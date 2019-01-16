@@ -1,0 +1,463 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>isopy.reduce &mdash; isopy 0.1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="isopy 0.1.1 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples_page.html">examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dtypes_page.html">dtypes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../load_page.html">load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../calc_page.html">calc</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>isopy.reduce</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for isopy.reduce</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">isopy.isorat</span> <span class="k">import</span> <span class="o">*</span>
+<span class="c1">###################</span>
+<span class="c1">### In progress ###</span>
+<span class="c1">###################</span>
+<span class="k">def</span> <span class="nf">isotope_to_ratio</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">denominator</span><span class="p">):</span>
+    <span class="c1">#TODO isotopes must be keep the same</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">denominator</span><span class="p">,</span> <span class="n">Isotope</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">denominator</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">denominator</span> <span class="o">=</span> <span class="n">Isotope</span><span class="p">(</span><span class="n">denominator</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;expected an Isotope object or a string at can be converted into one.&#39;</span><span class="p">)</span>
+
+    <span class="c1">#TODO check if data is structured array</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;dict&#39;</span>
+        <span class="n">isotopes</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;numpy&#39;</span>
+        <span class="n">isotopes</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;data must either be a dict or a structured numpy array not </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="n">denominator</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;denominator &quot;</span><span class="si">{}</span><span class="s1">&quot; not found in data&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">denominator</span><span class="p">))</span>
+
+    <span class="n">ratios</span> <span class="o">=</span> <span class="n">isotopes</span><span class="o">/</span><span class="n">denominator</span>
+
+    <span class="n">new_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">ratios</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">():</span> <span class="n">data</span><span class="p">[</span><span class="n">isotopes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">()</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="n">denominator</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">()]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ratios</span><span class="p">))}</span>
+
+    <span class="n">new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">isotope_data</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rat</span><span class="p">),</span> <span class="s1">&#39;f8&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">rat</span> <span class="ow">in</span> <span class="n">ratios</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">rat</span> <span class="ow">in</span> <span class="n">ratios</span><span class="p">:</span>
+        <span class="n">new</span><span class="p">[</span><span class="n">rat</span><span class="o">.</span><span class="n">str</span><span class="p">()]</span> <span class="o">=</span> <span class="n">isotope_data</span><span class="p">[</span><span class="n">rat</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">str</span><span class="p">()]</span> <span class="o">/</span> <span class="n">isotope_data</span><span class="p">[</span><span class="n">rat</span><span class="o">.</span><span class="n">denominator</span><span class="o">.</span><span class="n">str</span><span class="p">()]</span>
+
+    <span class="k">return</span> <span class="n">new</span>
+
+<span class="k">def</span> <span class="nf">ratio_to_isotope</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="c1">#Data must have same denominator</span>
+    <span class="k">pass</span>
+
+<span class="k">def</span> <span class="nf">isobaric_interference_corretion</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">abundance</span><span class="p">,</span> <span class="n">mass</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mf_law</span> <span class="o">=</span> <span class="s1">&#39;exponential&#39;</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">ratio</span> <span class="o">=</span> <span class="n">Ratio</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data_fields</span> <span class="o">=</span> <span class="n">Isotope</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">data_fields</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">data_fields</span> <span class="o">=</span> <span class="n">Ratio</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data_fields</span><span class="o">.</span><span class="n">common_denominator</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;all ratios in data must share a common denominator&#39;</span><span class="p">)</span>
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">data_fields</span><span class="o">.</span><span class="n">numerators</span><span class="p">()</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">data_fields</span><span class="o">.</span><span class="n">denominators</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data_fields</span><span class="p">[</span><span class="n">numer</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">)]]</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> not found in data&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">abundance</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">get_isorat_from_dict</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">abundance</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">abundance</span>
+
+    <span class="k">if</span> <span class="n">mass</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mf_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mass must be given if mass fractionation is required&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mf_law</span> <span class="o">==</span> <span class="s1">&#39;exponential&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="p">(</span><span class="n">get_isorat_from_dict</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">mass</span><span class="p">)</span> <span class="o">^</span> <span class="n">mf_factor</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="p">(</span><span class="n">mass</span> <span class="o">^</span> <span class="n">mf_factor</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid mass fractionation law&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data_fields</span><span class="p">)):</span>
+        <span class="c1"># For isotopes or the numeratior if data is ratio</span>
+        <span class="k">if</span> <span class="n">ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">A</span> <span class="o">==</span> <span class="n">numer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">A</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">data_fields</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data_fields</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">-</span> <span class="n">value</span>
+
+            <span class="k">if</span> <span class="n">denom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">A</span> <span class="o">==</span> <span class="n">denom</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">A</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">data_fields</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data_fields</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">/</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+<span class="k">def</span> <span class="nf">internal_normalisation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">std_abu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">abu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">rat</span> <span class="o">=</span> <span class="n">Ratio</span><span class="p">(</span><span class="n">ratio</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># TODO check for None Values</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">abu</span> <span class="o">=</span> <span class="n">ratio</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">mass</span> <span class="o">=</span> <span class="n">ratio</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rat</span> <span class="o">=</span> <span class="n">Ratio</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">abu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">std_abu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;abundance of &quot;</span><span class="si">{}</span><span class="s1">&quot; not given&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rat</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">abu</span> <span class="o">=</span> <span class="n">std_abu</span><span class="p">[</span><span class="n">rat</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;abundance of &quot;</span><span class="si">{}</span><span class="s1">&quot; not found in std_abu&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rat</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">mass</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">std_mass</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mass of &quot;</span><span class="si">{}</span><span class="s1">&quot; not given&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rat</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">mass</span> <span class="o">=</span> <span class="n">std_mass</span><span class="p">[</span><span class="n">rat</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mass of &quot;</span><span class="si">{}</span><span class="s1">&quot; not found in std_abu&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rat</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">law</span> <span class="o">==</span> <span class="s1">&#39;exponential&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">abu</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="n">rat</span><span class="o">.</span><span class="n">str</span><span class="p">()])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;exponential&#39;</span><span class="p">,</span> <span class="s1">&#39;f8&#39;</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">normalise_ratio</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reference_data</span><span class="p">,</span> <span class="n">factor</span> <span class="o">=</span> <span class="s1">&#39;epsilon&#39;</span><span class="p">):</span>
+    <span class="c1">#calcualte epsolon, delta etc</span>
+    <span class="k">pass</span>
+
+<span class="k">def</span> <span class="nf">outlier_rejection</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">rejection_threshold</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="mf">1.4826</span><span class="p">):</span>
+    <span class="n">outliers</span> <span class="o">=</span> <span class="n">outlier_index</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">rejection_threshold</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">outliers</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">outlier_index</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">rejection_threshold</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="mf">1.4826</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">mad</span> <span class="o">=</span> <span class="n">MAD</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">data</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">median</span> <span class="o">+</span> <span class="n">mad</span> <span class="o">*</span> <span class="n">rejection_threshold</span><span class="p">),</span> <span class="n">data</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">median</span> <span class="o">-</span> <span class="n">mad</span><span class="o">*</span> <span class="n">rejection_threshold</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                <span class="n">median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">mad</span> <span class="o">=</span> <span class="n">MAD</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">k</span><span class="p">)</span>
+                <span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">median</span> <span class="o">+</span> <span class="n">mad</span><span class="o">*</span> <span class="n">rejection_threshold</span><span class="p">),</span> <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">median</span> <span class="o">-</span> <span class="n">mad</span><span class="o">*</span> <span class="n">rejection_threshold</span><span class="p">)],</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span> <span class="k">raise</span>
+
+<span class="c1">######################</span>
+<span class="c1">### todo Docstring ###</span>
+<span class="c1">######################</span>
+
+<span class="c1">################</span>
+<span class="c1">### Finished ###</span>
+<span class="c1">################</span>
+<div class="viewcode-block" id="convert_data"><a class="viewcode-back" href="../../reduce_page.html#isopy.reduce.convert_data">[docs]</a><span class="k">def</span> <span class="nf">convert_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">new_format</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts data from one format to another.</span>
+<span class="sd">     </span>
+<span class="sd">     If converting data to present format then a copy is returned</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : (dict or numpy.ndarray)</span>
+<span class="sd">        Data to be converted. Must be in one of the formats specified below.</span>
+<span class="sd">        </span>
+<span class="sd">    new_format : {&#39;dict&#39;,&#39;numpy&#39;} </span>
+<span class="sd">        * dict - a dict of one dimensional numpy arrays</span>
+<span class="sd">        * numpy - a structured numpy array</span>
+<span class="sd">        * pandas - a panda array (not implemented)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    (dict, np.ndarray)</span>
+<span class="sd">        New data array in specified format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">new_format</span> <span class="o">==</span> <span class="s1">&#39;numpy&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">convert_dict2numpy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">new_format</span> <span class="o">==</span><span class="s1">&#39;dict&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">copy_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;new_format must be either &quot;dict&quot;, &quot;numpy&quot; or &quot;pandas&quot; not &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_format</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">new_format</span> <span class="o">==</span> <span class="s1">&#39;numpy&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">copy_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">new_format</span> <span class="o">==</span><span class="s1">&#39;dict&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">convert_numpy2dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;new_format must be either &quot;dict&quot;, &quot;numpy&quot; or &quot;pandas&quot; not &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_format</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;data type not recognised&#39;</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">convert_numpy2dict</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a structured array into a dict of one dimensional arrays.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : numpy.ndarray</span>
+<span class="sd">        Structured numpy array</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        A dict containing one dimensional array of values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">convert_dict2numpy</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a dict of one dimensional arrays into a structured array</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : dict</span>
+<span class="sd">        A dict containing one dimensional numpy arrays of the same length.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Structured numpy array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#Check that length of all arrays is the same</span>
+    <span class="n">dlen</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dlen</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">dlen</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">dlen</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dlen</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All arrays in dict must have the same length&#39;</span><span class="p">)</span>
+
+    <span class="c1">#Create array and return</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">tuple</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="n">ki</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">ki</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dlen</span><span class="p">[</span><span class="mi">0</span><span class="p">])],</span> <span class="n">dtype</span><span class="o">=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+
+<div class="viewcode-block" id="copy_data"><a class="viewcode-back" href="../../reduce_page.html#isopy.reduce.copy_data">[docs]</a><span class="k">def</span> <span class="nf">copy_data</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return deep copy of data object</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : (dict or numpy.ndarray)</span>
+<span class="sd">        Data object to be copied</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    (dict or numpy.ndarray)</span>
+<span class="sd">        Copy of original object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span> <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span> <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;data unrecognized type&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mattias Ek.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

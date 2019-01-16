@@ -1,0 +1,8 @@
+iso.reduce
+**********
+
+.. automodule:: isopy.reduce
+
+.. autoclass:: copy_data
+
+.. autoclass:: convert_data
