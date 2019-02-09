@@ -2,12 +2,14 @@ import numpy as _np
 import isopy.dtypes as _dtypes
 import csv as _csv
 import datetime as _dt
+import os
 
 def csvfile(filepath, header = False, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
     if empty_string_default is None: empty_string_default = ''
     out = {}
     column_title = {}
     header_set = False
+
     with open(filepath, 'r') as file:
         dialect = _csv.Sniffer().sniff(file.read(2048))
         file.seek(0)
@@ -42,9 +44,10 @@ def csvfile(filepath, header = False, skip_first_n_rows = 0, skip_first_n_column
     return out
 
 def reference_isotope_data(filepath = None, header = True, **kwargs):
-    if filepath is None: filepath = 'isopy/IsotopeData.csv'
+    if filepath is None: filepath= os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
+
     kwargs['header'] = header
-    raw = csvfile(filepath=filepath, **kwargs)
+    raw = csvfile(filepath, **kwargs)
     #TODO check that raw is big enough
     #TODO dict of dicts with float64 or np nan
 

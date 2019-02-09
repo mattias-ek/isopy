@@ -1089,6 +1089,7 @@ def IsoRatList(items, strict = False):
 ############
 ### Dict ###
 ############
+#TODO Elementstring, IsotopeString, RatioString keys
 class IsoRatDict(dict):
     def __init__(self, dictionary=None, values = None, keys = None, float_or_nan = True, **kwargs):
         self._float_or_nan = float_or_nan
@@ -1114,7 +1115,7 @@ class IsoRatDict(dict):
         super(IsoRatDict, self).__init__(**new)
 
     def __getitem__(self, key):
-        if isinstance(key, list): return {k: self.__getitem__(k) for k in key}
+        if isinstance(key, list): return [self.__getitem__(k) for k in key]
 
         try: key = IsoRatString(key)
         except: pass
@@ -1159,6 +1160,22 @@ class IsoRatDict(dict):
             return out
         try: return self.__getitem__(key)
         except KeyError: return default
+
+    def keys(self, element = False, isotope = False, ratio = False, other = False):
+        if not element and not isotope and not ratio and not other:
+            return super(IsoRatDict, self).keys()
+
+        if isotope and not (element and ratio and other): out = IsotopeList()
+        elif ratio and not (element and isotope and other): out = RatioList()
+        else: out = []
+
+        for k in super(IsoRatDict, self).keys():
+            if element and isinstance(k, ElementString): out.append(k)
+            elif isotope and isinstance(k, IsotopeString): out.append(k)
+            elif ratio and isinstance(k, RatioString): out.append(k)
+            elif other: out.append(k)
+
+        return out
 
 
 #############
