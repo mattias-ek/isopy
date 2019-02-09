@@ -16,7 +16,7 @@ isopy includes the most common reduction methods used in isotope geo/cosmochemis
    examples <examples_page>
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Modules:
 
    dtypes <dtypes_page>

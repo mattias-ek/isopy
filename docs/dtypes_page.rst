@@ -1,7 +1,16 @@
 isopy.dtypes
 ************
+.. currentmodule:: isopy.dtypes
 
-.. automodule:: isopy.dtypes
-    :members:
-    :undoc-members:
-    :member-order: bysource
+.. autosummary::
+    :toctree: dtypes
+    :template: class.rst
+
+    ElementString
+    IsotopeString
+    RatioString
+    IsotopeList
+    RatioList
+    IsoRatDict
+    IsotopeArray
+    RatioArray

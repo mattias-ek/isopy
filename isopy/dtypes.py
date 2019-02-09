@@ -17,7 +17,7 @@ class ElementString(str):
     Parameters
     ----------
     string : str
-        Can only contain alphabetical characters otherwise an error will be thrown.
+        Can only contain alphabetical characters.
     strict : bool, optional
         If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be
         thrown if string is not already in the correct format.
@@ -31,10 +31,10 @@ class ElementString(str):
     'Pd'
     >>> ElementString('pd')
     'Pd
-    >>> ElementString('1')  
+    >>> ElementString('Pd105')
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-    ValueError: ElementString can only contain alphabetical characters
+    ValueError: ElementString "Pd105"can only contain alphabetical characters
     
     Initialisation when ``strict == True``
     
@@ -43,20 +43,20 @@ class ElementString(str):
     >>> ElementString('pd', True)
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-    ValueError: First letter of ElementString must be upper case and following letters in lower case
+    ValueError: ElementString "pd" incorrectly formatted: First letter must be uppercase
 
     """
     __name__ = 'ElementString'
 
     def __new__(cls, string, strict = False):
-        if not string.isalpha(): raise ValueError('ElementString can only contain alphabetical characters')
-        if len(string) == 0: raise ValueError('ElementString cannot be an empty string')
+        if not string.isalpha(): raise ValueError('ElementString "{}" can only contain alphabetical characters'.format(string))
+        if len(string) == 0: raise ValueError('ElementString empty')
         if strict:
-            if len(string) == 1:
-                if not string[0].isupper(): ValueError('First letter of ElementString must be upper case')
-            else:
-                if not string[0].isupper() or not string[1:].islower():
-                    raise ValueError('First letter of ElementString must be upper case while the remaning letters are in lower case')
+            if not string[0].isupper(): ValueError('ElementString "{}" incorrectly formatted: First character must be'
+                                                   ' uppercase'.format(string))
+            if len(string) > 1 and string[1:].islower(): ValueError('ElementString "{}" incorrectly formatted: All but'
+                                                                    ' first character must be lowercase'.format(string))
+
         string = '{}{}'.format(string[0].upper(), string[1:].lower())
 
         obj = super(ElementString, cls).__new__(cls, string)
@@ -359,11 +359,11 @@ class _IsoRatList(list):
 
     def __getitem__(self, index):
         if isinstance(index,slice):
-            return self.__class__(super().__getitem__(index))
+            return self.__class__(super(_IsoRatList, self).__getitem__(index))
         elif isinstance(index, list):
-                return self._ltype([super().__getitem__(i) for i in index])
+                return self.__class__([super(_IsoRatList, self).__getitem__(i) for i in index])
         else:
-            return super().__getitem__(index)
+            return super(_IsoRatList, self).__getitem__(index)
 
     def __setitem__(self, key, value):
         raise NotImplementedError
@@ -604,7 +604,7 @@ class IsotopeList(_IsoRatList):
         """
         if index is None: index = [i for i in range(len(self))]
 
-        if isotope_list is None or isinstance(isotope_list, _IsoRatList, IsoRatDict):
+        if isotope_list is None or isinstance(isotope_list, (_IsoRatList, IsoRatDict)):
             pass
         else:
             isotope_list = IsotopeList(isotope_list)
@@ -1165,12 +1165,13 @@ class IsoRatDict(dict):
 ### Array ###
 #############
 class _IsoRatArray(np.ndarray):
-    def __new__(cls, data, *, keys = None):
+    def __new__(cls, data, keys = None):
         if keys is not None: keys = cls._ltype(keys)
 
         if isinstance(data, cls.__class__):
             #Data is already an IsoRatArray so just return a copy
             return data.copy()
+
         elif isinstance(data, np.ndarray):
             if data.dtype.names is None:
                 if keys is None: raise ValueError('keys must be given if data an numpy array')
@@ -1185,9 +1186,11 @@ class _IsoRatArray(np.ndarray):
                 for i in range(len(keys)):
                     obj[keys[i]] = data[i]
             else:
-                keys = cls._ltype(data.dtype.names)
+                if keys is None: keys = cls._ltype(data.dtype.names)
+                elif len(keys) != data.dtype.names: raise ValueError('Number of keys supplied ({}) does not match number'
+                    'of keys in data supplied ({}'.format(len(keys), len(data.dtype.names)))
                 try: dlen = len(data)
-                except: dlen = 1
+                except: dlen = None
                 obj = np.zeros(dlen, dtype=[(k, DTYPE) for k in keys])
                 obj = obj.view(cls)
                 for i in range(len(keys)):
@@ -1253,7 +1256,7 @@ class _IsoRatArray(np.ndarray):
             try: key = self._itype(key)
             except: pass
 
-        arr = super().__getitem__(key)
+        arr = super(_IsoRatArray, self).__getitem__(key)
         if arr.dtype.names is None: return arr.view(np.ndarray)
         else: return arr.view(self.__class__)
 
@@ -1335,28 +1338,67 @@ class _IsoRatArray(np.ndarray):
     def keys(self):
         return self._ltype(self.dtype.names)
 
-    def filter(self, **filter):
-        return NotImplemented
 
 
 class IsotopeArray(_IsoRatArray):
+    """
+    IsotopeArray(data, keys = None)
+
+    A custom view of a structured numpy array storing data with IsotopeString keys.
+
+    Functions much like a normal structured numpy array with a few exceptions.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        test 1
+    data : list
+        test 2
+    keys : list of str
+        A list of keys to be used with the data supplied.
+
+    Examples
+    --------
+    Init examples
+
+
+    Methods
+    -------
+    keys()
+        Return an IsotopeList containing the array keys.
+
+        Returns
+        -------
+        IsotopeList
+            List containing the IsotopeString keys stored in the array.
+
+        Examples
+        --------
+        >>> a = IsotopeArray(5, keys = ['pd105', '106Pd', '108pd'])
+        >>> type(a.keys())
+        IsotopeList
+        >>> a.keys()
+        ['105Pd', '106Pd', 108Pd']
+
+
+    """
     _ltype = IsotopeList
     _itype = IsotopeString
     __name__ = 'IsotopeArray'
 
-    def filter(self, **filter):
+    def filter(self, isotopelist, **filter):
         """
-            Select only the isotopes present in the data array given that passes filters specified.
-            
-            See IsotopeList.filter() for description of avaliable filters.
+        Return new IsotopeArray with isotopes of current array that passes matches the supplied filter parameters.
 
-            Returns
-            -------
-            IsotopeArray
-                Array containing the a copy of the data that matches the filter.
-            """
+        See IsotopeList.filter() for description of available filter parameters.
 
-        index = self.keys().filter(**filter)
+        Returns
+        -------
+        IsotopeArray
+            New array containing only the isotope keys that match the specified filter parameters.
+        """
+
+        index = self.keys().filter(isotopelist, **filter)
         return self[index].copy()
 
 
@@ -1367,15 +1409,15 @@ class RatioArray(_IsoRatArray):
 
     def filter(self, **filter):
         """
-            Select only the isotopes present in the data array given that passes filters specified.
-    
-            See RatioList.filter() for description of avaliable filters.
-    
-            Returns
-            -------
-            RatioArray
-                Array containing the a copy of the data that matches the filter.
-            """
+        Return new RatioArray with isotopes of current array that passes matches the supplied filter parameters.
+
+        See RatioList.filter() for description of available filter parameters.
+
+        Returns
+        -------
+        RatioArray
+            New array containing only the isotope keys that match the specified filter parameters.
+        """
 
         index = self.keys().filter(**filter)
         return self[index].copy()

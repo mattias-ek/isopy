@@ -1,4 +1,3 @@
 # isopy
-A python package for isotope geo/cosmochemistry
+A python package for data processing in isotope geo/cosmochemistry.
 
-delete

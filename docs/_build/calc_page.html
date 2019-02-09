@@ -24,26 +24,18 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="isopy 0.1.1 documentation" href="index.html"/>
-        <link rel="prev" title="isopy.load" href="load_page.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="isopy.load" href="load_page.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -110,7 +102,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">isopy</a>
@@ -118,9 +110,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -173,15 +166,15 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><em>IsotopeArray</em></a>) &#8211; Data that is to be converted to an RatioArray</li>
-<li><strong>denominator</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a>) &#8211; Denominator to be used in ratios. Must be present in data.</li>
+<li><strong>data</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><em>IsotopeArray</em></a>) – Data that is to be converted to an RatioArray</li>
+<li><strong>denominator</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a>) – Denominator to be used in ratios. Must be present in data.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
 </td>
 </tr>
 </tbody>
@@ -197,15 +190,15 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) &#8211; Ratio data to be converted. All ratios must share the same denominator</li>
-<li><strong>denominator_value</strong> (<em>float</em>) &#8211; Set denominator to this value and multiply all other values by it. Default = 1</li>
+<li><strong>data</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) – Ratio data to be converted. All ratios must share the same denominator</li>
+<li><strong>denominator_value</strong> (<em>float</em>) – Set denominator to this value and multiply all other values by it. Default = 1</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray">IsotopeArray</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray">IsotopeArray</a></p>
 </td>
 </tr>
 </tbody>
@@ -231,11 +224,11 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; Data array containing values to be correctd</li>
-<li><strong>ratio</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) &#8211; Ratio that will be fixed. Must be present in data</li>
-<li><strong>std_abu</strong> (<em>dict</em>) &#8211; A dict containing the reference composition of the normalisation ratio.</li>
-<li><strong>std_mass</strong> (<em>dict</em>) &#8211; A dict containing all the mass of all ratios in data.</li>
-<li><strong>law</strong> (<em>str</em>) &#8211; The mass fractionation law to be used. Only exponential fractionation is supported. Default = &#8216;exponential&#8217;</li>
+<li><strong>data</strong> (<em>numpy.ndarray</em>) – Data array containing values to be correctd</li>
+<li><strong>ratio</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) – Ratio that will be fixed. Must be present in data</li>
+<li><strong>std_abu</strong> (<em>dict</em>) – A dict containing the reference composition of the normalisation ratio.</li>
+<li><strong>std_mass</strong> (<em>dict</em>) – A dict containing all the mass of all ratios in data.</li>
+<li><strong>law</strong> (<em>str</em>) – The mass fractionation law to be used. Only exponential fractionation is supported. Default = ‘exponential’</li>
 </ul>
 </td>
 </tr>
@@ -258,17 +251,17 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) &#8211; Data array containing values to be corrected</li>
-<li><strong>mf_factor</strong> (<em>float</em>) &#8211; Mass fractionation factor to be applied to data</li>
-<li><strong>std_mass</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) &#8211; A dict containing all the mass of all ratios in data.</li>
-<li><strong>law</strong> (<em>str</em>) &#8211; The mass fractionation law to be used. Only exponential fractionation is supported. Default = &#8216;exponential&#8217;</li>
+<li><strong>data</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) – Data array containing values to be corrected</li>
+<li><strong>mf_factor</strong> (<em>float</em>) – Mass fractionation factor to be applied to data</li>
+<li><strong>std_mass</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) – A dict containing all the mass of all ratios in data.</li>
+<li><strong>law</strong> (<em>str</em>) – The mass fractionation law to be used. Only exponential fractionation is supported. Default = ‘exponential’</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Normalised data array.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
 </td>
 </tr>
 </tbody>
@@ -284,18 +277,18 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) &#8211; Data array containing values to be corrected</li>
-<li><strong>ratio</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) &#8211; Ratio that will be fixed. Must be present in data</li>
-<li><strong>std_abu</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) &#8211; A dict containing the reference composition of the normalisation ratio.</li>
-<li><strong>std_mass</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) &#8211; A dict containing all the mass of all ratios in data.</li>
-<li><strong>law</strong> (<em>str</em>) &#8211; The mass fractionation law to be used. Only exponential fractionation is supported. Default = &#8216;exponential&#8217;</li>
+<li><strong>data</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a>) – Data array containing values to be corrected</li>
+<li><strong>ratio</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) – Ratio that will be fixed. Must be present in data</li>
+<li><strong>std_abu</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) – A dict containing the reference composition of the normalisation ratio.</li>
+<li><strong>std_mass</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><em>IsoRatDict</em></a>) – A dict containing all the mass of all ratios in data.</li>
+<li><strong>law</strong> (<em>str</em>) – The mass fractionation law to be used. Only exponential fractionation is supported. Default = ‘exponential’</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Normalised data array.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray">RatioArray</a></p>
 </td>
 </tr>
 </tbody>
@@ -311,9 +304,9 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>measured_abu</strong> (<em>float</em>) &#8211; The measured abundance ratio between two isotopes</li>
-<li><strong>std_abu</strong> (<em>float</em>) &#8211; The reference abundance ratio between two isotopes</li>
-<li><strong>std_mass</strong> (<em>float</em>) &#8211; The mass ratio between two isotopes</li>
+<li><strong>measured_abu</strong> (<em>float</em>) – The measured abundance ratio between two isotopes</li>
+<li><strong>std_abu</strong> (<em>float</em>) – The reference abundance ratio between two isotopes</li>
+<li><strong>std_mass</strong> (<em>float</em>) – The mass ratio between two isotopes</li>
 </ul>
 </td>
 </tr>
@@ -335,8 +328,8 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>proportions</strong> (<em>list</em>) &#8211; A list of the proportion of each isotope abundance to be mixed.</li>
-<li><strong>isotope_data</strong> (<em>numpy.ndarray</em>) &#8211; A structured numpy array with each field corresponting to an isotope. Only those isotopes present in all
+<li><strong>proportions</strong> (<em>list</em>) – A list of the proportion of each isotope abundance to be mixed.</li>
+<li><strong>isotope_data</strong> (<em>numpy.ndarray</em>) – A structured numpy array with each field corresponting to an isotope. Only those isotopes present in all
 given data arrays given will be used.</li>
 </ul>
 </td>
@@ -375,16 +368,16 @@ given data arrays given will be used.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; Must</li>
-<li><strong>ratio</strong> (<a class="reference internal" href="dtypes_page.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) &#8211; A ratio where the numerator is the isotope whose contribution to other isotopes of the same mass will be removed.
+<li><strong>data</strong> (<em>numpy.ndarray</em>) – Must</li>
+<li><strong>ratio</strong> (<a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><em>RatioString</em></a>) – A ratio where the numerator is the isotope whose contribution to other isotopes of the same mass will be removed.
 The denominator is the isotope that will we used to calculate contribution of the numerator. Denominator must be
 present in data.</li>
-<li><strong>abundance</strong> (<em>value</em><em>, </em><em>dict</em>) &#8211; Can either be a value of the ratio specified or a dict of values where the ratio value can be found.</li>
-<li><strong>mass</strong> (<em>value</em><em>, </em><em>dict</em>) &#8211; Only required if mass fractionation correction is required. Can either be a value of the ratio specified or a dict of values
+<li><strong>abundance</strong> (<em>value</em><em>, </em><em>dict</em>) – Can either be a value of the ratio specified or a dict of values where the ratio value can be found.</li>
+<li><strong>mass</strong> (<em>value</em><em>, </em><em>dict</em>) – Only required if mass fractionation correction is required. Can either be a value of the ratio specified or a dict of values
 where the ratio value can be found.</li>
-<li><strong>mf_factor</strong> (<em>value</em>) &#8211; If specified then the this value will be used to correct the mass fractionation. Will be applied to the
+<li><strong>mf_factor</strong> (<em>value</em>) – If specified then the this value will be used to correct the mass fractionation. Will be applied to the
 abundance value of the ratio specified. This if used data should not have been internally normalised .</li>
-<li><strong>mf_law</strong> (<em>str</em>) &#8211; Mass fractionation law to be used. Defaults to the exponential law</li>
+<li><strong>mf_law</strong> (<em>str</em>) – Mass fractionation law to be used. Defaults to the exponential law</li>
 </ul>
 </td>
 </tr>
@@ -421,9 +414,7 @@ abundance value of the ratio specified. This if used data should not have been i
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -439,11 +430,11 @@ abundance value of the ratio specified. This if used data should not have been i
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Mattias Ek.
+        &copy; Copyright 2018, Mattias Ek
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -458,36 +449,24 @@ abundance value of the ratio specified. This if used data should not have been i
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.1.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

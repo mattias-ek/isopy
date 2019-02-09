@@ -24,26 +24,17 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="isopy 0.1.1 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -110,7 +101,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">isopy</a>
@@ -118,9 +109,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -150,8 +142,6 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
-        
       </li>
     
   </ul>
@@ -170,7 +160,7 @@
 <span class="c1">##############</span>
 <span class="c1">### String ###</span>
 <span class="c1">##############</span>
-<div class="viewcode-block" id="ElementString"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.ElementString">[docs]</a><span class="k">class</span> <span class="nc">ElementString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="ElementString"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.ElementString.html#isopy.dtypes.ElementString">[docs]</a><span class="k">class</span> <span class="nc">ElementString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ElementString(string, strict = False)</span>
 <span class="sd">    </span>
@@ -182,7 +172,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    string : str</span>
-<span class="sd">        Can only contain alphabetical characters otherwise an error will be thrown.</span>
+<span class="sd">        Can only contain alphabetical characters.</span>
 <span class="sd">    strict : bool, optional</span>
 <span class="sd">        If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be</span>
 <span class="sd">        thrown if string is not already in the correct format.</span>
@@ -196,10 +186,10 @@
 <span class="sd">    &#39;Pd&#39;</span>
 <span class="sd">    &gt;&gt;&gt; ElementString(&#39;pd&#39;)</span>
 <span class="sd">    &#39;Pd</span>
-<span class="sd">    &gt;&gt;&gt; ElementString(&#39;1&#39;)  </span>
+<span class="sd">    &gt;&gt;&gt; ElementString(&#39;Pd105&#39;)</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">        File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;</span>
-<span class="sd">    ValueError: ElementString can only contain alphabetical characters</span>
+<span class="sd">    ValueError: ElementString &quot;Pd105&quot;can only contain alphabetical characters</span>
 <span class="sd">    </span>
 <span class="sd">    Initialisation when ``strict == True``</span>
 <span class="sd">    </span>
@@ -208,27 +198,27 @@
 <span class="sd">    &gt;&gt;&gt; ElementString(&#39;pd&#39;, True)</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">        File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;</span>
-<span class="sd">    ValueError: First letter of ElementString must be upper case and following letters in lower case</span>
+<span class="sd">    ValueError: ElementString &quot;pd&quot; incorrectly formatted: First letter must be uppercase</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="vm">__name__</span> <span class="o">=</span> <span class="s1">&#39;ElementString&#39;</span>
 
     <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString can only contain alphabetical characters&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString cannot be an empty string&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString &quot;</span><span class="si">{}</span><span class="s1">&quot; can only contain alphabetical characters&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString empty&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;First letter of ElementString must be upper case&#39;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">string</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;First letter of ElementString must be upper case while the remaning letters are in lower case&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString &quot;</span><span class="si">{}</span><span class="s1">&quot; incorrectly formatted: First character must be&#39;</span>
+                                                   <span class="s1">&#39; uppercase&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">string</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">islower</span><span class="p">():</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ElementString &quot;</span><span class="si">{}</span><span class="s1">&quot; incorrectly formatted: All but&#39;</span>
+                                                                    <span class="s1">&#39; first character must be lowercase&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">string</span><span class="p">))</span>
+
         <span class="n">string</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">string</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
 
         <span class="n">obj</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ElementString</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">obj</span></div>
 
 
-<div class="viewcode-block" id="IsotopeString"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeString">[docs]</a><span class="k">class</span> <span class="nc">IsotopeString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeString"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString">[docs]</a><span class="k">class</span> <span class="nc">IsotopeString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    IsotopeString(string, strict = False)</span>
 <span class="sd">    </span>
@@ -362,7 +352,7 @@
         <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="RatioString"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioString">[docs]</a><span class="k">class</span> <span class="nc">RatioString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioString"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString">[docs]</a><span class="k">class</span> <span class="nc">RatioString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        RatioString(string, strict = False)</span>
 
@@ -465,7 +455,7 @@
         <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="IsoRatString"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatString">[docs]</a><span class="k">def</span> <span class="nf">IsoRatString</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">IsoRatString</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Shortcut function that will return an IsotopeString or a RatioString depending on the supplied string.</span>
 <span class="sd">        </span>
@@ -493,7 +483,7 @@
     <span class="k">try</span><span class="p">:</span> <span class="k">return</span> <span class="n">IsotopeString</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">pass</span>
     <span class="k">try</span><span class="p">:</span> <span class="k">return</span> <span class="n">RatioString</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">raise</span> <span class="c1">#ValueError(&#39;Unable to parse items into IsotopeList or RatioList&#39;)</span></div>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">raise</span> <span class="c1">#ValueError(&#39;Unable to parse items into IsotopeList or RatioList&#39;)</span>
 
 <span class="c1">############</span>
 <span class="c1">### List ###</span>
@@ -524,11 +514,11 @@
 
     <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="nb">slice</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ltype</span><span class="p">([</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">index</span><span class="p">])</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">([</span><span class="nb">super</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">index</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
@@ -546,7 +536,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_itype</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
 
 
-<div class="viewcode-block" id="IsotopeList"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeList">[docs]</a><span class="k">class</span> <span class="nc">IsotopeList</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeList"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList">[docs]</a><span class="k">class</span> <span class="nc">IsotopeList</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        IsotopeList(items = None, strict = False)</span>
 
@@ -729,7 +719,7 @@
     <span class="n">_itype</span> <span class="o">=</span> <span class="n">IsotopeString</span>
     <span class="vm">__name__</span> <span class="o">=</span> <span class="s1">&#39;IsotopeList&#39;</span>
 
-<div class="viewcode-block" id="IsotopeList.filter_index"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeList.filter_index">[docs]</a>    <span class="k">def</span> <span class="nf">filter_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotope_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_lt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_gt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeList.filter_index"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList.filter_index">[docs]</a>    <span class="k">def</span> <span class="nf">filter_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotope_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_lt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_gt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a list of the index of all items in list that match the given filter restrictions.</span>
 
@@ -769,7 +759,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))]</span>
 
-        <span class="k">if</span> <span class="n">isotope_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">isotope_list</span><span class="p">,</span> <span class="n">_IsoRatList</span><span class="p">,</span> <span class="n">IsoRatDict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotope_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">isotope_list</span><span class="p">,</span> <span class="p">(</span><span class="n">_IsoRatList</span><span class="p">,</span> <span class="n">IsoRatDict</span><span class="p">)):</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">isotope_list</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">(</span><span class="n">isotope_list</span><span class="p">)</span>
@@ -800,7 +790,7 @@
             <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="IsotopeList.filter"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeList.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotope_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_lt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_gt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeList.filter"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotope_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_lt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">A_gt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return only isotopes in list that matches the filters specified.</span>
 
@@ -839,7 +829,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">isotope_list</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">element</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span> <span class="n">A_lt</span><span class="o">=</span><span class="n">A_lt</span><span class="p">,</span> <span class="n">A_gt</span><span class="o">=</span><span class="n">A_gt</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">)]</span></div></div>
 
 
-<div class="viewcode-block" id="RatioList"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList">[docs]</a><span class="k">class</span> <span class="nc">RatioList</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList">[docs]</a><span class="k">class</span> <span class="nc">RatioList</span><span class="p">(</span><span class="n">_IsoRatList</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    RatioList(items = None, strict = False)</span>
 
@@ -1006,7 +996,7 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        IsotopeList</span>
+<span class="sd">        RatioList</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -1023,9 +1013,9 @@
     <span class="n">_itype</span> <span class="o">=</span> <span class="n">RatioString</span>
     <span class="vm">__name__</span> <span class="o">=</span> <span class="s1">&#39;RatioList&#39;</span>
 
-<div class="viewcode-block" id="RatioList.get_numerators"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.get_numerators">[docs]</a>    <span class="k">def</span> <span class="nf">get_numerators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.get_numerators"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.get_numerators">[docs]</a>    <span class="k">def</span> <span class="nf">get_numerators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list with of the numerators for all items in the list.</span>
+<span class="sd">        Returns a list with the numerators for all items in the list.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1040,9 +1030,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="n">rat</span><span class="o">.</span><span class="n">numerator</span> <span class="k">for</span> <span class="n">rat</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="RatioList.get_denominators"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.get_denominators">[docs]</a>    <span class="k">def</span> <span class="nf">get_denominators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.get_denominators"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.get_denominators">[docs]</a>    <span class="k">def</span> <span class="nf">get_denominators</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a list with of the denominators for all items in the list.</span>
+<span class="sd">        Returns a list with the denominators for all items in the list.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1057,7 +1047,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="n">rat</span><span class="o">.</span><span class="n">denominator</span> <span class="k">for</span> <span class="n">rat</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="RatioList.has_common_denominator"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.has_common_denominator">[docs]</a>    <span class="k">def</span> <span class="nf">has_common_denominator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.has_common_denominator"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.has_common_denominator">[docs]</a>    <span class="k">def</span> <span class="nf">has_common_denominator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns ``True`` if all isotope ratios in list have a common denominator.</span>
 <span class="sd">        </span>
@@ -1095,7 +1085,7 @@
                     <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="RatioList.get_common_denominator"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.get_common_denominator">[docs]</a>    <span class="k">def</span> <span class="nf">get_common_denominator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.get_common_denominator"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.get_common_denominator">[docs]</a>    <span class="k">def</span> <span class="nf">get_common_denominator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the common denominator for each item in the list. Error will be thrown if no common denominator exists.</span>
 <span class="sd">        </span>
@@ -1121,7 +1111,7 @@
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_denominators</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;list is empty&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_denominators</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="RatioList.filter_index"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.filter_index">[docs]</a>    <span class="k">def</span> <span class="nf">filter_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ratio_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">numerator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.filter_index"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.filter_index">[docs]</a>    <span class="k">def</span> <span class="nf">filter_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ratio_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">numerator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a list of the index of all items in list that match the given filter restrictions.</span>
 <span class="sd">        </span>
@@ -1191,7 +1181,7 @@
 
         <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="RatioList.filter"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioList.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ratio_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">numerator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioList.filter"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ratio_list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">numerator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a list items in list that match the given filter restrictions.</span>
 
@@ -1234,7 +1224,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">ratio_list</span><span class="p">,</span> <span class="n">numerator</span> <span class="o">=</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span> <span class="o">=</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">)]</span></div></div>
 
 
-<div class="viewcode-block" id="IsoRatList"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatList">[docs]</a><span class="k">def</span> <span class="nf">IsoRatList</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">IsoRatList</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
@@ -1248,13 +1238,13 @@
     <span class="k">try</span><span class="p">:</span> <span class="k">return</span> <span class="n">IsotopeList</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">pass</span>
     <span class="k">try</span><span class="p">:</span> <span class="k">return</span> <span class="n">RatioList</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unable to parse items into IsotopeList or RatioList&#39;</span><span class="p">)</span></div>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unable to parse items into IsotopeList or RatioList&#39;</span><span class="p">)</span>
 
 
 <span class="c1">############</span>
 <span class="c1">### Dict ###</span>
 <span class="c1">############</span>
-<div class="viewcode-block" id="IsoRatDict"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatDict">[docs]</a><span class="k">class</span> <span class="nc">IsoRatDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<div class="viewcode-block" id="IsoRatDict"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict">[docs]</a><span class="k">class</span> <span class="nc">IsoRatDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dictionary</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">float_or_nan</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_float_or_nan</span> <span class="o">=</span> <span class="n">float_or_nan</span>
         <span class="k">if</span> <span class="n">dictionary</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">dictionary</span> <span class="o">=</span> <span class="n">kwargs</span>
@@ -1303,19 +1293,19 @@
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IsoRatDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
-<div class="viewcode-block" id="IsoRatDict.pop"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatDict.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="IsoRatDict.pop"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span> <span class="n">key</span> <span class="o">=</span> <span class="n">IsoRatString</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IsoRatDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="IsoRatDict.setdefault"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatDict.setdefault">[docs]</a>    <span class="k">def</span> <span class="nf">setdefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="IsoRatDict.setdefault"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict.setdefault">[docs]</a>    <span class="k">def</span> <span class="nf">setdefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span> <span class="n">key</span> <span class="o">=</span> <span class="n">IsoRatString</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">IsoRatDict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="IsoRatDict.get"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsoRatDict.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">):</span>
+<div class="viewcode-block" id="IsoRatDict.get"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
@@ -1330,12 +1320,13 @@
 <span class="c1">### Array ###</span>
 <span class="c1">#############</span>
 <span class="k">class</span> <span class="nc">_IsoRatArray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_ltype</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
             <span class="c1">#Data is already an IsoRatArray so just return a copy</span>
             <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;keys must be given if data an numpy array&#39;</span><span class="p">)</span>
@@ -1350,9 +1341,11 @@
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)):</span>
                     <span class="n">obj</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_ltype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_ltype</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of keys supplied (</span><span class="si">{}</span><span class="s1">) does not match number&#39;</span>
+                    <span class="s1">&#39;of keys in data supplied (</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)))</span>
                 <span class="k">try</span><span class="p">:</span> <span class="n">dlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-                <span class="k">except</span><span class="p">:</span> <span class="n">dlen</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">except</span><span class="p">:</span> <span class="n">dlen</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="n">obj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dlen</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="n">DTYPE</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span>
                 <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)):</span>
@@ -1418,7 +1411,7 @@
             <span class="k">try</span><span class="p">:</span> <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_itype</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
 
-        <span class="n">arr</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_IsoRatArray</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
 
@@ -1500,56 +1493,93 @@
     <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ltype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">NotImplemented</span>
 
 
-<div class="viewcode-block" id="IsotopeArray"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeArray">[docs]</a><span class="k">class</span> <span class="nc">IsotopeArray</span><span class="p">(</span><span class="n">_IsoRatArray</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeArray"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray">[docs]</a><span class="k">class</span> <span class="nc">IsotopeArray</span><span class="p">(</span><span class="n">_IsoRatArray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    IsotopeArray(data, keys = None)</span>
+
+<span class="sd">    A custom view of a structured numpy array storing data with IsotopeString keys.</span>
+
+<span class="sd">    Functions much like a normal structured numpy array with a few exceptions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : numpy.ndarray</span>
+<span class="sd">        test 1</span>
+<span class="sd">    data : list</span>
+<span class="sd">        test 2</span>
+<span class="sd">    keys : list of str</span>
+<span class="sd">        A list of keys to be used with the data supplied.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Init examples</span>
+
+
+<span class="sd">    Methods</span>
+<span class="sd">    -------</span>
+<span class="sd">    keys()</span>
+<span class="sd">        Return an IsotopeList containing the array keys.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        IsotopeList</span>
+<span class="sd">            List containing the IsotopeString keys stored in the array.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; a = IsotopeArray(5, keys = [&#39;pd105&#39;, &#39;106Pd&#39;, &#39;108pd&#39;])</span>
+<span class="sd">        &gt;&gt;&gt; type(a.keys())</span>
+<span class="sd">        IsotopeList</span>
+<span class="sd">        &gt;&gt;&gt; a.keys()</span>
+<span class="sd">        [&#39;105Pd&#39;, &#39;106Pd&#39;, 108Pd&#39;]</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_ltype</span> <span class="o">=</span> <span class="n">IsotopeList</span>
     <span class="n">_itype</span> <span class="o">=</span> <span class="n">IsotopeString</span>
     <span class="vm">__name__</span> <span class="o">=</span> <span class="s1">&#39;IsotopeArray&#39;</span>
 
-<div class="viewcode-block" id="IsotopeArray.filter"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.IsotopeArray.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">):</span>
+<div class="viewcode-block" id="IsotopeArray.filter"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isotopelist</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Select only the isotopes present in the data array given that passes filters specified.</span>
-<span class="sd">            </span>
-<span class="sd">            See IsotopeList.filter() for description of avaliable filters.</span>
+<span class="sd">        Return new IsotopeArray with isotopes of current array that passes matches the supplied filter parameters.</span>
 
-<span class="sd">            Returns</span>
-<span class="sd">            -------</span>
-<span class="sd">            IsotopeArray</span>
-<span class="sd">                Array containing the a copy of the data that matches the filter.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">        See IsotopeList.filter() for description of available filter parameters.</span>
 
-        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">**</span><span class="nb">filter</span><span class="p">)</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        IsotopeArray</span>
+<span class="sd">            New array containing only the isotope keys that match the specified filter parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">isotopelist</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div></div>
 
 
-<div class="viewcode-block" id="RatioArray"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioArray">[docs]</a><span class="k">class</span> <span class="nc">RatioArray</span><span class="p">(</span><span class="n">_IsoRatArray</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioArray"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray">[docs]</a><span class="k">class</span> <span class="nc">RatioArray</span><span class="p">(</span><span class="n">_IsoRatArray</span><span class="p">):</span>
     <span class="n">_ltype</span> <span class="o">=</span> <span class="n">RatioList</span>
     <span class="n">_itype</span> <span class="o">=</span> <span class="n">RatioString</span>
     <span class="vm">__name__</span> <span class="o">=</span> <span class="s1">&#39;RatioArray&#39;</span>
 
-<div class="viewcode-block" id="RatioArray.filter"><a class="viewcode-back" href="../../dtypes_page.html#isopy.dtypes.RatioArray.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">):</span>
+<div class="viewcode-block" id="RatioArray.filter"><a class="viewcode-back" href="../../dtypes/isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="nb">filter</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Select only the isotopes present in the data array given that passes filters specified.</span>
-<span class="sd">    </span>
-<span class="sd">            See RatioList.filter() for description of avaliable filters.</span>
-<span class="sd">    </span>
-<span class="sd">            Returns</span>
-<span class="sd">            -------</span>
-<span class="sd">            RatioArray</span>
-<span class="sd">                Array containing the a copy of the data that matches the filter.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">        Return new RatioArray with isotopes of current array that passes matches the supplied filter parameters.</span>
+
+<span class="sd">        See RatioList.filter() for description of available filter parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RatioArray</span>
+<span class="sd">            New array containing only the isotope keys that match the specified filter parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">**</span><span class="nb">filter</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div></div>
 </pre></div>
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -1558,11 +1588,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Mattias Ek.
+        &copy; Copyright 2018, Mattias Ek
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -1577,36 +1607,24 @@
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../',
-            VERSION:'0.1.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
