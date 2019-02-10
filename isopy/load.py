@@ -4,11 +4,12 @@ import csv as _csv
 import datetime as _dt
 import os
 
-def csvfile(filepath, header = False, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
+def _key_csvfile(filepath, column_key = True, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
     if empty_string_default is None: empty_string_default = ''
+    key = []
     out = {}
     column_title = {}
-    header_set = False
+    column_key_set = False
 
     with open(filepath, 'r') as file:
         dialect = _csv.Sniffer().sniff(file.read(2048))
@@ -25,84 +26,67 @@ def csvfile(filepath, header = False, skip_first_n_rows = 0, skip_first_n_column
                 skip_first_n_rows -= 1
                 continue
 
-            if not header_set:
+            if not column_key_set:
                 #TODO make sure header doesnt already exist
-                header_set = True
-                if header:
-                    for i in range(skip_first_n_columns, len(row)): column_title[i] = row[i].strip()
+                column_key_set = True
+                if column_key:
+                    for i in range(skip_first_n_columns+1, len(row)): column_title[i] = row[i].strip()
                     continue
                 else:
-                    for i in range(skip_first_n_columns, len(row)): column_title[i] = i
+                    for i in range(skip_first_n_columns+1, len(row)): column_title[i] = i
 
+            #get key
+            try: key_val = row[skip_first_n_columns].strip()
+            except: continue
+            if key_val == '': continue
+            if key_val in key: continue
+            key.append(key_val)
 
-            for i in range(skip_first_n_columns, len(column_title)):
+            #read data
+            for i in range(skip_first_n_columns+1, len(column_title)):
                 try: row_val = row[i].strip()
                 except: row_val = ''
                 if row_val == '': row_val = empty_string_default
                 out.setdefault(column_title[i], []).append(row_val)
 
-    return out
+    return key, out
 
-def reference_isotope_data(**kwargs):
+def reference_data_dict():
     filepath = os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
-    return isotope_data(filepath, **kwargs)
+    return data_dict(filepath)
 
-def isotope_data(filepath = None, **kwargs):
-    kwargs.setdefault('header', True)
-    header = kwargs['header']
-    raw = csvfile(filepath, **kwargs)
-    #TODO check that raw is big enough
-    #TODO dict of dicts with float64 or np nan
-
-    isotopes = None
-    iso_header = None
-    if header:
-        for iso in ['isotope', 'isotopes', 'ISOTOPE', 'ISOTOPES', 'Isotope', 'Isotopes']:
-            if iso in raw:
-                isotopes = raw[iso]
-                iso_header = iso
-                break
-        if isotopes is None: raise ValueError('"isotope" header not found in "{}"'.format(filepath))
-    else:
-        isotopes = raw[0]
-        iso_header = 0
+def data_dict(filepath = None, column_key = True, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
+    keys, data = _key_csvfile(filepath, column_key, skip_first_n_rows, skip_first_n_columns, empty_string_default)
 
     out = {}
-    for key in raw:
-        if key == iso_header: continue
-        out[key] = _dtypes.IsopyDict(keys = isotopes, values = raw[key])
+    for k in data:
+        out[k] = _dtypes.IsopyDict(keys = keys, values = data[k])
 
     return out
 
-def load_standard_ratio_data(filepath = None, header = True):
-    pass
 
-def _isorat_array(filepath, **kwargs):
-    kwargs['header'] = True
-    raw = csvfile(filepath, empty_string_default='nan' ,**kwargs)
-    out = {'sample': None, 'value': {}, 'uncertainty': {}}
-    for smp in ['sample','samples', 'Sample', 'Samples', 'SAMPLE', 'SAMPLES']:
-        if smp in raw:
-            out['sample'] = raw.pop(smp)
-            break
+def _isopy_array(filepath, **kwargs):
+    key, data = _key_csvfile(filepath, empty_string_default='nan', **kwargs)
+    out = {'sample': key, 'value': {}, 'uncertainty': {}}
 
-    for key in raw:
+    for key in data:
         if '+-' in key:
-            out['uncertainty'][key.replace('+-', '').strip()] = raw[key]
+            out['uncertainty'][key.replace('+-', '').strip()] = data[key]
         else:
-            out['value'][key] = raw[key]
+            out['value'][key] = data[key]
 
     return out
 
 def isotope_array(filepath, **kwargs):
-    out = _isorat_array(filepath, **kwargs)
+    #TODO surely this should be an array of the keys in value rather than a dict
+    out = _isopy_array(filepath, **kwargs)
     out['value'] = _dtypes.IsotopeArray(out['value'])
     if len(out['uncertainty']) == 0: out['uncertainty'] = None
     else: out['uncertinaty'] = _dtypes.IsotopeArray(out['uncertinaty'])
     return out
 
 def ratio_array(filepath, **kwargs):
-    out = _isorat_array(filepath,**kwargs)
+    out = _isopy_array(filepath, **kwargs)
     out['value'] = _dtypes.RatioArray(out['value'])
     if len(out['uncertainty']) == 0: out['uncertainty'] = None
     else: out['uncertainty'] = _dtypes.RatioArray(out['uncertainty'])

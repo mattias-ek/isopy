@@ -667,7 +667,7 @@ class IsotopeList(_IsopyList):
             if isotope is not None:
                 if iso not in isotope: continue
             if element is not None:
-                if iso.symbol not in element: continue
+                if iso.element not in element: continue
             if A is not None:
                 if iso.A != A: continue
             if A_lt is not None:
@@ -1413,18 +1413,37 @@ class _IsopyArray(np.ndarray):
 
         raise NotImplementedError('ufunc "{}" is not supported for {}'.format(ufunc.__name__, self.__name__))
 
-    def mean(self, out = None, **unused_kwargs):
-        #TODO warning for unused kwargs
-        if out is None: out = self.__class__(1, keys = self.keys())
-        for key in self.keys():
-            out[key] = np.mean(self[key])
-        return out
+    def mean(self, axis = 0, dtype = None, out = None, **unused_kwargs):
+        return self._ado_function(np.mean, axis, dtype, out)
 
-    def std(self, out = None, ddof = 0, **unused_kwargs):
-        if out is None: out = self.__class__(1, keys = self.keys())
-        for key in self.keys():
-            out[key] = np.std(self[key], ddof = ddof)
-        return out
+    def std(self, axis = 0, dtype = None, out = None, ddof = 0, **unused_kwargs):
+        return self._ado_function(np.std, axis, dtype, out, ddof = ddof)
+
+    def sum(self, axis=0, dtype = None, out=None, **unused_kwargs):
+        return self._ado_function(np.sum, axis, dtype, out)
+
+    def _ado_function(self, func, axis, dtype, out, **kwargs):
+        #function with axis, dtype, out options e.g. sum, mean std
+        if dtype is None: dtype = DTYPE
+
+        if axis == 0 or axis is None:
+            if out is None: out = self.__class__(None, keys = self.keys())
+            for key in self.keys():
+                func(self[key], out=out[key], **kwargs)
+            return out
+        if axis == -1:
+            if out is None:
+                return func([self[x] for x in self.keys()], dtype=dtype, **kwargs)
+            else:
+                func([self[x] for x in self.keys()], out=out, **kwargs)
+                return out
+        if axis == 1:
+            if out is None:
+                return func([self[x] for x in self.keys()], axis=0, dtype=dtype, **kwargs)
+            else:
+                func([self[x] for x in self.keys()], axis=0, out=out, **kwargs)
+                return out
+        raise ValueError('axis {} is out of bounds'.format(axis))
 
     def keys(self):
         return self._list_class(self.dtype.names)
