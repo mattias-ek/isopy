@@ -1,0 +1,543 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>isopy.dtypes.IsotopeList &mdash; isopy 0.1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="isopy.dtypes.RatioList" href="isopy.dtypes.RatioList.html" />
+    <link rel="prev" title="isopy.dtypes.RatioString" href="isopy.dtypes.RatioString.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial_page.html">tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples_page.html">examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Modules:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">dtypes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.ElementString.html">isopy.dtypes.ElementString</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeString.html">isopy.dtypes.IsotopeString</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioString.html">isopy.dtypes.RatioString</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">isopy.dtypes.IsotopeList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioList.html">isopy.dtypes.RatioList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsoRatDict.html">isopy.dtypes.IsoRatDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeArray.html">isopy.dtypes.IsotopeArray</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioArray.html">isopy.dtypes.RatioArray</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../load_page.html">load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">calc</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../dtypes_page.html">isopy.dtypes</a> &raquo;</li>
+        
+      <li>isopy.dtypes.IsotopeList</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/dtypes/isopy.dtypes.IsotopeList.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="isopy-dtypes-isotopelist">
+<h1>isopy.dtypes.IsotopeList<a class="headerlink" href="#isopy-dtypes-isotopelist" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="isopy.dtypes.IsotopeList">
+<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">IsotopeList</code><span class="sig-paren">(</span><em>items = None</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList" title="Permalink to this definition">¶</a></dt>
+<dd><p>A subclass of list specifically for list of IsotopeString items.</p>
+<p>Functions much like a normal list with the exception that all objects must be/are converted to an IsotopeString.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>items</strong> (<em>list of strings</em><em> or </em><a class="reference internal" href="isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">None</span></code> an empty list will be created. If <code class="docutils literal notranslate"><span class="pre">list</span></code> then all items must be strings that can be converted
+into an IsotopeString. If <code class="docutils literal notranslate"><span class="pre">IsotopeArray</span></code> then the the keys of the array will used to populate the IsotopeList.</li>
+<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+thrown if strings are not already in the correct format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">])</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">])</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">&quot;104&quot; does not contain an element</span>
+</pre></div>
+</div>
+<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.__contains__">
+<code class="descname">__contains__</code><span class="sig-paren">(</span><em>item</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if list contains <cite>item</cite>. Otherwise returns <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> (<em>str</em>) – String representation of an isotope</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;105Pd&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;pd105&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;108Pd&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if list equals <cite>other</cite>. Otherwise returns <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>list of strings</em><em> or </em><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – List of strings representing isotopes</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">]</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add item to the end of the list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
+<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+thrown if item is not already in the correct format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;, &#39;108Pd&#39;]</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.insert">
+<code class="descname">insert</code><span class="sig-paren">(</span><em>index</em>, <em>item</em>, <em>stict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.insert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert item at list index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> (<em>int</em>) – Postion where item will be added</li>
+<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
+<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+thrown if item is not already in the correct format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;102pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">[&#39;102Pd&#39;, &#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;102pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove item from list</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
+<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+thrown if item is not already in the correct format.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;105pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">[&#39;104Pd&#39;, &#39;106Pd&#39;]</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
+<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the current list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList">IsotopeList</a></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108Pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;, 108Pd]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.filter">
+<code class="descname">filter</code><span class="sig-paren">(</span><em>isotope_list=None</em>, <em>*</em>, <em>element=None</em>, <em>A=None</em>, <em>A_lt=None</em>, <em>A_gt=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return only isotopes in list that matches the filters specified.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>isotope_list</strong> (<a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – Keep only isotopes appearing in self and the supplied IsotopeList</li>
+<li><strong>element</strong> (<em>str</em><em>, </em><em>optional</em>) – Isotope must have this element symbol</li>
+<li><strong>A</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have this nucleon number (A)</li>
+<li><strong>A_lt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) less than this value</li>
+<li><strong>A_gt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) greater than this value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List consisting of the isotopes that comply with the filter specified.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList">IsotopeList</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element</span> <span class="o">=</span> <span class="s1">&#39;Pd&#39;</span><span class="p">)</span>
+<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="go">[&#39;104Ru&#39;, &#39;104Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A_gt</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="go">[&#39;105Pd&#39;, &#39;106Pd&#39;, &#39;111Cd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
+<span class="go">[&#39;104Ru&#39;, &#39;111Cd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">],</span> <span class="n">A_lt</span> <span class="o">=</span> <span class="mi">105</span><span class="p">)</span>
+<span class="go">[&#39;104Ru&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.filter_index">
+<code class="descname">filter_index</code><span class="sig-paren">(</span><em>isotope_list=None</em>, <em>*</em>, <em>element=None</em>, <em>A=None</em>, <em>A_lt=None</em>, <em>A_gt=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.filter_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.filter_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of the index of all items in list that match the given filter restrictions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>isotope_list</strong> (<a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – Isotope must be present in ´isotope_list´</li>
+<li><strong>element</strong> (<em>str</em><em>, </em><em>optional</em>) – Isotope must have this element symbol</li>
+<li><strong>A</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have this nucleon number (A)</li>
+<li><strong>A_lt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) less than this value</li>
+<li><strong>A_gt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) greater than this value</li>
+<li><strong>index</strong> (<em>list</em>) – List of integers. Only check these indexes. If not given then check all items in list.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of indexes of all items matches the filter.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element</span> <span class="o">=</span> <span class="s1">&#39;Pd&#39;</span><span class="p">)</span>
+<span class="go">[1,2,3]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="go">[0,1]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A_gt</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="go">[2,3,4]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
+<span class="go">[0,4]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">],</span> <span class="n">A_lt</span> <span class="o">=</span> <span class="mi">105</span><span class="p">)</span>
+<span class="go">[0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.dtypes.RatioList.html" class="btn btn-neutral float-right" title="isopy.dtypes.RatioList" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="isopy.dtypes.RatioString.html" class="btn btn-neutral" title="isopy.dtypes.RatioString" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
