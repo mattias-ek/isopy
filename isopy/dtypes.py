@@ -277,14 +277,18 @@ class RatioString(str):
             except:
                 raise ValueError('no "/" found in string')
         else:
-            raise ValueError('unable to parse "{}" into isotopes'.format(string))
+            raise ValueError('unable to parse "{}"'.format(string))
 
 
-        try: numer = IsotopeString(numer, strict)
-        except: raise ValueError('Unable to parse numerator: "{}"'.format(numer))
+        try: numer = ElementString(numer, strict)
+        except ValueError:
+            try: numer = IsotopeString(numer, strict)
+            except ValueError: ValueError('Unable to parse numerator: "{}"'.format(numer))
 
-        try: denom = IsotopeString(denom, strict)
-        except: raise ValueError('Unable to parse denominator: "{}"'.format(denom))
+        try: denom = ElementString(denom, strict)
+        except ValueError:
+            try: denom = IsotopeString(denom, strict)
+            except: raise ValueError('Unable to parse denominator: "{}"'.format(denom))
 
         obj =  super(RatioString, cls).__new__(cls, '{}/{}'.format(numer, denom))
         obj.numerator = numer
@@ -293,14 +297,16 @@ class RatioString(str):
 
     def __contains__(self, item, strict = False):
         if isinstance(item, str):
+            try: item = ElementString(item, strict)
+            except: pass
             try: item = IsotopeString(item, strict)
             except: pass
-        if isinstance(item, IsotopeString):
+        if isinstance(item, (IsotopeString, ElementString)):
             return self.numerator == item or self.denominator == item
         return False
 
 
-def IsoRatString(string, strict = False):
+def any_string(string, strict = False):
     """
         Shortcut function that will return an IsotopeString or a RatioString depending on the supplied string.
         
@@ -318,26 +324,28 @@ def IsoRatString(string, strict = False):
         
         Examples
         --------
-        >>> type(IsoRatString('105Pd'))
+        >>> type(any_string('105Pd'))
         IsotopeString
-        >>> Type(IsoRatString('105Pd/106Pd'))
+        >>> Type(any_string('105Pd/106Pd'))
         RatioString
 
         
     """
+    try: return ElementString(string, strict)
+    except ValueError: pass
     try: return IsotopeString(string, strict)
     except ValueError: pass
     try: return RatioString(string, strict)
-    except ValueError: raise #ValueError('Unable to parse items into IsotopeList or RatioList')
+    except ValueError: raise #ValueError('Unable to parse items into ElementString, IsotopeList or RatioList')
 
 ############
 ### List ###
 ############
-class _IsoRatList(list):
+class _IsopyList(list):
     def __init__(self, items = None, strict = False):
         if items is None: items = []
         elif isinstance(items, np.ndarray): items = items.dtype.names
-        try: super().__init__([self._itype(item, strict) for item in items])
+        try: super().__init__([self._new_item(item, strict) for item in items])
         except: raise
 
     def __eq__(self, other):
@@ -351,37 +359,67 @@ class _IsoRatList(list):
         return True
     
     def __contains__(self, item):
-        if not isinstance(item, self._itype):
-            try: item = self._itype(item)
+        if not isinstance(item, self._string_class):
+            try: item = self._string_class(item)
             except: return None
         
-        return super(_IsoRatList, self).__contains__(item)
+        return super(_IsopyList, self).__contains__(item)
 
     def __getitem__(self, index):
         if isinstance(index,slice):
-            return self.__class__(super(_IsoRatList, self).__getitem__(index))
+            return self.__class__(super(_IsopyList, self).__getitem__(index))
         elif isinstance(index, list):
-                return self.__class__([super(_IsoRatList, self).__getitem__(i) for i in index])
+                return self.__class__([super(_IsopyList, self).__getitem__(i) for i in index])
         else:
-            return super(_IsoRatList, self).__getitem__(index)
+            return super(_IsopyList, self).__getitem__(index)
 
     def __setitem__(self, key, value):
         raise NotImplementedError
 
+    def _new_item(self, item, strict = False):
+        return self._string_class(item, strict)
+
     def append(self, item, strict = False):
-        return super().append(self._itype(item, strict))
+        return super().append(self._new_item(item, strict))
 
     def insert(self, index, item, strict = False):
-        return super().insert(index, self._itype(item, strict))
+        return super().insert(index, self._new_item(item, strict))
 
     def remove(self, item, strict = False):
-        return super().remove(self._itype(item, strict))
+        return super().remove(self._new_item(item, strict))
 
     def copy(self):
-        return self.__class__([self._itype(x) for x in self])
+        return self.__class__([self._new_item(x) for x in self])
 
 
-class IsotopeList(_IsoRatList):
+class ElementList(_IsopyList):
+    _string_class = ElementString
+    __name__ = 'ElementList'
+
+    def filter_index(self, element = None, *, index = None):
+        if index is None: index = [i for i in range(len(self))]
+
+        if element is None or isinstance(element, (ElementList, IsopyDict)):
+            pass
+        elif isinstance(element, list):
+            element = ElementList(element)
+        else:
+            return self.index(ElementString(element))
+
+        out = []
+        for i in index:
+            ele = self[i]
+            if element is not None:
+                if ele not in element: continue
+
+            out.append(i)
+        return out
+
+    def filter(self, element = None, *, index = None):
+        return self[self.filter_index(element, index = index)]
+
+
+class IsotopeList(_IsopyList):
     """
         IsotopeList(items = None, strict = False)
 
@@ -561,17 +599,21 @@ class IsotopeList(_IsoRatList):
             ['104Pd', '105Pd', '106Pd']
         
         """
-    _itype = IsotopeString
+    _string_class = IsotopeString
     __name__ = 'IsotopeList'
 
-    def filter_index(self, isotope_list = None, *, element=None, A=None, A_lt=None, A_gt=None, index = None):
+    def filter_index(self, isotope = None, *, element=None, A=None, A_lt=None, A_gt=None, index = None):
         """
         Return a list of the index of all items in list that match the given filter restrictions.
 
         Parameters
         ----------
-        isotope_list : IsotopeList
-            Isotope must be present in ´isotope_list´
+        isotope : IsotopeList
+            Isotope must be present in ´isotope´
+        isotope : str
+            pass
+        isotope : list
+            pass
         element : str, optional
             Isotope must have this element symbol
         A : int, optional
@@ -604,24 +646,26 @@ class IsotopeList(_IsoRatList):
         """
         if index is None: index = [i for i in range(len(self))]
 
-        if isotope_list is None or isinstance(isotope_list, (_IsoRatList, IsoRatDict)):
+        if isotope is None or isinstance(isotope, (IsotopeList, IsopyDict)):
             pass
+        elif isinstance(isotope, (list, IsotopeArray)):
+            isotope = IsotopeList(isotope)
         else:
-            isotope_list = IsotopeList(isotope_list)
+            isotope = IsotopeList([isotope])
 
-        if element is None:
+        if element is None or isinstance(element, ElementList):
             pass
-        elif isinstance(element, (list, IsotopeList)):
-            element = IsotopeList(element)
+        elif isinstance(element, list):
+            element = ElementList(element)
         else:
-            element = IsotopeList([element])
+            element = ElementList([element])
 
         out = []
         for i in index:
             iso = self[i]
             # Do not include iso if it fails any of these tests
-            if isotope_list is not None:
-                if iso not in isotope_list: continue
+            if isotope is not None:
+                if iso not in isotope: continue
             if element is not None:
                 if iso.symbol not in element: continue
             if A is not None:
@@ -674,7 +718,7 @@ class IsotopeList(_IsoRatList):
         return self[self.filter_index(isotope_list, element=element, A=A, A_lt=A_lt, A_gt=A_gt, index = index)]
 
 
-class RatioList(_IsoRatList):
+class RatioList(_IsopyList):
     """
     RatioList(items = None, strict = False)
 
@@ -855,8 +899,30 @@ class RatioList(_IsoRatList):
         >>> b
         ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']
     """
-    _itype = RatioString
+    _string_class = RatioString
     __name__ = 'RatioList'
+    _numerator_string_class = None
+    _denominator_string_class = None
+
+    def _new_item(self, item, strict = False):
+        item = super()._new_item(item, strict)
+        if self._numerator_string_class is None: self._numerator_string_class = item.numerator.__class__
+        elif not isinstance(item.numerator, self._numerator_string_class):
+            raise ValueError('ratio numerator set to "{}" not "{}"'.format(self._numerator_string_class.__name__,
+                                                                           item.numerator.__class__.__name__))
+        if self._denominator_string_class is None: self._denominator_string_class = item.denominator.__class__
+        elif not isinstance(item.denominator, self._denominator_string_class):
+            raise ValueError('ratio denominator set to "{}" not "{}"'.format(self._denominator_string_class.__name__,
+                                                                             item.denominator.__class__.__name__))
+        return item
+
+    @property
+    def numerators(self):
+        return self.get_numerators()
+
+    @property
+    def denominators(self):
+        return self.get_denominators()
 
     def get_numerators(self):
         """
@@ -873,7 +939,11 @@ class RatioList(_IsoRatList):
         >>> a.get_numerators()
         ['104Pd', '105Pd', '106Pd']
         """
-        return IsotopeList([rat.numerator for rat in self])
+        if self._numerator_string_class is ElementString:
+            return ElementList([rat.numerator for rat in self])
+        if self._numerator_string_class is IsotopeString:
+            return IsotopeList([rat.numerator for rat in self])
+        raise ValueError('numerator class unrecognized')
 
     def get_denominators(self):
         """
@@ -890,7 +960,11 @@ class RatioList(_IsoRatList):
         >>> a.get_denominators()
         ['108Pd', '108Pd', '108Pd']
         """
-        return IsotopeList([rat.denominator for rat in self])
+        if self._denominator_string_class is ElementString:
+            return ElementList([rat.denominator for rat in self])
+        if self._denominator_string_class is IsotopeString:
+            return IsotopeList([rat.denominator for rat in self])
+        raise ValueError('denominator class unrecognized')
 
     def has_common_denominator(self, denominator = None):
         """
@@ -956,7 +1030,7 @@ class RatioList(_IsoRatList):
         elif len(self.get_denominators()) == 0: raise ValueError('list is empty')
         else: return self.get_denominators()[0]
 
-    def filter_index(self, ratio_list = None, *, numerator = None, denominator = None, index = None):
+    def filter_index(self, ratio = None, *, numerator = None, denominator = None, index = None):
         """
         Return a list of the index of all items in list that match the given filter restrictions.
         
@@ -996,12 +1070,12 @@ class RatioList(_IsoRatList):
         >>> a.filter_index(numerator = {'A_lt': 105}, denominator = '102Ru')
         [3]
         """
-        if ratio_list is None:
+        if ratio is None or isinstance(ratio, RatioList):
             pass
-        elif isinstance(ratio_list, (list, IsotopeList, np.ndarray)):
-            ratio_list = RatioList(ratio_list)
+        elif isinstance(ratio, (list, RatioArray)):
+            ratio = RatioList(ratio)
         else:
-            ratio_list = RatioList([ratio_list])
+            ratio = RatioList([ratio])
 
         if not isinstance(numerator, dict): raise ValueError('numberator must be a dict')
         if not isinstance(denominator, dict): raise ValueError('numberator must be a dict')
@@ -1009,9 +1083,9 @@ class RatioList(_IsoRatList):
         if index is None: index = [i for i in range(len(self))]
 
         out = []
-        if ratio_list is not None:
+        if ratio is not None:
             for i in index:
-                if self[i] in ratio_list: out.append(i)
+                if self[i] in ratio: out.append(i)
             index = out
 
         if numerator is not None:
@@ -1069,7 +1143,7 @@ class RatioList(_IsoRatList):
         return self[self.filter_index(ratio_list, numerator = numerator, denominator = denominator, index = index)]
 
 
-def IsoRatList(items, strict = False):
+def any_list(items, strict = False):
     """
     
     Parameters
@@ -1090,7 +1164,7 @@ def IsoRatList(items, strict = False):
 ### Dict ###
 ############
 #TODO Elementstring, IsotopeString, RatioString keys
-class IsoRatDict(dict):
+class IsopyDict(dict):
     def __init__(self, dictionary=None, values = None, keys = None, float_or_nan = True, **kwargs):
         self._float_or_nan = float_or_nan
         if dictionary is None: dictionary = kwargs
@@ -1104,7 +1178,7 @@ class IsoRatDict(dict):
 
         new = {}
         for k in dictionary:
-            try: key = IsoRatString(k)
+            try: key = any_string(k)
             except: key = k
 
             try: new[key] = np.float64(dictionary[k])
@@ -1112,44 +1186,44 @@ class IsoRatDict(dict):
                 if float_or_nan: new[key] = np.nan
                 else: new[key] = dictionary[k]
 
-        super(IsoRatDict, self).__init__(**new)
+        super(IsopyDict, self).__init__(**new)
 
     def __getitem__(self, key):
         if isinstance(key, list): return [self.__getitem__(k) for k in key]
 
-        try: key = IsoRatString(key)
+        try: key = any_string(key)
         except: pass
 
-        try: return super(IsoRatDict, self).__getitem__(key)
+        try: return super(IsopyDict, self).__getitem__(key)
         except KeyError as err:
             if isinstance(key, RatioString):
-                try: return super(IsoRatDict, self).__getitem__(key.numerator) / super(IsoRatDict, self).__getitem__(key.denominator)
+                try: return super(IsopyDict, self).__getitem__(key.numerator) / super(IsopyDict, self).__getitem__(key.denominator)
                 except: raise err
             else: raise
 
     def __setitem__(self, key, value):
-        try: key = IsoRatString(key)
+        try: key = any_string(key)
         except: pass
 
-        return super(IsoRatDict, self).__setitem__(key, value)
+        return super(IsopyDict, self).__setitem__(key, value)
 
     def __contains__(self, key):
-        try: key = IsoRatString(key)
+        try: key = any_string(key)
         except: pass
 
-        return super(IsoRatDict, self).__contains__(key)
+        return super(IsopyDict, self).__contains__(key)
 
     def pop(self, key, default=None):
-        try: key = IsoRatString(key)
+        try: key = any_string(key)
         except: pass
 
-        return super(IsoRatDict, self).pop(key, default)
+        return super(IsopyDict, self).pop(key, default)
 
     def setdefault(self, key, default=None):
-        try: key = IsoRatString(key)
+        try: key = any_string(key)
         except: pass
 
-        return super(IsoRatDict, self).setdefault(key, default)
+        return super(IsopyDict, self).setdefault(key, default)
 
     def get(self, key, default = np.nan):
         if isinstance(key, list):
@@ -1163,13 +1237,13 @@ class IsoRatDict(dict):
 
     def keys(self, element = False, isotope = False, ratio = False, other = False):
         if not element and not isotope and not ratio and not other:
-            return super(IsoRatDict, self).keys()
+            return super(IsopyDict, self).keys()
 
         if isotope and not (element and ratio and other): out = IsotopeList()
         elif ratio and not (element and isotope and other): out = RatioList()
         else: out = []
 
-        for k in super(IsoRatDict, self).keys():
+        for k in super(IsopyDict, self).keys():
             if element and isinstance(k, ElementString): out.append(k)
             elif isotope and isinstance(k, IsotopeString): out.append(k)
             elif ratio and isinstance(k, RatioString): out.append(k)
@@ -1181,9 +1255,9 @@ class IsoRatDict(dict):
 #############
 ### Array ###
 #############
-class _IsoRatArray(np.ndarray):
+class _IsopyArray(np.ndarray):
     def __new__(cls, data, keys = None):
-        if keys is not None: keys = cls._ltype(keys)
+        if keys is not None: keys = cls._list_class(keys)
 
         if isinstance(data, cls.__class__):
             #Data is already an IsoRatArray so just return a copy
@@ -1203,7 +1277,7 @@ class _IsoRatArray(np.ndarray):
                 for i in range(len(keys)):
                     obj[keys[i]] = data[i]
             else:
-                if keys is None: keys = cls._ltype(data.dtype.names)
+                if keys is None: keys = cls._list_class(data.dtype.names)
                 elif len(keys) != data.dtype.names: raise ValueError('Number of keys supplied ({}) does not match number'
                     'of keys in data supplied ({}'.format(len(keys), len(data.dtype.names)))
                 try: dlen = len(data)
@@ -1236,7 +1310,7 @@ class _IsoRatArray(np.ndarray):
         elif isinstance(data, dict):
             dlen = None
             keys = list(data.keys())
-            new_keys = cls._ltype(keys)
+            new_keys = cls._list_class(keys)
             for d in data:
                 if dlen is None:
                     try:
@@ -1269,11 +1343,11 @@ class _IsoRatArray(np.ndarray):
         return obj
 
     def __getitem__(self, key):
-        if not isinstance(key, self._itype):
-            try: key = self._itype(key)
+        if not isinstance(key, self._string_class):
+            try: key = self._string_class(key)
             except: pass
 
-        arr = super(_IsoRatArray, self).__getitem__(key)
+        arr = super(_IsopyArray, self).__getitem__(key)
         if arr.dtype.names is None: return arr.view(np.ndarray)
         else: return arr.view(self.__class__)
 
@@ -1281,7 +1355,7 @@ class _IsoRatArray(np.ndarray):
         if obj is None: return
         if obj.dtype.names is None: raise ValueError('Only structured arrays can be used with this view')
         try:
-           self._ltype(obj.dtype.names)
+           self._list_class(obj.dtype.names)
         except:
             raise
         return obj
@@ -1297,7 +1371,7 @@ class _IsoRatArray(np.ndarray):
         keys = None
         dlen = None
         for i in inputs:
-            if isinstance(i, _IsoRatArray):
+            if isinstance(i, _IsopyArray):
                 if keys is None:
                     keys = i.keys()
                 else:
@@ -1319,7 +1393,7 @@ class _IsoRatArray(np.ndarray):
         if ufunc.__name__ in ['log']:
             for key in keys:
                 kwargs['out'] = out[key]
-                super(_IsoRatArray, self).__array_ufunc__(ufunc, method, inputs[0][key], **kwargs)
+                super(_IsopyArray, self).__array_ufunc__(ufunc, method, inputs[0][key], **kwargs)
             return out
 
         #ufuncs that uses two inputs
@@ -1334,7 +1408,7 @@ class _IsoRatArray(np.ndarray):
                     except (ValueError, KeyError): raise ValueError('key "{}" not found in input {}'.format(key, i+1))
                     except: key_inputs.append(inputs[i])
 
-                super(_IsoRatArray, self).__array_ufunc__(ufunc, method, *key_inputs, **kwargs)
+                super(_IsopyArray, self).__array_ufunc__(ufunc, method, *key_inputs, **kwargs)
             return out
 
         raise NotImplementedError('ufunc "{}" is not supported for {}'.format(ufunc.__name__, self.__name__))
@@ -1353,11 +1427,18 @@ class _IsoRatArray(np.ndarray):
         return out
 
     def keys(self):
-        return self._ltype(self.dtype.names)
+        return self._list_class(self.dtype.names)
 
+class ElementArray(_IsopyArray):
+    _list_class = ElementList
+    _string_class = ElementString
+    __name__ = 'ElementArray'
 
+    def filter(self, element, **filter):
+        index = self.keys().filter(element, **filter)
+        return self[index].copy()
 
-class IsotopeArray(_IsoRatArray):
+class IsotopeArray(_IsopyArray):
     """
     IsotopeArray(data, keys = None)
 
@@ -1399,11 +1480,11 @@ class IsotopeArray(_IsoRatArray):
 
 
     """
-    _ltype = IsotopeList
-    _itype = IsotopeString
+    _list_class = IsotopeList
+    _string_class = IsotopeString
     __name__ = 'IsotopeArray'
 
-    def filter(self, isotopelist, **filter):
+    def filter(self, isotope = None, **filter):
         """
         Return new IsotopeArray with isotopes of current array that passes matches the supplied filter parameters.
 
@@ -1415,16 +1496,15 @@ class IsotopeArray(_IsoRatArray):
             New array containing only the isotope keys that match the specified filter parameters.
         """
 
-        index = self.keys().filter(isotopelist, **filter)
+        index = self.keys().filter(isotope, **filter)
         return self[index].copy()
 
-
-class RatioArray(_IsoRatArray):
-    _ltype = RatioList
-    _itype = RatioString
+class RatioArray(_IsopyArray):
+    _list_class = RatioList
+    _string_class = RatioString
     __name__ = 'RatioArray'
 
-    def filter(self, **filter):
+    def filter(self, ratio = None, **filter):
         """
         Return new RatioArray with isotopes of current array that passes matches the supplied filter parameters.
 
@@ -1436,5 +1516,5 @@ class RatioArray(_IsoRatArray):
             New array containing only the isotope keys that match the specified filter parameters.
         """
 
-        index = self.keys().filter(**filter)
+        index = self.keys().filter(ratio, **filter)
         return self[index].copy()

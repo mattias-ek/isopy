@@ -43,10 +43,13 @@ def csvfile(filepath, header = False, skip_first_n_rows = 0, skip_first_n_column
 
     return out
 
-def reference_isotope_data(filepath = None, header = True, **kwargs):
-    if filepath is None: filepath= os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
+def reference_isotope_data(**kwargs):
+    filepath = os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
+    return isotope_data(filepath, **kwargs)
 
-    kwargs['header'] = header
+def isotope_data(filepath = None, **kwargs):
+    kwargs.setdefault('header', True)
+    header = kwargs['header']
     raw = csvfile(filepath, **kwargs)
     #TODO check that raw is big enough
     #TODO dict of dicts with float64 or np nan
@@ -67,7 +70,7 @@ def reference_isotope_data(filepath = None, header = True, **kwargs):
     out = {}
     for key in raw:
         if key == iso_header: continue
-        out[key] = _dtypes.IsoRatDict(keys = isotopes, values = raw[key])
+        out[key] = _dtypes.IsopyDict(keys = isotopes, values = raw[key])
 
     return out
 

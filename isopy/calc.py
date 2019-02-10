@@ -84,7 +84,7 @@ def ratio_to_isotope(data, denominator_value=1):
 
 def normalise_ratio_to_reference(data, reference_abu, factor = 1, subtract_one = True):
     if not isinstance(data, RatioArray): data = RatioArray(data)
-    if not isinstance(reference_abu, (IsoRatDict, RatioArray)): reference_abu = IsoRatDict(reference_abu)
+    if not isinstance(reference_abu, (IsopyDict, RatioArray)): reference_abu = IsopyDict(reference_abu)
 
     if isinstance(factor, str):
         if factor.lower() in ['delta', 'ppt', 'permil']: factor = 1000
@@ -101,7 +101,7 @@ def normalise_ratio_to_reference(data, reference_abu, factor = 1, subtract_one =
 
 def denomralise_ratio_from_reference(data, reference_abu, factor = 1, add_one = True):
     if not isinstance(data, RatioArray): data = RatioArray(data)
-    if not isinstance(reference_abu, (IsoRatDict, RatioArray)): reference_abu = IsoRatDict(reference_abu)
+    if not isinstance(reference_abu, (IsopyDict, RatioArray)): reference_abu = IsopyDict(reference_abu)
 
     if isinstance(factor, str):
         if factor.lower() in ['delta', 'ppt', 'permil']: factor = 1000
@@ -156,7 +156,7 @@ def correct_mass_fractionation(data, mf_factor, std_mass, law='exponential'):
         Data array containing values to be corrected
     mf_factor : float
         Mass fractionation factor to be applied to data
-    std_mass : IsoRatDict
+    std_mass : IsopyDict
         A dict containing all the mass of all ratios in data.
     law : str
         The mass fractionation law to be used. Only exponential fractionation is supported. Default = 'exponential'
@@ -167,7 +167,7 @@ def correct_mass_fractionation(data, mf_factor, std_mass, law='exponential'):
         Normalised data array.
     """
     if not isinstance(data, RatioArray): data = RatioArray(data)
-    if not isinstance(std_mass, IsoRatDict): std_mass = IsoRatDict(std_mass)
+    if not isinstance(std_mass, IsopyDict): std_mass = IsopyDict(std_mass)
 
     new = data.copy()
     if law == 'exponential':
@@ -187,9 +187,9 @@ def calculate_mass_fractionation_factor(data, ratio, std_abu, std_mass, law='exp
         Data array containing values to be corrected
     ratio : RatioString
         Ratio that will be fixed. Must be present in data
-    std_abu : IsoRatDict
+    std_abu : IsopyDict
         A dict containing the reference composition of the normalisation ratio.
-    std_mass : IsoRatDict
+    std_mass : IsopyDict
         A dict containing all the mass of all ratios in data.
     law : str
         The mass fractionation law to be used. Only exponential fractionation is supported. Default = 'exponential'
@@ -200,8 +200,8 @@ def calculate_mass_fractionation_factor(data, ratio, std_abu, std_mass, law='exp
         Normalised data array.
     """
     if not isinstance(data, RatioArray): data = RatioArray(data)
-    if not isinstance(std_abu, IsoRatDict): std_abu = IsoRatDict(std_abu)
-    if not isinstance(std_mass, IsoRatDict): std_abu = IsoRatDict(std_mass)
+    if not isinstance(std_abu, IsopyDict): std_abu = IsopyDict(std_abu)
+    if not isinstance(std_mass, IsopyDict): std_abu = IsopyDict(std_mass)
     if not isinstance(ratio, RatioString): ratio = RatioString(ratio)
 
     if law == 'exponential':
@@ -402,7 +402,7 @@ def isobaric_interference_correction(data, ratio, abundance, mass = None, mf_fac
     """
     ratio = RatioString(ratio)
 
-    names = IsoRatList(data.dtype.names)
+    names = any_list(data.dtype.names)
     if isinstance(names, IsotopeList):
         numer = names
         denom = None
