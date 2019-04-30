@@ -4,7 +4,8 @@ import csv as _csv
 import datetime as _dt
 import os
 
-def _key_csvfile(filepath, column_key = True, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
+
+def _key_csvfile(filepath, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
     if empty_string_default is None: empty_string_default = ''
     key = []
     out = {}
@@ -27,40 +28,68 @@ def _key_csvfile(filepath, column_key = True, skip_first_n_rows = 0, skip_first_
                 continue
 
             if not column_key_set:
-                #TODO make sure header doesnt already exist
+                # TODO make sure header doesnt already exist
                 column_key_set = True
                 if column_key:
-                    for i in range(skip_first_n_columns+1, len(row)): column_title[i] = row[i].strip()
+                    for i in range(skip_first_n_columns + 1, len(row)):
+                        column_title[i] = row[i].strip()
                     continue
                 else:
-                    for i in range(skip_first_n_columns+1, len(row)): column_title[i] = i
+                    for i in range(skip_first_n_columns + 1, len(row)): column_title[i] = i
 
-            #get key
-            try: key_val = row[skip_first_n_columns].strip()
-            except: continue
+            # get key
+            try:
+                key_val = row[skip_first_n_columns].strip()
+            except:
+                continue
             if key_val == '': continue
             if key_val in key: continue
             key.append(key_val)
 
-            #read data
-            for i in range(skip_first_n_columns+1, len(column_title)):
-                try: row_val = row[i].strip()
-                except: row_val = ''
+            # read data
+            for i in range(skip_first_n_columns + 1, len(column_title) + 1):
+                try:
+                    row_val = row[i].strip()
+                except:
+                    row_val = ''
                 if row_val == '': row_val = empty_string_default
                 out.setdefault(column_title[i], []).append(row_val)
 
     return key, out
 
-def reference_data_dict():
+
+def reference_isotope_data():
+    """'
+
+    Reference data keys:
+    - 'initial isotope abundance L09'
+
+    - 'initial isotope fraction L09'
+
+    - 'isotope fraction M16'
+
+    - 'isotope fraction uncertainty M16'
+
+    - 'isotope mass H17'
+
+    - 'sprocess isotope abundance B11'
+
+    - 'sprocess isotope fraction B11'
+
+    - 'sprocess isotope abundance A99'
+
+    - 'sprocess isotope fraction A99'
+
+    """
     filepath = os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
     return data_dict(filepath)
 
-def data_dict(filepath = None, column_key = True, skip_first_n_rows = 0, skip_first_n_columns = 0, empty_string_default = None):
-    keys, data = _key_csvfile(filepath, column_key, skip_first_n_rows, skip_first_n_columns, empty_string_default)
 
+def data_dict(filepath=None, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
+    keys, data = _key_csvfile(filepath, column_key, skip_first_n_rows, skip_first_n_columns, empty_string_default)
     out = {}
     for k in data:
-        out[k] = _dtypes.IsopyDict(keys = keys, values = data[k])
+        out[k] = _dtypes.IsopyDict(keys=keys, values=data[k])
 
     return out
 
@@ -77,36 +106,44 @@ def _isopy_array(filepath, **kwargs):
 
     return out
 
+
 def isotope_array(filepath, **kwargs):
-    #TODO surely this should be an array of the keys in value rather than a dict
+    # TODO surely this should be an array of the keys in value rather than a dict
     out = _isopy_array(filepath, **kwargs)
     out['value'] = _dtypes.IsotopeArray(out['value'])
-    if len(out['uncertainty']) == 0: out['uncertainty'] = None
-    else: out['uncertinaty'] = _dtypes.IsotopeArray(out['uncertinaty'])
+    if len(out['uncertainty']) == 0:
+        out['uncertainty'] = None
+    else:
+        out['uncertinaty'] = _dtypes.IsotopeArray(out['uncertinaty'])
     return out
+
 
 def ratio_array(filepath, **kwargs):
     out = _isopy_array(filepath, **kwargs)
     out['value'] = _dtypes.RatioArray(out['value'])
-    if len(out['uncertainty']) == 0: out['uncertainty'] = None
-    else: out['uncertainty'] = _dtypes.RatioArray(out['uncertainty'])
+    if len(out['uncertainty']) == 0:
+        out['uncertainty'] = None
+    else:
+        out['uncertainty'] = _dtypes.RatioArray(out['uncertainty'])
     return out
+
 
 class neptune(object):
     """Used to read data files produced by a Neptune ICP-MS.
-    
+
     Parameters
     ----------
     info : dict
         A dict of the information provided in the begining of the file (if given)
     lines : dict
-        A dict with the lines specified in the file. 
-        
+        A dict with the lines specified in the file.
+
     """
+
     def __init__(self, file):
-        #TODO block
+        # TODO block
         """
-        
+
         Parameters
         ----------
         file
@@ -124,9 +161,8 @@ class neptune(object):
         for l in self.isotopes:
             lc = len(self.cycle[l])
 
-            self.data[l] = _np.zeros(lc, dtype = [('{}'.format(iso), 'f8') for iso in self.isotopes[l]])
+            self.data[l] = _np.zeros(lc, dtype=[('{}'.format(iso), 'f8') for iso in self.isotopes[l]])
             for iso in self.isotopes[l]: self.data[l][str(iso)] = data[l][str(iso)]
-
 
     def _read_file(self, file):
         field = {}
@@ -142,32 +178,34 @@ class neptune(object):
                 raise TypeError('"{}" is not a valid neptune file'.format(file))
 
             for row in reader:
-                #Collect run information
+                # Collect run information
                 if ":" in row[0]:
-                    i = row[0].split(":",1)
+                    i = row[0].split(":", 1)
                     self.info[i[0]] = i[1]
 
-                #Cycle is the first field in the data table
+                # Cycle is the first field in the data table
                 if row[0] == 'Cycle':
 
-                    if 'Analysis date' in self.info: date = self.info['Analysis date']
-                    elif 'Date' in self.info: date = self.info
-                    else: date = None
+                    if 'Analysis date' in self.info:
+                        date = self.info['Analysis date']
+                    elif 'Date' in self.info:
+                        date = self.info
+                    else:
+                        date = None
 
                     field['cycle'] = 0
 
-
-                    #Find fields with isotope data
-                    for ci in range(1,len(row)):
+                    # Find fields with isotope data
+                    for ci in range(1, len(row)):
                         if row[ci] == 'Time':
                             field['time'] = ci
                             continue
 
                         if "/" in row[ci]:
-                            #Not interested in ratios
+                            # Not interested in ratios
                             continue
 
-                        #Check if multiple lines
+                        # Check if multiple lines
                         if ":" in row[ci]:
                             line, isotope = row[ci].split(":", 1)
                             line = int(line)
@@ -178,19 +216,25 @@ class neptune(object):
                         try:
                             self.isotopes.setdefault(line, []).append(IsotopeString(isotope, False))
                         except:
-                            #Column text does not fit the isotope format
+                            # Column text does not fit the isotope format
                             pass
                         else:
                             field.setdefault(line, []).append(ci)
 
                     for cycle in reader:
-                        #Signals the end of the cycle data
+                        # Signals the end of the cycle data
                         if cycle[0] == "***" or cycle[1].strip() == '': return data
 
                         for l in self.isotopes:
-                            self.cycle.setdefault(l,[]).append(int(cycle[field['cycle']]))
-                            if date is None: self.time.setdefault(l, []).append(_dt.time.strftime(cycle[field['time']], '%H:%M:%S:%f'))
-                            else: self.time.setdefault(l, []).append(_dt.datetime.strptime('{} {}'.format(date.strip(), cycle[field['time']]), '%m/%d/%Y %H:%M:%S:%f'))
+                            self.cycle.setdefault(l, []).append(int(cycle[field['cycle']]))
+                            if date is None:
+                                self.time.setdefault(l, []).append(
+                                    _dt.time.strftime(cycle[field['time']], '%H:%M:%S:%f'))
+                            else:
+                                self.time.setdefault(l, []).append(
+                                    _dt.datetime.strptime('{} {}'.format(date.strip(), cycle[field['time']]),
+                                                          '%m/%d/%Y %H:%M:%S:%f'))
                             for i in range(len(self.isotopes[l])):
-                                data.setdefault(l,{}).setdefault(str(self.isotopes[l][i]),[]).append(cycle[field[l][i]])
+                                data.setdefault(l, {}).setdefault(str(self.isotopes[l][i]), []).append(
+                                    cycle[field[l][i]])
         return data

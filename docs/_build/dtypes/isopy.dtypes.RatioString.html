@@ -89,19 +89,20 @@
 </ul>
 <p class="caption"><span class="caption-text">Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">dtypes</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../isopy_page.html">isopy</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">isopy.dtypes</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.ElementString.html">isopy.dtypes.ElementString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeString.html">isopy.dtypes.IsotopeString</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">isopy.dtypes.RatioString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeList.html">isopy.dtypes.IsotopeList</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioList.html">isopy.dtypes.RatioList</a></li>
-<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsoRatDict.html">isopy.dtypes.IsoRatDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsopyDict.html">isopy.dtypes.IsopyDict</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeArray.html">isopy.dtypes.IsotopeArray</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioArray.html">isopy.dtypes.RatioArray</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../load_page.html">load</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">calc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_page.html">isopy.load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">isopy.calc</a></li>
 </ul>
 
             
@@ -172,17 +173,17 @@
 <h1>isopy.dtypes.RatioString<a class="headerlink" href="#isopy-dtypes-ratiostring" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="isopy.dtypes.RatioString">
-<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">RatioString</code><span class="sig-paren">(</span><em>string</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioString"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioString" title="Permalink to this definition">¶</a></dt>
-<dd><p>A subclass of <code class="docutils literal notranslate"><span class="pre">str</span></code> for a storing an isotope ratio.</p>
-<p>A string consisting the numerator IsotopeString followed by the denominator IsotopeString seperated by a “/”.</p>
+<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">RatioString</code><span class="sig-paren">(</span><em>string</em>, <em>reformat = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioString"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioString" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string representation of a ratio.</p>
+<p>A string consisting the numerator ElementString/IsotopeString followed by the denominator ElementString/IsotopeString seperated by a “/”.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>string</strong> (<em>str</em>) – Must contain two IsotopeString seperated by a “/”</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then string will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
-thrown if string is not already in the correct format.</li>
+<li><strong>string</strong> (<em>str</em>) – Must contain two ElementString/IsotopeString seperated by a “/”</li>
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then string will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then a ValueError will be
+thrown if string is not already correctly formatted.</li>
 </ul>
 </td>
 </tr>
@@ -191,12 +192,12 @@ thrown if string is not already in the correct format.</li>
 <dl class="attribute">
 <dt id="isopy.dtypes.RatioString.numerator">
 <code class="descname">numerator</code><a class="headerlink" href="#isopy.dtypes.RatioString.numerator" title="Permalink to this definition">¶</a></dt>
-<dd><p>The numerator isotope in the ratio</p>
+<dd><p>The numerator string</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString">IsotopeString</a></td>
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="isopy.dtypes.ElementString.html#isopy.dtypes.ElementString" title="isopy.dtypes.ElementString">ElementString</a> or <a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString">IsotopeString</a></td>
 </tr>
 </tbody>
 </table>
@@ -205,40 +206,40 @@ thrown if string is not already in the correct format.</li>
 <dl class="attribute">
 <dt id="isopy.dtypes.RatioString.denominator">
 <code class="descname">denominator</code><a class="headerlink" href="#isopy.dtypes.RatioString.denominator" title="Permalink to this definition">¶</a></dt>
-<dd><p>The denominator isotope in the ratio</p>
+<dd><p>The denominator string</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString">IsotopeString</a></td>
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="isopy.dtypes.ElementString.html#isopy.dtypes.ElementString" title="isopy.dtypes.ElementString">ElementString</a> or <a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString">IsotopeString</a></td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <p class="rubric">Examples</p>
-<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
+<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">)</span>
 <span class="go">&#39;105Pd/108Pd&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;pd105/108pd&#39;</span><span class="p">)</span>
-<span class="go">&#39;105Pd/108Pd&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;pd105/pd&#39;</span><span class="p">)</span>
+<span class="go">&#39;105Pd/Pd&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;105Pd&#39;</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
 <span class="gr">ValueError</span>: <span class="n">no &quot;/&quot; found in string</span>
 </pre></div>
 </div>
-<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
+<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 <span class="go">&#39;105Pd/108Pd&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;pd105/108pd&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">Unable to parse numerator: &quot;pd105&quot;</span>
+<span class="gr">ValueError</span>: <span class="n">Unable to parse numerator: &quot;In string &quot;pd105&quot; element appears before nucleon number (A)&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;105Pd/108pd&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">Unable to parse denominator: &quot;108pd&quot;</span>
+<span class="gr">ValueError</span>: <span class="n">Unable to parse denominator: &quot;ElementString &quot;pd&quot; incorrectly formatted: First character must be uppercase&quot;</span>
 </pre></div>
 </div>
 <p>Accessing attributes</p>

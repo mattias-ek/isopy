@@ -89,19 +89,20 @@
 </ul>
 <p class="caption"><span class="caption-text">Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">dtypes</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../isopy_page.html">isopy</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">isopy.dtypes</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.ElementString.html">isopy.dtypes.ElementString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeString.html">isopy.dtypes.IsotopeString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioString.html">isopy.dtypes.RatioString</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">isopy.dtypes.IsotopeList</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioList.html">isopy.dtypes.RatioList</a></li>
-<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsoRatDict.html">isopy.dtypes.IsoRatDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsopyDict.html">isopy.dtypes.IsopyDict</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeArray.html">isopy.dtypes.IsotopeArray</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioArray.html">isopy.dtypes.RatioArray</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../load_page.html">load</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">calc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_page.html">isopy.load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">isopy.calc</a></li>
 </ul>
 
             
@@ -172,36 +173,31 @@
 <h1>isopy.dtypes.IsotopeList<a class="headerlink" href="#isopy-dtypes-isotopelist" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="isopy.dtypes.IsotopeList">
-<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">IsotopeList</code><span class="sig-paren">(</span><em>items = None</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList" title="Permalink to this definition">¶</a></dt>
-<dd><p>A subclass of list specifically for list of IsotopeString items.</p>
-<p>Functions much like a normal list with the exception that all objects must be/are converted to an IsotopeString.</p>
+<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">IsotopeList</code><span class="sig-paren">(</span><em>items</em>, <em>reformat = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list for storing IsotopeString items.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>items</strong> (<em>list of strings</em><em> or </em><a class="reference internal" href="isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">None</span></code> an empty list will be created. If <code class="docutils literal notranslate"><span class="pre">list</span></code> then all items must be strings that can be converted
-into an IsotopeString. If <code class="docutils literal notranslate"><span class="pre">IsotopeArray</span></code> then the the keys of the array will used to populate the IsotopeList.</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
-thrown if strings are not already in the correct format.</li>
+<li><strong>items</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em>, </em><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a><em>, </em><a class="reference internal" href="isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><em>IsotopeArray</em></a>) – A string will be converted to a list of one item. A copy of a given list will be used for the newly
+created list. The key of a IsotopeArray will be used to create the list.</li>
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then all items
+must already be correctly formatted or an exception will be thrown.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
+<p>Default initialisation, <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">])</span>
 <span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">])</span>
-<span class="gt">Traceback (most recent call last):</span>
-    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">&quot;104&quot; does not contain an element</span>
 </pre></div>
 </div>
-<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
+<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
 <span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
@@ -218,7 +214,7 @@ thrown if strings are not already in the correct format.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> (<em>str</em>) – String representation of an isotope</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>item</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em>, </em><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – If a list then all items must be present in the curent list</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
@@ -227,11 +223,13 @@ thrown if strings are not already in the correct format.</li>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;105Pd&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
-<span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;pd105&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;pd105&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;108Pd&#39;</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;106pd&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;108pd&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="go">False</span>
 </pre></div>
 </div>
@@ -240,12 +238,13 @@ thrown if strings are not already in the correct format.</li>
 <dl class="method">
 <dt id="isopy.dtypes.IsotopeList.__eq__">
 <code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.__eq__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if list equals <cite>other</cite>. Otherwise returns <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if list equals <cite>other</cite>. Otherwise returns <code class="docutils literal notranslate"><span class="pre">False</span></code>. Order of items in either list is not
+considerd.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>list of strings</em><em> or </em><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – List of strings representing isotopes</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
@@ -254,201 +253,123 @@ thrown if strings are not already in the correct format.</li>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106pd&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">]</span>
-<span class="go">False</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106pd&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="go">True</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
-<span class="go">False</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
-<dt id="isopy.dtypes.IsotopeList.append">
-<code class="descname">append</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.append" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add item to the end of the list.</p>
+<dt id="isopy.dtypes.IsotopeList.__div__">
+<code class="descname">__div__</code><span class="sig-paren">(</span><em>denominator</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.__div__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.__div__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to create a RatioList from the current list.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
-thrown if item is not already in the correct format.</li>
-</ul>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>denominator</strong> (<a class="reference internal" href="isopy.dtypes.ElementString.html#isopy.dtypes.ElementString" title="isopy.dtypes.ElementString"><em>ElementString</em></a><em>, </em><a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em>, </em><em>ElementList</em><em>, </em><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – Lists must be same length as current list.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">RatioList<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="s1">&#39;108pd&#39;</span>
+<span class="go">[&#39;104Pd/108Pd&#39;, &#39;105Pd/108Pd&#39;, &#39;106Pd/108Pd&#39;]</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="p">[</span><span class="s1">&#39;Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;Cd&#39;</span><span class="p">]</span>
+<span class="go">[&#39;104Pd/Ru&#39;, &#39;105Pd/Pd&#39;, &#39;106Pd/Cd&#39;]</span>
+</pre></div>
+</div>
 </td>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+</dd></dl>
+
+<dl class="docutils">
+<dt>append(item, reformat = True)</dt>
+<dd><p class="first">Add item to the end of the list.</p>
+<dl class="docutils">
+<dt>item <span class="classifier-delimiter">:</span> <span class="classifier">IsotopeString</span></dt>
+<dd>String to be appended to list</dd>
+<dt>reformat <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd>If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then all items
+must already be correctly formatted or an exception will be thrown.</dd>
+</dl>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;, &#39;108Pd&#39;]</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="gt">Traceback (most recent call last):</span>
-    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="isopy.dtypes.IsotopeList.insert">
-<code class="descname">insert</code><span class="sig-paren">(</span><em>index</em>, <em>item</em>, <em>stict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.insert" title="Permalink to this definition">¶</a></dt>
-<dd><p>Insert item at list index.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>index</strong> (<em>int</em>) – Postion where item will be added</li>
-<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
-thrown if item is not already in the correct format.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+</dd>
+<dt>insert(index, item, stict = False)</dt>
+<dd><p class="first">Insert item at list index.</p>
+<dl class="docutils">
+<dt>index <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Position where item will be added</dd>
+<dt>item <span class="classifier-delimiter">:</span> <span class="classifier">IsotopeString</span></dt>
+<dd>String to be inserted into the current list</dd>
+<dt>reformat <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd>If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then all items
+must already be correctly formatted or an exception will be thrown.</dd>
+</dl>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;102pd&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">[&#39;102Pd&#39;, &#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;102pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="gt">Traceback (most recent call last):</span>
-    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="isopy.dtypes.IsotopeList.remove">
-<code class="descname">remove</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove item from list</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
-thrown if item is not already in the correct format.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+</dd>
+<dt>remove(item, reformat = True)</dt>
+<dd><p class="first">Remove item from list</p>
+<dl class="docutils">
+<dt>item <span class="classifier-delimiter">:</span> <span class="classifier">IsotopeString</span></dt>
+<dd>The first occurrence of this string will be removed from the list</dd>
+<dt>reformat <span class="classifier-delimiter">:</span> <span class="classifier">bool, optional</span></dt>
+<dd>If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then all items
+must already be correctly formatted or an exception will be thrown.</dd>
+</dl>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;105pd&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">[&#39;104Pd&#39;, &#39;106Pd&#39;]</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="gt">Traceback (most recent call last):</span>
-    <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
-<span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="isopy.dtypes.IsotopeList.copy">
-<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.IsotopeList.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a copy of the current list.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList">IsotopeList</a></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
+</dd>
+<dt>copy()</dt>
+<dd><p class="first">Returns a copy of the current list. Equalivent to IsotopeList[:]</p>
+<p>IsotopeList</p>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
 <span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108Pd&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
-<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;, 108Pd]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
-<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">==</span> <span class="n">a</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">==</span> <span class="n">a</span>
+<span class="go">False</span>
 </pre></div>
 </div>
-</dd></dl>
-
+</dd>
+</dl>
 <dl class="method">
 <dt id="isopy.dtypes.IsotopeList.filter">
-<code class="descname">filter</code><span class="sig-paren">(</span><em>isotope_list=None</em>, <em>*</em>, <em>element=None</em>, <em>A=None</em>, <em>A_lt=None</em>, <em>A_gt=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return only isotopes in list that matches the filters specified.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>isotope_list</strong> (<a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – Keep only isotopes appearing in self and the supplied IsotopeList</li>
-<li><strong>element</strong> (<em>str</em><em>, </em><em>optional</em>) – Isotope must have this element symbol</li>
-<li><strong>A</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have this nucleon number (A)</li>
-<li><strong>A_lt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) less than this value</li>
-<li><strong>A_gt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) greater than this value</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List consisting of the isotopes that comply with the filter specified.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList">IsotopeList</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element</span> <span class="o">=</span> <span class="s1">&#39;Pd&#39;</span><span class="p">)</span>
-<span class="go">[&#39;104Pd&#39;, &#39;105Pd&#39;, &#39;106Pd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
-<span class="go">[&#39;104Ru&#39;, &#39;104Pd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A_gt</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
-<span class="go">[&#39;105Pd&#39;, &#39;106Pd&#39;, &#39;111Cd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
-<span class="go">[&#39;104Ru&#39;, &#39;111Cd&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">],</span> <span class="n">A_lt</span> <span class="o">=</span> <span class="mi">105</span><span class="p">)</span>
-<span class="go">[&#39;104Ru&#39;]</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="isopy.dtypes.IsotopeList.filter_index">
-<code class="descname">filter_index</code><span class="sig-paren">(</span><em>isotope_list=None</em>, <em>*</em>, <em>element=None</em>, <em>A=None</em>, <em>A_lt=None</em>, <em>A_gt=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.filter_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.filter_index" title="Permalink to this definition">¶</a></dt>
+<code class="descname">filter</code><span class="sig-paren">(</span><em>isotope=None</em>, <em>*</em>, <em>isotope_not=None</em>, <em>element_symbol=None</em>, <em>element_symbol_not=None</em>, <em>mass_number=None</em>, <em>mass_number_not=None</em>, <em>mass_number_lt=None</em>, <em>mass_number_gt=None</em>, <em>return_index_list=False</em>, <em>index_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of the index of all items in list that match the given filter restrictions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>isotope_list</strong> (<a class="reference internal" href="#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a>) – Isotope must be present in ´isotope_list´</li>
+<li><strong>isotope</strong> (<em>list</em>) – Isotope must be present in ´isotope´</li>
+<li><strong>isotope</strong> – pass</li>
+<li><strong>isotope</strong> – pass</li>
 <li><strong>element</strong> (<em>str</em><em>, </em><em>optional</em>) – Isotope must have this element symbol</li>
-<li><strong>A</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have this nucleon number (A)</li>
-<li><strong>A_lt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) less than this value</li>
-<li><strong>A_gt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) greater than this value</li>
+<li><strong>mass_number</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have this nucleon number (A)</li>
+<li><strong>mass_number_not</strong> – pass</li>
+<li><strong>mass_number_lt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) less than this value</li>
+<li><strong>mass_number_gt</strong> (<em>int</em><em>, </em><em>optional</em>) – Isotope must have a nucleon number (A) greater than this value</li>
 <li><strong>index</strong> (<em>list</em>) – List of integers. Only check these indexes. If not given then check all items in list.</li>
 </ul>
 </td>
@@ -463,16 +384,38 @@ thrown if item is not already in the correct format.</li>
 </table>
 <p class="rubric">Examples</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element</span> <span class="o">=</span> <span class="s1">&#39;Pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element_symbol</span> <span class="o">=</span> <span class="s1">&#39;Pd&#39;</span><span class="p">)</span>
 <span class="go">[1,2,3]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mass_number</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
 <span class="go">[0,1]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">A_gt</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mass_number_gt</span> <span class="o">=</span> <span class="mi">104</span><span class="p">)</span>
 <span class="go">[2,3,4]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
 <span class="go">[0,4]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">],</span> <span class="n">A_lt</span> <span class="o">=</span> <span class="mi">105</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;104Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;110Cd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">],</span> <span class="n">mass_number_lt</span> <span class="o">=</span> <span class="mi">105</span><span class="p">)</span>
 <span class="go">[0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="isopy.dtypes.IsotopeList.get_element_symbols">
+<code class="descname">get_element_symbols</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#IsotopeList.get_element_symbols"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.IsotopeList.get_element_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of the element property for all IsotopeStrings in the current list</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">ElementList</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">IsotopeList</span><span class="p">([</span><span class="s1">&#39;101Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111Cd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">get_elements</span><span class="p">()</span>
+<span class="go">[&#39;Ru&#39;, &#39;Pd&#39;, &#39;Cd]</span>
 </pre></div>
 </div>
 </dd></dl>

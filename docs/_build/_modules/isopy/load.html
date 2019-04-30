@@ -87,9 +87,10 @@
 </ul>
 <p class="caption"><span class="caption-text">Modules:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../dtypes_page.html">dtypes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../load_page.html">load</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../calc_page.html">calc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../isopy_page.html">isopy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dtypes_page.html">isopy.dtypes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../load_page.html">isopy.load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../calc_page.html">isopy.calc</a></li>
 </ul>
 
             
@@ -157,12 +158,15 @@
 <span class="kn">import</span> <span class="nn">isopy.dtypes</span> <span class="k">as</span> <span class="nn">_dtypes</span>
 <span class="kn">import</span> <span class="nn">csv</span> <span class="k">as</span> <span class="nn">_csv</span>
 <span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">_dt</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
-<div class="viewcode-block" id="csvfile"><a class="viewcode-back" href="../../load_page.html#isopy.load.csvfile">[docs]</a><span class="k">def</span> <span class="nf">csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">skip_first_n_rows</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">skip_first_n_columns</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">empty_string_default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_key_csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">column_key</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">skip_first_n_rows</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">skip_first_n_columns</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">empty_string_default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">empty_string_default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">empty_string_default</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">column_title</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">header_set</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">column_key_set</span> <span class="o">=</span> <span class="kc">False</span>
+
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
         <span class="n">dialect</span> <span class="o">=</span> <span class="n">_csv</span><span class="o">.</span><span class="n">Sniffer</span><span class="p">()</span><span class="o">.</span><span class="n">sniff</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2048</span><span class="p">))</span>
         <span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -178,80 +182,89 @@
                 <span class="n">skip_first_n_rows</span> <span class="o">-=</span> <span class="mi">1</span>
                 <span class="k">continue</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">header_set</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">column_key_set</span><span class="p">:</span>
                 <span class="c1">#TODO make sure header doesnt already exist</span>
-                <span class="n">header_set</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">if</span> <span class="n">header</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span> <span class="n">column_title</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">column_key_set</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">column_key</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
+                        <span class="n">column_title</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
                     <span class="k">continue</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span> <span class="n">column_title</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span> <span class="n">column_title</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
 
+            <span class="c1">#get key</span>
+            <span class="k">try</span><span class="p">:</span> <span class="n">key_val</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">skip_first_n_columns</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">key_val</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">key_val</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">key</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key_val</span><span class="p">)</span>
 
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">column_title</span><span class="p">)):</span>
+            <span class="c1">#read data</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">skip_first_n_columns</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">column_title</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
                 <span class="k">try</span><span class="p">:</span> <span class="n">row_val</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
                 <span class="k">except</span><span class="p">:</span> <span class="n">row_val</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
                 <span class="k">if</span> <span class="n">row_val</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="n">row_val</span> <span class="o">=</span> <span class="n">empty_string_default</span>
                 <span class="n">out</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">column_title</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row_val</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">out</span></div>
+    <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">out</span>
 
-<div class="viewcode-block" id="reference_isotope_data"><a class="viewcode-back" href="../../load_page.html#isopy.load.reference_isotope_data">[docs]</a><span class="k">def</span> <span class="nf">reference_isotope_data</span><span class="p">(</span><span class="n">filepath</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">filepath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">filepath</span> <span class="o">=</span> <span class="s1">&#39;isopy/IsotopeData.csv&#39;</span>
-    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">header</span>
-    <span class="n">raw</span> <span class="o">=</span> <span class="n">csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="c1">#TODO check that raw is big enough</span>
-    <span class="c1">#TODO dict of dicts with float64 or np nan</span>
+<div class="viewcode-block" id="reference_isotope_data"><a class="viewcode-back" href="../../load_page.html#isopy.load.reference_isotope_data">[docs]</a><span class="k">def</span> <span class="nf">reference_isotope_data</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;&#39;</span>
 
-    <span class="n">isotopes</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">iso_header</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">header</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">iso</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;isotope&#39;</span><span class="p">,</span> <span class="s1">&#39;isotopes&#39;</span><span class="p">,</span> <span class="s1">&#39;ISOTOPE&#39;</span><span class="p">,</span> <span class="s1">&#39;ISOTOPES&#39;</span><span class="p">,</span> <span class="s1">&#39;Isotope&#39;</span><span class="p">,</span> <span class="s1">&#39;Isotopes&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">iso</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
-                <span class="n">isotopes</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">iso</span><span class="p">]</span>
-                <span class="n">iso_header</span> <span class="o">=</span> <span class="n">iso</span>
-                <span class="k">break</span>
-        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;isotope&quot; header not found in &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">isotopes</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">iso_header</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="sd">    Reference data keys:</span>
+<span class="sd">    - &#39;inital isotope abundance L09&#39;</span>
 
+<span class="sd">    - &#39;inital isotope fraction L09&#39;</span>
+
+<span class="sd">    - &#39;isotope fraction M16&#39;</span>
+
+<span class="sd">    - &#39;isotope fraction uncertainty M16&#39;</span>
+
+<span class="sd">    - &#39;isotope mass H17&#39;</span>
+
+<span class="sd">    - &#39;sprocess isotope abundance B11&#39;</span>
+
+<span class="sd">    - &#39;sprocess isotope fraction B11&#39;</span>
+
+<span class="sd">    - &#39;sprocess isotope abundance A99&#39;</span>
+
+<span class="sd">    - &#39;sprocess isotope fraction A99&#39;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;IsotopeData.csv&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_dict</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="data_dict"><a class="viewcode-back" href="../../load_page.html#isopy.load.data_dict">[docs]</a><span class="k">def</span> <span class="nf">data_dict</span><span class="p">(</span><span class="n">filepath</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">column_key</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">skip_first_n_rows</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">skip_first_n_columns</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">empty_string_default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="n">keys</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_key_csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">column_key</span><span class="p">,</span> <span class="n">skip_first_n_rows</span><span class="p">,</span> <span class="n">skip_first_n_columns</span><span class="p">,</span> <span class="n">empty_string_default</span><span class="p">)</span>
     <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="n">iso_header</span><span class="p">:</span> <span class="k">continue</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsoRatDict</span><span class="p">(</span><span class="n">keys</span> <span class="o">=</span> <span class="n">isotopes</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">(</span><span class="n">keys</span> <span class="o">=</span> <span class="n">keys</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="load_standard_ratio_data"><a class="viewcode-back" href="../../load_page.html#isopy.load.load_standard_ratio_data">[docs]</a><span class="k">def</span> <span class="nf">load_standard_ratio_data</span><span class="p">(</span><span class="n">filepath</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">header</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-    <span class="k">pass</span></div>
 
-<span class="k">def</span> <span class="nf">_isorat_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">raw</span> <span class="o">=</span> <span class="n">csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">empty_string_default</span><span class="o">=</span><span class="s1">&#39;nan&#39;</span> <span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;sample&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s1">&#39;uncertainty&#39;</span><span class="p">:</span> <span class="p">{}}</span>
-    <span class="k">for</span> <span class="n">smp</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">,</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span> <span class="s1">&#39;Sample&#39;</span><span class="p">,</span> <span class="s1">&#39;Samples&#39;</span><span class="p">,</span> <span class="s1">&#39;SAMPLE&#39;</span><span class="p">,</span> <span class="s1">&#39;SAMPLES&#39;</span><span class="p">]:</span>
-        <span class="k">if</span> <span class="n">smp</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="s1">&#39;sample&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">smp</span><span class="p">)</span>
-            <span class="k">break</span>
+<span class="k">def</span> <span class="nf">_isopy_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">_key_csvfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">empty_string_default</span><span class="o">=</span><span class="s1">&#39;nan&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;sample&#39;</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s1">&#39;uncertainty&#39;</span><span class="p">:</span> <span class="p">{}}</span>
 
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
         <span class="k">if</span> <span class="s1">&#39;+-&#39;</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">][</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;+-&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">][</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;+-&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">out</span>
 
 <div class="viewcode-block" id="isotope_array"><a class="viewcode-back" href="../../load_page.html#isopy.load.isotope_array">[docs]</a><span class="k">def</span> <span class="nf">isotope_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">_isorat_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="c1">#TODO surely this should be an array of the keys in value rather than a dict</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_isopy_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">])</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">else</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertinaty&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertinaty&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="ratio_array"><a class="viewcode-back" href="../../load_page.html#isopy.load.ratio_array">[docs]</a><span class="k">def</span> <span class="nf">ratio_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">_isorat_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">_isopy_array</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">])</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">else</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s1">&#39;uncertainty&#39;</span><span class="p">])</span>

@@ -11,6 +11,6 @@ isopy.dtypes
     RatioString
     IsotopeList
     RatioList
-    IsoRatDict
+    IsopyDict
     IsotopeArray
     RatioArray

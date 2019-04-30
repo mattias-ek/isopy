@@ -7,9 +7,9 @@ DTYPE = 'f8'
 ##############
 class ElementString(str):
     """
-    ElementString(string, strict = False)
+    ElementString(string, reformat = True)
     
-    String representation of an element.
+    A string representation of an element.
      
     The first letter of an ``ElementString``  is in uppercase and the remaining letters are in lowercase.
        
@@ -18,29 +18,29 @@ class ElementString(str):
     ----------
     string : str
         Can only contain alphabetical characters.
-    strict : bool, optional
-        If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be
-        thrown if string is not already in the correct format.
+    reformat : bool, optional
+        If ``reformat == True`` then string will be parsed to correct format. If ``reformat == False`` then a ValueError will be
+        thrown if string is not correctly formated.
     
     
     Examples
     --------
-    Default initalisation, ``strict == False``
+    Default initalisation, ``reformat == True``
     
     >>> ElementString('Pd')
     'Pd'
     >>> ElementString('pd')
     'Pd
-    >>> ElementString('Pd105')
+    >>> ElementString('105Pd')
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-    ValueError: ElementString "Pd105"can only contain alphabetical characters
+    ValueError: ElementString "105Pd" can only contain alphabetical characters
     
-    Initialisation when ``strict == True``
+    Initialisation when ``reformat == False``
     
-    >>> ElementString('Pd', True)
+    >>> ElementString('Pd', False)
     'Pd'
-    >>> ElementString('pd', True)
+    >>> ElementString('pd', False)
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
     ValueError: ElementString "pd" incorrectly formatted: First letter must be uppercase
@@ -48,75 +48,77 @@ class ElementString(str):
     """
     __name__ = 'ElementString'
 
-    def __new__(cls, string, strict = False):
+    def __new__(cls, string, reformat = True):
+        if not isinstance(string, str): raise ValueError('string must be a str type')
+        string = string.strip()
         if not string.isalpha(): raise ValueError('ElementString "{}" can only contain alphabetical characters'.format(string))
         if len(string) == 0: raise ValueError('ElementString empty')
-        if strict:
-            if not string[0].isupper(): ValueError('ElementString "{}" incorrectly formatted: First character must be'
+        if not reformat:
+            if not string[0].isupper(): raise ValueError('ElementString "{}" incorrectly formatted: First character must be'
                                                    ' uppercase'.format(string))
-            if len(string) > 1 and string[1:].islower(): ValueError('ElementString "{}" incorrectly formatted: All but'
+            if len(string) > 1:
+                if not string[1:].islower(): raise ValueError('ElementString "{}" incorrectly formatted: All but'
                                                                     ' first character must be lowercase'.format(string))
 
-        string = '{}{}'.format(string[0].upper(), string[1:].lower())
+        string = string.capitalize()
 
         obj = super(ElementString, cls).__new__(cls, string)
         return obj
 
-
 class IsotopeString(str):
     """
-    IsotopeString(string, strict = False)
+    IsotopeString(string, reformat = True)
     
-    A subclass of ``str`` for a storing a string representation of an isotope.
+    A string representation of an isotope.
     
-    A string consisting of the nucleon (mass) number followed by the element of an isotope.
+    A string consisting of the mass number followed by the element symbol of an isotope.
 
     
     Parameters
     ----------
     string : str
         Must contain nucleon number and element string
-    strict : bool, optional
-        If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be
-        thrown if string is not already in the correct format.
+    reformat : bool, optional
+        If ``reformat == True`` then string will be parsed to correct format. If ``reformat == False`` then a ValueError will be
+        thrown if `string` is not correctly formated.
     
     
     Attributes
     ----------
-    A : int
-        The nucleon (mass) number of the isotope
-    symbol : ElementString
-        The element of the isotope
+    mass_number : int
+        The mass number of the isotope
+    element_symbol : ElementString
+        The element symbol of the isotope
 
 
     Examples
     --------
-    Default initalisation, ``strict == False``
+    Default initalisation, ``reformat == True``
     
     >>> IsotopeString('105Pd')
     '105Pd'
-    >>> ElementString('pd105')
+    >>> IsotopeString('pd105')
     '105Pd'
-    >>> ElementString('Pd')  
+    >>> IsotopeString('Pd')
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
     ValueError: "Pd" does not contain a nucleon number
     
-    Initialisation when ``strict == True``
+    Initialisation when ``reformat == False``
     
-    >>> ElementString('105Pd', True)
-    'Pd'
-    >>> ElementString('Pd105', True)
+    >>> IsotopeString('105Pd', False)
+    '105Pd'
+    >>> IsotopeString('Pd105', False)
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
     ValueError: In string "Pd105" element appears before nucleon number (A)
-    >>> ElementString('105pd', True)
+    >>> IsotopeString('105pd', False)
     Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-    ValueError: First letter of ElementString must be upper case and following letters in lower case
-    
-    Accessing attibutes
-    
+    ValueError: "ElementString "pd" incorrectly formatted: First character must be uppercase"
+
+    Accessing attributes
+
     >>> IsotopeString('105Pd').A
     105
     >>> IsotopeString('105Pd').element
@@ -138,20 +140,21 @@ class IsotopeString(str):
     """
     __name__ = 'IsotopeString'
 
-    def __new__(cls, string, strict = False):
-        A, element = cls._parse(string, strict)
-        obj = super(IsotopeString, cls).__new__(cls, '{}{}'.format(A, element))
-        obj.A = A
-        obj.element = element
+    def __new__(cls, string, reformat = True):
+        string = string.strip()
+        mass, element = cls._parse(None, string, reformat)
+        obj = super(IsotopeString, cls).__new__(cls, '{}{}'.format(mass, element))
+        obj.mass_number = mass
+        obj.element_symbol = element
         return obj
 
-    def _parse(string, strict=False):
+    def _parse(self, string, reformat=True):
         if not isinstance(string, str):
             try: string = str(string)
             except: raise ValueError('unable to parse type {}'.format(type(string)))
 
         if isinstance(string, IsotopeString):
-            return string.A, string.element
+            return string.mass_number, string.element
 
         elif isinstance(string, str):
             string = string.strip()
@@ -161,8 +164,7 @@ class IsotopeString(str):
                 raise ValueError('"{}" does not contain a nucleon number'.format(string))
 
 
-            # If only digits then only nucleon number is given.
-            if string.isdigit():
+            # If only digits then only mass number
                 raise ValueError('"{}" does not contain an element'.format(string))
 
             # Loop through to split
@@ -173,14 +175,14 @@ class IsotopeString(str):
 
                 # a = nucleon number and b = Symbol
                 if a.isdigit() and b.isalpha():
-                    return int(a), ElementString(b, strict)
+                    return int(a), ElementString(b, reformat)
 
                 # b = nucleon number and a = Symbol
                 if a.isalpha() and b.isdigit():
-                    if strict:
+                    if not reformat:
                         raise ValueError('In string "{}" element appears before nucleon number (A)'.format(string))
                     else:
-                        return int(b), ElementString(a, strict)
+                        return int(b), ElementString(a, reformat)
 
         # Unable to parse input
         raise ValueError('unable to parse "{}" into IsotopeString'.format(string))
@@ -188,65 +190,64 @@ class IsotopeString(str):
     def __contains__(self, item):
         if isinstance(item, str):
             if item.isdigit():
-                return self.A == int(item)
+                return self.mass_number == int(item)
             elif item.isalpha():
-                try: return self.symbol == ElementString(item)
+                try: return self.element_symbol == ElementString(item)
                 except: return False
         elif isinstance(item, int):
-            return self.A == item
+            return self.mass_number == item
         return False
-
 
 class RatioString(str):
     """
-        RatioString(string, strict = False)
+        RatioString(string, reformat = True)
 
-        A subclass of ``str`` for a storing an isotope ratio.
+        A string representation of a ratio.
 
-        A string consisting the numerator IsotopeString followed by the denominator IsotopeString seperated by a "/".
+        A string consisting the numerator ElementString/IsotopeString followed by the denominator ElementString/IsotopeString seperated by a "/".
 
         Parameters
         ----------
         string : str
-            Must contain two IsotopeString seperated by a "/"
-        strict : bool, optional
-            If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be
-            thrown if string is not already in the correct format.
+            Must contain two ElementString/IsotopeString seperated by a "/"
+        reformat : bool, optional
+            If ``reformat == True`` then string will be parsed to correct format. If ``reformat == False`` then a ValueError will be
+            thrown if string is not already correctly formatted.
 
 
         Attributes
         ----------
-        numerator : IsotopeString
-            The numerator isotope in the ratio
-        denominator : IsotopeString
-            The denominator isotope in the ratio
+        numerator : ElementString or IsotopeString
+            The numerator string
+        denominator : ElementString or IsotopeString
+            The denominator string
 
 
         Examples
         --------
-        Default initalisation, ``strict == False``
+        Default initalisation, ``reformat == True``
 
         >>> RatioString('105Pd/108Pd')
         '105Pd/108Pd'
-        >>> RatioString('pd105/108pd')
-        '105Pd/108Pd'
+        >>> RatioString('pd105/pd')
+        '105Pd/Pd'
         >>> RatioString('105Pd')  
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
         ValueError: no "/" found in string
 
-        Initialisation when ``strict == True``
+        Initialisation when ``reformat == False``
 
         >>> RatioString('105Pd/108Pd', True)
         '105Pd/108Pd'
         >>> RatioString('pd105/108pd', True)
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
-        ValueError: Unable to parse numerator: "pd105"
+        ValueError: Unable to parse numerator: "In string "pd105" element appears before nucleon number (A)"
         >>> RatioString('105Pd/108pd', True)
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
-        ValueError: Unable to parse denominator: "108pd"
+        ValueError: Unable to parse denominator: "ElementString "pd" incorrectly formatted: First character must be uppercase"
 
         Accessing attributes
 
@@ -267,7 +268,8 @@ class RatioString(str):
         """
     __name__ = 'RatioString'
 
-    def __new__(cls, string, strict = False):
+    def __new__(cls, string, reformat = True):
+        string = string.strip()
         if isinstance(string, RatioString):
             numer = string.numerator
             denom = string.denominator
@@ -279,34 +281,32 @@ class RatioString(str):
         else:
             raise ValueError('unable to parse "{}"'.format(string))
 
-
-        try: numer = ElementString(numer, strict)
+        try: numer = ElementString(numer, reformat)
         except ValueError:
-            try: numer = IsotopeString(numer, strict)
-            except ValueError: ValueError('Unable to parse numerator: "{}"'.format(numer))
+            try: numer = IsotopeString(numer, reformat)
+            except ValueError as err: raise ValueError('Unable to parse numerator: "{}"'.format(err))
 
-        try: denom = ElementString(denom, strict)
+        try: denom = ElementString(denom, reformat)
         except ValueError:
-            try: denom = IsotopeString(denom, strict)
-            except: raise ValueError('Unable to parse denominator: "{}"'.format(denom))
+            try: denom = IsotopeString(denom, reformat)
+            except ValueError as err: raise ValueError('Unable to parse denominator: "{}"'.format(err))
 
-        obj =  super(RatioString, cls).__new__(cls, '{}/{}'.format(numer, denom))
+        obj = super(RatioString, cls).__new__(cls, '{}/{}'.format(numer, denom))
         obj.numerator = numer
         obj.denominator = denom
         return obj
 
-    def __contains__(self, item, strict = False):
+    def __contains__(self, item, reformat = True):
         if isinstance(item, str):
-            try: item = ElementString(item, strict)
+            try: item = ElementString(item, reformat)
             except: pass
-            try: item = IsotopeString(item, strict)
+            try: item = IsotopeString(item, reformat)
             except: pass
         if isinstance(item, (IsotopeString, ElementString)):
             return self.numerator == item or self.denominator == item
         return False
 
-
-def any_string(string, strict = False):
+def any_string(string, reformat = True):
     """
         Shortcut function that will return an IsotopeString or a RatioString depending on the supplied string.
         
@@ -314,8 +314,8 @@ def any_string(string, strict = False):
         ----------
         string : str
             A string that can be parsed into either an IsotopeSting or a RatioSting
-        strict : bool, optional
-            If ``strict == False`` then string will be parsed to correct format. If ``strict == True`` then a ValueError will be
+        reformat : bool, optional
+            If ``reformat == True`` then string will be parsed to correct format. If ``reformat == False`` then a ValueError will be
             thrown if string is not already in the correct format.
     
         Returns
@@ -331,22 +331,24 @@ def any_string(string, strict = False):
 
         
     """
-    try: return ElementString(string, strict)
+    try: return ElementString(string, reformat)
     except ValueError: pass
-    try: return IsotopeString(string, strict)
+    try: return IsotopeString(string, reformat)
     except ValueError: pass
-    try: return RatioString(string, strict)
+    try: return RatioString(string, reformat)
     except ValueError: raise #ValueError('Unable to parse items into ElementString, IsotopeList or RatioList')
 
 ############
 ### List ###
 ############
+#TODO disallow duplicates
 class _IsopyList(list):
-    def __init__(self, items = None, strict = False):
+    def __init__(self, items, reformat = True):
+        super().__init__([])
         if items is None: items = []
-        elif isinstance(items, np.ndarray): items = items.dtype.names
-        try: super().__init__([self._new_item(item, strict) for item in items])
-        except: raise
+        if isinstance(items, str): items = items.split(',')
+        elif isinstance(items, _IsopyArray): items = items.keys()
+        for item in items: self.append(item, reformat)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -359,9 +361,14 @@ class _IsopyList(list):
         return True
     
     def __contains__(self, item):
+        if isinstance(item, list):
+            for i in item:
+                if not self.__contains__(i): return False
+            return True
+
         if not isinstance(item, self._string_class):
             try: item = self._string_class(item)
-            except: return None
+            except: return False
         
         return super(_IsopyList, self).__contains__(item)
 
@@ -376,81 +383,96 @@ class _IsopyList(list):
     def __setitem__(self, key, value):
         raise NotImplementedError
 
-    def _new_item(self, item, strict = False):
-        return self._string_class(item, strict)
+    def _new_item(self, item, reformat = True):
+        return self._string_class(item, reformat)
 
-    def append(self, item, strict = False):
-        return super().append(self._new_item(item, strict))
+    def append(self, item, reformat = True):
+        item = self._new_item(item, reformat)
+        return super().append(item)
 
-    def insert(self, index, item, strict = False):
-        return super().insert(index, self._new_item(item, strict))
+    def insert(self, index, item, reformat = True):
+        item = self._new_item(item, reformat)
+        return super().insert(index, item)
 
-    def remove(self, item, strict = False):
-        return super().remove(self._new_item(item, strict))
+    def remove(self, item, reformat = True):
+        return super().remove(self._new_item(item, reformat))
 
     def copy(self):
         return self.__class__([self._new_item(x) for x in self])
-
 
 class ElementList(_IsopyList):
     _string_class = ElementString
     __name__ = 'ElementList'
 
-    def filter_index(self, element = None, *, index = None):
-        if index is None: index = [i for i in range(len(self))]
+    def __div__(self, other):
+        if isinstance(other, list):
+            if len(other) != len(self): raise ValueError('Length of supplied list is not the same as subject list')
+            return RatioList(['{}/{}'.format(self[i], other[i]) for i in range(len(self))])
 
-        if element is None or isinstance(element, (ElementList, IsopyDict)):
+        if isinstance(other, str):
+            return RatioList(['{}/{}'.format(x, other) for x in self])
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def filter(self, element_symbol = None, *, element_symbol_not = None,
+               return_index_list = False, index_list = None):
+
+        if index_list is None: index_list = [i for i in range(len(self))]
+
+        if element_symbol is None or isinstance(element_symbol, ElementList):
             pass
-        elif isinstance(element, list):
-            element = ElementList(element)
         else:
-            return self.index(ElementString(element))
+            element_symbol = ElementList(element_symbol)
+
+        if element_symbol_not is None or isinstance(element_symbol_not, ElementList):
+            pass
+        else:
+            element_symbol_not = ElementList(element_symbol_not)
 
         out = []
-        for i in index:
+        for i in index_list:
             ele = self[i]
-            if element is not None:
-                if ele not in element: continue
+            if element_symbol is not None:
+                if ele not in element_symbol: continue
+            if element_symbol_not is not None:
+                if ele in element_symbol_not: continue
 
             out.append(i)
-        return out
 
-    def filter(self, element = None, *, index = None):
-        return self[self.filter_index(element, index = index)]
-
+        if return_index_list:
+            return out
+        else:
+            return self[out]
 
 class IsotopeList(_IsopyList):
     """
-        IsotopeList(items = None, strict = False)
+        IsotopeList(items, reformat = True)
 
-        A subclass of list specifically for list of IsotopeString items.
-
-        Functions much like a normal list with the exception that all objects must be/are converted to an IsotopeString. 
+        A list for storing IsotopeString items.
 
         Parameters
         ----------
-        items : list of strings or IsotopeArray, optional
-            If ``None`` an empty list will be created. If ``list`` then all items must be strings that can be converted
-            into an IsotopeString. If ``IsotopeArray`` then the the keys of the array will used to populate the IsotopeList.
+        items : IsotopeString, IsotopeList, IsotopeArray
+            A string will be converted to a list of one item. A copy of a given list will be used for the newly
+            created list. The key of a IsotopeArray will be used to create the list.
         
-        strict : bool, optional
-            If ``strict == False`` then strings will be parsed to correct format. If ``strict == True`` then a ValueError will be
-            thrown if strings are not already in the correct format.
+        reformat : bool, optional
+            If ``reformat == True`` then strings will be parsed to correct format. If ``reformat == False`` then all items
+            must already be correctly formatted or an exception will be thrown.
+
+
         
         Examples
         --------
-        Default initalisation, ``strict == False``
+        Default initialisation, ``reformat == True``
 
         >>> IsotopeList(['104Pd', '105Pd', '106Pd'])
         ['104Pd', '105Pd', '106Pd']
         >>> IsotopeList(['104pd', 'pd105', 'Pd106'])
         ['104Pd', '105Pd', '106Pd']
-        >>> IsotopeList(['104', 'pd105', 'Pd106'])
-        Traceback (most recent call last):
-            File "<stdin>", line 1, in <module>
-        ValueError: "104" does not contain an element
 
-        Initialisation when ``strict == True``
+        Initialisation when ``reformat == False``
 
         >>> IsotopeList(['104Pd', '105Pd', '106Pd'], True)
         ['104Pd', '105Pd', '106Pd']
@@ -466,8 +488,8 @@ class IsotopeList(_IsopyList):
             
             Parameters
             ----------
-            item : str
-                String representation of an isotope
+            item : IsotopeString, IsotopeList
+                If a list then all items must be present in the curent list
                  
             Returns
             -------
@@ -475,20 +497,22 @@ class IsotopeList(_IsopyList):
             
             Examples
             --------
-            >>> '105Pd' in IsotopeList(['104Pd', '105Pd', '106Pd'])
-            True
             >>> 'pd105' in IsotopeList(['104Pd', '105Pd', '106Pd'])
             True
             >>> '108Pd' in IsotopeList(['104Pd', '105Pd', '106Pd'])
             False
+            >>> ['pd105', '106pd'] in IsotopeList(['104Pd', '105Pd', '106Pd'])
+            True
+            >>> ['pd105', '108pd'] in IsotopeList(['104Pd', '105Pd', '106Pd'])
+            False
             
         __eq__(other)
-            Return ``True`` if list equals `other`. Otherwise returns ``False``.
+            Return ``True`` if list equals `other`. Otherwise returns ``False``. Order of items in either list is not
+            considerd.
             
             Parameters
             ----------
-            other : list of strings or IsotopeList
-                List of strings representing isotopes
+            other : IsotopeList
             
             Return
             ------
@@ -496,25 +520,43 @@ class IsotopeList(_IsopyList):
         
             Examples
             --------
-            >>> IsotopeList(['104Pd', '105Pd', '106Pd']) == IsotopeList(['104Pd', '105Pd', '106Pd'])
+            >>> ['104pd', '105pd', '106pd'] == IsotopeList(['104Pd', '105Pd', '106Pd'])
             True
-            >>> IsotopeList(['104Pd', '105Pd', '106Pd']) == ['104Pd', '105Pd', '106Pd']
-            False
-            >>> IsotopeList(['106Pd', '105Pd', '104Pd']) == IsotopeList(['104Pd', '105Pd', '106Pd'])
+            >>> ['105pd', '104pd', '106pd'] == IsotopeList(['104Pd', '105Pd', '106Pd'])
             True
-            >>> IsotopeList(['104Pd', '105Pd', '108Pd', '108Pd']) == IsotopeList(['104Pd', '105Pd', '106Pd'])
-            False
+
+        __div__(denominator)
+            Used to create a RatioList from the current list.
+
+            Parameters
+            ----------
+            denominator : ElementString, IsotopeString, ElementList, IsotopeList
+                Lists must be same length as current list.
+
+            Returns
+            -------
+            RatioList
+
+
+            Examples
+            --------
+            >>>  IsotopeList(['104Pd', '105Pd', '106Pd']) / '108pd'
+            ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']
+
+            >>>  IsotopeList(['104Pd', '105Pd', '106Pd']) / ['Ru', 'Pd', 'Cd']
+            ['104Pd/Ru', '105Pd/Pd', '106Pd/Cd']
+
         
-        append(item, strict = False)
+        append(item, reformat = True)
             Add item to the end of the list.
             
             Parameters
             ----------
-            item : str
-                String representation of an isotope
-            strict : bool, optional
-                If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
-                thrown if item is not already in the correct format.
+            item : IsotopeString
+                String to be appended to list
+            reformat : bool, optional
+                If ``reformat == True`` then strings will be parsed to correct format. If ``reformat == False`` then all items
+                must already be correctly formatted or an exception will be thrown.
     
             Examples
             --------      
@@ -522,12 +564,7 @@ class IsotopeList(_IsopyList):
             >>> a.append('108pd')
             >>> a
             ['104Pd', '105Pd', '106Pd', '108Pd']
-            
-            >>> a = IsotopeList(['104Pd', '105Pd', '106Pd'])
-            >>> a.append('108pd', strict = True)
-            Traceback (most recent call last):
-                File "<stdin>", line 1, in <module>
-            ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
+
         
         insert(index, item, stict = False)
             Insert item at list index.
@@ -535,12 +572,12 @@ class IsotopeList(_IsopyList):
             Parameters
             ----------
             index : int
-                Postion where item will be added
-            item : str
-                String representation of an isotope
-            strict : bool, optional
-                If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
-                thrown if item is not already in the correct format.
+                Position where item will be added
+            item : IsotopeString
+                String to be inserted into the current list
+            reformat : bool, optional
+                If ``reformat == True`` then strings will be parsed to correct format. If ``reformat == False`` then all items
+                must already be correctly formatted or an exception will be thrown.
     
             Examples
             --------
@@ -548,23 +585,18 @@ class IsotopeList(_IsopyList):
             >>> a.insert(0,'102pd')
             >>> a
             ['102Pd', '104Pd', '105Pd', '106Pd']
-            
-            >>> a = IsotopeList(['104Pd', '105Pd', '106Pd'])
-            >>> a.insert(0,'102pd', strict = True)
-            Traceback (most recent call last):
-                File "<stdin>", line 1, in <module>
-            ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
+
         
-        remove(item, strict = False)
+        remove(item, reformat = True)
             Remove item from list
         
             Parameters
             ----------
-            item : str
-                String representation of an isotope
-            strict : bool, optional
-                If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
-                thrown if item is not already in the correct format.
+            item : IsotopeString
+                The first occurrence of this string will be removed from the list
+            reformat : bool, optional
+                If ``reformat == True`` then strings will be parsed to correct format. If ``reformat == False`` then all items
+                must already be correctly formatted or an exception will be thrown.
     
             Examples
             --------
@@ -572,15 +604,9 @@ class IsotopeList(_IsopyList):
             >>> a.remove(0,'105pd')
             >>> a
             ['104Pd', '106Pd']
-            
-            >>> a = IsotopeList(['104Pd', '105Pd', '106Pd'])
-            >>> a.remove('105pd', strict = True)
-            Traceback (most recent call last):
-                File "<stdin>", line 1, in <module>
-            ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
         
         copy()
-            Returns a copy of the current list.
+            Returns a copy of the current list. Equalivent to IsotopeList[:]
         
             Returns
             -------
@@ -592,17 +618,56 @@ class IsotopeList(_IsopyList):
             >>> b = a.copy()
             >>> b
             ['104Pd', '105Pd', '106Pd']
-            >>> a.append('108Pd')
-            >>> a
-            ['104Pd', '105Pd', '106Pd', 108Pd]
-            >>> b
-            ['104Pd', '105Pd', '106Pd']
+            >>> b == a
+            True
+            >>> b == a
+            False
         
         """
     _string_class = IsotopeString
     __name__ = 'IsotopeList'
 
-    def filter_index(self, isotope = None, *, element=None, A=None, A_lt=None, A_gt=None, index = None):
+    def __div__(self, denominator):
+        if isinstance(denominator, list):
+            if len(denominator) != len(self): raise ValueError('Length of supplied list is not the same as subject list')
+            return RatioList(['{}/{}'.format(self[i], denominator[i]) for i in range(len(self))])
+
+        if isinstance(denominator, str):
+            return RatioList(['{}/{}'.format(x, denominator) for x in self])
+
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    @property
+    def mass_numbers(self):
+        return self.get_mass_numbers()
+
+    @property
+    def element_symbols(self):
+        return self.get_element_symbols()
+
+    def get_mass_numbers(self):
+        return [x.mass_number for x in self]
+
+    def get_element_symbols(self):
+        """
+        Return a list of the element property for all IsotopeStrings in the current list
+
+        Returns
+        -------
+        ElementList
+
+        Examples
+        --------
+        >>> a = IsotopeList(['101Ru', '105Pd', '111Cd'])
+        >>> a.get_elements()
+        ['Ru', 'Pd', 'Cd]
+        """
+        return ElementList([x.element_symbol for x in self])
+
+    def filter(self, isotope = None, *, isotope_not = None, element_symbol=None, element_symbol_not = None,
+               mass_number=None, mass_number_not = None, mass_number_lt=None, mass_number_gt=None,
+               return_index_list = False, index_list = None):
         """
         Return a list of the index of all items in list that match the given filter restrictions.
 
@@ -616,11 +681,13 @@ class IsotopeList(_IsopyList):
             pass
         element : str, optional
             Isotope must have this element symbol
-        A : int, optional
+        mass_number : int, optional
             Isotope must have this nucleon number (A)
-        A_lt : int, optional
+        mass_number_not:
+            pass
+        mass_number_lt : int, optional
             Isotope must have a nucleon number (A) less than this value
-        A_gt : int, optional
+        mass_number_gt : int, optional
             Isotope must have a nucleon number (A) greater than this value
         index : list
             List of integers. Only check these indexes. If not given then check all items in list.
@@ -633,94 +700,83 @@ class IsotopeList(_IsopyList):
         Examples
         --------
         >>> a = IsotopeList(['104Ru', '104Pd', '105Pd', '106Pd', '111Cd'])
-        >>> a.filter(element = 'Pd')
+        >>> a.filter(element_symbol = 'Pd')
         [1,2,3]
-        >>> a.filter(A = 104)
+        >>> a.filter(mass_number = 104)
         [0,1]
-        >>> a.filter(A_gt = 104)
+        >>> a.filter(mass_number_gt = 104)
         [2,3,4]
         >>> a.filter(['102Ru', '104Ru', '110Cd', '111Cd'])
         [0,4]
-        >>> a.filter(['102Ru', '104Ru', '110Cd', '111Cd'], A_lt = 105)
+        >>> a.filter(['102Ru', '104Ru', '110Cd', '111Cd'], mass_number_lt = 105)
         [0]
         """
-        if index is None: index = [i for i in range(len(self))]
+        if index_list is None: index_list = [i for i in range(len(self))]
 
-        if isotope is None or isinstance(isotope, (IsotopeList, IsopyDict)):
+        if isotope is None or isinstance(isotope, IsotopeList):
             pass
-        elif isinstance(isotope, (list, IsotopeArray)):
+        else:
             isotope = IsotopeList(isotope)
-        else:
-            isotope = IsotopeList([isotope])
 
-        if element is None or isinstance(element, ElementList):
+        if isotope_not is None or isinstance(isotope_not, IsotopeList):
             pass
-        elif isinstance(element, list):
-            element = ElementList(element)
         else:
-            element = ElementList([element])
+            isotope_not = IsotopeList(isotope_not)
+
+        if element_symbol is None or isinstance(element_symbol, ElementList):
+            pass
+        else:
+            element_symbol = ElementList(element_symbol)
+
+        if element_symbol_not is None or isinstance(element_symbol_not, ElementList):
+            pass
+        else:
+            element_symbol_not = ElementList(element_symbol_not)
+
+        if mass_number is None or isinstance(mass_number, list):
+            pass
+        else:
+            mass_number = [mass_number]
+
+        if mass_number_not is None or isinstance(mass_number_not, list):
+            pass
+        else:
+            mass_number_not = [mass_number_not]
 
         out = []
-        for i in index:
+        for i in index_list:
             iso = self[i]
-            # Do not include iso if it fails any of these tests
             if isotope is not None:
                 if iso not in isotope: continue
-            if element is not None:
-                if iso.element not in element: continue
-            if A is not None:
-                if iso.A != A: continue
-            if A_lt is not None:
-                if iso.A > A_lt: continue
-            if A_gt is not None:
-                if iso.A < A_gt: continue
+            if isotope_not is not None:
+                if iso in isotope_not: continue
+
+            if element_symbol is not None:
+                if iso.element_symbol not in element_symbol: continue
+            if element_symbol_not is not None:
+                if iso.element_symbol in element_symbol_not: continue
+
+            if mass_number is not None:
+                if iso.mass_number not in mass_number: continue
+            if mass_number_not is not None:
+                if iso.mass_number in mass_number_not: continue
+
+            if mass_number_lt is not None:
+                if iso.mass_number >= mass_number_lt: continue
+            if mass_number_gt is not None:
+                if iso.mass_number <= mass_number_gt: continue
 
             # It has passed all the tests above
             out.append(i)
-        return out
 
-    def filter(self, isotope_list = None, *, element=None, A=None, A_lt=None, A_gt=None, index = None):
-        """
-        Return only isotopes in list that matches the filters specified.
-
-        Parameters
-        ----------
-        isotope_list : IsotopeList
-            Keep only isotopes appearing in self and the supplied IsotopeList
-        element : str, optional
-            Isotope must have this element symbol
-        A : int, optional
-            Isotope must have this nucleon number (A)
-        A_lt : int, optional
-            Isotope must have a nucleon number (A) less than this value
-        A_gt : int, optional
-            Isotope must have a nucleon number (A) greater than this value
-
-        Returns
-        -------
-        IsotopeList
-            List consisting of the isotopes that comply with the filter specified.
-            
-        Examples
-        --------
-        >>> a = IsotopeList(['104Ru', '104Pd', '105Pd', '106Pd', '111Cd'])
-        >>> a.filter(element = 'Pd')
-        ['104Pd', '105Pd', '106Pd']
-        >>> a.filter(A = 104)
-        ['104Ru', '104Pd']
-        >>> a.filter(A_gt = 104)
-        ['105Pd', '106Pd', '111Cd']
-        >>> a.filter(['102Ru', '104Ru', '110Cd', '111Cd'])
-        ['104Ru', '111Cd']
-        >>> a.filter(['102Ru', '104Ru', '110Cd', '111Cd'], A_lt = 105)
-        ['104Ru']
-        """
-        return self[self.filter_index(isotope_list, element=element, A=A, A_lt=A_lt, A_gt=A_gt, index = index)]
-
+        if return_index_list:
+            return out
+        else:
+            return self[out]
 
 class RatioList(_IsopyList):
     """
-    RatioList(items = None, strict = False)
+    RatioList(items = None, reformat = True)
 
     A subclass of list specifically for list of RatioString items.
 
@@ -732,13 +788,13 @@ class RatioList(_IsopyList):
         If ``None`` an empty list will be created. If ``list`` then all items must be strings that can be converted
         into an RatioString. If ``RatioArray`` then the the keys of the array will used to populate the RatioList.
 
-    strict : bool, optional
-        If ``strict == False`` then strings will be parsed to correct format. If ``strict == True`` then a ValueError
+    reformat : bool, optional
+        If ``reformat == True`` then strings will be parsed to correct format. If ``reformat == False`` then a ValueError
         will be thrown if strings are not already in the correct format.
 
     Examples
     --------
-    Default initalisation, ``strict == False``
+    Default initalisation, ``reformat == True``
 
     >>> RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd'])
     ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']
@@ -749,7 +805,7 @@ class RatioList(_IsopyList):
         File "<stdin>", line 1, in <module>
     ValueError: no "/" found in string
 
-    Initialisation when ``strict == True``
+    Initialisation when ``reformat == False``
 
     >>> RatioList(['104Pd/108Pd', '105Pd108Pd8', '106Pd/108Pd'], True)
     ['104Pd/Pd108', '105Pd/108Pd', '106Pd/108Pd']
@@ -806,15 +862,15 @@ class RatioList(_IsopyList):
         >>> RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']) == RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '110Pd/108Pd'])
         False
 
-    append(item, strict = False)
+    append(item, reformat = True)
         Add item to the end of the list.
 
         Parameters
         ----------
         item : str
             String representation of an isotope ratio
-        strict : bool, optional
-            If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
+        reformat : bool, optional
+            If ``reformat == True`` then item will be parsed to correct format. If ``reformat == False`` then a ValueError will be
             thrown if item is not already in the correct format.
 
         Examples
@@ -825,7 +881,7 @@ class RatioList(_IsopyList):
         ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '110Pd/108Pd]
 
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd'])
-        >>> a.append('108pd/110pd', strict = True)
+        >>> a.append('108pd/110pd', reformat = False)
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
         ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
@@ -839,8 +895,8 @@ class RatioList(_IsopyList):
             Postion where item will be added
         item : str
             String representation of an isotope ratio
-        strict : bool, optional
-            If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
+        reformat : bool, optional
+            If ``reformat == True`` then item will be parsed to correct format. If ``reformat == False`` then a ValueError will be
             thrown if item is not already in the correct format.
 
         Examples
@@ -851,20 +907,20 @@ class RatioList(_IsopyList):
         ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '110Pd/108Pd']
 
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd'])
-        >>> a.insert(0,'110pd/108pd', strict = True)
+        >>> a.insert(0,'110pd/108pd', reformat = False)
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
         ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
 
-    remove(item, strict = False)
+    remove(item, reformat = True)
         Remove item from list
 
         Parameters
         ----------
         item : str
             String representation of an isotope
-        strict : bool, optional
-            If ``strict == False`` then item will be parsed to correct format. If ``strict == True`` then a ValueError will be
+        reformat : bool, optional
+            If ``reformat == True`` then item will be parsed to correct format. If ``reformat == False`` then a ValueError will be
             thrown if item is not already in the correct format.
 
         Examples
@@ -875,7 +931,7 @@ class RatioList(_IsopyList):
         ['104Pd/108Pd', '106Pd/108Pd']
 
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd'])
-        >>> a.remove('105pd/108pd', strict = True)
+        >>> a.remove('105pd/108pd', reformat = False)
         Traceback (most recent call last):
             File "<stdin>", line 1, in <module>
         ValueError: First letter of ElementString must be upper case while the remaning letters are in lower case
@@ -904,8 +960,8 @@ class RatioList(_IsopyList):
     _numerator_string_class = None
     _denominator_string_class = None
 
-    def _new_item(self, item, strict = False):
-        item = super()._new_item(item, strict)
+    def _new_item(self, item, reformat = True):
+        item = super()._new_item(item, reformat)
         if self._numerator_string_class is None: self._numerator_string_class = item.numerator.__class__
         elif not isinstance(item.numerator, self._numerator_string_class):
             raise ValueError('ratio numerator set to "{}" not "{}"'.format(self._numerator_string_class.__name__,
@@ -985,7 +1041,7 @@ class RatioList(_IsopyList):
         >>> a.has_common_denominator()
         True
         
-        >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
+        >>> a = RatioList(['104Pd/102Pd', '105Pd/108Pd', '106Pd/110Pd'])
         >>> a.has_common_denominator()
         False
         
@@ -995,14 +1051,15 @@ class RatioList(_IsopyList):
         """
         denom = self.get_denominators()
         if len(denom) == 0:
-            return True
+            if denominator is not None: return False
+            else: return True
         elif len(denom) > 0:
             if denom[0] != denominator and denominator is not None:
                 return False
             for d in denom[1:]:
                 if denom[0] != d:
                     return False
-        return True
+            return True
 
     def get_common_denominator(self):
         """
@@ -1030,7 +1087,8 @@ class RatioList(_IsopyList):
         elif len(self.get_denominators()) == 0: raise ValueError('list is empty')
         else: return self.get_denominators()[0]
 
-    def filter_index(self, ratio = None, *, numerator = None, denominator = None, index = None):
+    def filter(self, ratio = None, *, ratio_not = None, numerator= None, denominator = None,
+               return_index_list = False, index_list = None, **nd_filters):
         """
         Return a list of the index of all items in list that match the given filter restrictions.
         
@@ -1038,10 +1096,10 @@ class RatioList(_IsopyList):
         ----------
         ratio_list : RatioList
             Ratio must be present in ´ratio_list´.
-        numerator : IsotopeString or dict, optional
+        numerator : IsotopeString, IsotopeList, optional
             If ``IsotopeString`` the numerator for each item in list must match 'numerator'. If ``dict`` then
             this dict is used to filter a ``IsotopeList`` of each items numerator. See IsotopeList.filter_index
-        denominator : IsotopeString or dict, optional
+        denominator : IsotopeString, IsotopeList, optional
             If ``IsotopeString`` the denominator for each item in list must match 'numerator'. If ``dict`` then
             this dict is used to filter a ``IsotopeList`` of each items denominator. See IsotopeList.filter_index
         index : list of integers, optional
@@ -1055,95 +1113,66 @@ class RatioList(_IsopyList):
         Examples
         --------
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru']])
-        >>> a.filter_index(['102Pd/108Pd', '104Pd/108Pd', '106Pd/108Pd'])
+        >>> a.filter(['102Pd/108Pd', '104Pd/108Pd', '106Pd/108Pd'])
         [0,2]
         
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(denominator = '108Pd')
+        >>> a.filter(denominator_filter = '108Pd')
         [0,1,2]
         
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(numerator = {'A_lt': 105})
+        >>> a.filter(numerator_filter = {'A_lt': 105})
         [0,3]
         
         >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(numerator = {'A_lt': 105}, denominator = '102Ru')
+        >>> a.filter(numerator_filter = {'A_lt': 105}, denominator_filter = '102Ru')
         [3]
         """
+
+
         if ratio is None or isinstance(ratio, RatioList):
             pass
-        elif isinstance(ratio, (list, RatioArray)):
-            ratio = RatioList(ratio)
         else:
-            ratio = RatioList([ratio])
+            ratio = RatioList(ratio)
 
-        if not isinstance(numerator, dict): raise ValueError('numberator must be a dict')
-        if not isinstance(denominator, dict): raise ValueError('numberator must be a dict')
+        if ratio_not is None or isinstance(ratio_not, RatioList):
+            pass
+        else:
+            ratio_not = RatioList(ratio_not)
 
-        if index is None: index = [i for i in range(len(self))]
+        numerator_filters = {}
+        denominator_filters = {}
+        for k in nd_filters:
+            ks = k.split('_', 1)
+            if ks[0] == 'numerator' or ks[0] == 'n':
+                numerator_filters[ks[1]] = nd_filters[k]
+            elif ks[0] == 'denominator' or ks[0] == 'd':
+                denominator_filters[ks[1]] = nd_filters[k]
+            else: raise ValueError('nd_filter prefix "{}" unknown'.format(ks[0]))
+
+        if index_list is None: index_list = [i for i in range(len(self))]
 
         out = []
-        if ratio is not None:
-            for i in index:
-                if self[i] in ratio: out.append(i)
-            index = out
+        for i in index_list:
+            rat = self[i]
+            if ratio is not None:
+                if rat not in ratio: continue
+            if ratio_not is not None:
+                if rat in ratio_not: continue
+            out.append(i)
 
-        if numerator is not None:
-            numerator['index'] = index
-            out = self.get_numerators().filter_index(**numerator)
-            index = out
+        if numerator is not None or len(numerator_filters) > 0:
+            out = self.get_numerators().filter(numerator, index_list= out, return_index_list = True, **numerator_filters)
 
-        if denominator is not None:
-            denominator['index'] = index
-            out = self.get_denominators().filter_index(**denominator)
-            index = out
+        if denominator is not None or len(denominator_filters) > 0:
+            out = self.get_denominators().filter(denominator, index_list= out, return_index_list = True, **denominator_filters)
 
-        return out
+        if return_index_list:
+            return out
+        else:
+            return self[out]
 
-    def filter(self, ratio_list = None, *, numerator = None, denominator = None, index = None):
-        """
-        Return a list items in list that match the given filter restrictions.
-
-        Parameters
-        ----------
-        ratio_list : RatioList
-            Ratio must be present in ´ratio_list´.
-        numerator : IsotopeString or dict, optional
-            If ``IsotopeString`` the numerator for each item in list must match 'numerator'. If ``dict`` then
-            this dict is used to filter a ``IsotopeList`` of each items numerator. See IsotopeList.filter_index
-        denominator : IsotopeString or dict, optional
-            If ``IsotopeString`` the denominator for each item in list must match 'numerator'. If ``dict`` then
-            this dict is used to filter a ``IsotopeList`` of each items denominator. See IsotopeList.filter_index
-        index : list of integers, optional
-            List of integers. Only check these indexes. If not given then check all items in list.
-
-        Returns
-        -------
-        RatioList
-            List of all items matches the filter.
-
-        Examples
-        --------
-        >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru']])
-        >>> a.filter_index(['102Pd/108Pd', '104Pd/108Pd', '106Pd/108Pd'])
-        ['104Pd/108Pd', '106Pd/108Pd']
-
-        >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(denominator = '108Pd')
-        ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']
-
-        >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(numerator = {'A_lt': 105})
-        ['104Pd/108Pd', '101Ru/102Ru']
-
-        >>> a = RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd', '101Ru/102Ru'])
-        >>> a.filter_index(numerator = {'A_lt': 105}, denominator = '102Ru')
-        ['101Ru/102Ru']
-        """
-        return self[self.filter_index(ratio_list, numerator = numerator, denominator = denominator, index = index)]
-
-
-def any_list(items, strict = False):
+def any_list(items, reformat = True):
     """
     
     Parameters
@@ -1154,11 +1183,10 @@ def any_list(items, strict = False):
     -------
     (IsotopeList or RatioList)
     """
-    try: return IsotopeList(items, strict)
+    try: return IsotopeList(items, reformat)
     except ValueError: pass
-    try: return RatioList(items, strict)
+    try: return RatioList(items, reformat)
     except ValueError: raise ValueError('Unable to parse items into IsotopeList or RatioList')
-
 
 ############
 ### Dict ###
@@ -1189,8 +1217,14 @@ class IsopyDict(dict):
         super(IsopyDict, self).__init__(**new)
 
     def __getitem__(self, key):
-        if isinstance(key, list): return [self.__getitem__(k) for k in key]
+        if isinstance(key, list):
+            output = [self.__getitem__(k) for k in key]
+            if isinstance(key, ElementList): return ElementArray(output, keys=key, size=-1)
+            elif isinstance(key, IsotopeList): return IsotopeArray(output, keys=key, size=-1)
+            elif isinstance(key, RatioList): return RatioArray(output, keys=key, size=-1)
+            else: return output
 
+        #TODO check if unformaed key exists
         try: key = any_string(key)
         except: pass
 
@@ -1199,7 +1233,7 @@ class IsopyDict(dict):
             if isinstance(key, RatioString):
                 try: return super(IsopyDict, self).__getitem__(key.numerator) / super(IsopyDict, self).__getitem__(key.denominator)
                 except: raise err
-            else: raise
+            else: raise err
 
     def __setitem__(self, key, value):
         try: key = any_string(key)
@@ -1251,48 +1285,48 @@ class IsopyDict(dict):
 
         return out
 
-
 #############
 ### Array ###
 #############
 class _IsopyArray(np.ndarray):
-    def __new__(cls, data, keys = None):
+    def __new__(cls, values = None, keys = None, size = None, **key_data):
         if keys is not None: keys = cls._list_class(keys)
+        if values is None and len(key_data) != 0: values = key_data
 
-        if isinstance(data, cls.__class__):
+        if isinstance(values, cls.__class__):
             #Data is already an IsoRatArray so just return a copy
-            return data.copy()
+            return values.copy()
 
-        elif isinstance(data, np.ndarray):
-            if data.dtype.names is None:
-                if keys is None: raise ValueError('keys must be given if data an numpy array')
-                if len(data) != len(keys): raise ValueError('data array and keys must have the same length')
+        elif isinstance(values, np.ndarray):
+            if values.dtype.names is None:
+                if keys is None: raise ValueError('keys must be given if data is an numpy array')
+                if len(values) != len(keys): raise ValueError('data array and keys must have the same length')
 
-                if data.ndim == 1: dlen = 1
-                elif data.ndim == 2: dlen = data.shape[-1]
+                if values.ndim == 1: dlen = 1
+                elif values.ndim == 2: dlen = values.shape[-1]
                 else: raise ValueError('data array contains to many dimensions')
 
                 obj = np.zeros(dlen, dtype=[(k, DTYPE) for k in keys])
                 obj = obj.view(cls)
                 for i in range(len(keys)):
-                    obj[keys[i]] = data[i]
+                    obj[keys[i]] = values[i]
             else:
-                if keys is None: keys = cls._list_class(data.dtype.names)
-                elif len(keys) != data.dtype.names: raise ValueError('Number of keys supplied ({}) does not match number'
-                    'of keys in data supplied ({}'.format(len(keys), len(data.dtype.names)))
-                try: dlen = len(data)
+                if keys is None: keys = cls._list_class(values.dtype.names)
+                elif len(keys) != len(values.dtype.names): raise ValueError('Number of keys supplied ({}) does not match number'
+                    'of keys in data supplied ({})'.format(len(keys), len(values.dtype.names)))
+                try: dlen = len(values)
                 except: dlen = None
                 obj = np.zeros(dlen, dtype=[(k, DTYPE) for k in keys])
                 obj = obj.view(cls)
                 for i in range(len(keys)):
-                    obj[keys[i]] = data[data.dtype.names[i]]
+                    obj[keys[i]] = values[values.dtype.names[i]]
 
-        elif isinstance(data, list):
+        elif isinstance(values, list):
             if keys is None: raise ValueError('keys must be given if data is a list')
-            if len(data) != len(keys): raise ValueError('data list and keys must have the same length')
+            if len(values) != len(keys): raise ValueError('data list and keys must have the same length')
 
             dlen = None
-            for d in data:
+            for d in values:
                 if dlen is None:
                     try: dlen = len(d)
                     except: pass
@@ -1305,40 +1339,40 @@ class _IsopyArray(np.ndarray):
             obj = np.zeros(dlen, dtype=[(k, DTYPE) for k in keys])
             obj = obj.view(cls)
             for i in range(len(keys)):
-                obj[keys[i]] = data[i]
+                obj[keys[i]] = values[i]
 
-        elif isinstance(data, dict):
+        elif isinstance(values, dict):
             dlen = None
-            keys = list(data.keys())
+            keys = list(values.keys())
             new_keys = cls._list_class(keys)
-            for d in data:
+            for d in values:
                 if dlen is None:
                     try:
-                        dlen = len(data[d])
+                        dlen = len(values[d])
                     except:
                         pass
                 else:
                     try:
-                        if dlen != len(data[d]): raise ValueError('not all items in data list have the same length')
+                        if dlen != len(values[d]): raise ValueError('not all items in data list have the same length')
                     except:
                         if dlen != 1: raise ValueError('not all items in data list have the same length')
 
             obj = np.zeros(dlen, dtype=[(k, DTYPE) for k in new_keys])
             obj = obj.view(cls)
             for i in range(len(keys)):
-                try: obj[new_keys[i]] = data[keys[i]]
+                try: obj[new_keys[i]] = values[keys[i]]
                 except ValueError: raise ValueError('could not convert string to float key: {}'.format(keys[i]))
 
-        elif isinstance(data, int):
+        elif isinstance(size, int):
+            if size == -1: size = None
             if keys is None: raise ValueError('keys not given')
-            obj = np.zeros(data, dtype=[(k, DTYPE) for k in keys])
+            obj = np.zeros(size, dtype=[(k, DTYPE) for k in keys])
             obj = obj.view(cls)
-        elif data is None:
-            if keys is None: raise ValueError('keys not given')
-            obj = np.zeros(None, dtype=[(k, DTYPE) for k in keys])
-            obj = obj.view(cls)
+            if values is not None:
+                for k in obj.keys(): obj[k] = values
+
         else:
-            raise ValueError('data type "{}" cannot be converted into IsoRatArray'.format(type(data)))
+            raise ValueError('Unable to create {}'.format(cls.__name__))
 
         return obj
 
@@ -1350,6 +1384,13 @@ class _IsopyArray(np.ndarray):
         arr = super(_IsopyArray, self).__getitem__(key)
         if arr.dtype.names is None: return arr.view(np.ndarray)
         else: return arr.view(self.__class__)
+        
+    def __setitem__(self, key, value):
+        if not isinstance(key, self._string_class):
+            try: key = self._string_class(key)
+            except: pass
+            
+        super(_IsopyArray, self).__setitem__(key, value)
 
     def __array_finalize__(self, obj):
         if obj is None: return
@@ -1369,7 +1410,7 @@ class _IsopyArray(np.ndarray):
 
 
         keys = None
-        dlen = None
+        dlen = -1
         for i in inputs:
             if isinstance(i, _IsopyArray):
                 if keys is None:
@@ -1377,7 +1418,7 @@ class _IsopyArray(np.ndarray):
                 else:
                     if skip_missing_keys: keys = keys.filter(i.keys())
                     elif keys != i.keys(): raise ValueError('keys of {} dont match.'.format(self.__name__))
-            if dlen is None and isinstance(i, (list, tuple, np.ndarray)):
+            if dlen is -1 and isinstance(i, (tuple,list, np.ndarray)):
                 try: dlen = len(i)
                 except: pass
 
@@ -1385,19 +1426,20 @@ class _IsopyArray(np.ndarray):
         if len(keys) == 0: return np.array([])
 
         if 'out' in kwargs:
+
             out = kwargs.pop('out')
         else:
-            out = self.__class__(dlen, keys=keys)
+            out = self.__class__(size = dlen, keys=keys)
 
         #ufunc with only one input and operates on each item
-        if ufunc.__name__ in ['log']:
+        if ufunc.__name__ in ['log', 'log10']:
             for key in keys:
                 kwargs['out'] = out[key]
                 super(_IsopyArray, self).__array_ufunc__(ufunc, method, inputs[0][key], **kwargs)
             return out
 
         #ufuncs that uses two inputs
-        if ufunc.__name__ in ['add', 'subtract','multiply', 'true_divide', 'floor_divide', 'power']:
+        if ufunc.__name__ in ['add', 'subtract','multiply', 'true_divide', 'floor_divide', 'power', 'sqrt', 'square']:
             for key in keys:
                 try: kwargs['out'] = out[key]
                 except: raise IndexError('key: "{}" not found in output array'.format(key))
@@ -1414,32 +1456,41 @@ class _IsopyArray(np.ndarray):
         raise NotImplementedError('ufunc "{}" is not supported for {}'.format(ufunc.__name__, self.__name__))
 
     def mean(self, axis = 0, dtype = None, out = None, **unused_kwargs):
-        return self._ado_function(np.mean, axis, dtype, out)
+        if dtype is None: dtype = DTYPE
+        return self._ado_function(np.mean, axis, out, dtype=dtype)
 
     def std(self, axis = 0, dtype = None, out = None, ddof = 0, **unused_kwargs):
-        return self._ado_function(np.std, axis, dtype, out, ddof = ddof)
+        if dtype is None: dtype = DTYPE
+        return self._ado_function(np.std, axis, out, dtype=dtype, ddof = ddof)
 
     def sum(self, axis=0, dtype = None, out=None, **unused_kwargs):
-        return self._ado_function(np.sum, axis, dtype, out)
-
-    def _ado_function(self, func, axis, dtype, out, **kwargs):
-        #function with axis, dtype, out options e.g. sum, mean std
         if dtype is None: dtype = DTYPE
+        return self._ado_function(np.sum, axis, out, dtype=dtype)
+
+    def max(self, axis=0, out=None, **unused_kwargs):
+        return self._ado_function(np.max, axis, out)
+
+    def min(self, axis=0, out=None, **unused_kwargs):
+        return self._ado_function(np.min, axis, out)
+
+    def _ado_function(self, func, axis, out, **kwargs):
+        #function with axis, dtype, out options e.g. sum, mean std
+        #if dtype is None: dtype = DTYPE
 
         if axis == 0 or axis is None:
-            if out is None: out = self.__class__(None, keys = self.keys())
+            if out is None: out = self.__class__(size = -1, keys = self.keys())
             for key in self.keys():
                 func(self[key], out=out[key], **kwargs)
             return out
         if axis == -1:
             if out is None:
-                return func([self[x] for x in self.keys()], dtype=dtype, **kwargs)
+                return func([self[x] for x in self.keys()], **kwargs)
             else:
                 func([self[x] for x in self.keys()], out=out, **kwargs)
                 return out
         if axis == 1:
             if out is None:
-                return func([self[x] for x in self.keys()], axis=0, dtype=dtype, **kwargs)
+                return func([self[x] for x in self.keys()], axis=0, **kwargs)
             else:
                 func([self[x] for x in self.keys()], axis=0, out=out, **kwargs)
                 return out
@@ -1448,14 +1499,28 @@ class _IsopyArray(np.ndarray):
     def keys(self):
         return self._list_class(self.dtype.names)
 
+    def len(self):
+        try: return self.__len__()
+        except TypeError: return -1
+
 class ElementArray(_IsopyArray):
     _list_class = ElementList
     _string_class = ElementString
     __name__ = 'ElementArray'
 
-    def filter(self, element, **filter):
-        index = self.keys().filter(element, **filter)
-        return self[index].copy()
+    def filter(self, element_symbol, **filter):
+        keys = self.keys().filter(element_symbol, **filter)
+        return self[keys]
+
+    def convert_to_ratio_array(self, denominator):
+        denominator = ElementString(denominator)
+        keys = self.keys()
+        if denominator not in keys(): raise ValueError('denominator "{}" not found in array keys'.format(denominator))
+        keys.remove(denominator)
+        new_keys = keys/denominator
+        output_array = RatioArray(values = 1, keys = new_keys, size = self.len())
+        for nk in new_keys:
+            output_array[nk] = self[nk.numerator]/self[nk.denominator]
 
 class IsotopeArray(_IsopyArray):
     """
@@ -1515,8 +1580,18 @@ class IsotopeArray(_IsopyArray):
             New array containing only the isotope keys that match the specified filter parameters.
         """
 
-        index = self.keys().filter(isotope, **filter)
-        return self[index].copy()
+        keys = self.keys().filter(isotope, **filter)
+        return self[keys]
+
+    def convert_to_ratio_array(self, denominator):
+        denominator = IsotopeString(denominator)
+        keys = self.keys()
+        if denominator not in keys(): raise ValueError('denominator "{}" not found in array keys'.format(denominator))
+        keys.remove(denominator)
+        new_keys = keys/denominator
+        output_array = RatioArray(values = 1, keys = new_keys, size = self.len())
+        for nk in new_keys:
+            output_array[nk] = self[nk.numerator]/self[nk.denominator]
 
 class RatioArray(_IsopyArray):
     _list_class = RatioList
@@ -1527,7 +1602,7 @@ class RatioArray(_IsopyArray):
         """
         Return new RatioArray with isotopes of current array that passes matches the supplied filter parameters.
 
-        See RatioList.filter() for description of available filter parameters.
+        See :ref:`RatioList.filter() <ratio-filter>` for description of available filter parameters.
 
         Returns
         -------
@@ -1535,5 +1610,35 @@ class RatioArray(_IsopyArray):
             New array containing only the isotope keys that match the specified filter parameters.
         """
 
-        index = self.keys().filter(ratio, **filter)
-        return self[index].copy()
+        keys = self.keys().filter(ratio, **filter)
+        return self[keys]
+
+    def convert_to_isotope_array(self, denominator_value = 1):
+        keys = self.keys()
+        if not keys.has_common_denominator(): raise ValueError('array does not have a common denominator')
+        numerators = keys.get_numerators()
+        if not isinstance(numerators, IsotopeList): raise ValueError('array numerators are not isotope type')
+        denominator = keys.get_common_denominator()
+        if not isinstance(denominator, IsotopeString): raise ValueError('array denominator are not isotope type')
+
+        numerators.append(denominator)
+        output_array = IsotopeArray(values = 1, size = self.len(), keys = numerators)
+        for i in range(len(keys)):
+            output_array[numerators[i]] = self[keys[i]]
+        output_array = output_array * denominator_value
+        return output_array
+
+    def convert_to_element_array(self, denominator_value = 1):
+        keys = self.keys()
+        if not keys.has_common_denominator(): raise ValueError('array does not have a common denominator')
+        numerators = keys.get_numerators()
+        if not isinstance(numerators, ElementList): raise ValueError('array numerators are not isotope type')
+        denominator = keys.get_common_denominator()
+        if not isinstance(denominator, ElementString): raise ValueError('array denominator are not isotope type')
+
+        numerators.append(denominator)
+        output_array = ElementArray(values = 1, size=self.len(), keys=numerators)
+        for i in range(len(keys)):
+            output_array[numerators[i]] = self[keys[i]]
+        output_array = output_array * denominator_value
+        return output_array

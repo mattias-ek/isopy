@@ -28,8 +28,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="isopy.dtypes.ElementString" href="dtypes/isopy.dtypes.ElementString.html" />
-    <link rel="prev" title="Examples" href="examples_page.html" /> 
+    <link rel="next" title="isopy.dtypes.ElementString" href="dtypes/isopy.dtypes.ElementString.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -89,19 +88,20 @@
 </ul>
 <p class="caption"><span class="caption-text">Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">dtypes</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="isopy_page.html">isopy</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">isopy.dtypes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.ElementString.html">isopy.dtypes.ElementString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeString.html">isopy.dtypes.IsotopeString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html">isopy.dtypes.RatioString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeList.html">isopy.dtypes.IsotopeList</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.RatioList.html">isopy.dtypes.RatioList</a></li>
-<li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.IsoRatDict.html">isopy.dtypes.IsoRatDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.IsopyDict.html">isopy.dtypes.IsopyDict</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeArray.html">isopy.dtypes.IsotopeArray</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dtypes/isopy.dtypes.RatioArray.html">isopy.dtypes.RatioArray</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="load_page.html">load</a></li>
-<li class="toctree-l1"><a class="reference internal" href="calc_page.html">calc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_page.html">isopy.load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calc_page.html">isopy.calc</a></li>
 </ul>
 
             
@@ -174,22 +174,22 @@
 <col width="90%" />
 </colgroup>
 <tbody valign="top">
-<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.ElementString.html#isopy.dtypes.ElementString" title="isopy.dtypes.ElementString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ElementString</span></code></a>(string,&nbsp;strict&nbsp;=&nbsp;False)</td>
-<td>String representation of an element.</td>
+<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.ElementString.html#isopy.dtypes.ElementString" title="isopy.dtypes.ElementString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ElementString</span></code></a>(string,&nbsp;reformat&nbsp;=&nbsp;True)</td>
+<td>A string representation of an element.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeString</span></code></a>(string,&nbsp;strict&nbsp;=&nbsp;False)</td>
-<td>A subclass of <code class="docutils literal notranslate"><span class="pre">str</span></code> for a storing a string representation of an isotope.</td>
+<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeString</span></code></a>(string,&nbsp;reformat&nbsp;=&nbsp;True)</td>
+<td>A string representation of an isotope.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioString</span></code></a>(string,&nbsp;strict&nbsp;=&nbsp;False)</td>
-<td>A subclass of <code class="docutils literal notranslate"><span class="pre">str</span></code> for a storing an isotope ratio.</td>
+<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.RatioString.html#isopy.dtypes.RatioString" title="isopy.dtypes.RatioString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioString</span></code></a>(string,&nbsp;reformat&nbsp;=&nbsp;True)</td>
+<td>A string representation of a ratio.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeList</span></code></a>(items&nbsp;=&nbsp;None,&nbsp;strict&nbsp;=&nbsp;False)</td>
+<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeList</span></code></a>(items&nbsp;=&nbsp;None,&nbsp;reformat&nbsp;=&nbsp;True)</td>
 <td>A subclass of list specifically for list of IsotopeString items.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList" title="isopy.dtypes.RatioList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioList</span></code></a>(items&nbsp;=&nbsp;None,&nbsp;strict&nbsp;=&nbsp;False)</td>
+<tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.RatioList.html#isopy.dtypes.RatioList" title="isopy.dtypes.RatioList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioList</span></code></a>(items&nbsp;=&nbsp;None,&nbsp;reformat&nbsp;=&nbsp;True)</td>
 <td>A subclass of list specifically for list of RatioString items.</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsoRatDict.html#isopy.dtypes.IsoRatDict" title="isopy.dtypes.IsoRatDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsoRatDict</span></code></a>([dictionary,&nbsp;values,&nbsp;keys,&nbsp;…])</td>
+<tr class="row-even"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsopyDict.html#isopy.dtypes.IsopyDict" title="isopy.dtypes.IsopyDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsopyDict</span></code></a>([dictionary,&nbsp;values,&nbsp;keys,&nbsp;…])</td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><a class="reference internal" href="dtypes/isopy.dtypes.IsotopeArray.html#isopy.dtypes.IsotopeArray" title="isopy.dtypes.IsotopeArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeArray</span></code></a>(data,&nbsp;keys&nbsp;=&nbsp;None)</td>
@@ -212,8 +212,6 @@
       
         <a href="dtypes/isopy.dtypes.ElementString.html" class="btn btn-neutral float-right" title="isopy.dtypes.ElementString" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="examples_page.html" class="btn btn-neutral" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

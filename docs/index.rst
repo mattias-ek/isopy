@@ -19,9 +19,10 @@ isopy includes the most common reduction methods used in isotope geo/cosmochemis
    :maxdepth: 1
    :caption: Modules:
 
-   dtypes <dtypes_page>
-   load <load_page>
-   calc <calc_page>
+   isopy <isopy_page>
+   isopy.dtypes <dtypes_page>
+   isopy.load <load_page>
+   isopy.calc <calc_page>
 
 Indices and tables
 ==================

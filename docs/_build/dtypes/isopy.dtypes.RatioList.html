@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="isopy.dtypes.IsoRatDict" href="isopy.dtypes.IsoRatDict.html" />
+    <link rel="next" title="isopy.dtypes.IsopyDict" href="isopy.dtypes.IsopyDict.html" />
     <link rel="prev" title="isopy.dtypes.IsotopeList" href="isopy.dtypes.IsotopeList.html" /> 
 
   
@@ -89,19 +89,20 @@
 </ul>
 <p class="caption"><span class="caption-text">Modules:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">dtypes</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../isopy_page.html">isopy</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes_page.html">isopy.dtypes</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.ElementString.html">isopy.dtypes.ElementString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeString.html">isopy.dtypes.IsotopeString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioString.html">isopy.dtypes.RatioString</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeList.html">isopy.dtypes.IsotopeList</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">isopy.dtypes.RatioList</a></li>
-<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsoRatDict.html">isopy.dtypes.IsoRatDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsopyDict.html">isopy.dtypes.IsopyDict</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.IsotopeArray.html">isopy.dtypes.IsotopeArray</a></li>
 <li class="toctree-l2"><a class="reference internal" href="isopy.dtypes.RatioArray.html">isopy.dtypes.RatioArray</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../load_page.html">load</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">calc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../load_page.html">isopy.load</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../calc_page.html">isopy.calc</a></li>
 </ul>
 
             
@@ -172,7 +173,7 @@
 <h1>isopy.dtypes.RatioList<a class="headerlink" href="#isopy-dtypes-ratiolist" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="isopy.dtypes.RatioList">
-<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">RatioList</code><span class="sig-paren">(</span><em>items = None</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioList" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">isopy.dtypes.</code><code class="descname">RatioList</code><span class="sig-paren">(</span><em>items = None</em>, <em>reformat = True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioList" title="Permalink to this definition">¶</a></dt>
 <dd><p>A subclass of list specifically for list of RatioString items.</p>
 <p>Functions much like a normal list with the exception that all objects must be/are converted to an RatioString.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -182,7 +183,7 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>items</strong> (<em>list of strings</em><em> or </em><a class="reference internal" href="isopy.dtypes.RatioArray.html#isopy.dtypes.RatioArray" title="isopy.dtypes.RatioArray"><em>RatioArray</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">None</span></code> an empty list will be created. If <code class="docutils literal notranslate"><span class="pre">list</span></code> then all items must be strings that can be converted
 into an RatioString. If <code class="docutils literal notranslate"><span class="pre">RatioArray</span></code> then the the keys of the array will used to populate the RatioList.</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then strings will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then a ValueError
 will be thrown if strings are not already in the correct format.</li>
 </ul>
 </td>
@@ -190,7 +191,7 @@ will be thrown if strings are not already in the correct format.</li>
 </tbody>
 </table>
 <p class="rubric">Examples</p>
-<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
+<p>Default initalisation, <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
 <span class="go">[&#39;104Pd/108Pd&#39;, &#39;105Pd/108Pd&#39;, &#39;106Pd/108Pd&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104pd/108pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105/108pd&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106/Pd108&#39;</span><span class="p">])</span>
@@ -201,7 +202,7 @@ will be thrown if strings are not already in the correct format.</li>
 <span class="gr">ValueError</span>: <span class="n">no &quot;/&quot; found in string</span>
 </pre></div>
 </div>
-<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code></p>
+<p>Initialisation when <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd108Pd8&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
 <span class="go">[&#39;104Pd/Pd108&#39;, &#39;105Pd/108Pd&#39;, &#39;106Pd/108Pd&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104pd/108pd&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105/108pd&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd106/Pd108&#39;</span><span class="p">],</span> <span class="kc">True</span><span class="p">)</span>
@@ -270,7 +271,7 @@ will be thrown if strings are not already in the correct format.</li>
 
 <dl class="method">
 <dt id="isopy.dtypes.RatioList.append">
-<code class="descname">append</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.RatioList.append" title="Permalink to this definition">¶</a></dt>
+<code class="descname">append</code><span class="sig-paren">(</span><em>item</em>, <em>reformat = True</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.RatioList.append" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add item to the end of the list.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -278,7 +279,7 @@ will be thrown if strings are not already in the correct format.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>item</strong> (<em>str</em>) – String representation of an isotope ratio</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then a ValueError will be
 thrown if item is not already in the correct format.</li>
 </ul>
 </td>
@@ -293,7 +294,7 @@ thrown if item is not already in the correct format.</li>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd/110pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;108pd/110pd&#39;</span><span class="p">,</span> <span class="n">reformat</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
 <span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
@@ -312,7 +313,7 @@ thrown if item is not already in the correct format.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>index</strong> (<em>int</em>) – Postion where item will be added</li>
 <li><strong>item</strong> (<em>str</em>) – String representation of an isotope ratio</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then a ValueError will be
 thrown if item is not already in the correct format.</li>
 </ul>
 </td>
@@ -327,7 +328,7 @@ thrown if item is not already in the correct format.</li>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;110pd/108pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;110pd/108pd&#39;</span><span class="p">,</span> <span class="n">reformat</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
 <span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
@@ -337,7 +338,7 @@ thrown if item is not already in the correct format.</li>
 
 <dl class="method">
 <dt id="isopy.dtypes.RatioList.remove">
-<code class="descname">remove</code><span class="sig-paren">(</span><em>item</em>, <em>strict = False</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.RatioList.remove" title="Permalink to this definition">¶</a></dt>
+<code class="descname">remove</code><span class="sig-paren">(</span><em>item</em>, <em>reformat = True</em><span class="sig-paren">)</span><a class="headerlink" href="#isopy.dtypes.RatioList.remove" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove item from list</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -345,7 +346,7 @@ thrown if item is not already in the correct format.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>item</strong> (<em>str</em>) – String representation of an isotope</li>
-<li><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">False</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">strict</span> <span class="pre">==</span> <span class="pre">True</span></code> then a ValueError will be
+<li><strong>reformat</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">True</span></code> then item will be parsed to correct format. If <code class="docutils literal notranslate"><span class="pre">reformat</span> <span class="pre">==</span> <span class="pre">False</span></code> then a ValueError will be
 thrown if item is not already in the correct format.</li>
 </ul>
 </td>
@@ -360,7 +361,7 @@ thrown if item is not already in the correct format.</li>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;105pd/108pd&#39;</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;105pd/108pd&#39;</span><span class="p">,</span> <span class="n">reformat</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
     <span class="n">File</span> <span class="s2">&quot;&lt;stdin&gt;&quot;</span><span class="p">,</span> <span class="n">line</span> <span class="mi">1</span><span class="p">,</span> <span class="ow">in</span> <span class="o">&lt;</span><span class="n">module</span><span class="o">&gt;</span>
 <span class="gr">ValueError</span>: <span class="n">First letter of ElementString must be upper case while the remaning letters are in lower case</span>
@@ -398,56 +399,7 @@ thrown if item is not already in the correct format.</li>
 
 <dl class="method">
 <dt id="isopy.dtypes.RatioList.filter">
-<code class="descname">filter</code><span class="sig-paren">(</span><em>ratio_list=None</em>, <em>*</em>, <em>numerator=None</em>, <em>denominator=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioList.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioList.filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a list items in list that match the given filter restrictions.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ratio_list</strong> (<a class="reference internal" href="#isopy.dtypes.RatioList" title="isopy.dtypes.RatioList"><em>RatioList</em></a>) – Ratio must be present in ´ratio_list´.</li>
-<li><strong>numerator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em> or </em><em>dict</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the numerator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
-this dict is used to filter a <code class="docutils literal notranslate"><span class="pre">IsotopeList</span></code> of each items numerator. See IsotopeList.filter_index</li>
-<li><strong>denominator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em> or </em><em>dict</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the denominator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
-this dict is used to filter a <code class="docutils literal notranslate"><span class="pre">IsotopeList</span></code> of each items denominator. See IsotopeList.filter_index</li>
-<li><strong>index</strong> (<em>list of integers</em><em>, </em><em>optional</em>) – List of integers. Only check these indexes. If not given then check all items in list.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of all items matches the filter.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#isopy.dtypes.RatioList" title="isopy.dtypes.RatioList">RatioList</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Examples</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">([</span><span class="s1">&#39;102Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
-<span class="go">[&#39;104Pd/108Pd&#39;, &#39;106Pd/108Pd&#39;]</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">denominator</span> <span class="o">=</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">)</span>
-<span class="go">[&#39;104Pd/108Pd&#39;, &#39;105Pd/108Pd&#39;, &#39;106Pd/108Pd&#39;]</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">numerator</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">})</span>
-<span class="go">[&#39;104Pd/108Pd&#39;, &#39;101Ru/102Ru&#39;]</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">numerator</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">},</span> <span class="n">denominator</span> <span class="o">=</span> <span class="s1">&#39;102Ru&#39;</span><span class="p">)</span>
-<span class="go">[&#39;101Ru/102Ru&#39;]</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="isopy.dtypes.RatioList.filter_index">
-<code class="descname">filter_index</code><span class="sig-paren">(</span><em>ratio_list=None</em>, <em>*</em>, <em>numerator=None</em>, <em>denominator=None</em>, <em>index=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioList.filter_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioList.filter_index" title="Permalink to this definition">¶</a></dt>
+<code class="descname">filter</code><span class="sig-paren">(</span><em>ratio=None</em>, <em>*</em>, <em>ratio_not=None</em>, <em>numerator=None</em>, <em>denominator=None</em>, <em>return_index_list=False</em>, <em>index_list=None</em>, <em>**nd_filters</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/isopy/dtypes.html#RatioList.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.dtypes.RatioList.filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a list of the index of all items in list that match the given filter restrictions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -455,9 +407,9 @@ this dict is used to filter a <code class="docutils literal notranslate"><span c
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ratio_list</strong> (<a class="reference internal" href="#isopy.dtypes.RatioList" title="isopy.dtypes.RatioList"><em>RatioList</em></a>) – Ratio must be present in ´ratio_list´.</li>
-<li><strong>numerator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em> or </em><em>dict</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the numerator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
+<li><strong>numerator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em>, </em><a class="reference internal" href="isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the numerator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
 this dict is used to filter a <code class="docutils literal notranslate"><span class="pre">IsotopeList</span></code> of each items numerator. See IsotopeList.filter_index</li>
-<li><strong>denominator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em> or </em><em>dict</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the denominator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
+<li><strong>denominator</strong> (<a class="reference internal" href="isopy.dtypes.IsotopeString.html#isopy.dtypes.IsotopeString" title="isopy.dtypes.IsotopeString"><em>IsotopeString</em></a><em>, </em><a class="reference internal" href="isopy.dtypes.IsotopeList.html#isopy.dtypes.IsotopeList" title="isopy.dtypes.IsotopeList"><em>IsotopeList</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">IsotopeString</span></code> the denominator for each item in list must match ‘numerator’. If <code class="docutils literal notranslate"><span class="pre">dict</span></code> then
 this dict is used to filter a <code class="docutils literal notranslate"><span class="pre">IsotopeList</span></code> of each items denominator. See IsotopeList.filter_index</li>
 <li><strong>index</strong> (<em>list of integers</em><em>, </em><em>optional</em>) – List of integers. Only check these indexes. If not given then check all items in list.</li>
 </ul>
@@ -473,22 +425,22 @@ this dict is used to filter a <code class="docutils literal notranslate"><span c
 </table>
 <p class="rubric">Examples</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">([</span><span class="s1">&#39;102Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">([</span><span class="s1">&#39;102Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">])</span>
 <span class="go">[0,2]</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">denominator</span> <span class="o">=</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">denominator_filter</span> <span class="o">=</span> <span class="s1">&#39;108Pd&#39;</span><span class="p">)</span>
 <span class="go">[0,1,2]</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">numerator</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">numerator_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">})</span>
 <span class="go">[0,3]</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter_index</span><span class="p">(</span><span class="n">numerator</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">},</span> <span class="n">denominator</span> <span class="o">=</span> <span class="s1">&#39;102Ru&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">numerator_filter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;A_lt&#39;</span><span class="p">:</span> <span class="mi">105</span><span class="p">},</span> <span class="n">denominator_filter</span> <span class="o">=</span> <span class="s1">&#39;102Ru&#39;</span><span class="p">)</span>
 <span class="go">[3]</span>
 </pre></div>
 </div>
@@ -589,7 +541,7 @@ this dict is used to filter a <code class="docutils literal notranslate"><span c
 <span class="go">True</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;101Ru/102Ru&#39;</span><span class="p">])</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">RatioList</span><span class="p">([</span><span class="s1">&#39;104Pd/102Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;105Pd/108Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;106Pd/110Pd&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">has_common_denominator</span><span class="p">()</span>
 <span class="go">False</span>
 </pre></div>
@@ -613,7 +565,7 @@ this dict is used to filter a <code class="docutils literal notranslate"><span c
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="isopy.dtypes.IsoRatDict.html" class="btn btn-neutral float-right" title="isopy.dtypes.IsoRatDict" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="isopy.dtypes.IsopyDict.html" class="btn btn-neutral float-right" title="isopy.dtypes.IsopyDict" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="isopy.dtypes.IsotopeList.html" class="btn btn-neutral" title="isopy.dtypes.IsotopeList" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
