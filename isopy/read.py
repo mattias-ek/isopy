@@ -1,16 +1,16 @@
 import numpy as _np
-import isopy.dtypes as _dtypes
+import isopy._dtypes as _dtypes
 import csv as _csv
 import datetime as _dt
 import os
 
 
-def _key_csvfile(filepath, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
-    if empty_string_default is None: empty_string_default = ''
-    key = []
-    out = {}
-    column_title = {}
-    column_key_set = False
+def file(filepath, first_column_is_key = True, comments ='#', fixed_row_size = False):
+    keys = []
+    values = []
+    row_size = None
+
+    #TODO propblems opening file etc
 
     with open(filepath, 'r') as file:
         dialect = _csv.Sniffer().sniff(file.read(2048))
@@ -18,116 +18,32 @@ def _key_csvfile(filepath, column_key=True, skip_first_n_rows=0, skip_first_n_co
         reader = _csv.reader(file, dialect, quoting=_csv.QUOTE_NONE)
 
         for row in reader:
-            try:
-                if row[0].strip()[0] == '#': continue
-            except:
-                pass
-
-            if skip_first_n_rows > 0:
-                skip_first_n_rows -= 1
-                continue
-
-            if not column_key_set:
-                # TODO make sure header doesnt already exist
-                column_key_set = True
-                if column_key:
-                    for i in range(skip_first_n_columns + 1, len(row)):
-                        column_title[i] = row[i].strip()
-                    continue
-                else:
-                    for i in range(skip_first_n_columns + 1, len(row)): column_title[i] = i
-
-            # get key
-            try:
-                key_val = row[skip_first_n_columns].strip()
-            except:
-                continue
-            if key_val == '': continue
-            if key_val in key: continue
-            key.append(key_val)
-
-            # read data
-            for i in range(skip_first_n_columns + 1, len(column_title) + 1):
+            if comments is not None:
                 try:
-                    row_val = row[i].strip()
+                    if row[0].strip()[0] == comments: continue
                 except:
-                    row_val = ''
-                if row_val == '': row_val = empty_string_default
-                out.setdefault(column_title[i], []).append(row_val)
+                    pass
+            if len(row) == 0: continue
+            if fixed_row_size:
+                if row_size is None: row_size = len(row)
+                elif len(row) != row_size: raise ValueError('All rows must be the same size')
 
-    return key, out
+            if first_column_is_key:
+                keys.append(row[0].strip())
+                values.append(row[1:])
+            else:
+                values.append(row[:])
 
+        if first_column_is_key: return keys, values
+        else: return values
 
-def reference_isotope_data():
-    """'
+def reference_data(name):
+    #TODO file not found etc
+    filepath = os.path.join(os.path.dirname(__file__), 'referencedata', '{}.csv'.format(name))
+    keys, values = file(filepath)
+    return _dtypes.IsopyDict(values, keys = keys)
 
-    Reference data keys:
-    - 'initial isotope abundance L09'
-
-    - 'initial isotope fraction L09'
-
-    - 'isotope fraction M16'
-
-    - 'isotope fraction uncertainty M16'
-
-    - 'isotope mass H17'
-
-    - 'sprocess isotope abundance B11'
-
-    - 'sprocess isotope fraction B11'
-
-    - 'sprocess isotope abundance A99'
-
-    - 'sprocess isotope fraction A99'
-
-    """
-    filepath = os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
-    return data_dict(filepath)
-
-
-def data_dict(filepath=None, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
-    keys, data = _key_csvfile(filepath, column_key, skip_first_n_rows, skip_first_n_columns, empty_string_default)
-    out = {}
-    for k in data:
-        out[k] = _dtypes.IsopyDict(keys=keys, values=data[k])
-
-    return out
-
-
-def _isopy_array(filepath, **kwargs):
-    key, data = _key_csvfile(filepath, empty_string_default='nan', **kwargs)
-    out = {'sample': key, 'value': {}, 'uncertainty': {}}
-
-    for key in data:
-        if '+-' in key:
-            out['uncertainty'][key.replace('+-', '').strip()] = data[key]
-        else:
-            out['value'][key] = data[key]
-
-    return out
-
-
-def isotope_array(filepath, **kwargs):
-    # TODO surely this should be an array of the keys in value rather than a dict
-    out = _isopy_array(filepath, **kwargs)
-    out['value'] = _dtypes.IsotopeArray(out['value'])
-    if len(out['uncertainty']) == 0:
-        out['uncertainty'] = None
-    else:
-        out['uncertinaty'] = _dtypes.IsotopeArray(out['uncertinaty'])
-    return out
-
-
-def ratio_array(filepath, **kwargs):
-    out = _isopy_array(filepath, **kwargs)
-    out['value'] = _dtypes.RatioArray(out['value'])
-    if len(out['uncertainty']) == 0:
-        out['uncertainty'] = None
-    else:
-        out['uncertainty'] = _dtypes.RatioArray(out['uncertainty'])
-    return out
-
-
+#Needs to be updated
 class neptune(object):
     """Used to read data files produced by a Neptune ICP-MS.
 
@@ -238,3 +154,94 @@ class neptune(object):
                                 data.setdefault(l, {}).setdefault(str(self.isotopes[l][i]), []).append(
                                     cycle[field[l][i]])
         return data
+
+#Obsolete
+def _key_csvfile(filepath, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
+    if empty_string_default is None: empty_string_default = ''
+    key = []
+    out = {}
+    column_title = {}
+    column_key_set = False
+
+    with open(filepath, 'r') as file:
+        dialect = _csv.Sniffer().sniff(file.read(2048))
+        file.seek(0)
+        reader = _csv.reader(file, dialect, quoting=_csv.QUOTE_NONE)
+
+        for row in reader:
+            try:
+                if row[0].strip()[0] == '#': continue
+            except:
+                pass
+
+            if skip_first_n_rows > 0:
+                skip_first_n_rows -= 1
+                continue
+
+            if not column_key_set:
+                # TODO make sure header doesnt already exist
+                column_key_set = True
+                if column_key:
+                    for i in range(skip_first_n_columns + 1, len(row)):
+                        column_title[i] = row[i].strip()
+                    continue
+                else:
+                    for i in range(skip_first_n_columns + 1, len(row)): column_title[i] = i
+
+            # get key
+            try:
+                key_val = row[skip_first_n_columns].strip()
+            except:
+                continue
+            if key_val == '': continue
+            if key_val in key: continue
+            key.append(key_val)
+
+            # read data
+            for i in range(skip_first_n_columns + 1, len(column_title) + 1):
+                try:
+                    row_val = row[i].strip()
+                except:
+                    row_val = ''
+                if row_val == '': row_val = empty_string_default
+                out.setdefault(column_title[i], []).append(row_val)
+
+    return key, out
+
+
+def _reference_isotope_data():
+    """'
+
+    Reference data keys:
+    - 'initial isotope abundance L09'
+
+    - 'initial isotope fraction L09'
+
+    - 'isotope fraction M16'
+
+    - 'isotope fraction uncertainty M16'
+
+    - 'isotope mass H17'
+
+    - 'sprocess isotope abundance B11'
+
+    - 'sprocess isotope fraction B11'
+
+    - 'sprocess isotope abundance A99'
+
+    - 'sprocess isotope fraction A99'
+
+    """
+    filepath = os.path.join(os.path.dirname(__file__), 'IsotopeData.csv')
+    return data_dict(filepath)
+
+
+def data_dict(filepath=None, column_key=True, skip_first_n_rows=0, skip_first_n_columns=0, empty_string_default=None):
+    keys, data = _key_csvfile(filepath, column_key, skip_first_n_rows, skip_first_n_columns, empty_string_default)
+    out = {}
+    for k in data:
+        out[k] = _dtypes.IsopyDict(keys=keys, values=data[k])
+
+    return out
+
+

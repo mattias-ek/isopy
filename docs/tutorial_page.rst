@@ -1,47 +1,54 @@
-Introduction to isopy
+Tutorial
 *********************
 
-The isopy package revolves around a set of custom data types used to manipulate three different kinds of data commonly
-used in geo/cosmochemistry: Element data, Isotope data and Ratio data.
-
-isopy strings are used to store a sting representation of the type of
-
- The input string does not have to be correctly formatted as by default the input string will be reformatted, if possible, to the correct format.
 
 
-ElementString can only contain alphabetical characters. The first character is always in upper case whereas the remaining characters are always in lower case.
->>> isopy.ElementString(‘Pd’)
-‘Pd’
->>> isopy.ElementString(‘pd’)
-‘Pd’
->>> isopy.ElementString(‘pD’)
-‘Pd’
 
-IsotopeString begins with a integer representing the nucleon number (A) followed by an ElementString.
->>> isopy.IsotopeString(‘105pd’)
-‘105Pd’
->>> isopy.IsotopeString(‘pd105’)
-‘105Pd’
+Creating arrays
+---------------
+There are several possible ways to create arrays.
 
-The nucleon number (A) and element of an IsotopeString can be accessed individually
->>> isotope = isopy.IsotopeString(‘105Pd’)
->>> isotope.A
-105
->>> isotope.element
-‘Pd’
+Empty arrays are created by giving the size and a set of keys
 
-RatioString consists of a single string with numerator (ElementString or IsotopeString) and a denominator (ElementString or IsotopeString) seperated by a ‘/’. Any combination of ElementString and IsotopeString can be used for the numerator and denominator.
+>>> array = isopy.IsotopeArray(size = 5, keys = ['104pd', '105pd', '106pd'])
+>>> print(array)
+104Pd, 105Pd, 106Pd
+0.0, 0.0, 0.0
+0.0, 0.0, 0.0
+0.0, 0.0, 0.0
+0.0, 0.0, 0.0
+0.0, 0.0, 0.0
 
->>> isopy.RatioString(‘ru/pd’)
-‘Ru/Pd’
->>> isopy.RatioString(‘ru101/pd’)
-‘101Ru/Pd’
->>> isopy.RatioString(‘ru101/105pd’)
-‘101Ru/105Pd’
+There are a number of ways in which arrays can be created from existing data.
 
-The numerator and denominator of an RatioString can be accessed individually
->>> ratio = isopy.RatioString(‘ru/105pd’)
->>> ratio.numerator
-‘Ru’
->>> ratio.denominator
-‘105Pd’
+>>> datadict = {'104pd': [0.11004982, 0.11172253, 0.1138327 , 0.11066279, 0.11123413],
+                '105pd': [0.22524588, 0.2254826 , 0.22228121, 0.22352313, 0.2216239 ],
+                '106Pd': [0.27218295, 0.2687675 , 0.27360541, 0.27352446, 0.27843918]}
+>>> array = IsotopeArray(datadict)
+>>> print(array)
+
+
+
+
+There are several ways to create an array. To create an empty array you just need to supply an integer of the number of
+records desired and a list of keys.
+>>> a = IsotopeArray(10,['105pd','106pd','108pd'])
+>>> a
+whatever this looks like
+>>> a.keys()
+['105Pd', '106Pd', '108Pd']
+>>> len(a)
+10
+
+The example above creates an IsotopeArray with 10 empty records for each key given. The keys are automatically
+formatted into the correct format. See IsotopeSting and IsotopeList for more information on this.
+
+Finally, if we already have a structured numpy array with keys that can be formatted to an IsotopeSting we can simply
+change the view of the array to a IsotopeArray
+
+
+>>> a = numpy.array([[1,2,3],[4,5,6]], dtype = [('105pd', 'f8'), ('106Pd', 'f8'), ('108pd', 'f8'])
+>>> IsotopeArray(a)
+ValueError:
+
+Th

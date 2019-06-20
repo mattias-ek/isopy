@@ -1,8 +1,9 @@
 name = 'isopy'
 
-import isopy.dtypes as dtypes
-import isopy.read as read
-import isopy.tb as tb
+from ._dtypes import *
+from ._functions import *
+from ._misc import *
 
-from isopy.dtypes import ElementString, IsotopeString, RatioString
+from isopy import doublespike
 
+#__all__ = ['ElementArray', 'IsotopeArray', 'RatioArray', 'reference_values']

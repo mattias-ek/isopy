@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib import ticker, cm, colors
 
-def york_regression(axes, regression, slopeline = True, errorline = True, shaded = True, shade_kwargs = None, **line_kwargs):
+def plot_york_regression(axes, regression, slopeline = True, errorline = True, shaded = True, shade_kwargs = None, **line_kwargs):
     slopeline_kwargs = {'linestyle': '-', 'marker': '', 'color': 'black'}
     slopeline_kwargs.update(line_kwargs)
     errorline_kwargs = {'linestyle': '--', 'marker': '', 'color': 'black'}

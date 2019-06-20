@@ -3,26 +3,34 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-isopy: A python package for data reduction in isotope geosciences.
-******************************************************************
+isopy: A python package for data processing in geosciences
+**********************************************************
 
-isopy includes the most common reduction methods used in isotope geo/cosmochemistry
+isopy is a package which aims to simplify data processing for geosciences. At its heart it a set of custom data
+arrays for storing and manipulation of three types of data: elemental, isotopic and ratios of elemental and/or isotope
+values. A number of toolboxes is also available providing functions for performing common tasks.
+
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
-   tutorial <tutorial_page>
-   examples <examples_page>
+   Tutorial <tutorial_page>
+   Examples <examples_page>
 
 .. toctree::
    :maxdepth: 1
-   :caption: Modules:
+   :caption: isopy
 
-   isopy <isopy_page>
-   isopy.dtypes <dtypes_page>
-   isopy.load <load_page>
-   isopy.calc <calc_page>
+   Data types <dtypes_page2>
+   NumPy functions <functions_page>
+   Miscellaneous functions <functions_page>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Toolboxes:
+
+   doublespike <doublespike_page>
 
 Indices and tables
 ==================
