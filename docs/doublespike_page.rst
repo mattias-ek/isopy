@@ -14,7 +14,7 @@ Inversion
 
 
 Miscellaneous
--------------------
+-------------
 .. autofunction:: isopy.doublespike.uncertainty_grid
 
 .. autofunction:: isopy.doublespike.plot_uncertainty_grid

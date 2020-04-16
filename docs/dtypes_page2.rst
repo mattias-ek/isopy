@@ -17,7 +17,7 @@ IsopyItems
     :members: __contains__
 
 IsopyList's
-#####
+###########
 
 .. autoclass:: isopy.MassList
     :members: __eq__, __contains__, __getitem__, append, index, insert, remove, copy, filter
@@ -32,7 +32,7 @@ IsopyList's
     :members: __eq__, __contains__, __getitem__, append, index, insert, remove, copy, get_numerators, get_denominators, has_common_denominator, get_common_denominator, filter
 
 IsopyArray's
-######
+############
 
 .. autoclass:: isopy.MassArray
     :members: filter

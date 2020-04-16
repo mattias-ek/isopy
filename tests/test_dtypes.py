@@ -1,17 +1,43 @@
-from isopy._dtypes import *
+from isopy.dtypes import *
+import isopy.functions as ipf
+import numpy as np
 import isopy
 import pytest
+
+
+def assert_isopyarray_equal_ndarray(arr1, arr2, **kwargs):
+    assert isinstance(arr1, IsopyArray)
+    assert not isinstance(arr2, IsopyArray)
+    arr2 = np.asarray(arr2)
+    assert (arr1.ndim + 1) == arr2.ndim
+    assert arr1.keycount() == arr2.shape[0]
+    keys = arr1.keys()
+    for i in range(arr1.keycount()):
+        np.testing.assert_array_equal(arr1[keys[i]], arr2[i])
+
+def assert_isoparray_equal_isopyarray(arr1, arr2, **kwargs):
+    assert isinstance(arr1, IsopyArray)
+    assert isinstance(arr2, IsopyArray)
+    assert arr1.keys == arr2.keys()
+    for key in arr1.keys():
+        np.testing.assert_array_equal(arr1[key], arr2[key])
+
+def assert_ndarray_equal_ndarray(arr1, arr2, **kwargs):
+    assert not isinstance(arr1, IsopyArray)
+    assert not isinstance(arr2, IsopyArray)
+    np.testing.assert_array_equal(arr1, arr2)
+
 
 class Test_IsopyString(object):
     def test_creation(self):
         #ElementString
-        self.creation(ElementString, str, 'Pd', ['pd', 'pD', 'PD'],['', '1', '1Pd', '/Pd', '_Pd'])
+        self.creation(ElementString, str, 'Pd', ['pd', 'pD', 'PD'],['', '1', '1Pd', '/Pd', '_Pd', 'Palladium', 'Pdd'])
 
         #IsotopeString
-        self.creation(IsotopeString, str, '105Pd', ['105PD', '105pd', '105pD', 'Pd105', 'Pd105', 'pd105', 'pD105'], ['','Pd', '105', '_Pd105', 'P105D', '105Pd/108Pd'])
+        self.creation(IsotopeString, str, '105Pd', ['105PD', '105pd', '105pD', 'Pd105', 'Pd105', 'pd105', 'pD105', '_105Pd'], ['','Pd', '105', 'Pd105a', 'P105D', '105Pd/108Pd'])
 
         #MassInteger
-        self.creation(MassInteger, int, 105, ['105'], ['pd105', 'onehundred and five'])
+        self.creation(MassString, str, '105', [105], ['pd105', 'onehundred and five', -105, '-105'])
 
         #RatioString
         self.creation(RatioString, str, 'Pd/Pd',
@@ -43,7 +69,7 @@ class Test_IsopyString(object):
             formatted_string = string_class(string)
             assert isinstance(formatted_string, string_class)
             assert isinstance(formatted_string, base_type)
-            assert formatted_string != string
+            assert formatted_string == string
             assert formatted_string == correct_format
             assert formatted_string == formatted_correct_format
             assert type(formatted_string) == string_class
@@ -60,7 +86,8 @@ class Test_IsopyString(object):
         assert hasattr(isotope, 'element_symbol')
 
         assert isotope.mass_number == 105
-        assert type(isotope.mass_number) == MassInteger
+        assert isotope.mass_number == '105'
+        assert type(isotope.mass_number) == MassString
 
         assert isotope.element_symbol == 'Pd'
         assert type(isotope.element_symbol) == ElementString
@@ -69,6 +96,7 @@ class Test_IsopyString(object):
         isotope = IsotopeString('105Pd')
 
         assert 105 in isotope
+        assert '105' in isotope
         assert 'Pd' in isotope
         assert 'PD' in isotope
 
@@ -83,7 +111,7 @@ class Test_IsopyString(object):
         assert ratio.numerator == '105Pd'
         assert type(ratio.numerator) == IsotopeString
 
-        assert ratio.denominator == '108Pd'
+        assert ratio.denominator == 'Pd108'
         assert type(ratio.denominator) == IsotopeString
 
         ratio = RatioString('Ru/Pd')
@@ -97,7 +125,7 @@ class Test_IsopyString(object):
         assert type(ratio.denominator) == ElementString
 
     def test_ratio_contains(self):
-        ratio  = RatioString('105Pd/108Pd')
+        ratio = RatioString('105Pd/108Pd')
 
         assert '105Pd' in ratio
         assert 'pd105' in ratio
@@ -110,31 +138,74 @@ class Test_IsopyString(object):
         assert 'Pd' not in ratio
 
     def test_string_manipulation(self):
-        element = ElementString('Pd')
-        isotope = IsotopeString('105Pd')
-        ratio = RatioString('105Pd/108Pd')
+        ratio = RatioString('108Pd/Pd105')
 
-        assert type(element.upper()) == str
-        assert type(isotope.lower()) == str
+        assert type(ratio.upper()) == str
+        assert type(ratio.lower()) == str
         assert type(ratio.capitalize()) == str
-        assert type(isotope[:3]) == str
+        assert type(ratio[:1]) == str
 
-        assert type(element[0]) == str
-        assert type(element[3:]) == str
+        assert type(ratio[0]) == str
+        assert type(ratio[1:]) == str
 
         assert type(ratio.split('/')[0]) == str
 
     def test_integer_manipulation(self):
-        mass = MassInteger(105)
+        integer = 105
+        mass = MassString(integer)
 
-        assert type(mass) == MassInteger
+        assert type(mass) == MassString
         assert mass == 105
-        assert type(mass+1) != MassInteger
-        assert type(mass+1) == int
+        assert type(mass+1) != MassString
 
-        mass+=1
-        assert type(mass) == int
-        assert type(mass) != MassInteger
+        assert isinstance(mass + 1, type(integer + 1))
+        assert mass + 1 == integer + 1
+
+
+        assert isinstance(mass - 1, type(integer - 1))
+        assert mass - 1 == integer - 1
+
+        assert isinstance(mass * 2, type(integer * 2))
+        assert mass * 2 == integer * 2
+
+        assert isinstance(mass / 2, type(integer / 2))
+        assert mass / 2 == integer / 2
+
+        assert mass > 100
+        assert not mass > 105
+
+        assert mass < 110
+        assert not mass < 105
+
+        assert mass >= 100
+        assert mass >= 105
+        assert not mass >= 110
+
+        assert mass <= 110
+        assert mass <= 105
+        assert not mass <= 100
+
+    def test_divide_to_ratio(self):
+        denom = IsotopeString('74Ge')
+
+        for i in [MassString('105'), ElementString('Pd'), IsotopeString('105Pd')]:
+            ratio = i / denom
+
+            assert type(ratio) == RatioString
+            assert ratio == '{}/{}'.format(i, denom)
+            assert ratio.denominator == denom
+            assert ratio.numerator == i
+
+    def test_safe_string(self):
+        mass = MassString('105')
+        element = ElementString('Pd')
+        isotope = IsotopeString('105Pd')
+        ratio = RatioString('108Pd/105Pd')
+
+        assert mass.safe_format() == '_105'
+        assert element.safe_format() == 'Pd'
+        assert isotope.safe_format() == '_105Pd'
+        assert ratio.safe_format() == '_108Pd_OVER_105Pd'
 
 
 class Test_IsopyList(object):
@@ -157,7 +228,7 @@ class Test_IsopyList(object):
 
         assert isopy_correct_list == correct_list
         assert isopy_unformatted_list == correct_list
-        assert isopy_unformatted_list != unformatted_list
+        assert isopy_unformatted_list == unformatted_list
 
         for invalid_list in invalid_lists:
             with pytest.raises(ValueError):
@@ -165,15 +236,15 @@ class Test_IsopyList(object):
                 print('"{}" was formatted to "{}" when it should have raised a ValueError'.format(invalid_list,
                                                                                                          formatted_list))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             formatted_list = RatioList(['101Ru/Pd', 'Pd/Pd', '111Cd/Pd'])
-            print('"{}" was formatted to "{}" when it should have raised a ValueError'.format(invalid_list,
+            print('"{}" was formatted to "{}" when it should have raised a TypeError'.format(invalid_list,
                                                                                               formatted_list))
 
     def test_compare(self):
         element_list = ['Ru', 'Pd', 'Cd']
         rearranged_list = ['Pd', 'Ru','Cd']
-        different_lists = (['Pd', 'Cd'], ['Mo', 'Ru', 'Pd', 'Cd'])
+        different_lists = (['Pd', 'Cd'], ['Mo', 'Ru', 'Pd', 'Cd'], ['Ru', 'Ru', 'Cd', 'Pd'])
 
         isopy_correct_list = ElementList(element_list)
         isopy_rearranged_list = ElementList(rearranged_list)
@@ -192,6 +263,24 @@ class Test_IsopyList(object):
 
         assert ['Pd', 'cd'] in element_list
         assert ['Pd', 'Mo'] not in element_list
+
+    def test_append(self):
+        list1 = ['Ru', 'Pd', 'Cd']
+        list2 = ['Mo', 'Ru', 'Pd', 'Cd']
+
+        isopy_list = ElementList(list1)
+        isopy_list.append(list2)
+        combinedlist = list1 + list2
+        assert len(isopy_list) == len(combinedlist)
+        assert isopy_list == combinedlist
+        assert combinedlist == isopy_list
+
+        isopy_list = ElementList(list1)
+        isopy_list.append(list2, skip_duplicates=True)
+        combinedlist = list1 + [l for l in list2 if l not in list1]
+        assert len(isopy_list) == len(combinedlist)
+        assert isopy_list == combinedlist
+        assert combinedlist == isopy_list
 
     def test_getitem(self):
         element_list = ElementList(['Ru', 'Pd', 'Cd'])
@@ -265,81 +354,89 @@ class Test_IsopyList(object):
             isotope_list / ['Pd', 'Cd']
             element_list / ['Pd', 'Cd']
 
-    def test_element_filter(self):
+    def test_element_copy(self):
         element_list = ElementList(['Ru', 'Pd', 'Cd', 'Pd'])
 
-        assert element_list.filter('ru') == ['Ru']
-        assert element_list.filter(['RU', 'Cd']) == ['Ru', 'Cd']
-        assert element_list.filter(['cd', 'Ru']) == ['Ru', 'Cd']
+        assert element_list.copy() == ['Ru', 'Pd', 'Cd', 'Pd']
+        assert element_list.copy() is not element_list
+        assert element_list.copy(element_symbol = 'ru') == ['Ru']
+        assert element_list.copy(element_symbol = ['RU', 'Cd']) == ['Ru', 'Cd']
+        assert element_list.copy(element_symbol = ['cd', 'Ru']) == ['Ru', 'Cd']
 
-        assert element_list.filter(element_symbol_not='Pd') == ['Ru', 'Cd']
-        assert element_list.filter(element_symbol_not=['cd', 'ru']) == ['Pd', 'Pd']
+        assert element_list.copy(element_symbol_not='Pd') == ['Ru', 'Cd']
+        assert element_list.copy(element_symbol_not=['cd', 'ru']) == ['Pd', 'Pd']
 
-    def test_mass_filter(self):
+    def test_mass_copy(self):
         mass_list = MassList([102, 104, 105, 106, 108, 110])
 
-        assert mass_list.filter('104') == [104]
-        assert mass_list.filter(mass_number_not = [106,'108',110, 111]) == [102,104,105]
+        assert mass_list.copy() == mass_list
+        assert mass_list.copy() is not mass_list
+        assert mass_list.copy(mass_number='104') == [104]
+        assert mass_list.copy(mass_number_not = [106,'108',110, 111]) == [102,104,105]
 
-        assert mass_list.filter(mass_number_gt=106) == [108, 110]
-        assert mass_list.filter(mass_number_ge=106) == [106, 108, 110]
+        assert mass_list.copy(mass_number_gt=106) == [108, 110]
+        assert mass_list.copy(mass_number_ge=106) == [106, 108, 110]
 
-        assert mass_list.filter(mass_number_lt=106) == [102, 104, 105]
-        assert mass_list.filter(mass_number_le=106) == [102, 104, 105, 106]
+        assert mass_list.copy(mass_number_lt=106) == [102, 104, 105]
+        assert mass_list.copy(mass_number_le=106) == [102, 104, 105, 106]
 
-    def test_isotope_filter(self):
+    def test_isotope_copy(self):
         isotope_list = IsotopeList(['101Ru', '105Pd', '111Cd', '105Pd'])
 
-        assert isotope_list.filter('pd105') == ['105Pd', '105Pd']
-        assert isotope_list.filter(['111cd', 'ru101']) == ['101Ru', '111Cd']
+        assert isotope_list.copy() == isotope_list
+        assert isotope_list.copy() is not isotope_list
+        assert isotope_list.copy(isotope='pd105') == ['105Pd', '105Pd']
+        assert isotope_list.copy(isotope=['111cd', 'ru101']) == ['101Ru', '111Cd']
 
-        assert isotope_list.filter(isotope_not='111cd') == ['101Ru', '105Pd', '105Pd']
-        assert isotope_list.filter(isotope_not=['105pd','111cd']) == ['101Ru']
+        assert isotope_list.copy(isotope_not='111cd') == ['101Ru', '105Pd', '105Pd']
+        assert isotope_list.copy(isotope_not=['105pd','111cd']) == ['101Ru']
 
-        assert isotope_list.filter(mass_number=105) ==['105Pd', '105Pd']
-        assert isotope_list.filter(mass_number=[105, 111]) == ['105Pd', '111Cd', '105Pd']
+        assert isotope_list.copy(mass_number=105) ==['105Pd', '105Pd']
+        assert isotope_list.copy(mass_number=[105, 111]) == ['105Pd', '111Cd', '105Pd']
 
-        assert isotope_list.filter(mass_number_gt = 105) == ['111Cd']
-        assert isotope_list.filter(mass_number_lt = 111) == ['101Ru', '105Pd', '105Pd']
+        assert isotope_list.copy(mass_number_gt = 105) == ['111Cd']
+        assert isotope_list.copy(mass_number_lt = 111) == ['101Ru', '105Pd', '105Pd']
 
-    def test_ratio_filter(self):
+    def test_ratio_copy(self):
         ratio_list = RatioList(['101Ru/Ru', '105Pd/Pd', '111Cd/Cd', '105Pd/Pd'])
 
-        assert ratio_list.filter('105Pd/Pd') == ['105Pd/Pd', '105Pd/Pd']
-        assert ratio_list.filter(['101Ru/Ru', '111Cd/Cd']) == ['101Ru/Ru', '111Cd/Cd']
+        assert ratio_list.copy() == ratio_list
+        assert ratio_list.copy() is not ratio_list
+        assert ratio_list.copy(ratio='105Pd/Pd') == ['105Pd/Pd', '105Pd/Pd']
+        assert ratio_list.copy(ratio=['101Ru/Ru', '111Cd/Cd']) == ['101Ru/Ru', '111Cd/Cd']
 
-        assert ratio_list.filter(ratio_not = '105Pd/Pd') == ['101Ru/Ru', '111Cd/Cd']
-        assert ratio_list.filter(ratio_not = ['101Ru/Ru', '111Cd/Cd']) == ['105Pd/Pd', '105Pd/Pd']
+        assert ratio_list.copy(ratio_not = '105Pd/Pd') == ['101Ru/Ru', '111Cd/Cd']
+        assert ratio_list.copy(ratio_not = ['101Ru/Ru', '111Cd/Cd']) == ['105Pd/Pd', '105Pd/Pd']
 
-        assert ratio_list.filter(numerator_isotope = '105Pd') == ['105Pd/Pd', '105Pd/Pd']
-        assert ratio_list.filter(numerator_element_symbol = ['Ru', 'Cd']) == ['101Ru/Ru', '111Cd/Cd']
+        assert ratio_list.copy(numerator_isotope = '105Pd') == ['105Pd/Pd', '105Pd/Pd']
+        assert ratio_list.copy(numerator_element_symbol = ['Ru', 'Cd']) == ['101Ru/Ru', '111Cd/Cd']
 
-        assert ratio_list.filter(denominator_element_symbol='Pd') == ['105Pd/Pd', '105Pd/Pd']
-        assert ratio_list.filter(denominator_element_symbol_not = 'Pd') == ['101Ru/Ru', '111Cd/Cd']
+        assert ratio_list.copy(denominator_element_symbol='Pd') == ['105Pd/Pd', '105Pd/Pd']
+        assert ratio_list.copy(denominator_element_symbol_not = 'Pd') == ['101Ru/Ru', '111Cd/Cd']
 
-        assert ratio_list.filter(n_mass_number_gt = 101, d_element_symbol_not = 'Cd') == ['105Pd/Pd', '105Pd/Pd']
+        assert ratio_list.copy(n_mass_number_gt = 101, d_element_symbol_not = 'Cd') == ['105Pd/Pd', '105Pd/Pd']
 
     def test_isotope_get_has(self):
         isotope_list = IsotopeList(['101Ru', '105Pd', '111Cd', '105Pd'])
 
         assert isotope_list.mass_numbers == [101, 105, 111, 105]
-        assert isotope_list.get_mass_numbers() == [101, 105, 111, 105]
-        assert type(isotope_list.get_mass_numbers()) == MassList
+        assert isotope_list.mass_numbers == [101, 105, 111, 105]
+        assert type(isotope_list.mass_numbers) == MassList
 
         assert isotope_list.element_symbols == ['Ru', 'Pd', 'Cd', 'Pd']
-        assert isotope_list.get_element_symbols() == ['Ru', 'Pd', 'Cd', 'Pd']
-        assert type(isotope_list.get_element_symbols()) == ElementList
+        assert isotope_list.element_symbols == ['Ru', 'Pd', 'Cd', 'Pd']
+        assert type(isotope_list.element_symbols) == ElementList
 
     def test_ratio_get_has(self):
         ratio_list = RatioList(['101Ru/Ru', '105Pd/Pd', '111Cd/Cd', '105Pd/Pd'])
 
         assert ratio_list.numerators == ['101Ru', '105Pd', '111Cd', '105Pd']
-        assert ratio_list.get_numerators() == ['101Ru', '105Pd', '111Cd', '105Pd']
-        assert type(ratio_list.get_numerators()) == IsotopeList
+        assert ratio_list.numerators == ['101Ru', '105Pd', '111Cd', '105Pd']
+        assert type(ratio_list.numerators) == IsotopeList
 
         assert ratio_list.denominators == ['Ru', 'Pd', 'Cd', 'Pd']
-        assert ratio_list.get_denominators() == ['Ru', 'Pd', 'Cd', 'Pd']
-        assert type(ratio_list.get_denominators()) == ElementList
+        assert ratio_list.denominators == ['Ru', 'Pd', 'Cd', 'Pd']
+        assert type(ratio_list.denominators) == ElementList
 
         assert ratio_list.has_common_denominator() == False
 
@@ -361,7 +458,7 @@ class Test_IsopyArray(object):
         dict_data = {'104Pd': [1,2,3,4,5], '105Pd': [10, 20, 30, 40, 50], '106Pd': [100, 200, 300, 400, 500]}
 
         array = IsotopeArray(dict_data)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -370,7 +467,7 @@ class Test_IsopyArray(object):
         assert array.size == 5
 
         array = IsotopeArray(dict_data, ndim = -1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -384,48 +481,10 @@ class Test_IsopyArray(object):
         with pytest.raises(ValueError):
             array = RatioArray(dict_data)
 
-        dict_data = {'104Pd': 1, '105Pd': [10], '106Pd': [100]}
-
-        array = IsotopeArray(dict_data)
-        assert type(array) == IsotopeArray
-        assert array.keys() == ['104Pd', '105Pd', '106Pd']
-        assert np.all(array['104Pd'] == dict_data['104Pd'])
-        assert np.all(array['105Pd'] == dict_data['105Pd'])
-        assert np.all(array['106Pd'] == dict_data['106Pd'])
-        assert array.ndim == 1
-        assert array.size == 1
-
-        array = IsotopeArray(dict_data, ndim = 1)
-        assert type(array) == IsotopeArray
-        assert array.keys() == ['104Pd', '105Pd', '106Pd']
-        assert np.all(array['104Pd'] == dict_data['104Pd'])
-        assert np.all(array['105Pd'] == dict_data['105Pd'])
-        assert np.all(array['106Pd'] == dict_data['106Pd'])
-        assert array.ndim == 1
-        assert array.size == 1
-
-        array = IsotopeArray(dict_data, ndim = 0)
-        assert type(array) == IsotopeArray
-        assert array.keys() == ['104Pd', '105Pd', '106Pd']
-        assert np.all(array['104Pd'] == dict_data['104Pd'])
-        assert np.all(array['105Pd'] == dict_data['105Pd'])
-        assert np.all(array['106Pd'] == dict_data['106Pd'])
-        assert array.ndim == 0
-        assert array.size == 1
-
-        array = IsotopeArray(dict_data, ndim=-1)
-        assert type(array) == IsotopeArray
-        assert array.keys() == ['104Pd', '105Pd', '106Pd']
-        assert np.all(array['104Pd'] == dict_data['104Pd'])
-        assert np.all(array['105Pd'] == dict_data['105Pd'])
-        assert np.all(array['106Pd'] == dict_data['106Pd'])
-        assert array.ndim == 0
-        assert array.size == 1
-
         dict_data = {'104Pd': 1, '105Pd': 10, '106Pd': 100}
 
         array = IsotopeArray(dict_data)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -434,7 +493,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(dict_data, ndim=0)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -443,7 +502,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(dict_data, ndim=-1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -452,7 +511,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(dict_data, ndim = 1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == dict_data['104Pd'])
         assert np.all(array['105Pd'] == dict_data['105Pd'])
@@ -465,12 +524,12 @@ class Test_IsopyArray(object):
         with pytest.raises(ValueError):
             array = IsotopeArray(dict_data)
 
-    def text_creation_list(self):
+    def test_creation_list(self):
         list_data = [[1,2,3,4,5], [10, 20, 30, 40, 50], [100, 200, 300, 400, 500]]
         keys = ['104Pd', '105Pd', '106Pd']
 
         array = IsotopeArray(list_data, keys = keys)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -479,7 +538,7 @@ class Test_IsopyArray(object):
         assert array.size == 5
 
         array = IsotopeArray(list_data, keys=keys, ndim = 1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -493,10 +552,10 @@ class Test_IsopyArray(object):
         with pytest.raises(ValueError):
             array = RatioArray(list_data, keys=keys)
 
-        list_data = [1, [10], [100]]
+        list_data = [[1], [10], [100]]
 
         array = IsotopeArray(list_data, keys=keys)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -505,7 +564,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -514,7 +573,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=0)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -523,7 +582,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=-1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -534,7 +593,7 @@ class Test_IsopyArray(object):
         list_data = [1, 10, 100]
 
         array = IsotopeArray(list_data, keys=keys)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -543,7 +602,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -552,7 +611,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=0)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -561,7 +620,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(list_data, keys=keys, ndim=-1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == list_data[0])
         assert np.all(array['105Pd'] == list_data[1])
@@ -584,7 +643,7 @@ class Test_IsopyArray(object):
                         dtype = [('104Pd', 'f8'), ('105Pd', 'f8'), ('106Pd', 'f8')])
 
         array = IsotopeArray(array_data)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -593,7 +652,7 @@ class Test_IsopyArray(object):
         assert array.size == 5
 
         array = IsotopeArray(array_data, ndim=1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -607,20 +666,21 @@ class Test_IsopyArray(object):
         with pytest.raises(ValueError):
             array = RatioArray(array_data)
 
-        array = IsotopeArray(array_data, keys = {'104Pd': '104Ru', '106Pd': '106Cd'})
-        assert type(array) == IsotopeArray
-        assert array.keys() == ['104Ru', '105Pd', '106Cd']
-        assert np.all(array['104Ru'] == array_data['104Pd'])
-        assert np.all(array['105Pd'] == array_data['105Pd'])
-        assert np.all(array['106Cd'] == array_data['106Pd'])
-        assert array.ndim == 1
-        assert array.size == 5
+        #No longer supported
+        #array = IsotopeArray(array_data, keys = {'104Pd': '104Ru', '106Pd': '106Cd'})
+        #assert isinstance(array, IsotopeArray)
+        #assert array.keys() == ['104Ru', '105Pd', '106Cd']
+        #assert np.all(array['104Ru'] == array_data['104Pd'])
+        #assert np.all(array['105Pd'] == array_data['105Pd'])
+        #assert np.all(array['106Cd'] == array_data['106Pd'])
+        #assert array.ndim == 1
+        #assert array.size == 5
 
         array_data = np.array([(1, 10, 100)],
                               dtype=[('104Pd', 'f8'), ('105Pd', 'f8'), ('106Pd', 'f8')])
 
         array = IsotopeArray(array_data)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -629,7 +689,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim = 1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -638,7 +698,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim = 0)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -647,7 +707,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim=-1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -659,7 +719,7 @@ class Test_IsopyArray(object):
                               dtype=[('104Pd', 'f8'), ('105Pd', 'f8'), ('106Pd', 'f8')])
 
         array = IsotopeArray(array_data)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -668,7 +728,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim=1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -677,7 +737,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim=0)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -686,7 +746,7 @@ class Test_IsopyArray(object):
         assert array.size == 1
 
         array = IsotopeArray(array_data, ndim=-1)
-        assert type(array) == IsotopeArray
+        assert isinstance(array, IsotopeArray)
         assert array.keys() == ['104Pd', '105Pd', '106Pd']
         assert np.all(array['104Pd'] == array_data['104Pd'])
         assert np.all(array['105Pd'] == array_data['105Pd'])
@@ -701,7 +761,7 @@ class Test_IsopyArray(object):
 
         array2 = IsotopeArray(array)
         assert array is not array2
-        assert array.keys() == dict_data.keys()
+        assert array.keys() == list(dict_data.keys())
         assert array.keys() == array2.keys()
         assert np.all(array['104Pd'] == array2['104Pd'])
         assert np.all(array['105Pd'] == array2['105Pd'])
@@ -714,7 +774,7 @@ class Test_IsopyArray(object):
         dict_data = {'104Pd': [1], '105Pd': [10], '106Pd': [100]}
         array = IsotopeArray(dict_data)
         array2 = IsotopeArray(array, ndim=0)
-        assert array.keys() == dict_data.keys()
+        assert array.keys() == list(dict_data.keys())
         assert array.keys() == array2.keys()
         assert array.ndim == 1
         assert array2.ndim == 0
@@ -722,16 +782,164 @@ class Test_IsopyArray(object):
         array['104Pd'][0] = 1000
         assert array2['104Pd'] == 1
 
-        array2 = IsotopeArray(array, keys = {'104Pd': '104Ru', '106Pd': '106Cd'})
-        assert array is not array2
-        assert array.keys() == dict_data.keys()
-        assert array2.keys() == ['104Ru', '105Pd', '106Cd']
-        assert array.keys() != array2.keys()
-        assert np.all(array['104Pd'] == array2['104Ru'])
-        assert np.all(array['105Pd'] == array2['105Pd'])
-        assert np.all(array['106Pd'] == array2['106Cd'])
+        #array2 = IsotopeArray(array, keys = {'104Pd': '104Ru', '106Pd': '106Cd'})
+        #assert array is not array2
+        #assert array.keys() == dict_data.keys()
+        #assert array2.keys() == ['104Ru', '105Pd', '106Cd']
+        #assert array.keys() != array2.keys()
+        #assert np.all(array['104Pd'] == array2['104Ru'])
+        #assert np.all(array['105Pd'] == array2['105Pd'])
+        #assert np.all(array['106Pd'] == array2['106Cd'])
 
-    def test_creation_file(self):
+    def test_creation_empty(self):
+        array = IsotopeArray(5, keys = ['104Pd', '105Pd', '106Pd'])
+        assert array.size == 5
+        assert array.ndim == 1
+        assert np.all(array['104Pd'] == 0)
+        assert np.all(array['105Pd'] == 0)
+        assert np.all(array['106Pd'] == 0)
+
+        array = IsotopeArray(1, keys=['104Pd', '105Pd', '106Pd'])
+        assert array.size == 1
+        assert array.ndim == 1
+        assert np.all(array['104Pd'] == 0)
+        assert np.all(array['105Pd'] == 0)
+        assert np.all(array['106Pd'] == 0)
+
+        array = IsotopeArray(1, keys=['104Pd', '105Pd', '106Pd'], ndim = 0)
+        assert array.size == 1
+        assert array.ndim == 0
+        assert np.all(array['104Pd'] == 0)
+        assert np.all(array['105Pd'] == 0)
+        assert np.all(array['106Pd'] == 0)
+
+        array = IsotopeArray(1, keys=['104Pd', '105Pd', '106Pd'], ndim=-1)
+        assert array.size == 1
+        assert array.ndim == 0
+        assert np.all(array['104Pd'] == 0)
+        assert np.all(array['105Pd'] == 0)
+        assert np.all(array['106Pd'] == 0)
+        
+    def test_1input_ufunc(self):
+        dict_data = {'104Pd': [1.0, 2.0, 3.0, 4.0, 5.0], '105Pd': [10.0, 20.0, 30.0, 40.0, 50.0],
+                     '106Pd': [100.0, 200.0, 300.0, 400.0, np.nan]}
+        isopyarray = IsotopeArray(dict_data)
+
+        for ufunc in [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.degrees, np.isnan,
+                    np.radians, np.deg2rad, np.rad2deg, np.sinh, np.cosh, np.tanh, np.arcsinh, np.arccosh, np.arctanh,
+                    np.rint, np.floor, np.ceil, np.trunc, np.exp, np.expm1, np.exp2, np.log, np.log10, np.log2,
+                    np.log1p, np.reciprocal, np.positive, np.negative, np.sqrt, np.cbrt, np.square, np.fabs, np.sign,
+                    np.absolute, np.abs]:
+
+            isopyarray_result = ufunc(isopyarray)
+            ndarray_result = [ufunc(dict_data[key]) for key in dict_data.keys()]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, ufunc=ufunc)
+
+    def test_2input_ufunc1(self):
+        #test
+        dict_data = {'104Pd': [1.0, 2.0, 3.0, 4.0, 5.0], '105Pd': [10.0, 20.0, 30.0, 40.0, 50.0],
+                     '106Pd': [100.0, 200.0, 300.0, 400.0, np.nan]}
+        isopyarray = IsotopeArray(dict_data)
+        
+        ndarray = np.array([2.0,4.0,6.0,8.0,10.0])
+
+        for ufunc in [np.add, np.multiply, np.divide, np.power, np.subtract,
+                    np.true_divide, np.floor_divide, np.float_power, np.fmod, np.mod, np.remainder]:
+
+            isopyarray_result = ufunc(isopyarray, ndarray)
+            ndarray_result = [ufunc(dict_data[key], ndarray) for key in dict_data.keys()]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, ufunc=ufunc)
+
+            isopyarray_result = ufunc(ndarray, isopyarray)
+            ndarray_result = [ufunc(ndarray, dict_data[key]) for key in dict_data.keys()]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, ufunc=ufunc)
+
+    def test_2input_ufunc2(self):
+        dict_data1 = {'104Pd': [1.0, 2.0, 3.0, 4.0, 5.0], '105Pd': [10.0, 20.0, 30.0, 40.0, np.nan], '106Pd': [0.1, 0.2, 0.3, 0.4, 0.5]}
+        isopyarray1 = IsotopeArray(dict_data1)
+
+        dict_data2 = {'106Pd': [2, 4, 6, 8, 10], '105Pd': [1.0, 2.0, 3.0, 4.0, 5.0], '104Pd': [1.5, 2.5, 3.5, 4.5, 5.5],
+                     '102Pd': [0.1, 0.2, 0.3, 0.4, 0.5]}
+        isopyarray2 = IsotopeArray(dict_data2)
+
+        nanarray = np.array([np.nan, np.nan, np.nan, np.nan, np.nan])
+
+        for ufunc in [np.add, np.multiply, np.divide, np.power, np.subtract,
+                      np.true_divide, np.floor_divide, np.float_power, np.fmod, np.mod, np.remainder]:
+
+            key_list = IsotopeList(dict_data1.keys())
+            key_list.append(IsotopeList(dict_data2.keys()), skip_duplicates=True)
+            assert len(key_list) == 4
+            isopyarray_result = ufunc(isopyarray1, isopyarray2)
+            ndarray_result = [ufunc(dict_data1.get(key, nanarray), dict_data2.get(key, nanarray)) for key in key_list]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, ufunc=ufunc)
+
+            key_list = IsotopeList(dict_data2.keys())
+            key_list.append(IsotopeList(dict_data1.keys()), skip_duplicates=True)
+            assert len(key_list) == 4
+            isopyarray_result = ufunc(isopyarray2, isopyarray1)
+            ndarray_result = [ufunc(dict_data2.get(key, nanarray), dict_data1.get(key, nanarray)) for key in key_list]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, ufunc=ufunc, key_list=key_list)
+            
+    def test_1input_function1(self):
+        dict_data = {'104Pd': [1.0, 2.0, 3.0, 4.0, 5.0], '105Pd': [10.0, 20.0, 30.0, 40.0, 50.0],
+                     '106Pd': [100.0, 200.0, 300.0, 400.0, np.nan]}
+        isopyarray = IsotopeArray(dict_data)
+
+        for axis in [None, 1, 0]:
+            for func in [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
+                        np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.std,
+                        np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, ipf.mad, ipf.nanmad, ipf.se, ipf.nanse,
+                        ipf.sd, ipf.nansd]:
+                isopyarray_result = func(isopyarray, axis=axis)
+                ndarray_result = func(np.transpose([dict_data[key]for key in dict_data.keys()]), axis=axis)
+                if axis == 0:
+                    assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result.transpose(), func=func, axis=axis)
+                else:
+                    assert_ndarray_equal_ndarray(isopyarray_result, ndarray_result, func=func, axis=axis)
+
+            for func in [np.percentile, np.nanpercentile, np.quantile,np.nanquantile]:
+                isopyarray_result = func(isopyarray, q=0.5, axis=axis)
+                ndarray_result = func(np.transpose([dict_data[key] for key in dict_data.keys()]), q=0.5, axis=axis)
+                if axis == 0:
+                    assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result.transpose(), func=func)
+                else:
+                    assert_ndarray_equal_ndarray(isopyarray_result, ndarray_result, func=func)
+
+        for func in [np.around, np.round]:
+            isopyarray_result = func(isopyarray, 3)
+            ndarray_result = [func(dict_data[key], 3) for key in dict_data.keys()]
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, func=func)
+            isopyarray_result = func(isopyarray, decimals = 3)
+            ndarray_result = func(np.transpose([dict_data[key] for key in dict_data.keys()]), decimals=3)
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result.transpose(), func=func)
+
+        for func in [np.fix, np.nan_to_num]:
+            isopyarray_result = func(isopyarray)
+            ndarray_result = func(np.transpose([dict_data[key] for key in dict_data.keys()]))
+            assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result.transpose(), func=func)
+
+        dict_data2 = {'104Pd': [3.0, 2.3], '105Pd': [30.0, 20.3],
+                     '106Pd': [300.0, 200.3]}
+        isopyarray2 = IsotopeArray(dict_data2)
+        isopyarray_result = np.append(isopyarray, isopyarray2)
+        ndarray_result = [dict_data[key] + dict_data2[key] for key in dict_data.keys()]
+        assert_isopyarray_equal_ndarray(isopyarray_result, ndarray_result, func=np.append)
+
+
+    def test_filter(self):
+        pass
+
+    #TODO
+    def test_add_etc(self):
+        pass
+    #TODO
+    def test_save(self):
+        pass
+
+    #TODO
+    def test_load(self):
+        return None
         dict_data = {'104Pd': [1, 2, 3, 4, 5], '105Pd': [10, 20, 30, 40, 50], '106Pd': [100, 200, 300, 400, 500]}
         array = IsotopeArray(filepath='array_test_file.csv')
         assert type(array) == IsotopeArray
@@ -769,125 +977,5 @@ class Test_IsopyArray(object):
         assert np.all(array['106Pd'] == dict_data['106Pd'])
         assert array.ndim == 0
         assert array.size == 1
-
-    def test_creation_empty(self):
-        array = IsotopeArray(size = 5, keys = ['104Pd', '105Pd', '106Pd'])
-        assert array.size == 5
-        assert array.ndim == 1
-        assert np.all(array['104Pd'] == 0)
-        assert np.all(array['105Pd'] == 0)
-        assert np.all(array['106Pd'] == 0)
-
-        array = IsotopeArray(size=1, keys=['104Pd', '105Pd', '106Pd'])
-        assert array.size == 1
-        assert array.ndim == 1
-        assert np.all(array['104Pd'] == 0)
-        assert np.all(array['105Pd'] == 0)
-        assert np.all(array['106Pd'] == 0)
-
-        array = IsotopeArray(size=1, keys=['104Pd', '105Pd', '106Pd'], ndim = 0)
-        assert array.size == 1
-        assert array.ndim == 0
-        assert np.all(array['104Pd'] == 0)
-        assert np.all(array['105Pd'] == 0)
-        assert np.all(array['106Pd'] == 0)
-
-        array = IsotopeArray(size=1, keys=['104Pd', '105Pd', '106Pd'], ndim=-1)
-        assert array.size == 1
-        assert array.ndim == 0
-        assert np.all(array['104Pd'] == 0)
-        assert np.all(array['105Pd'] == 0)
-        assert np.all(array['106Pd'] == 0)
-
-
-    def test_filter(self):
-        pass
-
-    def test_numpy_statistics(self):
-        return None
-        dict_data = {'104Pd': [1, 2, 3, 4, np.nan], '105Pd': [10, 20, 30, 40, 50], '106Pd': [100, 200, 300, 400, 500]}
-        array = IsotopeArray(dict_data)
-        np.nanmean(array)
-
-        for func in [np.mean, np.var, np.std]:
-            array = IsotopeArray(dict_data)
-            result = func(array)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd']))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd']))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd']))
-
-        for func in [np.max, np.min, np.amax, np.amin, np.ptp]:
-            print(func)
-            array = IsotopeArray(dict_data)
-            result = func(array)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd']))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd']))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd']))
-
-    def test_isopy_statistics(self):
-        dict_data = {'104Pd': [1, 2, 3, 4, np.nan], '105Pd': [10, 20, 30, 40, 50], '106Pd': [100, 200, 300, 400, 500]}
-
-        for func in [isopy.mean, isopy.var, isopy.std, isopy.median, isopy.nanmean, isopy.nanvar, isopy.nanstd, isopy.nanmedian]:
-            array = IsotopeArray(dict_data)
-            result = func(array)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd']))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd']))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd']))
-
-        array = IsotopeArray(dict_data)
-        result = isopy.average(array, weights=[1,2,3,4,5])
-        assert type(result) == IsotopeArray
-        assert result.ndim == 0
-        assert result.size == 1
-        np.testing.assert_array_equal(result['104Pd'], isopy.average(dict_data['104Pd'], weights=[1,2,3,4,5]))
-        np.testing.assert_array_equal(result['105Pd'], isopy.average(dict_data['105Pd'], weights=[1,2,3,4,5]))
-        np.testing.assert_array_equal(result['106Pd'], isopy.average(dict_data['106Pd'], weights=[1,2,3,4,5]))
-
-        for func in [isopy.max, isopy.min, isopy.amax, isopy.amin, isopy.ptp, isopy.nanmax, isopy.nanmin]:
-            array = IsotopeArray(dict_data)
-            result = func(array)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd']))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd']))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd']))
-
-        for func in [isopy.percentile, isopy.percentile]:
-            array = IsotopeArray(dict_data)
-            result = func(array, 65)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd'], 65))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd'], 65))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd'], 65))
-
-        for func in [isopy.quantile, isopy.nanquantile]:
-            array = IsotopeArray(dict_data)
-            result = func(array, 0.65)
-            assert type(result) == IsotopeArray
-            assert result.ndim == 0
-            assert result.size == 1
-            np.testing.assert_array_equal(result['104Pd'], func(dict_data['104Pd'], 0.65))
-            np.testing.assert_array_equal(result['105Pd'], func(dict_data['105Pd'], 0.65))
-            np.testing.assert_array_equal(result['106Pd'], func(dict_data['106Pd'], 0.65))
-
-
-    def test_add_etc(self):
-        pass
-
-    def test_save(self):
-        pass
-
 
 
