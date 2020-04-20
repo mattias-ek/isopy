@@ -5,6 +5,8 @@ import inspect
 import isopy.functions as ipf
 import warnings
 
+pythonlist = list
+
 __all__ = ['MassString', 'ElementString', 'IsotopeString', 'RatioString',
            'MassList', 'ElementList', 'IsotopeList', 'RatioList',
            'MassArray', 'ElementArray', 'IsotopeArray', 'RatioArray',
@@ -94,6 +96,82 @@ def asanyarray(values=None, *, dtype=None):
     except:
         return np.asarray(values, dtype=dtype)
 
+##################
+### Exceptions ###
+##################
+
+def classname(obj):
+    if isinstance(obj, type): return obj.__name__
+    else: return obj.__class__.__name__
+
+class IsopyException(Exception):
+    pass
+
+class StringParseError(IsopyException):
+    def __init__(self, string, cls, additional_information = None):
+        self.string = string
+        self.cls = cls
+        self.additional_information = additional_information
+
+    def __str__(self):
+        message = '{}: Unable to parse "{}".'.format(classname(self.cls), self.string)
+        if self.additional_information is not None:
+            return '{} {}.'.format(message, self.additional_information)
+        else:
+            return message
+
+class StringTypeError(IsopyException):
+    def __init__(self, obj, cls):
+        self.obj = obj
+        self.cls = cls
+
+    def __str__(self):
+        return '{}: Cannot convert {} into <class \'str\'>.'.format(classname(self.cls), type(self.obj))
+
+class StringDuplicateError(IsopyException):
+    def __init__(self, string, listobj):
+        self.string = string
+        self.listobj = listobj
+
+    def __str__(self):
+        message = '{}: Duplicate of "{}" found in {}'.format(classname(self.listobj), self.string, self.listobj)
+        return message
+
+class ListSizeError(IsopyException):
+    def __init__(self, other, listobj):
+        self.other = other
+        self.listobj = listobj
+
+    def __str__(self):
+        return '{}: Length of \'{}\' does not match current list ({}, {})'.format(classname(self.listobj),
+                                                    classname(self.other), len(self.other), len(self.listobj))
+
+class ListTypeError(IsopyException):
+    def __init__(self, other, expected, listobj):
+        self.other = other
+        self.expected = expected
+        self.listobj = listobj
+
+    def __str__(self):
+        return '{}: Item must be a {} not {}'.format(classname(self.listobj), classname(self.listobj),
+                                                     classname(self.expected))
+
+class NumeratorTypeError(ListTypeError):
+    def __str__(self):
+        return '{}: Numerator must be a {} not {}'.format(classname(self.listobj), classname(self.listobj),
+                                                     classname(self.expected))
+
+class DenominatorTypeError(ListTypeError):
+    def __str__(self):
+        return '{}: Denominator must be a {} not {}'.format(classname(self.listobj), classname(self.listobj),
+                                                     classname(self.expected))
+
+class NoCommomDenominator(IsopyException):
+    def __init__(self, listobj):
+        self.listobj = listobj
+
+    def __str__(self):
+        return '{}: List does not have a common denominator'.format(classname(self.listobj))
 
 #############
 ### Types ###
@@ -231,31 +309,105 @@ class IsopyString(IsopyType, str):
     def __hash__(self):
         return super(IsopyString, self).__hash__()
 
-    def safe_format(self):
-        return self
+    def varname(self):
+        #This function should return a string that can safely be used as variable name
+        raise NotImplementedError()
 
 
 class MassString(MassType, IsopyString):
+    """
+    MassString(string)
+
+    String representation of an integer representing a mass number.
+
+    The supplied string must consist only of digits. :class:`MassString` can also be initialised with an integer.
+
+    Behaves just like, and contains all the methods that, a normal python string does. However, any method that
+    returns a string will return a normal python string and *not* an :class:`MassString` unless specifically noted below.
+    Only methods that behave differently from a normal string are documented below.
+
+    When compared to another item that item will be converted to an :class:`MassString` before comparison.
+
+    The MassString will behave as an integer when used with the ``+``, ``-``, ``*``, ``<``, ``<=``, ``>`` and ``>=``
+    operators and will therefore not return a :class:`MassString`. The ``/`` operator when used in conjunction with
+    another string will return a  :class:`RatioString`. For any other type of value is will behave the same
+    as the other operators.
+
+    Raises
+    ------
+    StringParseError
+        Is raised when the supplied string cannot be parsed into the correct format
+    StringTypeError
+        Raised when the supplied item cannot be turned into a string
+
+
+    Examples
+    --------
+    >>> isopy.MassString('76')
+    '76'
+    >>> isopy.MassString(70)
+    '70'
+
+    Comparisons
+
+    >>> isopy.MassString('76') == 76
+    True
+    >>> isopy.MassString('76') != 76
+    False
+
+
+    Using ``+``, ``-``, ``*``, ``/``, ``<``, ``<=``, ``>`` and ``>=``
+
+    >>> isopy.MassString('76') + 2
+    78
+    >>> isopy.MassString('76') / 2
+    38
+    >>> isopy.MassString('76') / '70'
+    '76/70'
+    >>> isopy.MassString('76') > 70
+    True
+    >>> isopy.MassString('76') <= '76'
+    True
+    """
     def __new__(cls, string):
         if isinstance(string, cls):
             return string
-        elif isinstance(string, int):
-            if string < 0: raise ValueError('MassString must be a positive integer ({})'.format(string))
-            return str.__new__(cls, str(string))
-        elif isinstance(string, str):
-            string.strip()
-            if string[:1] == '_':
-                string = string[1:]
-            if not string.isdigit():
-                raise ValueError('MassString can only contain numerical characters ({})'.format(string))
-            if int(string) < 0:
-                raise ValueError('MassString must be a positive integer ({})'.format(string))
-            return str.__new__(cls, string)
-        else:
-            raise TypeError("ElementString must be initialised with a <class 'str'> or <class 'int'> ({})".format(type(string)))
+        elif not isinstance(string, str):
+            try:
+                string = str(string)
+            except:
+                raise StringTypeError(string, cls)
 
-    def safe_format(self):
-        return '_{}'.format(self)
+        string.strip()
+        if string[:1] == '_':
+            string = string[1:]
+        elif string[:5] == 'Mass_':
+            string = string[5:]
+        if not string.isdigit():
+            raise StringParseError(string, cls, 'Can only contain numerical characters')
+        if int(string) < 0:
+            raise StringParseError(string, cls, 'Must be a positive integer')
+        return str.__new__(cls, string)
+
+    def varname(self):
+        """
+        Returns description of the string that can be used as a variable name.
+
+        The returned string can be parsed back into an :class:`MassString` the same as any other string.
+
+        Examples
+        --------
+        >>> isopy.MassString(76).varname()
+        'Mass_76'
+        >>> isopy.MassString('Mass_76')
+        '76'
+
+        Returns
+        -------
+        str
+            A string that can be used as a variable name
+        """
+        return 'Mass_{}'.format(self)
 
     def __eq__(self, other):
         if isinstance(other, int):
@@ -269,68 +421,94 @@ class MassString(MassType, IsopyString):
     def __ge__(self, item):
         if isinstance(item, MassString):
             item = int(item)
-        if isinstance(item, int):
-            return int(self).__ge__(item)
         else:
-            raise TypeError('MassString only supports ">=" operator with other MassStrings or integers')
+            return int(self).__ge__(item)
 
     def __le__(self, item):
         if isinstance(item, MassString):
             item = int(item)
-        if isinstance(item, int):
+        try:
             return int(self).__le__(item)
-        else:
+        except:
             raise TypeError('MassString only supports "<=" operator with other MassStrings or integers')
 
     def __gt__(self, item):
         if isinstance(item, MassString):
             item = int(item)
-        if isinstance(item, int):
-            return int(self).__gt__(item)
         else:
-            raise TypeError('MassString only supports ">" operator with other MassStrings or integers')
+            return int(self).__gt__(item)
 
     def __lt__(self, item):
         if isinstance(item, MassString):
             item = int(item)
-        if isinstance(item, int):
-            return int(self).__lt__(item)
         else:
-            raise TypeError('MassString only supports "<" operator with other MassStrings or integers')
+            return int(self).__lt__(item)
 
     def __add__(self, other):
-        if isinstance(other, int):
-            return int(self).__add__(other)
-        else:
-            raise TypeError('MassString only supports "+" operator with integers')
+        return int(self).__add__(other)
 
     def __truediv__(self, other):
-        if isinstance(other, int):
-            return int(self).__truediv__(other)
-        elif isinstance(other, str):
+        if isinstance(other, str):
             return RatioString('{}/{}'.format(self, other))
         else:
-            raise TypeError('MassString only supports "/" operator with with other MassStrings or integers')
+            return int(self).__truediv__(other)
 
     def __mul__(self, other):
-        if isinstance(other, int):
-            return int(self).__mul__(other)
-        else:
-            raise TypeError('MassString only supports "*" operator with integers')
+        return int(self).__mul__(other)
 
     def __sub__(self, other):
-        if isinstance(other, int):
-            return int(self).__sub__(other)
-        else:
-            raise TypeError('MassString only supports "-" operator with integers')
+        return int(self).__sub__(other)
 
 
 class ElementString(ElementType, IsopyString):
+    """
+    ElementString(string)
+
+    String representation of an element symbol.
+
+    The supplied string will automatically be formatted such that the first letter is always in upper case
+    and, if present, the second letter will always be in lower case. :class:`ElementString` is limited to two characters.
+
+    Behaves just like, and contains all the methods that, a normal python string does. However, any method that
+    return a string will return a normal python string and *not* an :class:`ElementString` unless specifically noted below.
+    Only methods that behave differently from a normal string are documented below.
+
+    When compared to another item that item will, if possible, be converted to an :class:`ElementString` for comparison.
+
+    Can be made into an :class:`RatioString` using the ``/`` operator.
+
+    Raises
+    ------
+    StringParseError
+        Is raised when the supplied string cannot be parsed into the correct format
+    StringTypeError
+        Raised when the supplied item cannot be turned into a string
+
+
+    Examples
+    --------
+    >>> isopy.ElementString('ge')
+    'Ge'
+
+    Comparisons
+
+    >>> isopy.ElementString('Ge') == 'ge'
+    True
+    >>> isopy.ElementString('Ge') != 'ge'
+    False
+
+    Using ``/`` to create a :class:`RatioString`
+
+    >>> isopy.ElementString('Ge') / 'Pd'
+    'Ge/Pd'
+    """
     def __new__(cls, string):
         if isinstance(string, cls):
             return string
         elif isinstance(string, str):
             string = string.strip()
+            if string[:8] == 'Element_':
+                string = string[8:]
             if len(string) == 0:
                 raise ValueError('ElementString empty')
             if len(string) > 2:
@@ -341,16 +519,98 @@ class ElementString(ElementType, IsopyString):
         else:
             raise TypeError("ElementString must be initialised with a <class 'str'> ({})".format(type(string)))
 
+    def varname(self):
+        """
+        Returns description of the string that can be used as a variable name.
+
+        The returned string can be parsed back into an :class:`ElementString` the same as any other string.
+
+        Examples
+        --------
+        >>> isopy.ElementString('Ge').varname()
+        'Element_Ge'
+        >>> isopy.Elementstring('Element_Ge')
+        'Ge'
+
+        Returns
+        -------
+        str
+            A string that can be used as a variable name
+        """
+        return 'Element_{}'.format(self)
+
     def __truediv__(self, other):
         return RatioString('{}/{}'.format(self, other))
 
 
 class IsotopeString(IsotopeType, IsopyString):
+    """
+    IsotopeString(string)
+
+    String representation of an isotope containing a mass number followed by an element symbol.
+
+    The supplied string should consist of a mass number and an element symbol that will be parsed into a :class:`MassString` and
+    an :class:`ElementString`, respectively. The mass number can occur before or after the element symbol.
+
+    Behaves just like, and contains all the methods that, a normal python string does. However, any method that
+    return a string will return a normal python string and *not* an :class:`IsotopeString` unless specifically noted below.
+    Only methods that behave differently from a normal string are documented below.'
+
+    When compared to another item that item will, if possible, be converted to an :class:`IsotopeString` for comparison.
+    The ``in`` operator will check if the given item is equal to either the mass number or element symbol
+
+    Can be made into an :class:`RatioString` using the ``/`` operator.
+
+    Raises
+    ------
+    StringParseError
+        Is raised when the supplied string cannot be parsed into the correct format
+    StringTypeError
+        Raised when the supplied item cannot be turned into a string
+
+    Attributes
+    ----------
+    mass_number : MassString
+        The mass number of the :class:`IsotopeString`
+    element_symbol : ElementString
+        The element symbol of the :class:`IsotopeString`
+
+    Examples
+    --------
+    >>> isopy.IsotopeString('ge76')
+    '76Ge'
+    >>> isopy.IsotopeString('ge76').mass_number
+    '76'
+    >>> isopy.IsotopeString('ge76').element_symbol
+    'Ge'
+
+    Comparisons
+
+    >>> isopy.IsotopeString('76Ge') == 'ge76'
+    True
+    >>> isopy.IsotopeString('76Ge') != 'ge76'
+    False
+
+    Using ``in``
+
+    >>> 'ge' in isopy.IsotopeString('ge76')
+    True
+    >>> '70' in isopy.IsotopeString('ge76')
+    False
+
+    Using ``/`` to create a :class:`RatioString`
+
+    >>> isopy.IsotopeString('Ge76') / '70ge'
+    '76Ge/70Ge'
+    """
     def __new__(cls, string):
         if isinstance(string, cls):
             return string
         elif isinstance(string, str):
             string = string.strip()
+
+            if string[:1] == '_': string = string[1:]
+            elif string[:8] == 'Isotope_': string = string[8:]
 
             # If no digits in string then only Symbol is given.
             if string.isalpha():
@@ -359,9 +619,6 @@ class IsotopeString(IsotopeType, IsopyString):
             # If only digits then only mass number
             if string.isdigit():
                 raise ValueError('"{}" does not contain an element symbol'.format(string))
-
-            #safe string starts with an _
-            if string[:1] == '_': string = string[1:]
 
             # Loop through to split
             l = len(string)
@@ -390,8 +647,25 @@ class IsotopeString(IsotopeType, IsopyString):
         else:
             raise TypeError("ElementString must be initialised with a <class 'str'> ({})".format(type(string)))
 
-    def safe_format(self):
-        return '_{}'.format(self)
+    def varname(self):
+        """
+        Returns description of the string that can be used as a variable name.
+
+        The returned string can be parsed back into an :class:`IsotopeString` the same as any other string.
+
+        Examples
+        --------
+        >>> isopy.IsotopeString('Ge76').varname()
+        'Isotope_76Ge'
+        >>> isopy.IsotopeString('Isotope_76Ge')
+        '76Ge'
+
+        Returns
+        -------
+        str
+            A string that can be used as a variable name
+        """
+        return 'Isotope_{}'.format(self)
 
     def __contains__(self, string):
         """
@@ -404,12 +678,70 @@ class IsotopeString(IsotopeType, IsopyString):
 
 
 class RatioString(RatioType, IsopyString):
+    """
+    RatioString(string)
+
+    String representation of a ratio consisting of a numerator and a denominator.
+
+
+    The supplied string should consist of a numerator and a denominator separated by a '/'. The numerator and
+    denominator strings must be able to be parsed into a :class:`MassString`, :class:`ElementString` or a
+     :class:`IsotopeString`. The numerator and denominator do not have to be the same type.
+
+    Behaves just like, and contains all the methods that, a normal python string does. However, any method that
+    return a string will return a normal python string and *not* an :class:`RatioString` unless specifically noted below.
+    Only methods that behave differently from a normal string are documented below.
+
+    When compared to another item that item will, if possible, be converted to an :class:`RatioString` for comparison.
+    The ``in`` operator will check if the given item is equal to either the numerator or denominator.
+
+    Raises
+    ------
+    StringParseError
+        Is raised when the supplied string cannot be parsed into the correct format
+    StringTypeError
+        Raised when the supplied item cannot be turned into a string
+
+    Attributes
+    ----------
+    numerator : MassString, ElementString or IsotopeString
+        The numerator string in the :class:`RatioString`. **Readonly**
+    denominator : MassString, ElementString or IsotopeString
+        The denominator string in the :class:`RatioString`. **Readonly**
+
+    Examples
+    --------
+    >>> isopy.RatioString('ge76/ge70')
+    '76Ge/70Ge'
+    >>> isopy.RatioString('ge76').numerator
+    '76Ge'
+    >>> isopy.RatioString('ge76').denominator
+    '70Ge'
+
+    Comparisons
+
+    >>> isopy.RatioString('ge76/70ge') == 'ge76/70ge'
+    True
+    >>> isopy.RatioString('ge76/70ge') != 'ge76/70ge'
+    False
+
+    Using ``in``
+
+    >>> '76ge' in isopy.RatioString('ge76/70ge')
+    True
+    >>> '75ge' isopy.RatioString('ge76/70ge')
+    False
+    """
     def __new__(cls, string):
         if isinstance(string, cls):
             return string
         elif isinstance(string, str):
             string = string.strip()
-            string = string.replace('_OVER_', '/')
+            if string[:6] == 'Ratio_':
+                string = string[6:]
+                string = string.replace('_', '/')
+            else:
+                string = string.replace('_OVER_', '/')
             if '/' not in string:
                 raise ValueError('unable to split string into numerator and denominator')
             numer, denom = string.split('/', 1)
@@ -441,8 +773,24 @@ class RatioString(RatioType, IsopyString):
         else:
             raise TypeError("RatioString must be initialised with a <class 'str'> ({})".format(type(string)))
 
-    def safe_format(self):
-        return '{}_OVER_{}'.format(self.numerator.safe_format(), self.denominator)
+    def varname(self):
+        """
+        Returns description of the string that can be used as a variable name.
+
+        The returned string can be parsed back into an :class:`RatioString` the same as any other string.
+
+        Examples
+        --------
+        >>> isopy.RatioString('Ge76/Ge70').varname()
+        'Ratio_76Ge_70Ge'
+        >>> isopy.RatioString('Ratio_76Ge_70Ge')
+        '76Ge/70Ge'
+
+        Returns
+        -------
+        str
+        """
+        return 'Ratio_{}_{}'.format(self.numerator, self.denominator)
 
     def __contains__(self, string):
         """
@@ -470,10 +818,13 @@ class IsopyList(IsopyType, list):
         elif not allow_duplicates:
             for item in items[1:]:
                 if self.count(item) > 1:
-                    raise ValueError('item {} already in list'.format(item))
+                    raise StringDuplicateError(item, self)
 
         super().__init__(items)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, super(IsopyList, self).__repr__())
+    
     def __eq__(self, other):
         """
         Return **True** if all items in `other` is the same all items in the list. Order is not important
@@ -509,111 +860,207 @@ class IsopyList(IsopyType, list):
         """
         if isinstance(index,slice):
             return self.__class__(super(IsopyList, self).__getitem__(index))
-        elif isinstance(index, list):
+        elif hasattr(index, '__iter__'):
                 return self.__class__([super(IsopyList, self).__getitem__(i) for i in index])
         else:
             return super(IsopyList, self).__getitem__(index)
 
     def __setitem__(self, key, value):
-        """
-        Not allowed. Raises NotImplementedError
-        """
-        raise NotImplementedError()
+        super(IsopyList, self).__setitem__(key, self._string(value))
 
-    def count(self):
-        return self.__len__()
+    def __and__(self, other):
+        other = self._list(other)
+        return self._list([item for item in self if item in other], skip_duplicates=True)
 
-    def safe_format(self):
-        return [s.safe_format() for s in self]
+    def __or__(self, other):
+        other = self._list(other)
+        return self._list(super(IsopyList, self).__add__(self, [item for item in other if item not in self]),
+                          skip_duplicates=True)
 
-    def has_duplicates(self):
-        for item in self[1:]:
-            if self.count(item) > 1: return True
+    def __xor__(self, other):
+        other = self._list(other)
+        return self._list(
+            super(IsopyList, self).__add__([item for item in self if item not in other],
+                                           [item for item in other if item not in self]),
+                                            skip_duplicates=True)
 
-        return False
+    def __add__(self, other):
+        other = self._list(other)
+        return self._list(super(IsopyList, self).__add__(other))
 
-    def remove_duplicates(self):
-        for item in self[1:]:
-            while self.count(item) > 1: self.remove(item)
-
-    def append(self, item, skip_duplicates = False, allow_duplicates = True):
-        """
-        Append item to the end of the list
-        """
-        if not isinstance(item, str) and hasattr(item, '__iter__'):
-            raise TypeError('iterables other than strings cannot be added to IsopyLists')
-
-        k = self._string(item)
-        if skip_duplicates and k in self: pass
-        elif not allow_duplicates and k in self:
-            raise ValueError('item "{}" already in list'.format(item))
+    def count(self, item):
+        try:
+            item = self._string(item)
+        except:
+            return 0
         else:
-            super(IsopyList, self).append(k)
-
-    def extend(self, items, skip_duplicates=False, allow_duplicates=True):
-        if isinstance(items, str): items = items.split((','))
-        if not hasattr(items, '__iter__'): raise TypeError('items must be iterable')
-
-        items = self._list(items, skip_duplicates, allow_duplicates)
-        if skip_duplicates: super(IsopyList, self).extend([item for item in items if item not in self])
-        elif not allow_duplicates:
-            for item in items:
-                if item in self:
-                    raise ValueError('item {} already in list'.format(item))
-        else:
-            super(IsopyList, self).extend(items)
+            super(IsopyList, self).count(item)
 
     def index(self, item, *args):
-        """
-        index(x[, start[, end]])
-
-        Return first index of value.
-
-        Raises ValueError if the value is not present.
-        """
-        return super(IsopyList, self).index(self._string(item), *args)
+        try:
+            return super(IsopyList, self).index(self._string(item), *args)
+        except StringParseError:
+            raise ValueError('\'{}\' is not in list'.format(item))
 
     def insert(self, index, item):
-        """
-        Insert item before index
-
-        """
         return super(IsopyList, self).insert(index, self._string(item))
 
     def remove(self, item):
-        """
-        Remove first occurrence of item.
-
-        Raises ValueError if the item is not present.
-        """
-        return super(IsopyList, self).remove(self._string(item))
+        try:
+            return super(IsopyList, self).remove(self._string(item))
+        except StringParseError:
+            raise ValueError('\'{}\' is not in list'.format(item))
 
     def copy(self):
         return self.__class__(super(IsopyList, self).copy())
 
+    def append(self, item, skip_duplicates=False, allow_duplicates=True):
+        """
+        Add an item to the end of the list. If ``skip_duplicates = True`` the item will only be added if it is not
+        already in the list. If ``allow_duplicated = False`` a StringDuplucateError will be raised if item is already
+        present in the list.
+
+        ``skip_duplicates`` and ``allow_duplicate`` options does not apply to items already present in the list.
+
+        Raises
+        ------
+        StringDuplicateError
+            Raised when a string already exist in the list and ``allow_duplicates = False``
+        """
+        item = self._string(item)
+        if skip_duplicates and item in self:
+            pass
+        elif not allow_duplicates and item in self:
+            raise StringDuplicateError(item, self)
+        else:
+            super(IsopyList, self).append(item)
+
+    def extend(self, items, skip_duplicates=False, allow_duplicates=True):
+        """
+        Extend the list by appending all the items. If ``skip_duplicates = True`` only those items not already present in
+        the list will be added. If ``allow_duplicated = False`` a StringDuplucateError will be raised if any item is already
+        present in the list.
+
+        ``skip_duplicates`` and ``allow_duplicate`` options do not apply for items already present in the list.
+
+        Raises
+        ------
+        StringDuplicateError
+            Raised when a string already exist in the list and ``allow_duplicates = False``
+        """
+        if not hasattr(items, '__iter__'): raise TypeError(
+            '\'{}\' object is not iterable'.format(items.__class__.__name__))
+
+        items = self._list(items, skip_duplicates, allow_duplicates)
+        if skip_duplicates:
+            items = [item for item in items if item not in self]
+        elif not allow_duplicates:
+            for item in items:
+                if item in self:
+                    raise StringDuplicateError(item, self)
+
+        super(IsopyList, self).extend(items)
+
+    def varnames(self):
+        """
+        Returns a list of variable names for each item in the list. Equivalent to ``[item.varname() for item in self]``
+        """
+        return [s.varname() for s in self]
+
+    def has_duplicates(self):
+        """
+        Returns ``True`` if the list contains duplicates items. Otherwise it returns ``False``
+        """
+        if len(set(self)) != len(self): return True
+        else: return False
+
+    def remove_duplicates(self):
+        """
+        Removes all duplicate item in the list.
+        """
+        for item in self[1:]:
+            while self.count(item) > 1: self.remove(item)
+
 
 class MassList(MassType, IsopyList):
     """
-    MassList(items)
+    MassList(items, skip_duplicates=False, allow_duplicates=True)
 
-    A list for storing `MassInteger`_ items.
+    A list consisting exclusively of :class:`MassString` items.
+
+    Behaves just like, and contains all the methods, that a normal python list does unless otherwise noted. All methods
+    that would normally return a list will instead return a :class:`MassList`. Only methods that behave differently from
+    a normal python list are documented below.
+
+    When comparing the list against another list the order of items is not considered.
+    The ``in`` operator can be used both with a single item or a list. If it is a list it will return ``True`` if
+    all item in the other list is present in the list.
+
+    Get item can be an int or a list of integers. However, set item only accepts a single integer.
+
+    The ``&``, ``|`` and ``^`` operators can be used in combination with another list for an unordered item to item
+    comparison. The and (``&``) operator will return the items that occur in both lists. The or (``|``) operator
+    will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
+    that do not appear in both lists. All duplicate items will be removed from the returned lists.
 
 
     Parameters
     ----------
-    items : MassInteger, MassList, or MassArray, optional
-        If an integer then return [items]. If a list then return a copy of the list. If an array then return a copy of
-        the array keys. If not given then return an empty list.
+    items : str, MassArray, iterable
+        Each item in the iterable will be :class:`MassString`. If items is a string it will be split into a list using the
+        ',' seperator.  If items is an :class:`MassArray` it will use the keys from that array to make the list.
+    skip_duplicates : bool
+        If ``True`` all duplicate items will be removed from the list. This only applies during initialisation of the list.
+        Default value is ``False``.
+    allow_duplicates : bool
+        If ``False`` a StringDuplicateError will be raised if the list contains any duplicate items. This only applies
+        during initialisation of the list. Default Value is ``True``.
+
+    Raises
+    ------
+    StringDuplicateError
+        Raised when a string already exist in the list and ``allow_duplicates = False``
+    ListLengthError
+        Raised when there is a size mismatch between this list and another list
 
 
     Examples
     --------
-    >>> MassList(['104', '105', '106'])
-    ['104', '105', '106']
-    >>> MassList('105')
-    ['105']
-    >>> MassList(MassArray(keys = ['104', '105', '106'], size = 1))
-    ['104', '105', '106']
+    >>> MassList([99, 105, '111'])
+    ['99', '105', '111']
+    >>> MassList('99, 105,111')
+    ['99', '105', '111']
+
+    Comparisons and ``in``
+    >>> MassList([99, 105, '111']) == [111, 105, 99]
+    True
+    >>> '105' in MassList([99, 105, '111'])
+    True
+    >>> ['105', 111] in MassList([99, 105, '111'])
+    True
+    >>> ['105', 107] in MassList([99, 105, '111'])
+    False
+
+    Indexing
+
+    >>> MassList([99, 105, '111'])[[0,2]
+    ['99', '111']
+
+    Using ``&``, ``|`` and ``^``
+
+    >>> MassList([99, 105, '111']) & [105, 107, '111']
+    ['105', '111']
+    >>> MassList([99, 105, '111']) | [105, 107, '111']
+    ['99', '105', '111', '107']
+    >>> MassList([99, 105, '111']) ^ [105, 107, '111']
+    ['99', '107']
+
+    Using ``/`` to make a :class:`RatioList`
+
+    >>> MassList([99, 105, '111']) / 108
+    ['99/108', '105/108', '111/108']
+    >>> MassList([99, 105, '111']) / [108, 109, '110']
+    ['99/108', '105/109', '111/110']
     """
 
     def __new__(cls, items, skip_duplicates = False, allow_duplicates=True):
@@ -621,31 +1068,7 @@ class MassList(MassType, IsopyList):
         obj.__init__(items, skip_duplicates, allow_duplicates)
         return obj
 
-    def __div__(self, denominator):
-        """
-        Same as __truediv__(denominator).
-        """
-        return self.__truediv__(denominator)
-
     def __truediv__(self, denominator):
-        """
-        Returns a `RatioList`_ where the numerator of each `RatioString`_ is equal to the MassInteger in the list and
-        the denominator is equal to `denominator`.
-
-
-        Parameters
-        ---------
-        denominator : str, list of str
-            If a list then it must have the same length as the list.
-
-        Examples
-        --------
-        >>> a = MassList([101, 105, 111])
-        >>> a/'108Pd'
-        ['101/108Pd', '105/108Pd', '111/108Pd']
-        >>> a/['Ru', 'Pd', 'Cd']
-        ['101/Ru', '105/Pd', '111/Cd']
-        """
         if isinstance(denominator, list):
             if len(denominator) != len(self): raise ValueError('Length of supplied list is not the same as subject list')
             return RatioList(['{}/{}'.format(self[i], denominator[i]) for i in range(len(self))])
@@ -657,7 +1080,17 @@ class MassList(MassType, IsopyList):
 
     def _filter_indexes(self, index_list, *, mass_number=None, mass_number_not=None, mass_number_lt=None,
                         mass_number_gt=None, mass_number_le=None, mass_number_ge=None, **_unused_kwargs):
+        """
+        Checks each index in *index_list* against the keyword arguments and return a a list with the indexes that
+        satisfy the keyword arguments.
 
+        This is called by the *copy* method and potentially by the copy method of other lists.
+
+        Returns
+        -------
+            list of int
+                A list of the indexes that satisfy the keyword arguments.
+        """
         for k in _unused_kwargs.keys():
             raise ValueError('"{}" not a valid filter for MassList'.format(k))
 
@@ -683,7 +1116,7 @@ class MassList(MassType, IsopyList):
             if mass_number_ge is not None:
                 if iso < mass_number_ge: continue
 
-            # It has passed all the tests above
+            # The item satisfies all the keyword arguments given.
             out.append(i)
 
         return out
@@ -691,6 +1124,47 @@ class MassList(MassType, IsopyList):
 
     def copy(self, *, mass_number=None, mass_number_not=None, mass_number_lt=None, mass_number_gt=None,
                mass_number_le=None, mass_number_ge=None):
+        """
+        copy(*, element_symbol = None, element_symbol_not = None)
+
+        Returns a copy of the list.
+
+        If keyword arguments are given then only those items in the list that satisfy these arguments are copied.
+
+        Parameters
+        ----------
+        mass_number : MassString, MassList, optional
+           Only items in the list matching/found in ``mass_number`` are copied.
+        mass_number_not : MassString, MassList, optional
+           Only items in the list not matching/not found in ``mass_number`` are copied.
+        mass_number_lt : MassString, optional
+            Only items in the list a mass number less than this value are copied.
+        mass_number_gt : MassString, optional
+            Only items in the list a mass number greater than this value are copied.
+        mass_number_le : MassString, optional
+            Only items in the list a mass number less than or equal to this value are copied.
+        mass_number_ge : MassString, optional
+            Only items in the list a mass number greater than or equal to this value are copied.
+
+
+        Returns
+        -------
+        MassList
+            A copy of the items in the list that satisfy the keyword arguments or all items in the list if none are
+            given.
+
+        Examples
+        --------
+        >>> MassList(['99', '105', '111']).copy(mass_number=[105, 107, 111])
+        ['105', '111']
+        >>> MassList(['99', '105', '111']).copy(mass_number_not='111'])
+        ['99', '105']
+        >>> MassList(['99', '105', '111']).copy(mass_number_gt='99'])
+        ['105', '111']
+        >>> MassList(['99', '105', '111']).copy(mass_number_le=105])
+        ['99', '105']
+        """
+
         """
         copy(*,mass_number = None,  mass_number_not = None, mass_number_lt=None, mass_number_gt=None, mass_number_le=None, mass_number_ge=None)
 
@@ -703,14 +1177,7 @@ class MassList(MassType, IsopyList):
             Only MassIntegers matching this string/found in this list will pass.
         mass_number_not : MassInteger, MassList, optional
             Only MassIntegers not matching this string/not found in this list will pass.
-        mass_number_lt=None : MassInteger, optional
-            Only MassIntegers less than this value will pass.
-        mass_number_gt=None : MassInteger, optional
-            Only MassIntegers greater than this value will pass.
-        mass_number_le=None : MassInteger, optional
-            Only MassIntegers less than or equal to this value will pass.
-        mass_number_ge=None : MassInteger, optional
-            Only MassIntegers greater than or equal to this value will pass.
+        
 
 
         Returns
@@ -729,68 +1196,97 @@ class MassList(MassType, IsopyList):
 
 class ElementList(ElementType, IsopyList):
     """
-        ElementList(items)
+    ElementList(items, skip_duplicates=False, allow_duplicates=True)
 
-        A list for storing `ElementString`_ items.
+    A list consisting exclusively of :class:`ElementString` items.
+
+    Behaves just like, and contains all the methods, that a normal python list does unless otherwise noted. All methods
+    that would normally return a list will instead return a :class:`ElementList`. Only methods that behave differently from
+    a normal python list are documented below.
+
+    When comparing the list against another list the order of items is not considered.
+    The ``in`` operator can be used both with a single item or a list. If it is a list it will return ``True`` if
+    all item in the other list is present in the list.
+
+    Get item can be an int or a list of integers. However, set item only accepts a single integer.
+
+    The ``&``, ``|`` and ``^`` operators can be used in combination with another list for an unordered item to item
+    comparison. The and (``&``) operator will return the items that occur in both lists. The or (``|``) operator
+    will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
+    that do not appear in both lists. All duplicate items will be removed from the returned lists.
 
 
-        Parameters
-        ----------
-        items : ElementString, ElementList, or ElementArray, optional
-            If an integer then return [items]. If a list then return a copy of the list. If an array then return a copy of
-            the array keys. If not given then return an empty list.
+    Parameters
+    ----------
+    items : str, ElementArray, iterable
+        Each item in the iterable will be :class:`ElementString`. If items is a string it will be split into a list using the
+        ',' seperator.  If items is an :class:`ElementArray` it will use the keys from that array to make the list.
+    skip_duplicates : bool
+        If ``True`` all duplicate items will be removed from the list. This only applies during initialisation of the list.
+        Default value is ``False``.
+    allow_duplicates : bool
+        If ``False`` a StringDuplicateError will be raised if the list contains any duplicate items. This only applies
+        during initialisation of the list. Default Value is ``True``.
+
+    Raises
+    ------
+    StringDuplicateError
+        Raised when a string already exist in the list and ``allow_duplicates = False``
+    ListLengthError
+        Raised when there is a size mismatch between this list and another list
 
 
-        Examples
-        --------
-        >>> ElementList(['Ru', 'Pd', 'Cd'])
-        ['Ru', 'Pd', 'Cd']
-        >>> ElementList(['ru', 'pd', 'cd'])
-        ['Ru', 'Pd', 'Cd']
-        >>> ElementList('pd')
-        ['Pd']
-        >>> ElementList(ElementArray(keys = ['Ru', 'Pd', 'Cd'], size = 1))
-        ['Ru', 'Pd', 'Cd']
-        """
+    Examples
+    --------
+    >>> ElementList(['ru', 'pd', 'cd'])
+    ['Ru', 'Pd', 'Cd']
+    >>> ElementList('ru, pd,cd')
+    ['Ru', 'Pd', 'Cd']
+
+    Comparisons and ``in``
+    >>> ElementList(['ru', 'pd', 'cd']) == ['cd', 'pd', 'ru']
+    True
+    >>> 'pd' in ElementList(['ru', 'pd', 'cd'])
+    True
+    >>> ['pd', 'cd'] in ElementList(['ru', 'pd', 'cd'])
+    True
+    >>> ['pd', 'ag'] in ElementList(['ru', 'pd', 'cd'])
+    False
+
+    Indexing
+
+    >>> ElementList(['ru', 'pd', 'cd'])[[0,2]
+    ['Ru', 'Cd']
+
+    Using ``&``, ``|`` and ``^``
+
+    >>> ElementList(['ru', 'pd', 'cd']) & ['pd', 'ag', 'cd']
+    ['Pd', 'Cd']
+    >>> ElementList(['ru', 'pd', 'cd']) | ['pd', 'ag', 'cd']
+    ['Ru', 'Pd', 'Cd', 'Ag']
+    >>> ElementList(['ru', 'pd', 'cd']) ^ ['pd', 'ag', 'cd']
+    ['Ru', 'Ag']
+
+    Using ``/`` to make a :class:`RatioList`
+
+    >>> ElementList(['ru', 'pd', 'cd']) / 'pd'
+    ['Ru/Pd', 'Pd/Pd', 'Cd/Pd']
+    >>> ElementList(['ru', 'pd', 'cd']) / ['108pd', '109Pd', '110Pd']
+    ['Ru/108Pd', 'Pd/109Pd', 'Cd/110Pd']
+    """
 
     def __new__(cls, items, skip_duplicates=False, allow_duplicates=True):
         obj = list.__new__(cls)
         obj.__init__(items, skip_duplicates, allow_duplicates)
         return obj
 
-    def __div__(self, denominator):
-        """
-        Same as __truediv__(denominator).
-        """
-        return self.__truediv__(denominator)
-
     def __truediv__(self, denominator):
-        """
-        Returns a `RatioList`_ where the numerator of each `RatioString`_ is equal to the ElementString in the list and
-        the denominator is equal to `denominator`.
-
-
-        Parameters
-        ---------
-        denominator : str, list of str
-            If a list then it must have the same length as the list.
-
-        Examples
-        --------
-        >>> a = ElementList(['Ru', 'Pd', 'Cd'])
-        >>> a/'108Pd'
-        ['Ru/108Pd', 'Pd/108Pd', 'Cd/108Pd']
-        >>> a/['Ru', 'Pd', 'Cd']
-        ['Ru/Ru', 'Pd/Pd', 'Cd/Cd']
-        """
-        if isinstance(denominator, list):
-            if len(denominator) != len(self): raise ValueError('Length of supplied list is not the same as subject list')
+        if hasattr(denominator, '__iter__'):
+            if len(denominator) != len(self): raise ListSizeError(denominator, self)
             return RatioList(['{}/{}'.format(self[i], denominator[i]) for i in range(len(self))])
-
-        if isinstance(denominator, str):
+        else:
+            denominator = self._string(denominator)
             return RatioList(['{}/{}'.format(x, denominator) for x in self])
-
-        raise ValueError('unable to parse {}'.format(denominator))
 
     def _filter_indexes(self, index_list, element_symbol = None, element_symbol_not = None, **_unused_kwargs):
         for k in _unused_kwargs.keys():
@@ -818,21 +1314,30 @@ class ElementList(ElementType, IsopyList):
         """
         copy(*, element_symbol = None, element_symbol_not = None)
 
-        Returns a copy of the current list where
+        Returns a copy of the list.
+
+        If keyword arguments are given then only those items in the list that satisfy these arguments are copied.
 
         Parameters
         ----------
-        element_symbol : ElementString, ElementList
-           Only ElementStrings matching this string/found in this list will pass.
-        element_symbol_not : ElementString, ElementList
-           Only ElementStrings not matching this string/not found in this list will pass.
+        element_symbol : ElementString, ElementList, optional
+           Only items in the list matching/found in ``element_symbol`` are copied.
+        element_symbol_not : ElementString, ElementList, optional
+           Only items in the list not matching/not found in ``element_symbol_not`` are copied.
 
 
         Returns
         -------
         ElementList
-           A new ElementList with each ElementString in the list that passed the filters.
+            A copy of the items in the list that satisfy the keyword arguments or all items in the list if none are
+            given.
 
+        Examples
+        --------
+        >>> ElementList(['ru', 'pd', 'cd']).copy(element_symbol=['pd','ag', 'cd'])
+        ['Pd', 'Cd]
+        >>> ElementList(['ru', 'pd', 'cd']).copy(element_symbol_not='cd')
+        ['Ru', 'Pd']
         """
         index_list = [i for i in range(len(self))]
         index = self._filter_indexes(index_list, element_symbol=element_symbol, element_symbol_not=element_symbol_not)
@@ -841,49 +1346,90 @@ class ElementList(ElementType, IsopyList):
 
 class IsotopeList(IsotopeType, IsopyList):
     """
-    IsotopeList(items)
+    IsotopeList(items, skip_duplicates=False, allow_duplicates=True)
 
-    A list for storing IsotopeString items.
+    A list consisting exclusively of :class:`IsotopeString` items.
+
+    Behaves just like, and contains all the methods, that a normal python list does unless otherwise noted. All methods
+    that would normally return a list will instead return a :class:`IsotopeList`. Only methods that behave differently from
+    a normal python list are documented below.
+
+    When comparing the list against another list the order of items is not considered.
+    The ``in`` operator can be used both with a single item or a list. If it is a list it will return ``True`` if
+    all item in the other list is present in the list.
+
+    Get item can be an int or a list of integers. However, set item only accepts a single integer.
+
+    The ``&``, ``|`` and ``^`` operators can be used in combination with another list for an unordered item to item
+    comparison. The and (``&``) operator will return the items that occur in both lists. The or (``|``) operator
+    will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
+    that do not appear in both lists. All duplicate items will be removed from the returned lists.
 
 
     Parameters
     ----------
-    items : IsotopeString, IsotopeList, IsotopeArray, optional
-        If a string then return [items]. If a list then return a copy of the list. If an array then return a copy of
-        the array keys. If not given then return an empty list.
+    items : str, IsotopeArray, iterable
+        Each item in the iterable will be :class:`IsotopeString`. If items is a string it will be split into a list using the
+        ',' seperator.  If items is an :class:`IsotopeArray` it will use the keys from that array to make the list.
+    skip_duplicates : bool
+        If ``True`` all duplicate items will be removed from the list. This only applies during initialisation of the list.
+        Default value is ``False``.
+    allow_duplicates : bool
+        If ``False`` a StringDuplicateError will be raised if the list contains any duplicate items. This only applies
+        during initialisation of the list. Default Value is ``True``.
 
-    Attributes
-    ----------
-    mass_numbers : MassList
-        Return a list of the mass number for each IsotopeString in the list
-    element_symbols : ElementList
-        Return a list of the element symbol for each IsotopeString in the list
+    Raises
+    ------
+    StringDuplicateError
+        Raised when a string already exist in the list and ``allow_duplicates = False``
+    ListLengthError
+        Raised when there is a size mismatch between this list and another list
 
 
     Examples
     --------
-    >>> IsotopeList(['104Pd', '105Pd', '106Pd'])
-    ['104Pd', '105Pd', '106Pd']
-    >>> IsotopeList(['104pd', 'pd105', 'Pd106'])
-    ['104Pd', '105Pd', '106Pd']
+    >>> IsotopeList(['99ru', '105pd', '111cd'])
+    ['99Ru', '105Pd', '111Cd']
+    >>> IsotopeList('99ru, 105pd,cd111')
+    ['99Ru', '105Pd', '111Cd']
 
-    >>> a = IsotopeList(['104Pd', '105Pd', '106Pd'])
-    >>> a.mass_numbers
-    [104, 105, 106]
-    >>> a.element_symbols
-    ['Pd', 'Pd', 'Pd']
+    Comparisons and ``in``
+
+    >>> IsotopeList(['99ru', '105pd', '111cd']) == ['111cd', '105pd',  '99ru', ]
+    True
+    >>> '105pd' in IsotopeList(['99ru', '105pd', '111cd'])
+    True
+    >>> ['105pd', '111cd'] in IsotopeList(['99ru', '105pd', '111cd'])
+    True
+    >>> ['105pd', '107ag'] in IsotopeList(['99ru', '105pd', '111cd'])
+    False
+
+    Indexing
+
+    >>> IsotopeList(['99ru', '105pd', '111cd'])[[0,2]
+    ['99Ru', '111Cd']
+
+    Using ``&``, ``|`` and ``^``
+
+    >>> IsotopeList(['99ru', '105pd', '111cd']) & ['105pd', '107ag', '111cd']
+    ['105Pd', '111Cd']
+    >>> IsotopeList(['99ru', '105pd', '111cd']) | ['105pd', '107ag', '111cd']
+    ['99Ru', '105Pd', '111Cd', '107Ag']
+    >>> IsotopeList(['99ru', '105pd', '111cd']) ^ ['105pd', '107ag', '111cd']
+    ['99Ru', '107Ag']
+
+    Using ``/``  to make a :class:`RatioList`
+
+    >>> ElementList(['99ru', '105pd', '111cd']) / '108pd'
+    ['99Ru/108Pd', '105Pd/108Pd', '111Cd/108Pd']
+    >>> ElementList(['99ru', '105pd', '111cd']) / ['108pd', '109Pd', '110Pd']
+    ['99Ru/108Pd', '105Pd/109Pd', '111Cd/110Pd']
     """
 
     def __new__(cls, items, skip_duplicates=False, allow_duplicates=True):
         obj = list.__new__(cls)
         obj.__init__(items, skip_duplicates, allow_duplicates)
         return obj
-
-    def __div__(self, denominator):
-        """
-        Same as __truediv__(denominator).
-        """
-        return self.__truediv__(denominator)
 
     def __truediv__(self, denominator):
         """
@@ -915,10 +1461,26 @@ class IsotopeList(IsotopeType, IsopyList):
 
     @property
     def mass_numbers(self):
+        """
+        A :class:`MassList` containing the mass number of each item in the list. *Readonly*
+
+        Examples
+        --------
+        >>> IsotopeList(['99ru', '105pd', '111cd']).mass_numbers
+        ['99', '105', '111']
+        """
         return MassList([x.mass_number for x in self])
 
     @property
     def element_symbols(self):
+        """
+        An :class:`ElementList` containing the element symbol of each item in the list. *Readonly*
+
+        Examples
+        --------
+        >>> IsotopeList(['99ru', '105pd', '111cd']).element_symbols
+        ['Ru', 'Pd', 'Cd']
+        """
         return ElementList([x.element_symbol for x in self])
 
     def _filter_indexes(self, index_list, isotope = None, isotope_not = None, **mass_number_and_element_symbol_filters):
@@ -957,69 +1519,125 @@ class IsotopeList(IsotopeType, IsopyList):
 
         return out
 
-    def copy(self, *, isotope = None, isotope_not = None, **mass_number_and_element_symbol_filters):
+    def copy(self, *, isotope = None, isotope_not = None, **mass_number_and_element_symbol_kwargs):
         """
-        filter(isotope = None, *, isotope_not = None, **mass_number_and_element_symbol_filters)
+        copy(*, isotope = None, isotope_not = None, **mass_number_and_element_symbol_kwargs)
 
-        Returns a copy of the current list.
+        Returns a copy of the list.
+
+        If keyword arguments are given then only those items in the list that satisfy these arguments are copied.
 
         Parameters
         ----------
-        isotope : IsotopeString, IsotopeList
-            Only IsotopeStrings matching this string/found in this list will pass.
-        isotope_not : IsotopeString, IsotopeList
-            Only IsotopeStrings not matching this string/not found in this list will pass.
-        mass_number_and_element_symbol_filters
-            See :func:`MassList.copy()<isopy.dtypes.MassList.filter>` and
-            :func:`ElementList.copy()<isopy.dtypes.ElementList.filter>` for a list of available filters and their descriptions.
+        isotope : IsotopeString, IsotopeList, optional
+           Only items in the list matching/found in ``isotope`` are copied.
+        isotope_not : IsotopeString, IsotopeList, optional
+           Only items in the list not matching/not found in ``isotope_not`` are copied.
+        **mass_number_and_element_symbol_kwargs
+            See :func:`MassList.copy` and :func:`Element.copy` for additional keyword arguments.
 
 
         Returns
         -------
         IsotopeList
-            A new IsotopeList with each IsotopeString in the list that passed the filters.
+            A copy of the items in the list that satisfy the keyword arguments or all items in the list if none are
+            given.
 
+        Examples
+        --------
+        >>> IsotopeList(['99ru', '105pd', '111cd']).copy(isotope=['105pd','107ag', '111cd'])
+        ['105Pd', '111Cd]
+        >>> IsotopeList(['99ru', '105pd', '111cd']).copy(isotope_not='111cd')
+        ['99Ru', '105Pd']
+        >>> IsotopeList(['99ru', '105pd', '111cd']).copy(mass_number_gt = 100)
+        ['105Pd', '111Cd]
+        >>> IsotopeList(['99ru', '105pd', '111cd']).copy(element_not='pd'])
+        ['99Ru', '111Cd]
         """
         index_list = [i for i in range(len(self))]
         index = self._filter_indexes(index_list, isotope=isotope, isotope_not=isotope_not,
-                                     **mass_number_and_element_symbol_filters)
+                                     **mass_number_and_element_symbol_kwargs)
         return self[index]
 
 
 class RatioList(RatioType, IsopyList):
     """
-    RatioList(items)
+    RatioList(items, skip_duplicates=False, allow_duplicates=True)
 
-    A list for storing RatioString items.
+    A list consisting exclusively of :class:`RatioString` items.
 
+    The numerator of all items in the list must be the same type of item. The same is true for the denominator. However,
+    the numerators and the denominators do not need to be of the same type.
+
+    Behaves just like, and contains all the methods, that a normal python list does unless otherwise noted. All methods
+    that would normally return a list will instead return a :class:`IsotopeString`. Only methods that behave differently from
+    a normal python list are documented below.
+
+    When comparing the list against another list the order of items is not considered.
+    The ``in`` operator can be used both with a single item or a list. If it is a list it will return ``True`` if
+    all item in the other list is present in the list.
+
+    Get item can be an int or a list of integers. However, set item only accepts a single integer.
+
+    The ``&``, ``|`` and ``^`` operators can be used in combination with another list for an unordered item to item
+    comparison. The and (``&``) operator will return the items that occur in both lists. The or (``|``) operator
+    will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
+    that do not appear in both lists. All duplicate items will be removed from the returned lists.
 
     Parameters
     ----------
-    items : RatioString, RatioList, RatioArray, optional
-        If a string then return [items]. If a list then return a copy of the list. If an array then return a copy of
-        the array keys. If not given then return an empty list.
+    items : str, RatioArray, iterable
+        Each item in the iterable will be :class:`RatioString`. If items is a string it will be split into a list using the
+        ',' seperator.  If items is an :class:`RatioArray` it will use the keys from that array to make the list.
+    skip_duplicates : bool
+        If ``True`` all duplicate items will be removed from the list. This only applies during initialisation of the list.
+        Default value is ``False``.
+    allow_duplicates : bool
+        If ``False`` a StringDuplicateError will be raised if the list contains any duplicate items. This only applies
+        during initialisation of the list. Default Value is ``True``.
 
-
-    Attributes
-    ----------
-    numerators : MassList, ElementList or IsotopeList
-        Return a list of the numerator for each RatioString in the list.
-    denominator : MassList, ElementList or IsotopeList
-        Return a list of the denominator for each RatioString in the list.
-
+    Raises
+    ------
+    StringDuplicateError
+        Raised when a string already exist in the list and ``allow_duplicates = False``
+    NumeratorTypeError
+        Raised when the numerator of a :class:`RatioString` does is not the same type as the
+        other numerators in the list.
+    DenominatorTypeError
+        Raised when the denominator of a :class:`RatioString` does is not the same type as the
+        other denominators in the list.
 
     Examples
     --------
-    >>> RatioList(['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd'])
-    ['104Pd/108Pd', '105Pd/108Pd', '106Pd/108Pd']
-    >>> RatioList(['104Pd/pd', '105Pd/pd', '106Pd/pd'])
-    ['104Pd/Pd', '105Pd/Pd', '106Pd/Pd']
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])
+    ['99Ru/108Pd', '105Pd/108Pd', '111Cd/108Pd']
+    >>> RatioList('99ru/108Pd, 105pd/108Pd,cd111/108Pd')
+    ['99Ru/108Pd', '105Pd/108Pd', '111Cd/108Pd']
 
-    >>> a = RatioList(['104Pd/Pd', '105Pd/Pd', '106Pd/Pd'])
-    >>> a.numerators
-    ['104Pd', '105Pd', '106Pd']
-    >>> a.denominators
-    ['Pd', 'Pd', 'Pd']
+    Comparisons and ``in``
+
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']) == ['111cd/108Pd', '105pd/108Pd',  '99ru/108Pd']
+    True
+    >>> '105pd' in RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])
+    True
+    >>> ['105pd/108Pd', '111cd/108Pd'] in RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])
+    True
+    >>> ['105pd/108Pd', '107ag/108Pd'] in RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])
+    False
+
+    Indexing
+
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])[[0,2]
+    ['99Ru/108Pd', '111Cd/108Pd']
+
+    Using ``&``, ``|`` and ``^``
+
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']) & ['105pd/108Pd', '107ag/108Pd', '111cd/108Pd']
+    ['105Pd/108Pd', '111Cd/108Pd']
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']) | ['105pd/108Pd', '107ag/108Pd', '111cd/108Pd']
+    ['99Ru/108Pd', '105Pd/108Pd', '111Cd/108Pd', '107Ag/108Pd']
+    >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']) ^ ['105pd/108Pd', '107ag/108Pd', '111cd/108Pd']
+    ['99Ru/108Pd', '107Ag/108Pd']
     """
 
     def __new__(cls, items, skip_duplicates=False, allow_duplicates=True):
@@ -1040,13 +1658,22 @@ class RatioList(RatioType, IsopyList):
             return string
         else:
             if not isinstance(string.numerator, self._numerator_type):
-                raise TypeError('numerator must be an {} (not {}'.format(self._numerator_type, type(string.numerator)))
+                raise NumeratorTypeError(string.numerator, self._numerator_type, self)
             elif not isinstance(string.denominator, self._denominator_type):
-                raise TypeError('denominator must be an {} (not {}'.format(self._denominator_type, type(string.denominator)))
+                raise DenominatorTypeError(string.denominator, self._denominator_type, self)
             return string
 
     @property
     def numerators(self):
+        """
+        Either a :class:`MassList`, :class:`ElementList` or a :class:`RatioList` containing the numerator of each
+        item in the list. **Readonly**
+
+        Examples
+        --------
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).numerators
+        ['99Ru', '105Pd', '111Cd']
+        """
         if len(self) == 0:
             return []
         else:
@@ -1054,6 +1681,15 @@ class RatioList(RatioType, IsopyList):
 
     @property
     def denominators(self):
+        """
+        Either a :class:`MassList`, :class:`ElementList` or a :class:`RatioList` containing the denominator of each
+        item in the list. **Readonly**
+
+        Examples
+        --------
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).numerators
+        ['108Pd', '108Pd', '108Pd']
+        """
         if len(self) == 0:
             return []
         else:
@@ -1061,7 +1697,22 @@ class RatioList(RatioType, IsopyList):
 
     def has_common_denominator(self, denominator = None):
         """
-        Return **True** if each RatioString in the list has the same denominator. Otherwise return **False**
+        Returns ``True`` if the all the items in the list have the same denominator. Otherwise returns ``False``.
+
+        If the optional ``denominator`` argument is given then ``True`` will only be returned if
+        the list has a common denominator equal to this string.
+
+        Parameters
+        ----------
+        denominator : MassString, ElementString, IsotopeString, optional
+            Should be given to check if the list has a specific common denominator
+
+        Examples
+        --------
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).has_common_denominator()
+        True
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).has_common_denominator('105Pd')
+        False
         """
         try:
             denom = self.get_common_denominator()
@@ -1077,9 +1728,17 @@ class RatioList(RatioType, IsopyList):
 
     def get_common_denominator(self):
         """
-        Return the common denominator for each item in the list.
+        Returns the common denominator string for each item in the list.
 
-        Raise ValueError is no common denominator exists.
+        Raises
+        ------
+        NoCommonDenominator
+            Raised if the list does not contain a common denominator
+
+        Examples
+        --------
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).get_common_denominator()
+        '108Pd'
         """
         denom = self.denominators
         if len(denom) == 0:
@@ -1133,32 +1792,46 @@ class RatioList(RatioType, IsopyList):
 
         return out
 
-    def copy(self, *, ratio = None, ratio_not = None, **numerator_and_denominator_filters):
+    def copy(self, *, ratio = None, ratio_not = None, **numerator_and_denominator_kwargs):
         """
-        Returns a copy of the current list.
+        copy(*, ratio = None, ratio_not = None, **numerator_and_denominator_kwargs)
 
+        Returns a copy of the list.
+
+        If keyword arguments are given then only those items in the list that satisfy these arguments are copied.
 
         Parameters
         ----------
         ratio : RatioString, RatioList, optional
-            Only RatioStrings matching this string/found in this list will pass.
+           Only items in the list matching/found in ``ratio`` are copied.
         ratio_not : RatioString, RatioList, optional
-            Only RatioStrings not matching this string/not found in this list will pass.
-        numerator_and_denominator_filters
-            Use *numerator_* and *denominator_* prefix to specify filters for the numerators and the denominators.
-            See :func:`MassList.copy()<isopy.dtypes.MassList.filter>`,
-            :func:`ElementList.copy()<isopy.dtypes.ElementList.filter>` and
-            :func:`IsotopeList.copy()<isopy.dtypes.IsotopeList.filter>` for a list of available filters and their
-            descriptions.
+           Only items in the list not matching/not found in ``ratio_not`` are copied.
+        **numerator_and_denominator_kwargs
+            See :func:`MassList.copy`, :func:`Element.copy` and :func:`IsotopeList.copy` for additional keyword
+            arguments. These arguments must be preceded by either 'numerator\_' or 'denominator\_' to specify where the
+            keywords should be used.
+
 
         Returns
         -------
         RatioList
-            A new RatioList with each RatioString in the list that passed the filters.
+            A copy of the items in the list that satisfy the keyword arguments or all items in the list if none are
+            given.
+
+        Examples
+        --------
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).copy(ratio=['105pd/108Pd','107ag/108Pd', '111cd/108Pd'])
+        ['105Pd/108Pd', '111Cd/108Pd']
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).copy(ratio_not='111cd/108Pd')
+        ['99Ru/108Pd', '105Pd/108Pd']
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).copy(numerator_isotope = ['pd', 'ag', 'cd'])
+        ['105Pd/108Pd', '111Cd/108Pd']
+        >>> RatioList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).copy(numerator_mass_number_lt = 100)
+        ['99Ru/108Pd', '105Pd/108Pd']
         """
         index_list = [i for i in range(len(self))]
         index = self._filter_indexes(index_list, ratio=ratio, ratio_not=ratio_not,
-                                     **numerator_and_denominator_filters)
+                                     **numerator_and_denominator_kwargs)
         return self[index]
 
 
@@ -1167,33 +1840,30 @@ class RatioList(RatioType, IsopyList):
 ############
 class ReferenceDict(dict):
     """
-    ReferenceDict(values = None, *, keys = None, dtype = None, filepath = None, **file_kwargs)
+    ReferenceDict(dictionary = None)
 
-    A custom dict where a keys are stored as isopy strings.
+    Custom dictionary where every item stores a single value as float64 with an :ref:`IsopyString <isopystring>` key.
 
-    All keys will, if they can, be converted into an MassInteger, ElementString, IsotopeString
-    or RatioString when added to the dict. All values will be converted to a 'dtype' numpy arrays. Otherwise ReferenceDict
-    behaves like a normal python dict.
+    All values are stored in a zero-dimensional numpy array as a 64-bit floating-point number.
 
+    Behaves just like, and contains all the methods, that a normal dictionary does unless otherwise noted. All methods
+    that takes a key argument will raise a StringParseError if the key cannot be converted to an
+    :ref:`IsopyString <isopystring>`.  Only methods that behave differently from a normal dictionary are documented below.
 
     Parameters
     ----------
-    values : tuple, list, ndarray, optional
-        Values must be compatible with the `dtype` given.
-    keys : tuple, list, optional
-        Keys for the dict. Keys that cannot be converted to an isopy type will be used as given. If values has keys
-        then keys must be a dict mapping the old key to a new key. Keys not found in this dict will be default to the old key.
-    dtype : str, optional
-        Accepts any numpy compatible data type. If **None** then data fill be stored as it is given. Defaults to
-        64-bit float ('f8')
-    ndim : int, optional
-        number of dimensions of values. If -1 then arrays will be made dimensionless if possible.
-         Defaults to -1
-    filepath : str, optional
-        Path of file on disk to read data from.
-    file_kwargs
-        Additional arguments for reading a file. See isopy.read.file() for list of available options.
+    dictionary : dict
+        Must only contain keys which can be parsed into an :ref:`IsopyString <isopystring>` that hold a single value
+        that can be converted to a float point value.
+
+    Examples
+    --------
+    >>> ReferenceDict({'Pd108': 108, '105Pd': 105, 'pd': 46}).keys()
+    dict_keys(['108Pd', '105Pd', 'Pd'])
+    >>> ReferenceDict({'Pd108': 108, '105Pd': 105, 'pd': 46}).values()
+    dict_values([array(108.), array(105.), array(46.)])
     """
+
     def __init__(self, dictionary = None):
         super(ReferenceDict, self).__init__()
         if dictionary is None: pass
@@ -1202,22 +1872,22 @@ class ReferenceDict(dict):
         else:
             raise TypeError('Reference dict can only be initialised with another dict')
 
-    def __getitem__(self, key):
-        return self.get(key, np.nan)
-
     def __setitem__(self, key, value):
-        key = IsopyString(key)
+        key = asstring(key)
         value = np.asarray(value, dtype='f8')
 
         if value.size != 1:
             raise ValueError('ReferenceDict can only store a single value per entry')
-        else:
+        elif value.ndim != 0:
             value = value.reshape(())
 
         super(ReferenceDict, self).__setitem__(key, value.copy())
 
     def __contains__(self, key):
-        key = IsotopeString(key)
+        try:
+            key = asstring(key)
+        except StringParseError:
+            return False
 
         if super(ReferenceDict, self).__contains__(key):
             return True
@@ -1227,26 +1897,40 @@ class ReferenceDict(dict):
         else:
             return False
 
-    def update(self, other):
-        if not isinstance(other, dict):
-            raise ValueError('other must be a dict')
-
-        for k in other.keys():
-            self.__setitem__(k, other[k])
-
-    def pop(self, key, default=np.nan):
-        key = IsopyString(key)
-        return super(ReferenceDict, self).pop(key, default)
-
-    def setdefault(self, key, default=np.nan):
-        key = IsopyString(key)
-
-        try: return self.__getitem__(key)
-        except KeyError:
-            self.__setitem__(key, default)
-            return self.__getitem__(key)
+    def __getitem__(self, key):
+        key = asstring(key)
+        return super(ReferenceDict, self).__getitem__(key)
 
     def get(self, key, default = np.nan):
+        """
+        Return the value for *key* if key is in the dictionary. If *key* is not in the dictionary it will return
+        the *default* value for :class:`MassString`, :class:`ElementString` and :class:`IsotopeString` keys.
+        For :class:`RatioString` keys not in the dictionary it will return the :func:`RatioString.numerator` key value
+        divided by the :func:`RatioString.denominator` key value if both are present in the dictionary, otherwise
+        it will return the *default* value.
+
+        If *key* is a list then a list with the value for each key in *key* is returned. If *key* is an
+        :ref:`IsopyList <isopylist>` then the corresponding :ref:`IsopyArray <isopyarray>` is returned.
+
+        Parameters
+        ----------
+        key : :ref:`IsopyString <isopystring>`, :ref:`IsopyList <isopylist>`
+            Can be either a string or a list of strings.
+        default : optional
+            If not given the *default* value is np.nan.
+
+        Examples
+        --------
+        >>> reference = ReferenceDict({'108Pd': 100, '105Pd': 20, '104Pd': 150, '104Pd/105Pd': 10})
+        >>> reference.get('108Pd/105Pd')
+        5.0
+        >>> reference.get('104Pd/105Pd')
+        10.0
+        >>> reference.get('104Pd') / reference.get('105Pd')
+        7.5
+        >>> reference.get('102Pd')
+        nan
+        """
         if isinstance(key, list):
             out = [self.get(k, default) for k in key]
             if isinstance(key, ElementList):
@@ -1258,24 +1942,59 @@ class ReferenceDict(dict):
             else:
                 return out
 
-        key = IsopyString(key)
-        if isinstance(key, RatioString) and not super(ReferenceDict, self).__contains__(key) and\
-                key.numerator in self and key.denominator in self:
-            return super(ReferenceDict, self).__getitem__(key.numerator) / super(ReferenceDict, self).__getitem__(
-                                                                                                        key.denominator)
-        else:
-            return super(ReferenceDict, self).get(key, default)
+        key = asstring(key)
+        try:
+            return super(ReferenceDict, self).__getitem__(key)
+        except KeyError:
+            if isinstance(key, RatioString):
+                try:
+                    return super(ReferenceDict, self).__getitem__(key.numerator) / \
+                           super(ReferenceDict, self).__getitem__(key.denominator)
+                except KeyError: pass
+
+            return default
+
+    def update(self, other):
+        if not isinstance(other, dict):
+            raise ValueError('other must be a dict')
+
+        for k in other.keys():
+            self.__setitem__(k, other[k])
+
+    def pop(self, key, default=np.nan):
+        key = asstring(key)
+        return super(ReferenceDict, self).pop(key, default)
+
+    def setdefault(self, key, default=np.nan):
+        key = asstring(key)
+
+        try: return self.__getitem__(key)
+        except KeyError:
+            self.__setitem__(key, default)
+            return self.__getitem__(key)
 
     def mass_keys(self):
-       return MassList([k for k in self.keys() if isinstance(k, MassString)])
+        """
+        Returns a :class:`MassList` with all the :class:`MassString` keys in the dict.
+        """
+        return MassList([k for k in self.keys() if isinstance(k, MassString)])
 
     def element_keys(self):
+        """
+        Returns a :class:`ElementList` with all the :class:`ElementString` keys in the dict.
+        """
         return ElementList([k for k in self.keys() if isinstance(k, ElementString)])
 
     def isotope_keys(self):
+        """
+        Returns a :class:`IsotopeList` with all the :class:`IsotopeString` keys in the dict.
+        """
         return IsotopeList([k for k in self.keys() if isinstance(k, IsotopeString)])
 
     def ratio_keys(self):
+        """
+        Returns a :class:`RatioList` with all the :class:`RatioString` keys in the dict.
+        """
         return RatioList([k for k in self.keys() if isinstance(k, RatioString)])
 
     def copy(self):
@@ -1496,130 +2215,255 @@ class IsopyArray(IsopyType):
     def keys(self):
         return self._list(self.dtype.names)
 
-    def keycount(self):
+    @property
+    def nkeys(self):
+        """
+        The number of keys in the array. Analogous to ``len(array.keys())``
+        """
         return len(self.dtype.names)
 
-    def get(self, key, default_value=np.nan):
+    @property
+    def nrows(self):
+        """
+        The number of rows in the array. If the array is zero-dimensional ``-1`` is returned.
+
+        Differs from ``array.size`` which will always return a positive integer. So ``array.size`` is equal
+        to ``abs(array.nrows)``.
+        """
+        if self.ndim == 0: return -1
+        else: self.size
+
+    def get(self, key, default=np.nan):
         try:
             return self[key]
         except:
-            default_value = np.asarray(default_value)
-            if default_value.ndim == 0 and self.ndim == 0: return default_value.copy()
-            elif default_value.ndim == 0:
+            default = np.asarray(default)
+            if default.ndim == 0 and self.ndim == 0: return default.copy()
+            elif default.ndim == 0:
                 out = np.empty(self.size)
-                out[:] = default_value
+                out[:] = default
                 return out
-            elif default_value.size != self.size:
-                raise ValueError('default_value must be dimensionless or the same size as the array')
+            elif default.size != self.size: #default.shape?
+                raise ValueError('default_value must be zero-dimensional or the same size as the array')
             else:
-                return default_value.copy()
+                return default.copy()
 
 
 class MassArray(IsopyArray):
     def __new__(cls, values=None, *, keys=None, ndim=None, dtype=None):
         return MassNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
 
-    def copy(self, *, mass_number=None, mass_number_not=None, mass_number_lt=None, mass_number_gt=None,
-               mass_number_le=None, mass_number_ge=None):
+    def copy(self, **mass_number_kwargs):
         """
-        Return a new IsotopeArray containing only the keys of the array pass each of the supplied filters.
+        Return a copy of the array.
 
+        If keyword arguments are given then only the keys in the array that satisfy these arguments is copied.
 
         Parameters
         ----------
-        isotope : IsotopeString, IsotopeArray, optional
-            Only keys matching this string/found in this list will pass.
-        copy : bool
-            If **True** then a copy of the array is returned. If **False** then a view on the array is returned.
-            Default value is **True**
-        isotope_not : IsotopeString, IsotopeList, optional
-            Only keys not matching this string/not found in this list will pass.
-        mass_number_and_element_symbol_filters
-            See :func:`MassArray.copy()<isopy.dtypes.MassArray.filter>` and
-            :func:`ElementArray.copy()<isopy.dtypes.ElementArray.filter>` for a list of available filters and their descriptions.
+        **mass_number_kwargs
+            See :func:`MassList.copy` for a description of the avaliable keyword arguments.
+        """
+        if mass_number_kwargs:
+            keys = self.keys().copy(**mass_number_kwargs)
+            return super(MassArray, self[keys]).copy()
+        else:
+            return super(MassArray, self).copy()
 
+    def keys(self):
+        """
+        Returns a :class:`MassList` containing the keys in the array.
+        """
+        return super(MassArray, self).keys()
+
+    def get(self, key, default=np.nan):
+        """
+        Return the data for *key* if in the array. If missing then an array consisting of the *default* value with
+        the same size as the current array is returned.
+
+        Parameters
+        ----------
+        key : :class:`MassString`
+            The key to be returned.
+        default
+            Must either be an zero-dimensional value or a array of values the same size as the array.
+
+        Raises
+        ------
+        ValueError
+            Raised if the size of *default* is not the same as the array.
 
         Returns
         -------
-        IsotopeArray
-            New array containing only the isotope keys that match the specified filter parameters.
-
-
-        See :func:`IsotopeList.copy()<isopy.dtypes.IsotopeList.filter>` for examples.
+        ndarray
+            An array with the data associated with *key*.
         """
-
-        if mass_number is None and mass_number_not is None and mass_number_lt is None and mass_number_gt is None\
-                and mass_number_le is None and mass_number_ge is None:
-            return super(MassArray, self).copy()
-        else:
-            keys = self.keys().copy(mass_number=mass_number, mass_number_not=mass_number_not,
-                                    mass_number_lt=mass_number_lt, mass_number_gt=mass_number_gt,
-                                    mass_number_le=mass_number_le, mass_number_ge=mass_number_ge)
-            return super(MassArray, self[keys]).copy()
+        return super(ElementArray, self).get(key, default)
 
 
 class ElementArray(IsopyArray):
+    """
+    An array storing data with :class:`ElementString` keys.
+
+    Bit more description.
+
+    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`
+    and therefore contains all the methods and attributes that a normal numpy ndarray does.
+    """
     def __new__(cls, values=None, *, keys=None, ndim=None, dtype=None):
         return ElementNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
 
-    def copy(self, *, element_symbol = None, element_symbol_not = None):
-        if element_symbol is None and element_symbol_not is None:
-            return super(ElementArray, self).copy()
-        else:
-            keys = self.keys().copy(element_symbol=element_symbol, element_symbol_not=element_symbol_not)
+    def copy(self, **element_symbol_kwargs):
+        """
+        Return a copy of the array.
+
+        If keyword arguments are given then only the keys in the array that satisfy these arguments is copied.
+
+        Parameters
+        ----------
+        **element_symbol_kwargs
+            See :func:`ElementList.copy` for a description of the avaliable keyword arguments.
+        """
+        if element_symbol_kwargs:
+            keys = self.keys().copy(**element_symbol_kwargs)
             return super(ElementArray, self[keys]).copy()
+        else:
+            return super(ElementArray, self).copy()
+
+    def keys(self):
+        """
+        Returns a :class:`ElementList` containing the keys in the array.
+        """
+        return super(ElementArray, self).keys()
+
+    def get(self, key, default=np.nan):
+        """
+        Return the data for *key* if in the array. If missing then an array consisting of the *default* value with
+        the same size as the current array is returned.
+
+        Parameters
+        ----------
+        key : :class:`ElementString`
+            The key to be returned.
+        default
+            Must either be an zero-dimensional value or a array of values the same size as the array.
+
+        Raises
+        ------
+        ValueError
+            Raised if the size of *default* is not the same as the array.
+
+        Returns
+        -------
+        ndarray
+            An array with the data associated with *key*.
+        """
+        return super(IsotopeArray, self).get(key, default)
 
 
 class IsotopeArray(IsopyArray):
     def __new__(cls, values=None, *, keys=None, ndim=None, dtype=None):
         return IsotopeNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
 
-    def copy(self, *, isotope=None, isotope_not=None, **mass_number_and_element_symbol_filters):
+    def copy(self, **isotope_kwargs):
         """
-        Return a new IsotopeArray containing only the keys of the array pass each of the supplied filters.
+        Return a copy of the array.
 
+        If keyword arguments are given then only the keys in the array that satisfy these arguments is copied.
 
         Parameters
         ----------
-        isotope : IsotopeString, IsotopeArray, optional
-            Only keys matching this string/found in this list will pass.
-        copy : bool
-            If **True** then a copy of the array is returned. If **False** then a view on the array is returned.
-            Default value is **True**
-        isotope_not : IsotopeString, IsotopeList, optional
-            Only keys not matching this string/not found in this list will pass.
-        mass_number_and_element_symbol_filters
-            See :func:`MassArray.copy()<isopy.dtypes.MassArray.filter>` and
-            :func:`ElementArray.copy()<isopy.dtypes.ElementArray.filter>` for a list of available filters and their descriptions.
+        **isotope_kwargs
+            See :func:`IsotopeList.copy` for a description of the avaliable keyword arguments.
+        """
+        if isotope_kwargs:
+            keys = self.keys().copy(**isotope_kwargs)
+            return super(IsotopeArray, self[keys]).copy()
+        else:
+            return super(IsotopeArray, self).copy()
 
+    def keys(self):
+        """
+        Returns a :class:`IsotopeList` containing the keys in the array.
+        """
+        return super(IsotopeArray, self).keys()
+
+    def get(self, key, default=np.nan):
+        """
+        Return the data for *key* if in the array. If missing then an array consisting of the *default* value with
+        the same size as the current array is returned.
+
+        Parameters
+        ----------
+        key : :class:`IsotopeString`
+            The key to be returned.
+        default
+            Must either be an zero-dimensional value or a array of values the same size as the array.
+
+        Raises
+        ------
+        ValueError
+            Raised if the size of *default* is not the same as the array.
 
         Returns
         -------
-        IsotopeArray
-            New array containing only the isotope keys that match the specified filter parameters.
-
-
-        See :func:`IsotopeList.copy()<isopy.dtypes.IsotopeList.filter>` for examples.
+        ndarray
+            An array with the data associated with *key*.
         """
-
-        if isotope is None and isotope_not is None and len(mass_number_and_element_symbol_filters) == 0:
-            return super(IsotopeArray, self).copy()
-        else:
-            keys = self.keys().copy(isotope=isotope, isotope_not=isotope_not,
-                                      **mass_number_and_element_symbol_filters)
-            return super(IsotopeArray, self[keys]).copy()
+        return super(RatioArray, self).get(key, default)
 
 
 class RatioArray(IsopyArray):
     def __new__(cls, values=None, *, keys=None, ndim=None, dtype=None):
         return RatioNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
 
-    def copy(self, *, ratio = None, ratio_not = None, **numerator_and_denominator_filters):
-        if ratio is None and ratio_not is None and len(numerator_and_denominator_filters) == 0:
-            return super(RatioArray, self).copy()
-        else:
-            keys = self.keys().copy(ratio=ratio, ratio_not=ratio_not, **numerator_and_denominator_filters)
+    def copy(self, **ratio_kwargs):
+        """
+        Return a copy of the array.
+
+        If keyword arguments are given then only the keys in the array that satisfy these arguments is copied.
+
+        Parameters
+        ----------
+        **ratio_kwargs
+            See :func:`RatioList.copy` for a description of the avaliable keyword arguments.
+        """
+        if ratio_kwargs:
+            keys = self.keys().copy(**ratio_kwargs)
             return super(RatioArray, self[keys]).copy()
+        else:
+            return super(RatioArray, self).copy()
+
+    def keys(self):
+        """
+        Returns a :class:`RatioList` containing the keys in the array.
+        """
+        return super(RatioArray, self).keys()
+
+    def get(self, key, default=np.nan):
+        """
+        Return the data for *key* if in the array. If missing then an array consisting of the *default* value with
+        the same size as the current array is returned.
+
+        Parameters
+        ----------
+        key : :class:`RatioString`
+            The key to be returned.
+        default
+            Must either be an zero-dimensional value or a array of values the same size as the array.
+
+        Raises
+        ------
+        ValueError
+            Raised if the size of *default* is not the same as the array.
+
+        Returns
+        -------
+        ndarray
+            An array with the data associated with *key*.
+        """
+        return super(MassArray, self).get(key, default)
+
 
 ###############
 ### Ndarray ###
@@ -1639,7 +2483,7 @@ def _new_dtype(dtype, keys=None):
         elif len(dtype) != len(keys):
             raise ValueError('Length of "dtype" argument does not match the number of keys')
         else:
-            return [(keys[i].safe_format(), _new_dtype(dtype[i])) for i in range(len(keys))]
+            return [(keys[i].varname(), _new_dtype(dtype[i])) for i in range(len(keys))]
     else:
         if keys is None:
             try:
@@ -1647,7 +2491,7 @@ def _new_dtype(dtype, keys=None):
             except:
                 raise ValueError('Could not convert "{}" to numpy dtype'.format(dtype))
         else:
-            return [(keys[i].safe_format(), _new_dtype(dtype)) for i in range(len(keys))]
+            return [(keys[i].varname(), _new_dtype(dtype)) for i in range(len(keys))]
 
 def _new_keys(cls, old_keys, new_keys):
     if isinstance(old_keys, (np.ndarray, np.void)):
@@ -1699,7 +2543,7 @@ class IsopyNdarray(IsopyArray, np.ndarray):
                 obj = np.zeros(None, dtype)
 
             for i in range(len(fkeys)):
-                obj[fkeys[i].safe_format()] = values[values.dtype.names[i]]
+                obj[fkeys[i].varname()] = values[values.dtype.names[i]]
             return cls._ndarray(obj)
 
         # TODO do seperatley so that each key cna have a different dtype
@@ -1740,10 +2584,10 @@ class IsopyNdarray(IsopyArray, np.ndarray):
 
                 if obj.ndim == 0 and values.ndim == 1:
                     for i in range(len(fkeys)):
-                        obj[fkeys[i].safe_format()] = values[values.dtype.names[i]][0]
+                        obj[fkeys[i].varname()] = values[values.dtype.names[i]][0]
                 else:
                     for i in range(len(fkeys)):
-                        obj[fkeys[i].safe_format()] = values[values.dtype.names[i]]
+                        obj[fkeys[i].varname()] = values[values.dtype.names[i]]
 
                 return cls._ndarray(obj)
             else:
@@ -1778,10 +2622,10 @@ class IsopyNdarray(IsopyArray, np.ndarray):
 
                 if obj.ndim == 0 and values.ndim == 2:
                     for i in range(len(fkeys)):
-                        obj[fkeys[i].safe_format()] = values[i][0]
+                        obj[fkeys[i].varname()] = values[i][0]
                 else:
                     for i in range(len(fkeys)):
-                        obj[fkeys[i].safe_format()] = values[i]
+                        obj[fkeys[i].varname()] = values[i]
 
                 return cls._ndarray(obj)
 
@@ -1790,7 +2634,7 @@ class IsopyNdarray(IsopyArray, np.ndarray):
     def __setitem__(self, key, value):
         if isinstance(key, str):
             try:
-                key = self._string(key).safe_format()
+                key = self._string(key).varname()
             except:
                 pass
         super(IsopyNdarray, self).__setitem__(key, value)
@@ -1798,7 +2642,7 @@ class IsopyNdarray(IsopyArray, np.ndarray):
     def __getitem__(self, key):
         if isinstance(key, str):
             try:
-                key = self._string(key).safe_format()
+                key = self._string(key).varname()
             except:
                 pass
         elif isinstance(key, list):
@@ -1807,7 +2651,7 @@ class IsopyNdarray(IsopyArray, np.ndarray):
             elif isinstance(key[0], str):
                 # Can be smarter
                 try:
-                    key = self._list(key).safe_format()
+                    key = self._list(key).varnames()
                 except:
                     pass
         return self._view(super(IsopyNdarray, self).__getitem__(key))
@@ -1855,7 +2699,7 @@ class IsopyVoid(IsopyArray, np.void):
             raise IndexError('{} cannot be indexed by position'.format(self.__class__.__name__))
         elif isinstance(key, str):
             try:
-                key = self._string(key).safe_format()
+                key = self._string(key).varname()
             except:
                 pass
         super(IsopyArray, self).__setitem__(key, value)
@@ -1865,7 +2709,7 @@ class IsopyVoid(IsopyArray, np.void):
             raise IndexError('{} cannot be indexed by position'.format(self.__class__.__name__))
         elif isinstance(key, str):
             try:
-                key = self._string(key).safe_format()
+                key = self._string(key).varname()
             except:
                 pass
         elif isinstance(key, list):
@@ -1874,7 +2718,7 @@ class IsopyVoid(IsopyArray, np.void):
             elif isinstance(key[0], str):
                 # Can be smarter
                 try:
-                    key = [k.safe_format() for k in self._list(key)]
+                    key = [k.varname() for k in self._list(key)]
                 except:
                     pass
         # TODO check if it return IsopyVoid

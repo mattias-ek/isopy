@@ -16,21 +16,20 @@ values. A number of toolboxes is also available providing functions for performi
    :caption: Contents
 
    Tutorial <tutorial_page>
-   Examples <examples_page>
 
 .. toctree::
    :maxdepth: 1
    :caption: isopy
 
-   Data types <dtypes_page2>
-   NumPy functions <functions_page>
-   Miscellaneous functions <functions_page>
+   Data types <refpages/dtypes>
+   Functions <refpages/functions>
+   Io <refpages/io>
 
 .. toctree::
    :maxdepth: 1
-   :caption: Toolboxes:
+   :caption: whatevs
 
-   doublespike <doublespike_page>
+   functions <refpages/functions>
 
 Indices and tables
 ==================

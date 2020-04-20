@@ -202,10 +202,10 @@ class Test_IsopyString(object):
         isotope = IsotopeString('105Pd')
         ratio = RatioString('108Pd/105Pd')
 
-        assert mass.safe_format() == '_105'
-        assert element.safe_format() == 'Pd'
-        assert isotope.safe_format() == '_105Pd'
-        assert ratio.safe_format() == '_108Pd_OVER_105Pd'
+        assert mass.varname() == '_105'
+        assert element.varname() == 'Pd'
+        assert isotope.varname() == '_105Pd'
+        assert ratio.varname() == '_108Pd_OVER_105Pd'
 
 
 class Test_IsopyList(object):
