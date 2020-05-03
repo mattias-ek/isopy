@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="isopy",
-    version="0.3.1",
+    version="0.3.2",
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy', 'tables', 'pyperclip', 'xlrd', 'matplotlib'],
 
