@@ -99,7 +99,7 @@ def import_exp(filename):
     info = {}
 
     with open(filename, 'r') as exp:
-        dialect = _csv.Sniffer().sniff(exp.read(1024))
+        dialect = _csv.Sniffer().sniff(exp.read())
         exp.seek(0)
         reader = _csv.reader(exp, dialect, quoting=_csv.QUOTE_NONE)
 
@@ -112,7 +112,7 @@ def import_exp(filename):
             # Collect run information
             if ":" in row[0]:
                 i = row[0].split(":", 1)
-                info[i[0]] = i[1]
+                info[i[0]] = i[1].strip()
 
             # Cycle is the first field in the data table
             if row[0] == 'Cycle':
@@ -234,8 +234,8 @@ def read_csv(filepath, comment_symbol='#', skip_columns=None):
 
     with open(filepath, 'r', newline='') as file:
         firstline = file.readline()
+        dialect = _csv.Sniffer().sniff(file.read())
         file.seek(0)
-        dialect = _csv.Sniffer().sniff(firstline)
         if firstline[:3] == 'ï»¿':
             #Ugly way of detecting if file is encoded with a Byte order mark
             #Excel csv files are encoded like this

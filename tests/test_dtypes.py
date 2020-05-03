@@ -556,6 +556,7 @@ class Test_IsopyList(object):
         assert list(onexortwo) == ['Ru', 'Ag']
 
 
+#TODO dtype
 class Test_IsopyArray(object):
     def test_creation_dict(self):
         #creating array from dict
