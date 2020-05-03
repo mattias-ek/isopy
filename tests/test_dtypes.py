@@ -19,12 +19,14 @@ def assert_isopyarray_equal_ndarray(arr1, arr2, **kwargs):
             print(kwargs)
             raise
 
+
 def assert_isoparray_equal_isopyarray(arr1, arr2, **kwargs):
     assert isinstance(arr1, IsopyArray)
     assert isinstance(arr2, IsopyArray)
     assert arr1.keys == arr2.keys()
     for key in arr1.keys():
         np.testing.assert_array_equal(arr1[key], arr2[key])
+
 
 def assert_ndarray_equal_ndarray(arr1, arr2, **kwargs):
     assert not isinstance(arr1, IsopyArray)
