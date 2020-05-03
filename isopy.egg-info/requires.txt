@@ -1,0 +1,5 @@
+numpy
+tables
+pyperclip
+xlrd
+matplotlib

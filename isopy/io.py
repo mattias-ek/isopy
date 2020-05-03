@@ -5,6 +5,7 @@ import csv as _csv
 import datetime as _dt
 import numpy as _np
 import xlrd as _xlrd
+import pkg_resources as _pkgr
 
 __all__ = ['get_reference_values', 'import_exp', 'read_csv', 'write_csv', 'read_excel']
 
@@ -66,8 +67,7 @@ def get_reference_values(name):
     if name in reference_values:
         return reference_values[name].copy()
     else:
-
-        #Make sure the file exists
+        #filepath = _pkgr.resource_filename('isopy', 'referencedata/{}.csv'.format(name))
         filepath = _os.path.join(_os.path.dirname(__file__), 'referencedata', '{}.csv'.format(name))
         if not _os.path.exists(filepath):
             raise ValueError('A data set called "{}" does not exist'.format(name))
