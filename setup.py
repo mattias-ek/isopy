@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="isopy",
-    version="0.3.0",
+    version="0.3.1",
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy', 'tables', 'pyperclip', 'xlrd', 'matplotlib'],
 
@@ -22,7 +22,7 @@ setuptools.setup(
     keywords="array isotope geochemistry cosmochemisty",
     long_description_content_type="text/markdown",
     url="https://github.com/mattias-ek/isopy",
-    download_url = "https://github.com/mattias-ek/isopy/archive/v0.3.tar.gz",
+    download_url = "https://github.com/mattias-ek/isopy/archive/v0.3.1.tar.gz",
 
     classifiers=[
         "Programming Language :: Python :: 3",
