@@ -1,5 +1,4 @@
 import numpy as _np
-import scipy.stats as _ss
 from numpy.lib.function_base import array_function_dispatch
 
 

@@ -1,4 +1,3 @@
-name = 'isopy'
 
 from .dtypes import *
 from .io import *
