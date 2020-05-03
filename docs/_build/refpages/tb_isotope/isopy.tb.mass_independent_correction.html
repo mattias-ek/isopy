@@ -1,0 +1,263 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mass_independent_correction &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="calculate_mass_fractionation_factor" href="isopy.tb.calculate_mass_fractionation_factor.html" />
+    <link rel="prev" title="make_sample" href="isopy.tb.make_sample.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#general-data-processing">General Data Processing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#isotope-data-processing">Isotope Data Processing</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_sample.html">make_sample</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">mass_independent_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.calculate_mass_fractionation_factor.html">calculate_mass_fractionation_factor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_mass_fractionation.html">remove_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.add_mass_fractionation.html">add_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_isobaric_interferences.html">remove_isobaric_interferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.add_isobaric_interferences.html">add_isobaric_interferences</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#miscellaneous">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#numpy-like-functions">Numpy like functions</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>mass_independent_correction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/refpages/tb_isotope/isopy.tb.mass_independent_correction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="mass-independent-correction">
+<h1>mass_independent_correction<a class="headerlink" href="#mass-independent-correction" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.mass_independent_correction">
+<code class="sig-prename descclassname">isopy.tb.</code><code class="sig-name descname">mass_independent_correction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">mf_ratio</span></em>, <em class="sig-param"><span class="n">normalisation_factor</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">std_abu</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">std_mass</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/isotope.html#mass_independent_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.tb.mass_independent_correction" title="Permalink to this definition">¶</a></dt>
+<dd><p>A quick function for mass-independent data correction.</p>
+<p>The data is corrected for mass fractionation, isobaric interferences and finally, if <em>normalisation_factor</em> is given,
+normalised to the values in <em>std_abu</em>. If <em>normalisation_factor</em> is not given the unnormalised corrected data is
+returned.</p>
+<p>An interference correction will be applied for all isotopes that are different from the <em>mf_ratio</em> numerator
+element. This will be done together with the mass fractionation correction to account for isobaric interferences
+on the <em>mf_ratio</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><em>IsotopeArray</em></a>) – The data to be corrected.</p></li>
+<li><p><strong>mf_ratio</strong> (<a class="reference internal" href="../Strings/isopy.RatioString.html#isopy.RatioString" title="isopy.RatioString"><em>RatioString</em></a>) – The data will be internally normalised to this ratio.</p></li>
+<li><p><strong>normalisation_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – If given the corrected data is passed to <a class="reference internal" href="../tb_general/isopy.tb.normalise_data.html#isopy.tb.normalise_data" title="isopy.tb.normalise_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">normalise_data()</span></code></a> together with the <em>std_abu</em> and with
+<em>normalisation_factor</em>.</p></li>
+<li><p><strong>std_abu</strong> (<em>dict</em>) – An object with a “.get(item, default_value)” method containing the abundance of each isotope/ratio needed for
+this function. Default is the “best isotope fraction” reference values.</p></li>
+<li><p><strong>std_mass</strong> (<em>dict</em>) – An object with a “.get(item, default_value)” method containing the masses of each isotope/ratio needed for
+this function. Default is the “isotope mass” reference values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The data corrected for mass-independent variation. Only the isotopes of the element in <em>mf_ratio</em> is returned.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../Arrays/isopy.RatioArray.html#isopy.RatioArray" title="isopy.RatioArray">RatioArray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.tb.calculate_mass_fractionation_factor.html" class="btn btn-neutral float-right" title="calculate_mass_fractionation_factor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="isopy.tb.make_sample.html" class="btn btn-neutral float-left" title="make_sample" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

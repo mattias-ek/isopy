@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>RatioString &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="string" href="isopy.string.html" />
+    <link rel="prev" title="IsotopeString" href="isopy.IsotopeString.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes.html">Data types</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../dtypes.html#isopystrings">IsopyStrings</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.MassString.html">MassString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.ElementString.html">ElementString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.IsotopeString.html">IsotopeString</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">RatioString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.string.html">string</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopylists">IsopyLists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopyarrays">IsopyArrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopydicts">IsopyDicts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../dtypes.html">Custom data types</a> &raquo;</li>
+        
+      <li>RatioString</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/refpages/Strings/isopy.RatioString.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="ratiostring">
+<h1>RatioString<a class="headerlink" href="#ratiostring" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="isopy.RatioString">
+<em class="property">class </em><code class="sig-prename descclassname">isopy.</code><code class="sig-name descname">RatioString</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">string</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/dtypes.html#RatioString"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.RatioString" title="Permalink to this definition">¶</a></dt>
+<dd><p>String representation of a ratio consisting of a numerator and a denominator.</p>
+<p>The supplied string should consist of a numerator and a denominator separated by a ‘/’. The numerator and
+denominator strings must be able to be parsed into a <a class="reference internal" href="isopy.MassString.html#isopy.MassString" title="isopy.MassString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MassString</span></code></a>, <a class="reference internal" href="isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementString</span></code></a> or a
+<a class="reference internal" href="isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotopeString</span></code></a>. The numerator and denominator do not have to be the same type.</p>
+<p>Behaves just like, and contains all the methods that, a normal python string does. However, any method that
+return a string will return a normal python string and <em>not</em> an <a class="reference internal" href="#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a> unless specifically noted below.
+Only methods that behave differently from a normal string are documented below.</p>
+<p>When compared to another item that item will, if possible, be converted to an <a class="reference internal" href="#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a> for comparison.
+The <code class="docutils literal notranslate"><span class="pre">in</span></code> operator will check if the given item is equal to either the numerator or denominator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>StringParseError</strong> – Is raised when the supplied string cannot be parsed into the correct format</p></li>
+<li><p><strong>StringTypeError</strong> – Raised when the supplied item cannot be turned into a string</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="isopy.RatioString.numerator">
+<code class="sig-name descname">numerator</code><a class="headerlink" href="#isopy.RatioString.numerator" title="Permalink to this definition">¶</a></dt>
+<dd><p>The numerator string in the <a class="reference internal" href="#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a>. <strong>Readonly</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="isopy.MassString.html#isopy.MassString" title="isopy.MassString">MassString</a>, <a class="reference internal" href="isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString">ElementString</a> or <a class="reference internal" href="isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString">IsotopeString</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="isopy.RatioString.denominator">
+<code class="sig-name descname">denominator</code><a class="headerlink" href="#isopy.RatioString.denominator" title="Permalink to this definition">¶</a></dt>
+<dd><p>The denominator string in the <a class="reference internal" href="#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a>. <strong>Readonly</strong></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="isopy.MassString.html#isopy.MassString" title="isopy.MassString">MassString</a>, <a class="reference internal" href="isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString">ElementString</a> or <a class="reference internal" href="isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString">IsotopeString</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76/ge70&#39;</span><span class="p">)</span>
+<span class="go">&#39;76Ge/70Ge&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">numerator</span>
+<span class="go">&#39;76Ge&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">denominator</span>
+<span class="go">&#39;70Ge&#39;</span>
+</pre></div>
+</div>
+<p>Comparisons</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76/70ge&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;ge76/70ge&#39;</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76/70ge&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;ge76/70ge&#39;</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>Using <code class="docutils literal notranslate"><span class="pre">in</span></code></p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;76ge&#39;</span> <span class="ow">in</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76/70ge&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">&#39;75ge&#39;</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;ge76/70ge&#39;</span><span class="p">)</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="isopy.RatioString.identifier">
+<code class="sig-name descname">identifier</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/dtypes.html#RatioString.identifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.RatioString.identifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns descriptive identifier that can be used to e.g. name attributes.</p>
+<p>The returned string can be parsed back into an <a class="reference internal" href="#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a> the same as any other string.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;Ge76/Ge70&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">identifier</span><span class="p">()</span>
+<span class="go">&#39;Ratio_76Ge_70Ge&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">RatioString</span><span class="p">(</span><span class="s1">&#39;Ratio_76Ge_70Ge&#39;</span><span class="p">)</span>
+<span class="go">&#39;76Ge/70Ge&#39;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.string.html" class="btn btn-neutral float-right" title="string" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="isopy.IsotopeString.html" class="btn btn-neutral float-left" title="IsotopeString" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

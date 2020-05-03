@@ -1,0 +1,514 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>isopy.toolbox.misc &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>isopy.toolbox.misc</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for isopy.toolbox.misc</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">matplotlib.axes</span> <span class="kn">import</span> <span class="n">Axes</span> <span class="k">as</span> <span class="n">_Axes</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Polygon</span> <span class="k">as</span> <span class="n">_Polygon</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">_np</span>
+<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">exceptions</span> <span class="k">as</span> <span class="n">_e</span>
+<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">dtypes</span> <span class="k">as</span> <span class="n">_dt</span>
+
+
+
+<span class="fm">__add__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;plot_york_regression&#39;</span><span class="p">,</span> <span class="s1">&#39;york_regression&#39;</span><span class="p">,</span> <span class="s1">&#39;johnson_nyquist_noise&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="plot_york_regression"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.tb.plot_york_regression.html#isopy.tb.plot_york_regression">[docs]</a><span class="k">def</span> <span class="nf">plot_york_regression</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">regression</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">slopeline</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">errorline</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">shaded</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">zorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shade_kwargs</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">line_kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots the regression within the limits of the supplies axes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    axes : matplotlib.axes.Axes, matplotlib.pytplot.plt</span>
+<span class="sd">        An axes instance where the regression envelope will be plotted.</span>
+<span class="sd">    regression : YorkRegression</span>
+<span class="sd">        The regression to be plotted</span>
+<span class="sd">    color : str</span>
+<span class="sd">        The color of the lines/polygon drawn for this regression. See</span>
+<span class="sd">        `matplotlib documentation &lt;https://matplotlib.org/tutorials/colors/colors.html&gt;`_.</span>
+<span class="sd">    slopeline : bool</span>
+<span class="sd">        If ``True`` the slope will be plotted as a solid line. Default value is ``True``.</span>
+<span class="sd">    errorline : bool, optional</span>
+<span class="sd">        If ``True`` the outline of the regression envelope will be plotted as a dashed line. Default value is ``True``.</span>
+<span class="sd">    shaded : bool, optional</span>
+<span class="sd">        If ``True`` the regression envelope will be shaded. Default value is ``True``.</span>
+<span class="sd">    zorder : int, optional</span>
+<span class="sd">        The higher the value the later the regression will be be drawn. Default value is ``1``.</span>
+<span class="sd">    shade_kwargs : dict, optional</span>
+<span class="sd">        kwargs that will be passed to polygon that makes up the shaded area.</span>
+<span class="sd">    **line_kwargs</span>
+<span class="sd">        Keyword arguments passed when drawing the slopeline and the errorline.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#TODO add</span>
+    <span class="n">slopeline_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;linestyle&#39;</span><span class="p">:</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;marker&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;zorder&#39;</span><span class="p">:</span> <span class="n">zorder</span><span class="p">}</span>
+    <span class="n">slopeline_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">line_kwargs</span><span class="p">)</span>
+    <span class="n">errorline_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;linestyle&#39;</span><span class="p">:</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="s1">&#39;marker&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;zorder&#39;</span><span class="p">:</span> <span class="n">zorder</span><span class="p">}</span>
+    <span class="n">errorline_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">line_kwargs</span><span class="p">)</span>
+    <span class="n">errorline_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">poly_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;zorder&#39;</span><span class="p">:</span> <span class="n">zorder</span><span class="o">-</span><span class="mf">0.1</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">shade_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">poly_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">shade_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">_Axes</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;axes must be a matplotlib Axes or pyplot obj&#39;</span><span class="p">)</span>
+
+    <span class="n">xlim</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ylim</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+
+    <span class="n">xval</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">10000</span><span class="p">)</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="n">xval</span> <span class="o">*</span> <span class="n">regression</span><span class="o">.</span><span class="n">slope</span> <span class="o">+</span> <span class="n">regression</span><span class="o">.</span><span class="n">intercept</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">regression</span><span class="o">.</span><span class="n">y_error</span><span class="p">(</span><span class="n">xval</span><span class="p">)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">-</span> <span class="n">regression</span><span class="o">.</span><span class="n">y_error</span><span class="p">(</span><span class="n">xval</span><span class="p">)</span>
+
+    <span class="n">index_slope</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">slope</span> <span class="o">&gt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">slope</span> <span class="o">&lt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">index_lower</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">lower</span> <span class="o">&gt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lower</span> <span class="o">&lt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">index_upper</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">upper</span> <span class="o">&gt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">upper</span> <span class="o">&lt;</span> <span class="n">ylim</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">upper_coordinates</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">xval</span><span class="p">[</span><span class="n">index_upper</span><span class="p">],</span> <span class="n">upper</span><span class="p">[</span><span class="n">index_upper</span><span class="p">])]</span>
+    <span class="n">lower_coordinates</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">xval</span><span class="p">[</span><span class="n">index_lower</span><span class="p">],</span> <span class="n">lower</span><span class="p">[</span><span class="n">index_lower</span><span class="p">])]</span>
+    <span class="n">lower_coordinates</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">shaded</span><span class="p">:</span>
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">_Polygon</span><span class="p">(</span><span class="n">upper_coordinates</span> <span class="o">+</span> <span class="n">lower_coordinates</span><span class="p">,</span> <span class="o">**</span><span class="n">poly_kwargs</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">poly</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">slopeline</span><span class="p">:</span> <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xval</span><span class="p">[</span><span class="n">index_slope</span><span class="p">],</span> <span class="n">slope</span><span class="p">[</span><span class="n">index_slope</span><span class="p">],</span> <span class="o">**</span><span class="n">slopeline_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">errorline</span><span class="p">:</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xval</span><span class="p">[</span><span class="n">index_upper</span><span class="p">],</span> <span class="n">upper</span><span class="p">[</span><span class="n">index_upper</span><span class="p">],</span> <span class="o">**</span><span class="n">errorline_kwargs</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xval</span><span class="p">[</span><span class="n">index_lower</span><span class="p">],</span> <span class="n">lower</span><span class="p">[</span><span class="n">index_lower</span><span class="p">],</span> <span class="o">**</span><span class="n">errorline_kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#axes.show(xlim, [regression.slope*xlim[0]+regression.intercept, regression.slope*xlim[1]+regression.intercept], **kwargs)</span>
+
+
+<div class="viewcode-block" id="york_regression"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.tb.york_regression.html#isopy.tb.york_regression">[docs]</a><span class="k">def</span> <span class="nf">york_regression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Xerr</span><span class="p">,</span> <span class="n">Yerr</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.00001</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the slope and intercept taking into account the uncertainty on x and y.</span>
+
+<span class="sd">    Uncertainties on the slope and intercept are given as 2σ. Based on the formulas from `York et al. (2004)</span>
+<span class="sd">    American Journal of Physics 72, 367 &lt;https://doi.org/10.1119/1.1632486&gt;`_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : np.ndarray</span>
+<span class="sd">        Values for x axis</span>
+<span class="sd">    Y : np.ndarray</span>
+<span class="sd">        Values for y axis</span>
+<span class="sd">    Xerr : float, np.ndarray</span>
+<span class="sd">        Uncertainties for x axis. If a single value then it will be used for all values of *X*.</span>
+<span class="sd">    Yerr : float, np.ndarray</span>
+<span class="sd">        Uncertainties for y axis. If a single value then it will be used for all values of *Y*.</span>
+<span class="sd">    r : float, optional</span>
+<span class="sd">        Correlation coefficient between errors in x and y. Default value is ``0``.</span>
+<span class="sd">    tol : float, optional</span>
+<span class="sd">        Tolerance for fit. Default value is ``0.00001``.</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    YorkRegression</span>
+<span class="sd">        Contains the slope and intercept values and all information needed to calculate the y for any given x.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :class:`YorkRegression`, :func:`plot_york_regression`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">Xerr</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;Xerr&#39;</span><span class="p">,</span> <span class="n">Xerr</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">Yerr</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;Yerr&#39;</span><span class="p">,</span> <span class="n">Yerr</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;tol&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;r must be between 0 and 1&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;parameter &quot;X&quot;: must have 1 dimension not </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">Y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;parameter &quot;Y&quot;: must have 1 dimension not </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">Y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;X and Y must have the same size&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Xerr</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">Xerr</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">Xerr</span>
+    <span class="k">elif</span> <span class="n">Xerr</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Xerr and X must have the same size&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Yerr</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">Yerr</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">Yerr</span>
+    <span class="k">elif</span> <span class="n">Yerr</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">Y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Yerr and Y must have the same size&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Do calculations</span>
+    <span class="n">WX</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">Xerr</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">WY</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">Yerr</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">WX</span> <span class="o">*</span> <span class="n">WY</span><span class="p">)</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span> <span class="o">*</span> <span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">_np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">*</span> <span class="n">_np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">_np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Iterativley converge self.slope until tol is reached</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="n">W</span> <span class="o">=</span> <span class="p">(</span><span class="n">WX</span> <span class="o">*</span> <span class="n">WY</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">WX</span> <span class="o">+</span> <span class="p">(</span><span class="n">slope</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">WY</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">r</span> <span class="o">*</span> <span class="n">k</span><span class="p">)</span>
+        <span class="n">Xbar</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">X</span><span class="p">)</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
+        <span class="n">Ybar</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">Y</span><span class="p">)</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">Xbar</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">Ybar</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">W</span> <span class="o">*</span> <span class="p">(</span><span class="n">U</span> <span class="o">/</span> <span class="n">WY</span> <span class="o">+</span> <span class="p">(</span><span class="n">slope</span> <span class="o">*</span> <span class="n">V</span><span class="p">)</span> <span class="o">/</span> <span class="n">WX</span> <span class="o">-</span> <span class="p">(</span><span class="n">slope</span> <span class="o">*</span> <span class="n">U</span> <span class="o">+</span> <span class="n">V</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="n">k</span><span class="p">))</span>
+
+        <span class="n">b2</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">V</span><span class="p">)</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">U</span><span class="p">)</span>
+        <span class="n">dif</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">b2</span> <span class="o">/</span> <span class="n">slope</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">slope</span> <span class="o">=</span> <span class="n">b2</span>
+        <span class="k">if</span> <span class="n">dif</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span> <span class="k">break</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unable to calculate a fit after 1000 iterations.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Calculate self.intercept</span>
+    <span class="n">intercept</span> <span class="o">=</span> <span class="n">Ybar</span> <span class="o">-</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">Xbar</span>
+
+    <span class="c1"># Calculate adjusted points</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">Xbar</span> <span class="o">+</span> <span class="n">beta</span>
+    <span class="n">xbar</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">xbar</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="n">Ybar</span> <span class="o">+</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">beta</span>
+    <span class="n">ybar</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">ybar</span>
+
+    <span class="c1">#Calculate the uncertianty on the slope</span>
+    <span class="n">slope_error</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="p">(</span><span class="n">u</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">intercept_error</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">0</span> <span class="o">-</span> <span class="n">xbar</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">slope_error</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="c1">#Goodness of fit</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">X</span> <span class="o">-</span> <span class="n">intercept</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1">#implementation in isoplotr</span>
+    <span class="k">return</span> <span class="n">YorkRegression</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span> <span class="n">slope_error</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">intercept_error</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">W</span><span class="p">),</span> <span class="n">xbar</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="YorkRegression"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.toolbox.misc.YorkRegression.html#isopy.tb.YorkRegression">[docs]</a><span class="k">class</span> <span class="nc">YorkRegression</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returned by :func:`york_regression`.</span>
+
+<span class="sd">    This object contains all the necessary attributes to calculate the value and uncertainty of y for any given</span>
+<span class="sd">    value of x.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    slope : float</span>
+<span class="sd">        The best fit slope of the regression</span>
+<span class="sd">    slope_error : float</span>
+<span class="sd">        The uncertainty of the slope</span>
+<span class="sd">    intercept : float</span>
+<span class="sd">        The y axis intercept of the regression</span>
+<span class="sd">    intercept_error : float</span>
+<span class="sd">        The uncertainty of the y axis intercept</span>
+<span class="sd">    sumW : float</span>
+<span class="sd">        Sum of the weights</span>
+<span class="sd">    xbar : float</span>
+<span class="sd">        The weighted x mean.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`york_regression`, :func:`plot_york_regression`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">slope_error</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">intercept_error</span><span class="p">,</span> <span class="n">sumW</span><span class="p">,</span> <span class="n">xbar</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span> <span class="o">=</span> <span class="n">slope</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope_error</span> <span class="o">=</span> <span class="n">slope_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span> <span class="o">=</span> <span class="n">intercept</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intercept_error</span> <span class="o">=</span> <span class="n">intercept_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sumW</span> <span class="o">=</span> <span class="n">sumW</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xbar</span> <span class="o">=</span> <span class="n">xbar</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;y=(</span><span class="si">{}</span><span class="s1"> +- </span><span class="si">{}</span><span class="s1">)x + (</span><span class="si">{}</span><span class="s1"> +- </span><span class="si">{}</span><span class="s1">); xbar = </span><span class="si">{}</span><span class="s1">, sum(W) = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope_error</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept_error</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xbar</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sumW</span><span class="p">)</span>
+
+<div class="viewcode-block" id="YorkRegression.y_error"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.toolbox.misc.YorkRegression.html#isopy.tb.YorkRegression.y_error">[docs]</a>    <span class="k">def</span> <span class="nf">y_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the uncertainty of y at *x*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sumW</span> <span class="o">+</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xbar</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slope_error</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="YorkRegression.y"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.toolbox.misc.YorkRegression.html#isopy.tb.YorkRegression.y">[docs]</a>    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return y at *x*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span></div></div>
+
+
+<div class="viewcode-block" id="johnson_nyquist_noise"><a class="viewcode-back" href="../../../refpages/tb_misc/isopy.tb.johnson_nyquist_noise.html#isopy.tb.johnson_nyquist_noise">[docs]</a><span class="k">def</span> <span class="nf">johnson_nyquist_noise</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">resistor</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span> <span class="n">integration_time</span> <span class="o">=</span> <span class="mf">8.389</span><span class="p">,</span> <span class="n">include_counting_statistics</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                          <span class="n">T</span> <span class="o">=</span> <span class="mi">309</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span> <span class="n">cpv</span> <span class="o">=</span> <span class="mf">6.25E7</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the Johnson-Nyquist noise and counting statistics for a given voltage.</span>
+
+<span class="sd">    The Johnson-Nyquist noise (:math:`n_{jn}` is calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{jn} = \\sqrt{ \\frac{4*k_{b}*T*r} {t} } * \\frac{R} {r}</span>
+
+<span class="sd">    The counting statistics, or shot noise, (:math:`n_{cs}` is calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{cs} = \\sqrt{ \\frac{1} {v * c_{V} * t}} * v</span>
+
+<span class="sd">    The two are combined as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{all} = \\sqrt{ (n_{jn})^2 + (n_{cs})^2 }</span>
+
+<span class="sd">    The noise for a specific isotope ratio can be calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{n,d} = \\sqrt{ (n_{n})^2 + (n_{d})^2 }</span>
+
+<span class="sd">    where :math:`n` is the numerator isotope and :math:`d` is the denominator isotope.</span>
+
+<span class="sd">    Adapted from the equations in `Liu &amp; Pearson (2014) Chemical Geology, 10, 301-311</span>
+<span class="sd">    &lt;https://doi.org/10.1016/j.chemgeo.2013.11.008&gt;`_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    voltage : IsotopeArray, float, np.ndarray</span>
+<span class="sd">        The measured voltages. :math:`v` in the equations above.</span>
+<span class="sd">    resistor : IsotopeArray, float, np.ndarray</span>
+<span class="sd">        The resistor for the measurement. Default value is ``1E11``. :math:`r` in the equations above.</span>
+<span class="sd">    integration_time : float, optional</span>
+<span class="sd">        The integration time in seconds for a single measurement. Default value is ``8.389``.</span>
+<span class="sd">        :math:`t` in the equations above.</span>
+<span class="sd">    include_counting_statistics: bool, optional</span>
+<span class="sd">        If ``True`` then the counting statistics are included in the returned value. Default value is ``True``.</span>
+<span class="sd">    T : float, optional</span>
+<span class="sd">        Amplifier housing temperature in kelvin. Default value is ``309``. :math:`T` in the equations above.</span>
+<span class="sd">    R : float, optional</span>
+<span class="sd">        Voltage is reported as volts for this resistor value. Default value is ``1E11``. :math:`R` in the equations</span>
+<span class="sd">        above.</span>
+<span class="sd">    cpv : float, optional</span>
+<span class="sd">        Counts per volt per second. Default value is ``6.25E7``. :math:`C_{V}` in the equations above.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.float or np.ndarray or IsotopeArray</span>
+<span class="sd">        The noise in V for the given voltage/set of voltages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">voltage</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;voltage&#39;</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">resistor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;resistor&#39;</span><span class="p">,</span> <span class="n">resistor</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">integration_time</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;integration_time&#39;</span><span class="p">,</span> <span class="n">integration_time</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">include_counting_statistics</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;include_counting_statistics&#39;</span><span class="p">,</span> <span class="n">include_counting_statistics</span><span class="p">,</span>
+                                                <span class="nb">bool</span><span class="p">)</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cpv</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;cpv&#39;</span><span class="p">,</span> <span class="n">cpv</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">kB</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="mf">1.3806488E-023</span><span class="p">)</span> <span class="c1"># Boltsman constant</span>
+
+    <span class="n">t_noise</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">4</span> <span class="o">*</span> <span class="n">kB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">*</span> <span class="n">resistor</span><span class="p">)</span> <span class="o">/</span> <span class="n">integration_time</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">voltage</span> <span class="o">*</span> <span class="p">(</span><span class="n">resistor</span> <span class="o">/</span> <span class="n">R</span><span class="p">))</span> <span class="o">*</span> <span class="n">voltage</span>
+    <span class="n">t_noise</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">4</span> <span class="o">*</span> <span class="n">kB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">*</span> <span class="n">resistor</span><span class="p">)</span> <span class="o">/</span> <span class="n">integration_time</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">R</span> <span class="o">/</span> <span class="n">resistor</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_counting_statistics</span><span class="p">:</span>
+        <span class="n">c_stat</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">voltage</span> <span class="o">*</span> <span class="n">cpv</span> <span class="o">*</span> <span class="n">integration_time</span><span class="p">))</span> <span class="o">*</span> <span class="n">voltage</span>
+        <span class="k">return</span> <span class="n">_np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">c_stat</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t_noise</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">t_noise</span></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

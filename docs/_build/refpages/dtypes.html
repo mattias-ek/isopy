@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Custom data types &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="MassString" href="Strings/isopy.MassString.html" />
+    <link rel="prev" title="Tutorial" href="../tutorial_page.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#isopystrings">IsopyStrings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Strings/isopy.MassString.html">MassString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Strings/isopy.ElementString.html">ElementString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Strings/isopy.IsotopeString.html">IsotopeString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Strings/isopy.RatioString.html">RatioString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Strings/isopy.string.html">string</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#isopylists">IsopyLists</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.MassList.html">MassList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.ElementList.html">ElementList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.IsotopeList.html">IsotopeList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.RatioList.html">RatioList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.list_.html">list_</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Lists/isopy.aslist.html">aslist</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#isopyarrays">IsopyArrays</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.MassArray.html">MassArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.ElementArray.html">ElementArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.IsotopeArray.html">IsotopeArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.RatioArray.html">RatioArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.array.html">array</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.asarray.html">asarray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Arrays/isopy.asanyarray.html">asanyarray</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#isopydicts">IsopyDicts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Dicts/isopy.ReferenceDict.html">ReferenceDict</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Custom data types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/refpages/dtypes.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="custom-data-types">
+<h1>Custom data types<a class="headerlink" href="#custom-data-types" title="Permalink to this headline">¶</a></h1>
+<p>Documented here are the custom data types implemented by isopy for working with and manipulating different types of
+data. See the <a class="reference internal" href="../tutorial_page.html#tutorial"><span class="std std-ref">Tutorial</span></a> for examples on using these data types.</p>
+<div class="section" id="isopystrings">
+<span id="isopystring"></span><h2>IsopyStrings<a class="headerlink" href="#isopystrings" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="Strings/isopy.MassString.html#isopy.MassString" title="isopy.MassString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MassString</span></code></a>(string)</p></td>
+<td><p>String representation of an integer representing a mass number.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Strings/isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ElementString</span></code></a>(string)</p></td>
+<td><p>String representation of an element symbol.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Strings/isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeString</span></code></a>(string)</p></td>
+<td><p>String representation of an isotope containing a mass number followed by an element symbol.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Strings/isopy.RatioString.html#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioString</span></code></a>(string)</p></td>
+<td><p>String representation of a ratio consisting of a numerator and a denominator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Strings/isopy.string.html#isopy.string" title="isopy.string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">string</span></code></a>(item)</p></td>
+<td><p>Create an <a class="reference internal" href="#isopystrings"><span class="std std-ref">IsopyString</span></a> from the input.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="isopylists">
+<span id="isopylist"></span><h2>IsopyLists<a class="headerlink" href="#isopylists" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="Lists/isopy.MassList.html#isopy.MassList" title="isopy.MassList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MassList</span></code></a>(items[, skip_duplicates, …])</p></td>
+<td><p>A list consisting exclusively of <a class="reference internal" href="Strings/isopy.MassString.html#isopy.MassString" title="isopy.MassString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MassString</span></code></a> items.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Lists/isopy.ElementList.html#isopy.ElementList" title="isopy.ElementList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ElementList</span></code></a>(items[, skip_duplicates, …])</p></td>
+<td><p>A list consisting exclusively of <a class="reference internal" href="Strings/isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementString</span></code></a> items.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Lists/isopy.IsotopeList.html#isopy.IsotopeList" title="isopy.IsotopeList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeList</span></code></a>(items[, skip_duplicates, …])</p></td>
+<td><p>A list consisting exclusively of <a class="reference internal" href="Strings/isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotopeString</span></code></a> items.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Lists/isopy.RatioList.html#isopy.RatioList" title="isopy.RatioList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioList</span></code></a>(items[, skip_duplicates, …])</p></td>
+<td><p>A list consisting exclusively of <a class="reference internal" href="Strings/isopy.RatioString.html#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a> items.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Lists/isopy.list_.html#isopy.list_" title="isopy.list_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_</span></code></a>(items[, skip_duplicates, allow_duplicates])</p></td>
+<td><p>Create an <a class="reference internal" href="#isopylists"><span class="std std-ref">IsopyList</span></a> from the input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Lists/isopy.aslist.html#isopy.aslist" title="isopy.aslist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aslist</span></code></a>(items[, skip_duplicates, …])</p></td>
+<td><p>Convert the input to a <a class="reference internal" href="#isopylists"><span class="std std-ref">IsopyList</span></a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="isopyarrays">
+<span id="isopyarray"></span><h2>IsopyArrays<a class="headerlink" href="#isopyarrays" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="Arrays/isopy.MassArray.html#isopy.MassArray" title="isopy.MassArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MassArray</span></code></a></p></td>
+<td><p>An array where data is stored in rows and columns with <code class="xref py py-class docutils literal notranslate"><span class="pre">Masstring</span></code> keys.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Arrays/isopy.ElementArray.html#isopy.ElementArray" title="isopy.ElementArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ElementArray</span></code></a></p></td>
+<td><p>An array where data is stored in rows and columns with <a class="reference internal" href="Strings/isopy.ElementString.html#isopy.ElementString" title="isopy.ElementString"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementString</span></code></a> keys.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IsotopeArray</span></code></a></p></td>
+<td><p>An array where data is stored in rows and columns with <a class="reference internal" href="Strings/isopy.IsotopeString.html#isopy.IsotopeString" title="isopy.IsotopeString"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotopeString</span></code></a> keys.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Arrays/isopy.RatioArray.html#isopy.RatioArray" title="isopy.RatioArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RatioArray</span></code></a></p></td>
+<td><p>An array where data is stored in rows and columns with <a class="reference internal" href="Strings/isopy.RatioString.html#isopy.RatioString" title="isopy.RatioString"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioString</span></code></a> keys.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Arrays/isopy.array.html#isopy.array" title="isopy.array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">array</span></code></a>([values, keys, ndim, dtype])</p></td>
+<td><p>Create an <a class="reference internal" href="#isopyarrays"><span class="std std-ref">IsopyArray</span></a> from the input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="Arrays/isopy.asarray.html#isopy.asarray" title="isopy.asarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">asarray</span></code></a>([values, keys, ndim, dtype])</p></td>
+<td><p>Convert the input to a <a class="reference internal" href="#isopyarrays"><span class="std std-ref">IsopyArray</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="Arrays/isopy.asanyarray.html#isopy.asanyarray" title="isopy.asanyarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">asanyarray</span></code></a>([values, dtype])</p></td>
+<td><p>Convert the input to a <a class="reference internal" href="#isopyarrays"><span class="std std-ref">IsopyArray</span></a> or an numpy.ndarray`.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="isopydicts">
+<h2>IsopyDicts<a class="headerlink" href="#isopydicts" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="Dicts/isopy.ReferenceDict.html#isopy.ReferenceDict" title="isopy.ReferenceDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReferenceDict</span></code></a>([dictionary])</p></td>
+<td><p>Custom dictionary where every item stores a single value as float64 with an <a class="reference internal" href="#isopystring"><span class="std std-ref">IsopyString</span></a> key.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Strings/isopy.MassString.html" class="btn btn-neutral float-right" title="MassString" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../tutorial_page.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

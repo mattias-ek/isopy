@@ -1,0 +1,11 @@
+asstring
+========
+
+.. currentmodule:: isopy
+
+.. autoclass:: asstring
+    :members:
+    :inherited-members: str
+    :member-order: bysource
+
+

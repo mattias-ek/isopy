@@ -1,0 +1,6 @@
+denomralise\_data
+=================
+
+.. currentmodule:: isopy.tb
+
+.. autofunction:: denomralise_data

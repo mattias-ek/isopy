@@ -1,0 +1,267 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>list_ &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="aslist" href="isopy.aslist.html" />
+    <link rel="prev" title="RatioList" href="isopy.RatioList.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes.html">Data types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopystrings">IsopyStrings</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../dtypes.html#isopylists">IsopyLists</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.MassList.html">MassList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.ElementList.html">ElementList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.IsotopeList.html">IsotopeList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.RatioList.html">RatioList</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">list_</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.aslist.html">aslist</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopyarrays">IsopyArrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopydicts">IsopyDicts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../dtypes.html">Custom data types</a> &raquo;</li>
+        
+      <li>list_</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/refpages/Lists/isopy.list_.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="list">
+<h1>list_<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="isopy.list_">
+<em class="property">class </em><code class="sig-prename descclassname">isopy.</code><code class="sig-name descname">list_</code><a class="reference internal" href="../../_modules/isopy/dtypes.html#list_"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.list_" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an <a class="reference internal" href="../dtypes.html#isopylists"><span class="std std-ref">IsopyList</span></a> from the input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>items</strong> (<em>str</em><em>, </em><em>list of str</em>) – List of strings to be parsed. If <em>items</em> is a str it will be split using the “,” seperator.</p></li>
+<li><p><strong>skip_duplicates</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> all duplicate items will be removed from the list. This only applies during initialisation of the list.
+Default value is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>allow_duplicates</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code> a StringDuplicateError will be raised if the list contains any duplicate items. This only applies
+during initialisation of the list. Default Value is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="../dtypes.html#isopylists"><span class="std std-ref">IsopyList</span></a> consisiting of <em>items</em>. If <em>item</em> already is an
+<a class="reference internal" href="../dtypes.html#isopylists"><span class="std std-ref">IsopyList</span></a> a copy is returned.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="isopy.MassList.html#isopy.MassList" title="isopy.MassList"><code class="xref py py-class docutils literal notranslate"><span class="pre">MassList</span></code></a>, <a class="reference internal" href="isopy.ElementList.html#isopy.ElementList" title="isopy.ElementList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementList</span></code></a>, <a class="reference internal" href="isopy.IsotopeList.html#isopy.IsotopeList" title="isopy.IsotopeList"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotopeList</span></code></a> or <a class="reference internal" href="isopy.RatioList.html#isopy.RatioList" title="isopy.RatioList"><code class="xref py py-class docutils literal notranslate"><span class="pre">RatioList</span></code></a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – Raised if <em>items</em> cannot be parsed into an <a class="reference internal" href="../dtypes.html#isopylists"><span class="std std-ref">IsopyList</span></a></p></li>
+<li><p><strong>StringDuplicateError</strong> – Raised when a string already exist in the list and <code class="docutils literal notranslate"><span class="pre">allow_duplicates</span> <span class="pre">=</span> <span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">list_</span><span class="p">([</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span>
+<span class="go">[&#39;99Ru&#39;, &#39;105Pd&#39;, &#39;111Cd&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">isopy</span><span class="o">.</span><span class="n">list_</span><span class="p">([</span><span class="mi">99</span><span class="p">,</span> <span class="mi">105</span><span class="p">,</span> <span class="s1">&#39;111&#39;</span><span class="p">]))</span>
+<span class="go">&#39;MassList&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.aslist.html" class="btn btn-neutral float-right" title="aslist" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="isopy.RatioList.html" class="btn btn-neutral float-left" title="RatioList" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
