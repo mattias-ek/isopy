@@ -1,0 +1,6 @@
+find\_outliers\_mad
+===================
+
+.. currentmodule:: isopy.tb
+
+.. autofunction:: find_outliers_mad

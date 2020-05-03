@@ -1,0 +1,258 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>get_reference_values &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="import_exp" href="isopy.import_exp.html" />
+    <link rel="prev" title="Read/Write" href="../io.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../io.html">Read/Write</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">get_reference_values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.import_exp.html">import_exp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.read_csv.html">read_csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.write_csv.html">write_csv</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.read_excel.html">read_excel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="isopy.io.NeptuneData.html">NeptuneData</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../io.html">Read/Write</a> &raquo;</li>
+        
+      <li>get_reference_values</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/refpages/ReadWrite/isopy.get_reference_values.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="get-reference-values">
+<h1>get_reference_values<a class="headerlink" href="#get-reference-values" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.get_reference_values">
+<code class="sig-prename descclassname">isopy.</code><code class="sig-name descname">get_reference_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/io.html#get_reference_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.get_reference_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get predefined reference values.</p>
+<p>The following reference values are currently avaliable:</p>
+<ul class="simple">
+<li><p>“best isotope fraction M16” - Best measurement of isotopic abundances from a single terrestrial source. Taken
+from Table 1 in <a class="reference external" href="https://doi.org/10.1515/pac-2015-0503">Meija et al. (2016) Pure and Applied Chemistry, 88, 293-306</a>.</p></li>
+<li><p>“initial isotope fraction L09” - Isotope abundances 4.56 Ga ago. Taken from Table 10
+in <a class="reference external" href="https://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34">Lodders et al. (2009) Abundances of the Elements in Astronomy and Astrophysics, Landolt-Börnstein, Berlin</a>.</p></li>
+<li><p>“initial isotope abundance L09” - Isotope abundances 4.56 Ga ago. Normalised to Si=10E6. Taken from Table 10
+in <a class="reference external" href="https://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34">Lodders et al. (2009) Abundances of the Elements in Astronomy and Astrophysics, Landolt-Börnstein, Berlin</a>.</p></li>
+<li><p>“isotope mass W17” - The atomic mass of each isotope relative to <span class="math notranslate nohighlight">\(^{12}C\)</span>. Taken from Table 1 in
+<a class="reference external" href="https://doi.org/10.1088/1674-1137/41/3/030003">Wang et al. (2017) Chinese Physics C, 41, 3</a>.</p></li>
+<li><p>“sprocess isotope fraction B11” - The s-process contribution to each isotope as a fraction of the abundance.
+Taken from Table 5 in <a class="reference external" href="https://doi.org/10.1111/j.1365-2966.2011.19484.x">Bisterzo et al. (2011) Monthly Notices of the
+Royal Astronomical Society, 418, 284-319</a>.</p></li>
+</ul>
+<p>Functions that request default values will automatically receive the most recent data set if more than one exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Name if the reference data set to be returned. If the last three reference characters (e.g. M16) are omitted
+then the most recent set of reference values with <em>name</em> will be returned. The data returned might therefore
+change in future versions. <strong>It is therefore recommended that you specify the data set to be used.</strong></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A dict containing the specified reference values.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../Dicts/isopy.ReferenceDict.html#isopy.ReferenceDict" title="isopy.ReferenceDict">ReferenceDict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.import_exp.html" class="btn btn-neutral float-right" title="import_exp" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../io.html" class="btn btn-neutral float-left" title="Read/Write" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 name = 'isopy'
 
-import isopy.load as load
-import isopy.calc as calc
-import isopy.dtypes as dtypes
-import isopy.plot as plot
+from .dtypes import *
+from .io import *
+
+import isopy.tb
+import isopy.toolbox

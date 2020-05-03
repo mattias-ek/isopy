@@ -1,0 +1,269 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>johnson_nyquist_noise &mdash; isopy 0.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="YorkRegression" href="isopy.toolbox.misc.YorkRegression.html" />
+    <link rel="prev" title="plot_york_regression" href="isopy.tb.plot_york_regression.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#general-data-processing">General Data Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#isotope-data-processing">Isotope Data Processing</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#miscellaneous">Miscellaneous</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.york_regression.html">york_regression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_york_regression.html">plot_york_regression</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">johnson_nyquist_noise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.toolbox.misc.YorkRegression.html">YorkRegression</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#numpy-like-functions">Numpy like functions</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>johnson_nyquist_noise</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/refpages/tb_misc/isopy.tb.johnson_nyquist_noise.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="johnson-nyquist-noise">
+<h1>johnson_nyquist_noise<a class="headerlink" href="#johnson-nyquist-noise" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.johnson_nyquist_noise">
+<code class="sig-prename descclassname">isopy.tb.</code><code class="sig-name descname">johnson_nyquist_noise</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">voltage</span></em>, <em class="sig-param"><span class="n">resistor</span><span class="o">=</span><span class="default_value">100000000000.0</span></em>, <em class="sig-param"><span class="n">integration_time</span><span class="o">=</span><span class="default_value">8.389</span></em>, <em class="sig-param"><span class="n">include_counting_statistics</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">T</span><span class="o">=</span><span class="default_value">309</span></em>, <em class="sig-param"><span class="n">R</span><span class="o">=</span><span class="default_value">100000000000.0</span></em>, <em class="sig-param"><span class="n">cpv</span><span class="o">=</span><span class="default_value">62500000.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/misc.html#johnson_nyquist_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#isopy.tb.johnson_nyquist_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the Johnson-Nyquist noise and counting statistics for a given voltage.</p>
+<p>The Johnson-Nyquist noise (<span class="math notranslate nohighlight">\(n_{jn}\)</span> is calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{jn} = \sqrt{ \frac{4*k_{b}*T*r} {t} } * \frac{R} {r}\]</div>
+<p>The counting statistics, or shot noise, (<span class="math notranslate nohighlight">\(n_{cs}\)</span> is calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{cs} = \sqrt{ \frac{1} {v * c_{V} * t}} * v\]</div>
+<p>The two are combined as:</p>
+<div class="math notranslate nohighlight">
+\[n_{all} = \sqrt{ (n_{jn})^2 + (n_{cs})^2 }\]</div>
+<p>The noise for a specific isotope ratio can be calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{n,d} = \sqrt{ (n_{n})^2 + (n_{d})^2 }\]</div>
+<p>where <span class="math notranslate nohighlight">\(n\)</span> is the numerator isotope and <span class="math notranslate nohighlight">\(d\)</span> is the denominator isotope.</p>
+<p>Adapted from the equations in <a class="reference external" href="https://doi.org/10.1016/j.chemgeo.2013.11.008">Liu &amp; Pearson (2014) Chemical Geology, 10, 301-311</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>voltage</strong> (<a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>float</em><em>, </em><em>np.ndarray</em>) – The measured voltages. <span class="math notranslate nohighlight">\(v\)</span> in the equations above.</p></li>
+<li><p><strong>resistor</strong> (<a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>float</em><em>, </em><em>np.ndarray</em>) – The resistor for the measurement. Default value is <code class="docutils literal notranslate"><span class="pre">1E11</span></code>. <span class="math notranslate nohighlight">\(r\)</span> in the equations above.</p></li>
+<li><p><strong>integration_time</strong> (<em>float</em><em>, </em><em>optional</em>) – The integration time in seconds for a single measurement. Default value is <code class="docutils literal notranslate"><span class="pre">8.389</span></code>.
+<span class="math notranslate nohighlight">\(t\)</span> in the equations above.</p></li>
+<li><p><strong>include_counting_statistics</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> then the counting statistics are included in the returned value. Default value is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>T</strong> (<em>float</em><em>, </em><em>optional</em>) – Amplifier housing temperature in kelvin. Default value is <code class="docutils literal notranslate"><span class="pre">309</span></code>. <span class="math notranslate nohighlight">\(T\)</span> in the equations above.</p></li>
+<li><p><strong>R</strong> (<em>float</em><em>, </em><em>optional</em>) – Voltage is reported as volts for this resistor value. Default value is <code class="docutils literal notranslate"><span class="pre">1E11</span></code>. <span class="math notranslate nohighlight">\(R\)</span> in the equations
+above.</p></li>
+<li><p><strong>cpv</strong> (<em>float</em><em>, </em><em>optional</em>) – Counts per volt per second. Default value is <code class="docutils literal notranslate"><span class="pre">6.25E7</span></code>. <span class="math notranslate nohighlight">\(C_{V}\)</span> in the equations above.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The noise in V for the given voltage/set of voltages.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.float or np.ndarray or <a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray">IsotopeArray</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="isopy.toolbox.misc.YorkRegression.html" class="btn btn-neutral float-right" title="YorkRegression" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="isopy.tb.plot_york_regression.html" class="btn btn-neutral float-left" title="plot_york_regression" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Mattias Ek
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

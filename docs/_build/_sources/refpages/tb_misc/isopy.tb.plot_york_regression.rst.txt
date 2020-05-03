@@ -1,0 +1,6 @@
+plot\_york\_regression
+======================
+
+.. currentmodule:: isopy.tb
+
+.. autofunction:: plot_york_regression
