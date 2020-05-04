@@ -39,7 +39,7 @@ def normalise_data(data, reference_values, factor=1, subtract_one=True):
             raise ValueError('parameter "factor": "{}" not an avaliable option.'.format(factor))
     subtract_one = _e.check_type('subtract_one', subtract_one, bool)
 
-    new = data / reference_values.get(data.keys())
+    new = data / reference_values
     if subtract_one: new = new - 1
     new = new * factor
 

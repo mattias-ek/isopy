@@ -3,6 +3,7 @@ from isopy import dtypes as _dt
 from isopy import exceptions as _e
 from isopy.toolbox import general as _g
 from isopy.toolbox import misc as _m
+from datetime import datetime as dt
 
 __all__ = ['make_sample', 'remove_mass_fractionation', 'add_mass_fractionation',
            'calculate_mass_fractionation_factor', 'mass_independent_correction',
@@ -173,17 +174,17 @@ def mass_independent_correction(data, mf_ratio, normalisation_factor=None, std_a
 
     #Convert the data into a ratio array
     rat = data.ratio(mf_ratio.denominator)
+    beta = calculate_mass_fractionation_factor(rat, mf_ratio, std_abu, std_mass)
 
     #Do a combined mass fractionation and isobaric interference correction.
     #This can account for isobaric interferences on isotopes in *mf_ratio*
-    prev_beta = 0
+    prev_beta = beta
     for i in range(10):
-        #Calculate the mass fractionation.
-        beta = calculate_mass_fractionation_factor(rat2, mf_ratio, std_abu, std_mass)
-
-        rat2 = rat.copy() #get a fresh copy of ratio for interference corrections.
         for infiso in interference_isotopes:
-            rat2 = remove_isobaric_interferences(rat2, infiso, beta, std_abu, std_mass)
+            rat2 = remove_isobaric_interferences(rat, infiso, beta, std_abu, std_mass)
+
+        # Calculate the mass fractionation.
+        beta = calculate_mass_fractionation_factor(rat2, mf_ratio, std_abu, std_mass)
 
         if beta/prev_beta < 0.0001:
             break #Beta value has converged so no need for more iterations.
@@ -261,7 +262,8 @@ def remove_mass_fractionation(data, fractionation_factor, std_mass=None):
         The corrected data. :math:`R` in the equation above.
     """
     data = _e.check_type('data', data, _dt.RatioArray, coerce=True)
-    fractionation_factor = _e.check_type('fractionation_factor', fractionation_factor, _np.float, coerce=True)
+    fractionation_factor = _e.check_type('fractionation_factor', fractionation_factor, _np.float, _np.ndarray,
+                                         coerce=True, coerce_into=[_np.float, _np.array])
     std_mass = _e.check_reference_value('std_mass', std_mass, 'isotope mass')
 
     return data / (std_mass.get(data.keys()) ** fractionation_factor)
@@ -294,7 +296,8 @@ def add_mass_fractionation(data, fractionation_factor, std_mass=None):
         The corrected data. :math:`R` in the equation above.
     """
     data = _e.check_type('data', data, _dt.RatioArray, coerce=True)
-    fractionation_factor = _e.check_type('fractionation_factor', fractionation_factor, _np.float, coerce=True)
+    fractionation_factor = _e.check_type('fractionation_factor', fractionation_factor, _np.float, _np.ndarray,
+                                         coerce=True, coerce_into=[_np.float, _np.array])
     std_mass = _e.check_reference_value('std_mass', std_mass, 'isotope mass')
 
     return data * (std_mass.get(data.keys()) ** fractionation_factor)
@@ -325,9 +328,11 @@ def remove_isobaric_interferences(data, isotope, mf_factor = None, std_abu = Non
     IsotopeArray or RatioArray
         Data minus the isobaric interferences.
     """
+
     data = _e.check_type('data', data, _dt.RatioArray, coerce=True)
     isotope = _e.check_type('isotope', isotope, _dt.IsotopeString, coerce=True)
-    mf_factor = _e.check_type('mf_factor', mf_factor, _np.float, coerce=True, allow_none=True)
+    mf_factor = _e.check_type('mf_factor', mf_factor, _np.float, _np.ndarray, coerce=True,
+                              coerce_into=[_np.float, _np.array], allow_none=True)
     std_abu = _e.check_reference_value('std_abu', std_abu, 'best isotope fraction')
     std_mass = _e.check_reference_value('std_mass', std_mass, 'isotope mass')
 
@@ -360,7 +365,7 @@ def remove_isobaric_interferences(data, isotope, mf_factor = None, std_abu = Non
     inf_data = _dt.MassArray(inf_data, keys=inf_data.keys().numerators().mass_numbers())
 
     #Create the output array
-    out = _dt.asarray(data.nrows, keys=keys)
+    out = _dt.array(data.nrows, keys=keys)
 
     #Loop through each key in *out* and remove interference
     for i in range(len(keys)):
@@ -404,7 +409,8 @@ def add_isobaric_interferences(data, isotope, value, mf_factor = None, std_abu=N
     """
     data = _e.check_type('data', data, _dt.RatioArray, coerce=True)
     isotope = _e.check_type('isotope', isotope, _dt.IsotopeString, coerce=True)
-    mf_factor = _e.check_type('mf_factor', mf_factor, _np.float, coerce=True, allow_none=True)
+    mf_factor = _e.check_type('mf_factor', mf_factor, _np.float, _np.ndarray, coerce=True,
+                              coerce_into=[_np.float, _np.array], allow_none=True)
     std_abu = _e.check_reference_value('std_abu', std_abu, 'best isotope fraction')
     std_mass = _e.check_reference_value('std_mass', std_mass, 'isotope mass')
 
