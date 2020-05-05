@@ -4,7 +4,6 @@ from tables import Table as _Table
 import inspect as _inspect
 import isopy.toolbox.np_func as _npf
 import warnings as _warnings
-from datetime import datetime as dt
 
 __all__ = ['MassString', 'ElementString', 'IsotopeString', 'RatioString',
            'MassList', 'ElementList', 'IsotopeList', 'RatioList',

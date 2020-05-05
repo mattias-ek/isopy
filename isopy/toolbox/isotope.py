@@ -3,7 +3,6 @@ from isopy import dtypes as _dt
 from isopy import exceptions as _e
 from isopy.toolbox import general as _g
 from isopy.toolbox import misc as _m
-from datetime import datetime as dt
 
 __all__ = ['make_sample', 'remove_mass_fractionation', 'add_mass_fractionation',
            'calculate_mass_fractionation_factor', 'mass_independent_correction',
