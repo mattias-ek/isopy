@@ -2436,22 +2436,81 @@ class IsopyArray(IsopyType):
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         #TODO make out before which should save some time
+        if method != '__call__':
+            raise TypeError('method "{}" is currently not supported'.format(method))
+        check_unsupported_parameters(ufunc.__name__, ['where', 'axes', 'axis', 'casting', 'order', 'subok',
+                                                     'signature', 'extobj', 'dtype', 'copy'], kwargs.keys())
+
+        out = kwargs.pop('out', None)
+        if out is not None: out = out[0]
         default_value = kwargs.pop('default_value', _np.nan)
         if len(inputs) == 1 and ufunc in [_np.sin, _np.cos, _np.tan, _np.arcsin, _np.arccos, _np.arctan, _np.degrees,
                                           _np.radians, _np.deg2rad, _np.rad2deg, _np.sinh, _np.cosh, _np.tanh, _np.arcsinh, _np.arccosh, _np.arctanh,
                                           _np.rint, _np.floor, _np.ceil, _np.trunc, _np.exp, _np.expm1, _np.exp2, _np.log, _np.log10, _np.log2,
                                           _np.log1p, _np.reciprocal, _np.positive, _np.negative, _np.sqrt, _np.cbrt, _np.square, _np.fabs, _np.sign,
-                                          _np.absolute, _np.abs, _np.isnan]: pass
+                                          _np.absolute, _np.abs, _np.isnan]:
+
+            keys = inputs[0].keys()
+            if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
+            for key in keys:
+                ufunc(inputs[0].get(key, default_value), out=out[key], **kwargs)
+            return out
+
         elif len(inputs) == 2 and ufunc in [_np.add, _np.multiply, _np.divide, _np.power, _np.subtract, _np.true_divide,
                                             _np.true_divide, _np.floor_divide, _np.float_power, _np.fmod, _np.mod, _np.remainder,
                                             _np.greater, _np.less, _np.greater_equal, _np.less_equal, _np.equal, _np.not_equal, _np.maximum,
-                                            _np.minimum]: pass
+                                            _np.minimum]:
+            if isinstance(inputs[0], IsopyArray) and isinstance(inputs[1], IsopyArray):
+                try:
+                    keys = inputs[0].keys() | inputs[1].keys()
+                except:
+                    raise ValueError('Cannot perform operation on two different types of IsopyArrays')
+                if out is None: out = inputs[0]._array(max(inputs[0].nrows, inputs[1].nrows), keys)
+                for key in keys:
+                    ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key], **kwargs)
+                return out
+            elif isinstance(inputs[0], IsopyArray):
+                keys = inputs[0].keys()
+                if isinstance(inputs[1], dict):
+                    if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
+                    for key in keys:
+                        ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key],
+                              **kwargs)
+                    return out
+                else:
+                    input1 = _np.asarray(inputs[1])
+                    if input1.ndim == 0:
+                        if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
+                    elif input1.ndim == 1:
+                        if out is None: out = inputs[0]._array(max(inputs[0].nrows, input1.size), keys)
+                    else:
+                        raise ValueError('value 2 has to many dimensions')
+                    for key in keys:
+                        ufunc(inputs[0].get(key, default_value), input1, out=out[key], **kwargs)
+                    return out
+            else:
+                #second array must be isopy array
+                keys = inputs[1].keys()
+                if isinstance(inputs[0], dict):
+                    if out is None: out = inputs[1]._array(inputs[1].nrows, keys)
+                    for key in keys:
+                        ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key],
+                              **kwargs)
+                    return out
+                else:
+                    input0 = _np.asarray(inputs[0])
+                    if input0.ndim == 0:
+                        if out is None: out = inputs[1]._array(inputs[1].nrows, keys)
+                    elif input0.ndim == 1:
+                        if out is None: out = inputs[1]._array(max(inputs[1].nrows, input0.size), keys)
+                    else:
+                        raise ValueError('value 2 has to many dimensions')
+                    for key in keys:
+                        ufunc(input0, inputs[1].get(key, default_value), out=out[key], **kwargs)
+                    return out
         else:
             raise TypeError('Function "{}" is not supported by isopy arrays'.format(ufunc.__name__))
-        if method != '__call__':
-            raise TypeError('method "{}" is currently not supported'.format(method))
-        check_unsupported_parameters(ufunc.__name__, ['out', 'where', 'axes', 'axis', 'casting', 'order', 'subok',
-                                                     'signature', 'extobj', 'dtype', 'copy'], kwargs.keys())
+
 
         is_input_isopy = [isinstance(inp, IsopyArray) for inp in inputs]
         if is_input_isopy.count(True) == 2:
@@ -2633,7 +2692,6 @@ class IsopyArray(IsopyType):
         else: return self.size
 
     def get(self, key, default=_np.nan):
-        key = self._string(key)
         try:
             return self[key]
         except:

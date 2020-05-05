@@ -346,52 +346,6 @@ pass ``axis=1`` to the function.
 [ 2.          4.          6.66666667  8.66666667 10.66666667]
 
 
-Lets start by creating an array containing the relative isotope abundance of each Pd isotope using the
-reference data set *best isotope fraction*
-
-
-
-
-
->>> a = isopy.array([0.1, 0.1, 1.0, 10], 'Ge70, ge74, pd105, pd108')
->>> b = isopy.array([5.0, 2.0, 1.0, 1.0], 'Ge70, ge74, pd105, pd108')
-
->>> key/ key = rat
-
->>> steps = np.linspace(0,1,10)
-
->>> c = a * steps + b * (1 - steps)
-
-
-TODO np.mean, isopy.sd, isopy.se, isopy.median
-
-TODO isobari
-
->>> rel_val = isopy.get_reference_values('best isotope fraction')
->>> pd = ref_val.get(ref_val.isotope_keys(element_symbol = 'pd'))
->>> ru = ref_val.get(ref_val.isotope_keys(element_symbol = 'ru'))
-
->>> pd2 = np.array(pd, pd.keys().mass_numbers())
->>> ru2 = np.array(ru, ru.keys().mass_numbers())
-
->>> all = pd2 + ru2
-
->>> all = np.add(pd2, ru2, default_value=0)
-
-
-
-Lets start by creating an array of Pd isotopes. Isopy comes with
-Interferences
-
-multipliing etc
-copying parts
-adding two arrays together that contain isotopes to do a mixing
-
-add mass isobaric interferences
-
-lets do this ione next
-
-
 Toolboxes
 =========
 Isopy contains a number of toolboxes that contain a couple of useful functions for processing data.
