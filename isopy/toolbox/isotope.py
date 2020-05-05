@@ -180,8 +180,9 @@ def mass_independent_correction(data, mf_ratio, normalisation_factor=None, std_a
     #This can account for isobaric interferences on isotopes in *mf_ratio*
     prev_beta = beta
     for i in range(10):
+        rat2 = rat
         for infiso in interference_isotopes:
-            rat2 = remove_isobaric_interferences(rat, infiso, beta, std_abu, std_mass)
+            rat2 = remove_isobaric_interferences(rat2, infiso, beta, std_abu, std_mass)
 
         # Calculate the mass fractionation.
         beta = calculate_mass_fractionation_factor(rat2, mf_ratio, std_abu, std_mass)
@@ -191,6 +192,9 @@ def mass_independent_correction(data, mf_ratio, normalisation_factor=None, std_a
 
     #Remove the isotopes on interfering elements
     rat = rat2.copy(element_symbol= mf_ratio.numerator.element_symbol)
+
+    #Correct for mass fractionation
+    rat = remove_mass_fractionation(rat, beta, std_mass)
 
     if normalisation_factor is not None:
         #Normalise the corrected data relative to *std_abu* and return

@@ -192,8 +192,8 @@ class NeptuneData():
         self.cycle = _np.array(cycle, dtype = 'int')
         self.time = [_dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
 
-        self.isotope_data = isotope_data
-        self.ratio_data = ratio_data
+        self.isotope_data = {key: _dtypes.IsotopeArray(isotope_data[key]) for key in isotope_data}
+        self.ratio_data = {key: _dtypes.RatioArray(ratio_data[key]) for key in ratio_data}
         self.other_data = other_data
 
 
