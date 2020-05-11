@@ -1,5 +1,6 @@
-from isopy import dtypes as dt
-from isopy.dtypes import *
+from isopy import core as dt
+from isopy.core import *
+import isopy
 import isopy.toolbox.np_func as ipf
 import numpy as np
 import pytest
@@ -25,13 +26,13 @@ def assert_isoparray_equal_isopyarray(arr1, arr2, **kwargs):
     assert isinstance(arr2, IsopyArray)
     assert arr1.keys == arr2.keys()
     for key in arr1.keys():
-        np.testing.assert_array_equal(arr1[key], arr2[key])
+        np.testing.assert_allclose(arr1[key], arr2[key], 1E-10)
 
 
 def assert_ndarray_equal_ndarray(arr1, arr2, **kwargs):
     assert not isinstance(arr1, IsopyArray)
     assert not isinstance(arr2, IsopyArray)
-    np.testing.assert_array_equal(arr1, arr2)
+    np.testing.assert_allclose(arr1, arr2, 1E-10)
 
 
 class Test_IsopyString(object):
@@ -65,10 +66,12 @@ class Test_IsopyString(object):
     def creation(self, string_class, base_type, correct_format, strings_incorrect_format, invalid_strings = []):
         #Make sure the correcttly formatted string can be created and is not reformatted
         formatted_correct_format = string_class(correct_format)
+        formatted_correct_format2 = isopy.string(correct_format)
         assert formatted_correct_format == correct_format
         assert formatted_correct_format == string_class(correct_format)
         assert isinstance(formatted_correct_format, base_type)
         assert isinstance(formatted_correct_format, string_class)
+        assert isinstance(formatted_correct_format2, string_class)
         assert type(formatted_correct_format) == string_class
 
         for string in strings_incorrect_format:
@@ -241,24 +244,36 @@ class Test_IsopyList(object):
 
         isopy_correct_list = ElementList(correct_list2)
         isopy_correct_list2 = ElementList(correct_list2, skip_duplicates=True)
+        isopy_correct_list3 = isopy.list_(correct_list2, skip_duplicates=True)
+        isopy_correct_list4 = isopy.aslist(isopy_correct_list3)
         isopy_unformatted_list = ElementList(unformatted_list)
 
         assert isinstance(isopy_correct_list, list)
         assert isinstance(isopy_correct_list2, list)
+        assert isinstance(isopy_correct_list3, list)
+        assert isinstance(isopy_correct_list4, list)
         assert isinstance(isopy_unformatted_list, list)
 
         assert isinstance(isopy_correct_list, ElementList)
         assert isinstance(isopy_correct_list2, ElementList)
+        assert isinstance(isopy_correct_list3, ElementList)
+        assert isinstance(isopy_correct_list4, ElementList)
         assert isinstance(isopy_unformatted_list, ElementList)
 
         assert type(isopy_correct_list) == ElementList
         assert type(isopy_correct_list2) == ElementList
+        assert type(isopy_correct_list3) == ElementList
+        assert type(isopy_correct_list4) == ElementList
         assert type(isopy_unformatted_list) == ElementList
 
         assert isopy_correct_list == correct_list2
         assert isopy_correct_list2 == correct_list
+        assert isopy_correct_list3 == correct_list
+        assert isopy_correct_list4 == correct_list
         assert isopy_unformatted_list == correct_list
         assert isopy_unformatted_list == unformatted_list
+        assert isopy_correct_list is not isopy_correct_list2
+        assert isopy_correct_list3 is isopy_correct_list4
 
         with pytest.raises(ValueError):
             ElementList(correct_list2, allow_duplicates=False)

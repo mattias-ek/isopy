@@ -1,6 +1,4 @@
-from isopy import exceptions as _e
-from isopy import dtypes as _dt
-from isopy.toolbox import np_func as _f
+import isopy as _isopy
 import numpy as _np
 
 __all__ = ['find_outliers', 'find_outliers_mad', 'normalise_data', 'denomralise_data', ]
@@ -25,9 +23,9 @@ def normalise_data(data, reference_values, factor=1, subtract_one=True):
     IsopyArray
         The normalised data
     """
-    data = _e.check_type('data', data, _dt.IsopyArray, coerce=True, coerce_into=_dt.asarray)
-    reference_values = _e.check_type('reference_values', reference_values, _dt.IsopyArray, dict, coerce=True)
-    factor = _e.check_type('factor', factor, _np.float, str, coerce=True)
+    data = _isopy.core.check_type('data', data, _isopy.core.IsopyArray, coerce=True, coerce_into=_isopy.core.asarray)
+    reference_values = _isopy.core.check_type('reference_values', reference_values, _isopy.core.IsopyArray, dict, coerce=True)
+    factor = _isopy.core.check_type('factor', factor, _np.float, str, coerce=True)
     if isinstance(factor, str):
         if factor.lower() in ['delta', 'permil', 'ppt']:
             factor = 1000
@@ -37,7 +35,7 @@ def normalise_data(data, reference_values, factor=1, subtract_one=True):
             factor = 1000000
         else:
             raise ValueError('parameter "factor": "{}" not an avaliable option.'.format(factor))
-    subtract_one = _e.check_type('subtract_one', subtract_one, bool)
+    subtract_one = _isopy.core.check_type('subtract_one', subtract_one, bool)
 
     new = data / reference_values
     if subtract_one: new = new - 1
@@ -66,9 +64,9 @@ def denomralise_data(data, reference_values, factor=1, add_one=True):
     IsopyArray
         The denormalised data.
     """
-    data = _e.check_type('data', data, _dt.IsopyArray, coerce=True, coerce_into=_dt.asarray)
-    reference_values = _e.check_type('reference_values', reference_values, _dt.IsopyArray, dict, coerce=True)
-    factor = _e.check_type('factor', factor, _np.float, str, coerce=True)
+    data = _isopy.core.check_type('data', data, _isopy.core.IsopyArray, coerce=True, coerce_into=_isopy.core.asarray)
+    reference_values = _isopy.core.check_type('reference_values', reference_values, _isopy.core.IsopyArray, dict, coerce=True)
+    factor = _isopy.core.check_type('factor', factor, _np.float, str, coerce=True)
     if isinstance(factor, str):
         if factor.lower() in ['delta', 'permil', 'ppt']:
             factor = 1000
@@ -78,7 +76,7 @@ def denomralise_data(data, reference_values, factor=1, add_one=True):
             factor = 1000000
         else:
             raise ValueError('parameter "factor": "{}" not an avaliable option.'.format(factor))
-    add_one = _e.check_type('subtract_one', add_one, bool)
+    add_one = _isopy.core.check_type('subtract_one', add_one, bool)
 
     new = data / factor
     if add_one: new = new + 1
@@ -110,10 +108,10 @@ def find_outliers(data, lower_limit, upper_limit, axis = None):
     IsopyArray, np.ndarray
         Array of bools with outliers marked with ``True``.
     """
-    data = _e.check_type('data', data, _dt.IsopyArray, coerce=True)
-    lower_limit = _e.check_type('lower_limit', lower_limit, _dt.IsopyArray, _np.float, coerce=True)
-    upper_limit = _e.check_type('upper_limit', upper_limit, _dt.IsopyArray, _np.float, coerce=True)
-    axis = _e.check_type('axis', axis, int, allow_none=True)
+    data = _isopy.core.check_type('data', data, _isopy.core.IsopyArray, coerce=True)
+    lower_limit = _isopy.core.check_type('lower_limit', lower_limit, _isopy.core.IsopyArray, _np.float, coerce=True)
+    upper_limit = _isopy.core.check_type('upper_limit', upper_limit, _isopy.core.IsopyArray, _np.float, coerce=True)
+    axis = _isopy.core.check_type('axis', axis, int, allow_none=True)
 
     outliers = (data > upper_limit) + (data < lower_limit)
 
@@ -148,11 +146,11 @@ def find_outliers_mad(data, level=3, axis=None):
     --------
     :func:`find_outliers`, :func:`mad`, :func:`nanmad`
     """
-    data = _e.check_type('data', data, _dt.IsopyArray, coerce=True)
-    level = _e.check_type('level', level, _np.float, coerce=True)
-    axis = _e.check_type('axis', axis, int, allow_none=True)
+    data = _isopy.core.check_type('data', data, _isopy.core.IsopyArray, coerce=True)
+    level = _isopy.core.check_type('level', level, _np.float, coerce=True)
+    axis = _isopy.core.check_type('axis', axis, int, allow_none=True)
 
-    data = _dt.asarray(data)
+    data = _isopy.core.asarray(data)
     median = _np.nanmedian(data)
-    mad = _f.nanmad(data) * level
+    mad = _isopy.core.nanmad(data) * level
     return find_outliers(data, median - mad, median + mad, axis=axis)

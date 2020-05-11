@@ -1,9 +1,10 @@
 import isopy
+import os
 
 
 def test_read_csv():
-    data_dict1 = isopy.read_csv('array_test_file.csv')
-    data_dict2 = isopy.read_csv('array_test_file2.csv')
+    data_dict1 = isopy.io.read_csv(os.path.join(os.path.dirname(__file__), 'array_test_file.csv'))
+    data_dict2 = isopy.io.read_csv(os.path.join(os.path.dirname(__file__), 'array_test_file2.csv'))
 
     assert list(data_dict1.keys()) == ['104Pd', '105Pd', '106Pd']
     assert list(data_dict2.keys()) == ['104Pd', '105Pd', '106Pd']
@@ -20,8 +21,8 @@ def test_read_csv():
 
 
 def test_read_excel():
-    data_dict1 = isopy.read_excel('excel_test_file.xlsx', 0)
-    data_dict2 = isopy.read_excel('excel_test_file.xlsx', 'Sheet2')
+    data_dict1 = isopy.io.read_excel(os.path.join(os.path.dirname(__file__), 'excel_test_file.xlsx'), 0)
+    data_dict2 = isopy.io.read_excel(os.path.join(os.path.dirname(__file__), 'excel_test_file.xlsx'), 'Sheet2')
 
     assert list(data_dict1.keys()) == ['104Pd', '105Pd', '106Pd']
     assert list(data_dict2.keys()) == ['104Pd', '105Pd', '106Pd']
@@ -36,7 +37,7 @@ def test_read_excel():
     assert data_dict2['105Pd'] == [10.0]
     assert data_dict2['106Pd'] == [100.0]
 
-    sheet_dict = isopy.read_excel('excel_test_file.xlsx')
+    sheet_dict = isopy.read_excel(os.path.join(os.path.dirname(__file__), 'excel_test_file.xlsx'))
     assert len(sheet_dict) == 2
     assert list(sheet_dict) == ['Sheet1', 'Sheet2']
 
@@ -45,7 +46,7 @@ def test_read_excel():
 
 
 def test_import_exp():
-    data = isopy.import_exp('001_blk.exp')
+    data = isopy.io.import_exp(os.path.join(os.path.dirname(__file__), '001_blk.exp'))
 
     assert data.info['Sample ID'] == 'blk'
     assert data.info['Instrument'] == 'PROTEUS'

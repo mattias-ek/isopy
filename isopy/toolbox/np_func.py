@@ -2,15 +2,15 @@ import numpy as _np
 from numpy.lib.function_base import array_function_dispatch
 
 
-__all__ = ['sd', 'se', 'mad', 'nansd', 'nanse', 'nanmad']
+__all__ = ['sd', 'se', 'mad', 'nansd', 'nanse', 'nanmad', 'count_notnan']
 
 #These functions will all call __array_function__
 
-def _sd_dispatcher(a, axis=None):
-    return (a,)
+def _sd_dispatcher(a, axis=None, out=None):
+    return (a,out)
 
 @array_function_dispatch(_sd_dispatcher)
-def sd(a, axis=None):
+def sd(a, axis=None, out=None):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom.
 
@@ -21,7 +21,9 @@ def sd(a, axis=None):
     axis : int or None, optional
         Axis along which the range is computed. Default is ``None``. If ``None`` compute
         over the entire array.
-
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     Shortcut for ``np.std(a, ddof=1, axis=axis)``.
 
@@ -32,10 +34,10 @@ def sd(a, axis=None):
     --------
     :func:`nansd`
     """
-    return _np.std(a, ddof = 1, axis=axis)
+    return _np.std(a, ddof = 1, axis=axis, out=out)
 
 @array_function_dispatch(_sd_dispatcher)
-def nansd(a, axis=None):
+def nansd(a, axis=None, out = None):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom, while ignoring NaNs.
 
@@ -46,7 +48,9 @@ def nansd(a, axis=None):
     axis : int or None, optional
         Axis along which the range is computed. Default is ``None``. If ``None`` compute
         over the entire array.
-
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     Shortcut for ``np.nanstd(a, ddof=1, axis=axis)``.
 
@@ -57,15 +61,15 @@ def nansd(a, axis=None):
     --------
     :func:`sd`
     """
-    return _np.nanstd(a, ddof = 1, axis=axis)
+    return _np.nanstd(a, ddof = 1, axis=axis, out=out)
 
 
-def _se_dispatcher(a, axis=None):
-    return (a,)
+def _se_dispatcher(a, axis=None, out=None):
+    return (a,out)
 
 
 @array_function_dispatch(_se_dispatcher)
-def se(a, axis=None):
+def se(a, axis=None, out=None):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom.
 
@@ -76,21 +80,24 @@ def se(a, axis=None):
     axis : int or None, optional
         Axis along which the range is computed. Default is ``None``. If ``None`` compute
         over the entire array.
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     See Also
     --------
     :func:`nanse`
     """
+    a = _np.asarray(a)
     if axis is None:
         n = a.size
-        return _np.std(a, ddof=1) / _np.sqrt(n)
     else:
         n = a.shape[axis]
-        return _np.std(a, ddof=1, axis=axis) / _np.sqrt(n)
+    return _np.divide(_np.std(a, ddof=1, axis=axis), _np.sqrt(n), out=out)
 
 
 @array_function_dispatch(_se_dispatcher)
-def nanse(a, axis=None):
+def nanse(a, axis=None, out=None):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom, while ignoring NaNs.
 
@@ -101,25 +108,24 @@ def nanse(a, axis=None):
     axis : int or None, optional
         Axis along which the range is computed. Default is ``None``. If ``None`` compute
         over the entire array.
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     See Also
     --------
     :func:`se`
     """
-    if axis is None:
-        n = _np.count_nonzero(~_np.isnan(a))
-        return  _np.nanstd(a, ddof=1) / _np.sqrt(n)
-    else:
-        n = _np.count_nonzero(~_np.isnan(a), axis=axis)
-        return _np.nanstd(a, ddof=1, axis=axis) / _np.sqrt(n)
+    n = count_notnan(a, axis)
+    return _np.divide(_np.nanstd(a, ddof=1, axis=axis), _np.sqrt(n), out=out)
 
 
-def _mad_dispatcher(a, axis=None, scale=None):
-    return (a,)
+def _mad_dispatcher(a, axis=None, scale=None, out=None):
+    return (a,out)
 
 
 @array_function_dispatch(_mad_dispatcher)
-def mad(a, axis=None, scale = 1.4826):
+def mad(a, axis=None, scale = 1.4826, out=None):
     """
     Compute the median absolute deviation of the data along the given axis.
 
@@ -133,14 +139,9 @@ def mad(a, axis=None, scale = 1.4826):
     scale : int, optional
         The scaling factor applied to the MAD. The default scale (1.4826) ensures consistency with the standard
         deviation for normally distributed data.
-
-
-    Shortcut for
-    ``scipy.stats.median_absolute_deviation(a, axis=axis, center=np.median, scale=scale, nan_policy='propagate')``.
-
-    See documentation for `scipy.stats.median_absolute_deviation
-    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_absolute_deviation.html>`_
-    for additional information.
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     See Also
     --------
@@ -148,16 +149,16 @@ def mad(a, axis=None, scale = 1.4826):
     """
     if axis is None:
         med = _np.nanmedian(a)
-        mad = _np.median(_np.abs(a - med))
+        mad = _np.median(_np.abs(a - med), out=out)
     else:
         med = _np.apply_over_axes(_np.nanmedian, a, axis)
-        mad = _np.median(_np.abs(a - med), axis=axis)
+        mad = _np.median(_np.abs(a - med), axis=axis, out=out)
 
-    return mad * scale
+    return _np.multiply(mad, scale, out=out)
 
 
 @array_function_dispatch(_mad_dispatcher)
-def nanmad(a, axis=None, scale = 1.4826):
+def nanmad(a, axis=None, scale = 1.4826, out=None):
     """
     Compute the median absolute deviation along the specified axis, while ignoring NaNs.
 
@@ -171,20 +172,42 @@ def nanmad(a, axis=None, scale = 1.4826):
     scale : int, optional
         The scaling factor applied to the MAD. The default scale (1.4826) ensures consistency with the standard
         deviation for normally distributed data.
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
 
     See Also
     --------
-    :func:`nanmad`
+    :func:`mad`
     """
 
     if axis is None:
         med = _np.nanmedian(a)
-        mad = _np.nanmedian(_np.abs(a - med))
+        mad = _np.nanmedian(_np.abs(a - med), out=out)
     else:
         med = _np.apply_over_axes(_np.nanmedian, a, axis)
-        mad = _np.nanmedian(_np.abs(a - med), axis=axis)
+        mad = _np.nanmedian(_np.abs(a - med), axis=axis, out=out)
 
-    return mad * scale
+    return _np.multiply(mad, scale, out=out)
+
+
+def _notnan_dispatcher(a, axis=None):
+    return (a,)
+
+@array_function_dispatch(_notnan_dispatcher)
+def count_notnan(a, axis=None):
+    """
+    Count all values in array that are not NaN's along the specified axis.
+
+    Parameters
+    ----------
+    a : IsopyArray, array_like
+        The array over which the operation will be performed
+    axis : int, optional
+        The axis along which the count should be performed. If not given all values in the array will be counted.
+
+    """
+    return _np.count_nonzero(~_np.isnan(a), axis=axis)
 
 
 

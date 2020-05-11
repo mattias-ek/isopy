@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.optimize as spo
-import isopy.dtypes as _dtypes
+import isopy.core as _dtypes
 import itertools as _itertools
 #import matplotlib.pyplot as plt
 from matplotlib import cm, colors
