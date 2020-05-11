@@ -23,7 +23,7 @@ setuptools.setup(
     keywords="array isotope geochemistry cosmochemisty",
     long_description_content_type="text/markdown",
     url="https://github.com/mattias-ek/isopy",
-    download_url = "https://github.com/mattias-ek/isopy/archive/v0.3.3.tar.gz",
+    download_url = "https://github.com/mattias-ek/isopy/archive/v0.3.4.tar.gz",
 
     classifiers=[
         "Programming Language :: Python :: 3",
