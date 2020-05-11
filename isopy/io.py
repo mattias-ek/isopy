@@ -1,6 +1,6 @@
 import os as _os
-import isopy.dtypes as _dtypes
-from isopy import exceptions as _e
+import isopy as _isopy
+
 import csv as _csv
 import datetime as _dt
 import numpy as _np
@@ -51,7 +51,7 @@ def get_reference_values(name):
     ReferenceDict
         A dict containing the specified reference values.
     """
-    name = _e.check_type('name', name, str)
+    name = _isopy.core.check_type('name', name, str)
     name = name.strip()
     default_datasets = {'best isotope fraction': 'best isotope fraction M16',
                         'initial isotope fraction': 'initial isotope fraction L09',
@@ -73,7 +73,7 @@ def get_reference_values(name):
             raise ValueError('A data set called "{}" does not exist'.format(name))
 
         #Load the reference values and add them to the
-        reference_values[name] = _dtypes.ReferenceDict(read_csv(filepath))
+        reference_values[name] = _isopy.core.ReferenceDict(read_csv(filepath))
         return reference_values[name].copy()
 
 
@@ -153,13 +153,13 @@ def _import_exp_data(legend_row, reader):
                 text = legend_row[i]
 
             if "/" in text:
-                try: text = _dtypes.RatioString(text)
+                try: text = _isopy.core.RatioString(text)
                 except:
                     other_data.setdefault(line, {})[text] = data[i]
                 else:
                     ratio_data.setdefault(line, {})[text] = data[i]
             else:
-                try: text = _dtypes.IsotopeString(text)
+                try: text = _isopy.core.IsotopeString(text)
                 except:
                     other_data.setdefault(line, {})[text] = data[i]
                 else:
@@ -192,8 +192,8 @@ class NeptuneData():
         self.cycle = _np.array(cycle, dtype = 'int')
         self.time = [_dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
 
-        self.isotope_data = {key: _dtypes.IsotopeArray(isotope_data[key]) for key in isotope_data}
-        self.ratio_data = {key: _dtypes.RatioArray(ratio_data[key]) for key in ratio_data}
+        self.isotope_data = {key: _isopy.core.IsotopeArray(isotope_data[key]) for key in isotope_data}
+        self.ratio_data = {key: _isopy.core.RatioArray(ratio_data[key]) for key in ratio_data}
         self.other_data = other_data
 
 
@@ -221,9 +221,9 @@ def read_csv(filepath, comment_symbol='#', skip_columns=None):
     --------
     Need to make examples
     """
-    filepath = _e.check_type('filepath', filepath, str)
-    comment_symbol = _e.check_type('comment_symbol', comment_symbol, str)
-    skip_columns = _e.check_type_list('skip_columns', skip_columns, int, allow_none=True, make_list=True
+    filepath = _isopy.core.check_type('filepath', filepath, str)
+    comment_symbol = _isopy.core.check_type('comment_symbol', comment_symbol, str)
+    skip_columns = _isopy.core.check_type_list('skip_columns', skip_columns, int, allow_none=True, make_list=True
                                       )
     keys = []
     values = []
@@ -277,10 +277,10 @@ def write_csv(data, filepath, comments = None, delimiter =',', comment_symbol='#
     comment_symbol : str, optional
         Used to denote that the line contains a comment.  Default value is ``"#"``.
     """
-    filepath = _e.check_type('filepath', filepath, str)
-    comments = _e.check_type_list('comments', comments, str, allow_none=True, make_list=True)
-    delimiter = _e.check_type('delimiter', delimiter, str)
-    comment_symbol = _e.check_type('comment_symbol', comment_symbol, str)
+    filepath = _isopy.core.check_type('filepath', filepath, str)
+    comments = _isopy.core.check_type_list('comments', comments, str, allow_none=True, make_list=True)
+    delimiter = _isopy.core.check_type('delimiter', delimiter, str)
+    comment_symbol = _isopy.core.check_type('comment_symbol', comment_symbol, str)
 
     with open(filepath, mode='w', newline='') as file:
         writer = _csv.writer(file, delimiter=delimiter)

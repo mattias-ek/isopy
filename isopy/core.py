@@ -4,12 +4,13 @@ from tables import Table as _Table
 import inspect as _inspect
 import isopy.toolbox.np_func as _npf
 import warnings as _warnings
+import isopy as _isopy
 
 __all__ = ['MassString', 'ElementString', 'IsotopeString', 'RatioString',
            'MassList', 'ElementList', 'IsotopeList', 'RatioList',
            'MassArray', 'ElementArray', 'IsotopeArray', 'RatioArray',
            'IsopyString', 'IsopyList', 'IsopyArray', 'ReferenceDict',
-           'string',  'list_', 'aslist', 'array', 'asarray', 'asanyarray']
+           'string',  'list_', 'aslist', 'array', 'asarray', 'asanyarray', 'concatenate']
 
 def string(item):
     """
@@ -353,6 +354,58 @@ def asanyarray(values=None, dtype=None):
 ##################
 ### Exceptions ###
 ##################
+
+def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, allow_list = False, allow_none=False):
+    if allow_none and value is None:
+        return value
+    if allow_list and isinstance(value, list):
+        out = []
+        try:
+            for i in range(len(value)):
+                out.append(check_type('attr', value[i], *accepted_types, coerce=coerce, coerce_into=coerce_into))
+        except TypeError as err:
+            raise TypeError('index {} of {}'.format(i, str(err)))
+        else:
+            return out
+
+    for accepted_type in accepted_types:
+        if isinstance(value, accepted_type):
+            return value
+    if coerce:
+        if coerce_into is None:
+            coerce_into = accepted_types
+        elif not isinstance(coerce_into, list):
+            coerce_into = [coerce_into]
+        for coerce_type in coerce_into:
+            try:
+                return coerce_type(value)
+            except:
+                continue
+        raise TypeError('parameter "{}": unable to coerce \'{}\' into \'{}\''.format(name,
+                                                                                     value.__class__.__name__, '\' or \''.join([ct.__name__ for ct in coerce_into])))
+    else:
+        raise TypeError('parameter "{}": must be \'{}\' not \'{}\''.format(name,
+                            '\' or \''.join([ct.__name__ for ct in coerce_into], value.__class__.__name__)))
+
+
+def check_type_list(name, values, *accepted_types, coerce=False, coerce_into=None, make_list=False, allow_none =False):
+    if allow_none and values is None:
+        return values
+    if not isinstance(values, list):
+        if make_list:
+            values = [values]
+        else:
+            raise TypeError('parameter "{}": must be \'{}\' not \'{}\''.format(name, list.__name__,
+                                                                               values.__class__.__name__))
+    return check_type(name, values, *accepted_types, coerce=coerce, coerce_into=coerce_into, allow_list=True)
+
+
+def check_reference_value(name, value, default_reference_dict):
+    if value is None: return _isopy.io.get_reference_values(default_reference_dict)
+    if not hasattr(value, 'get'):
+        raise TypeError('parameter "{}": \'{}\' does not have a ".get()" method'.format(name, value.__class__.__name__))
+    return value
+
 
 def classname(obj):
     if isinstance(obj, type): return obj.__name__
@@ -2393,15 +2446,89 @@ def check_unsupported_parameters(func_name, unsupported_param, given_param):
                 unsupported_used, func_name))
 
 
-class input_array_ndarray:
+def concatenate(arrays, axis=0, default_value=_np.nan, out=None):
     """
-    This is for 0 or 1 dim arrays where the stored value is the same for each key
-    """
-    def __init__(self, array):
-        self._array = array
+    Join arrays together along specified axis.
 
-    def get(self, key, default_value):
-        return self._array
+    Same function as ``np.concatenate`` with the additional option of specifying the default value for columns not
+    present in all arrays.
+
+    Normal numpy broadcasting rules apply so when concatenating columns the shape of the arrays must be compatible.
+    When array with a size of 1 is concatenated to an array of a different size it will be copied into every row
+    of the new shape.
+
+    Parameters
+    ----------
+    arrays : List, tuple
+        Arrays to be joined together.
+    axis : {0, 1}, optional
+        If 0 then the rows of each array in *arrays* will be concatenated. If 1 then the columns of each array will
+        be concatenated. If *axis* is 1 ann error will be raised if a column key occurs in more than one array. Default
+        value is 0.
+    default_value : float, optional
+        The default value for any columns that are missing when concatenating rows. Default value is ``np.nan``.
+    out : IsopyArray, optional
+        If provided, the destination to place the result. Must have the same number of rows and columns as the
+        result if not provided.
+
+    Returns
+    -------
+    IsopyArray
+        Array containing all the row data and all the columns keys found in *arrays*.
+
+    Examples
+    --------
+    >>> a = isopy.array(3, ['Ru', 'Pd', 'Cd']) + [1,2,3]
+    >>> b = isopy.array(2, ['Pd', 'Ag', 'Cd']) + 3
+    >>> print( isopy.dtypes.concatenate((a,b)) )
+    Ru  , Pd  , Cd  , Ag
+    1.0 , 1.0 , 1.0 , nan
+    2.0 , 2.0 , 2.0 , nan
+    3.0 , 3.0 , 3.0 , nan
+    nan , 3.0 , 3.0 , 3.0
+    nan , 3.0 , 3.0 , 3.0
+    >>> print( isopy.dtypes.concatenate((a,b), default_value=0) )
+    Ru  , Pd  , Cd  , Ag
+    1.0 , 1.0 , 1.0 , 0.0
+    2.0 , 2.0 , 2.0 , 0.0
+    3.0 , 3.0 , 3.0 , 0.0
+    0.0 , 3.0 , 3.0 , 3.0
+    0.0 , 3.0 , 3.0 , 3.0
+    >>> c = isopy.array(3, ['Rh', 'Ag']) + [3,6,9]
+    >>> print( isopy.dtypes.concatenate((a,c), axis=1) )
+    Ru  , Pd  , Cd  , Rh  , Ag
+    1.0 , 1.0 , 1.0 , 3.0 , 3.0
+    2.0 , 2.0 , 2.0 , 6.0 , 6.0
+    3.0 , 3.0 , 3.0 , 9.0 , 9.0
+    >>> d = isopy.array(1, ['Mo', 'Tc']) + 100
+    >>> print( isopy.dtypes.concatenate((d, a), axis=1) )
+    Mo    , Tc    , Ru  , Pd  , Cd
+    100.0 , 100.0 , 1.0 , 1.0 , 1.0
+    100.0 , 100.0 , 2.0 , 2.0 , 2.0
+    100.0 , 100.0 , 3.0 , 3.0 , 3.0
+    """
+    if False in [isinstance(a, IsopyArray) for a in arrays]:
+        raise TypeError('All input arrays must be IsopyArrays')
+    if axis == 0: #extend rows
+        keys = arrays[0].keys()
+        for a in arrays[1:]: keys.extend(a.keys(), skip_duplicates=True)
+        if out is None:
+            out = arrays[0]._array(sum([a.size for a in arrays]), keys)
+        for key in keys:
+            _np.concatenate([a.get(key, default_value) for a in arrays], out=out[key])
+        return out
+    elif axis == 1: #extend columns
+        akeys = [a.keys() for a in arrays]
+        keys = akeys[0][:]
+        for key in akeys[1:]:
+            keys.extend(key, allow_duplicates=False)
+        if out is None:
+            out = arrays[0]._array(max([a.nrows for a in arrays]), keys)
+        for i, a in enumerate(arrays):
+            out[akeys[i]] = a
+        return out
+    else:
+        raise _np.AxisError(axis, 1, 'concatenate only accepts axis 0 or 1 values')
 
 
 class IsopyArray(IsopyType):
@@ -2435,7 +2562,6 @@ class IsopyArray(IsopyType):
         return array(values, keys=keys, ndim=ndim, dtype=dtype)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        #TODO make out before which should save some time
         if method != '__call__':
             raise TypeError('method "{}" is currently not supported'.format(method))
         check_unsupported_parameters(ufunc.__name__, ['where', 'axes', 'axis', 'casting', 'order', 'subok',
@@ -2449,7 +2575,6 @@ class IsopyArray(IsopyType):
                                           _np.rint, _np.floor, _np.ceil, _np.trunc, _np.exp, _np.expm1, _np.exp2, _np.log, _np.log10, _np.log2,
                                           _np.log1p, _np.reciprocal, _np.positive, _np.negative, _np.sqrt, _np.cbrt, _np.square, _np.fabs, _np.sign,
                                           _np.absolute, _np.abs, _np.isnan]:
-
             keys = inputs[0].keys()
             if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
             for key in keys:
@@ -2465,14 +2590,16 @@ class IsopyArray(IsopyType):
                     keys = inputs[0].keys() | inputs[1].keys()
                 except:
                     raise ValueError('Cannot perform operation on two different types of IsopyArrays')
-                if out is None: out = inputs[0]._array(max(inputs[0].nrows, inputs[1].nrows), keys)
+                if out is None:
+                    out = inputs[0]._array(max(inputs[0].nrows, inputs[1].nrows), keys)
                 for key in keys:
                     ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key], **kwargs)
                 return out
             elif isinstance(inputs[0], IsopyArray):
                 keys = inputs[0].keys()
                 if isinstance(inputs[1], dict):
-                    if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
+                    if out is None:
+                        out = inputs[0]._array(inputs[0].nrows, keys)
                     for key in keys:
                         ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key],
                               **kwargs)
@@ -2480,9 +2607,11 @@ class IsopyArray(IsopyType):
                 else:
                     input1 = _np.asarray(inputs[1])
                     if input1.ndim == 0:
-                        if out is None: out = inputs[0]._array(inputs[0].nrows, keys)
+                        if out is None:
+                            out = inputs[0]._array(inputs[0].nrows, keys)
                     elif input1.ndim == 1:
-                        if out is None: out = inputs[0]._array(max(inputs[0].nrows, input1.size), keys)
+                        if out is None:
+                            out = inputs[0]._array(max(inputs[0].nrows, input1.size), keys)
                     else:
                         raise ValueError('value 2 has to many dimensions')
                     for key in keys:
@@ -2492,7 +2621,8 @@ class IsopyArray(IsopyType):
                 #second array must be isopy array
                 keys = inputs[1].keys()
                 if isinstance(inputs[0], dict):
-                    if out is None: out = inputs[1]._array(inputs[1].nrows, keys)
+                    if out is None:
+                        out = inputs[1]._array(inputs[1].nrows, keys)
                     for key in keys:
                         ufunc(inputs[0].get(key, default_value), inputs[1].get(key, default_value), out=out[key],
                               **kwargs)
@@ -2500,152 +2630,58 @@ class IsopyArray(IsopyType):
                 else:
                     input0 = _np.asarray(inputs[0])
                     if input0.ndim == 0:
-                        if out is None: out = inputs[1]._array(inputs[1].nrows, keys)
+                        if out is None:
+                            out = inputs[1]._array(inputs[1].nrows, keys)
                     elif input0.ndim == 1:
-                        if out is None: out = inputs[1]._array(max(inputs[1].nrows, input0.size), keys)
+                        if out is None:
+                            out = inputs[1]._array(max(inputs[1].nrows, input0.size), keys)
                     else:
-                        raise ValueError('value 2 has to many dimensions')
+                        raise ValueError('value 1 has to many dimensions')
                     for key in keys:
                         ufunc(input0, inputs[1].get(key, default_value), out=out[key], **kwargs)
                     return out
         else:
             raise TypeError('Function "{}" is not supported by isopy arrays'.format(ufunc.__name__))
 
-
-        is_input_isopy = [isinstance(inp, IsopyArray) for inp in inputs]
-        if is_input_isopy.count(True) == 2:
-            keys = inputs[0].keys() | inputs[1].keys()
-
-        elif is_input_isopy.count(True) == 1:
-            inputs = list(inputs)
-
-            isopy_i = is_input_isopy.index(True)
-            keys = inputs[isopy_i].keys()
-
-            try:
-                other_i = is_input_isopy.index(False)
-            except ValueError:
-                #Are used as is
-                pass
-            else:
-                if not isinstance(inputs[other_i], dict):
-                    try:
-                        other = _np.asarray(inputs[other_i])
-                    except:
-                        raise TypeError('Failed to convert input "{}" to compatible array'.format(inputs[other_i]))
-
-                    if other.ndim > 1:
-                        raise TypeError('input "{}" has to many dimensions'.format(inputs[other_i]))
-
-                    if other.dtype.names is not None:
-                        raise TypeError('structured ndarrays are currently not supported as inputs')
-
-                    inputs[other_i] = input_array_ndarray(inputs[other_i])
-        else:
-            raise TypeError('At least one input must be an isopy array')
-
-        output = {}
-        for key in keys:
-            try:
-                output[key] = ufunc(*[inp.get(key, default_value) for inp in inputs], **kwargs)
-            except KeyError:
-                raise KeyError('Key "{}" not found in all inputs'.format(key))
-            except:
-                raise
-
-        return self._array(output)
-
     def __array_function__(self, func, types, args, kwargs):
-        default_value = kwargs.pop('default_value', _np.nan)
-        if func in [_np.prod, _np.sum, _np.nanprod, _np.nansum, _np.cumprod, _np.cumsum, _np.nancumprod, _np.nancumsum,
-                    _np.amin, _np.amax, _np.nanmin, _np.nanmax, _np.fix, _np.ptp, _np.percentile, _np.nanpercentile, _np.quantile,
-                    _np.nanquantile, _np.median, _np.average, _np.mean, _np.std, _np.var, _np.nanmedian, _np.nanmean,
-                    _np.nanstd, _np.nanvar, _np.nan_to_num, _npf.mad, _npf.nanmad, _npf.se, _npf.nanse, _npf.sd, _npf.nansd,
+        #contains both our and axis
+        if func in [_np.prod, _np.sum, _np.nanprod, _np.nansum,
+                    _np.amin, _np.amax, _np.nanmin, _np.nanmax, _np.ptp, _np.percentile, _np.nanpercentile, _np.quantile,
+                    _np.nanquantile, _np.median, _np.mean, _np.std, _np.var, _np.nanmedian, _np.nanmean,
+                    _np.nanstd, _np.nanvar, _npf.mad, _npf.nanmad, _npf.se, _npf.nanse, _npf.sd, _npf.nansd,
                     _np.any, _np.all]:
             sig = _inspect.signature(func)
             bind = sig.bind(*args, **kwargs)
             func_parameters = list(sig.parameters.keys())
             parsed_kwargs = bind.arguments
-            check_unsupported_parameters(func.__name__, ['out', 'where', 'overwrite_input'], parsed_kwargs)
+            check_unsupported_parameters(func.__name__, ['where', 'overwrite_input'], parsed_kwargs)
             axis = parsed_kwargs.pop('axis', 0)
             array = parsed_kwargs.pop(func_parameters[0])
-            if not isinstance(array, IsopyArray):
-                raise TypeError('Array must be an isopy array')
-            elif axis is not None and axis > array.ndim:
-                raise _np.AxisError(axis, array.ndim)
 
-            elif axis == 0:
-                return self._array({key: func(array.get(key, default_value), **parsed_kwargs) for key in array.keys()})
+            if axis == 0:
+                keys = array.keys()
+                out = parsed_kwargs.pop('out', None)
+                if out is None:
+                    out = array._array(-1, keys)
+                for key in keys:
+                    func(array[key], out=out[key], **parsed_kwargs)
+                return out
+            elif axis is not None and axis > 1:
+                raise _np.AxisError(axis, 1, 'IsopyArrays do not allow  \'axis\' > 1')
+            elif array.ndim == 0:
+                return func(array.reshape(1).view(_np.ndarray).view(array.dtype[0]), **parsed_kwargs)
             else:
-                return func(_np.transpose([array.get(key, default_value) for key in array.keys()]),
-                            axis=axis, **parsed_kwargs)
-
-        elif func in [_np.argmax, _np.argmin]:
-            sig = _inspect.signature(func)
-            bind = sig.bind(*args, **kwargs)
-            func_parameters = list(sig.parameters.keys())
-            parsed_kwargs = bind.arguments
-            check_unsupported_parameters(func.__name__, ['out', 'where', 'overwrite_input'], parsed_kwargs)
-            axis = parsed_kwargs.pop('axis', 0)
-            array = parsed_kwargs.pop(func_parameters[0])
-            if not isinstance(array, IsopyArray):
-                raise TypeError('Array must be an isopy array')
-            elif axis is not None and axis > array.ndim:
-                raise _np.AxisError(axis, array.ndim)
-
-            if axis is None:
-                if func == _np.argmax: step1 = _np.amax(array)
-                else: step1 = _np.amin(array)
-                return array.keys()[int(func([step1[key] for key in step1.keys()], **parsed_kwargs))]
-            elif axis == 0:
-                return self._array({key: func(array.get(key, default_value), **parsed_kwargs) for key in array.keys()})
-            else:
-                return func(_np.transpose([array.get(key, default_value) for key in array.keys()]),
-                            axis=axis, **parsed_kwargs)
-
-        elif func in [_np.around, _np.round]:
-            sig = _inspect.signature(func)
-            bind = sig.bind(*args, **kwargs)
-            parsed_kwargs = bind.arguments
-            check_unsupported_parameters(func.__name__, ['out'], parsed_kwargs)
-            array = parsed_kwargs.pop('a')
-            if not isinstance(array, IsopyArray):
-                raise TypeError('Array must be an isopy array')
-            return self._array({key: func(array.get(key, default_value), **parsed_kwargs) for key in array.keys()})
+                return func(array.view(_np.ndarray).view(array.dtype[0]).reshape(array.size, -1), axis=axis, **parsed_kwargs)
 
         elif func is _np.concatenate:
             sig = _inspect.Signature([_inspect.Parameter('arr', _inspect.Parameter.POSITIONAL_ONLY),
                                       _inspect.Parameter('axis', _inspect.Parameter.POSITIONAL_OR_KEYWORD, default=0),
                                       _inspect.Parameter('out', _inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None)])
             bind = sig.bind(*args, **kwargs)
-            func_parameters = list(sig.parameters.keys())
             parsed_kwargs = bind.arguments
-            check_unsupported_parameters(func.__name__, ['out'], parsed_kwargs)
             axis = parsed_kwargs.pop('axis', 0)
-            arr = parsed_kwargs.pop(func_parameters[0])
-            if not isinstance(arr[0], IsopyArray) or False in [isinstance(a, arr[0].__class__) for a in arr[1:]]:
-                #Fails if one is void
-                raise TypeError('All arrays must be Isopy Arrays of the same type')
-
-
-            if axis == 0:
-                keys = arr[0].keys()
-                for a in arr[1:]: keys.extend(a.keys(), skip_duplicates=True)
-                return asarray({key: func([a.get(key, default_value) for a in arr], axis=0) for key in keys})
-            elif axis == 1:
-                if False in [a.size==arr[0].size for a in arr[1:]]:
-                    raise ValueError('All arrays must have the same size')
-                ndim = _np.max([a.ndim for a in arr])
-
-                keys = arr[0].keys()
-                for a in arr[1:]: keys.extend(a.keys(), allow_duplicates=False)
-
-                arrd = {}
-                for a in arr: arrd.update({key: a.get(key, default_value) for key in a.keys()})
-
-                return asarray(arrd, ndim = ndim)
-            else:
-                raise _np.AxisError(axis, 1)
+            arr = parsed_kwargs.pop('arr')
+            return concatenate(arr,axis, **parsed_kwargs)
 
         elif func is _np.append:
             sig = _inspect.signature(func)
@@ -2654,8 +2690,118 @@ class IsopyArray(IsopyType):
             array1 = parsed_kwargs.pop('arr')
             array2 = parsed_kwargs.pop('values')
             axis = parsed_kwargs.pop('axis', 0)
-            return _np.concatenate((array1, array2), axis = axis)
+            return concatenate((array1, array2), axis = axis)
 
+        #No out parameter
+        elif func in [_np.average, _npf.count_notnan]:
+            sig = _inspect.signature(func)
+            bind = sig.bind(*args, **kwargs)
+            parsed_kwargs = bind.arguments
+            axis = parsed_kwargs.pop('axis', 0)
+            array = parsed_kwargs.pop('a')
+
+            if axis == 0:
+                keys = array.keys()
+                out = parsed_kwargs.pop('out', None)
+                if out is None:
+                    out = array._array(-1, keys)
+                for key in keys:
+                    out[key] = func(array[key], **parsed_kwargs)
+                return out
+            elif axis is not None and axis > 1:
+                raise _np.AxisError(axis, 1, 'IsopyArrays do not allow  \'axis\' > 1')
+            elif array.ndim == 0:
+                return func(array.reshape(1).view(_np.ndarray).view(array.dtype[0]), **parsed_kwargs)
+            else:
+                return func(array.view(_np.ndarray).view(array.dtype[0]).reshape(array.size, -1), axis=axis,
+                            **parsed_kwargs)
+
+        #Return size as an input
+        elif func in [_np.cumprod, _np.cumsum, _np.nancumprod, _np.nancumsum,]:
+            sig = _inspect.signature(func)
+            bind = sig.bind(*args, **kwargs)
+            parsed_kwargs = bind.arguments
+            axis = parsed_kwargs.pop('axis', 0)
+            array = parsed_kwargs.pop('a')
+
+            if axis == 0:
+                keys = array.keys()
+                out = parsed_kwargs.pop('out', None)
+                if out is None:
+                    out = array._array(array.nrows, keys)
+                for key in keys:
+                    func(array[key], out=out[key], **parsed_kwargs)
+                return out
+            elif axis is not None and axis > 1:
+                raise _np.AxisError(axis, 1, 'IsopyArrays do not allow  \'axis\' > 1')
+            elif array.ndim == 0:
+                return func(array.reshape(1).view(_np.ndarray).view(array.dtype[0]), **parsed_kwargs)
+            else:
+                return func(array.view(_np.ndarray).view(array.dtype[0]).reshape(array.size, -1), axis=axis,
+                            **parsed_kwargs)
+
+        #special case
+        elif func in [_np.argmax, _np.argmin]:
+            sig = _inspect.signature(func)
+            bind = sig.bind(*args, **kwargs)
+            parsed_kwargs = bind.arguments
+            axis = parsed_kwargs.pop('axis', 0)
+            array = parsed_kwargs.pop('a')
+
+            if axis is None:
+                keys = array.keys()
+                if func == _np.argmax:
+                    return keys[int(func([_np.amax(array[key] for key in keys)], **parsed_kwargs))]
+                else: #argmin
+                    return keys[int(func([_np.amin(array[key] for key in keys)], **parsed_kwargs))]
+            elif axis == 0:
+                keys = array.keys()
+                out = parsed_kwargs.pop('out', None)
+                if out is None:
+                    out = array._array(-1, keys)
+                for key in keys:
+                    func(array[key], out=out[key], **parsed_kwargs)
+                return out
+            elif axis is not None and axis > 1:
+                raise _np.AxisError(axis, 1, 'IsopyArrays do not allow  \'axis\' > 1')
+            elif array.ndim == 0:#axis=1
+                return None
+            else:  # axis = 1
+                return func(array.view(_np.ndarray).view(array.dtype[0]).reshape(array.size, -1), axis=axis, **parsed_kwargs)
+
+        #No axis argument
+        elif func in [_np.around, _np.round]:
+            sig = _inspect.signature(func)
+            bind = sig.bind(*args, **kwargs)
+            parsed_kwargs = bind.arguments
+            func_parameters = list(sig.parameters.keys())
+            array = parsed_kwargs.pop(func_parameters[0])
+            if not isinstance(array, IsopyArray):
+                raise TypeError('Array must be an isopy array')
+            keys = array.keys()
+            out = parsed_kwargs.pop('out', None)
+            if out is None:
+                out = array._array(array.nrows, keys)
+            for key in keys:
+                func(array[key], out=out[key], **parsed_kwargs)
+            return out
+
+        #No out or axis
+        elif func in [_np.fix, _np.nan_to_num]:
+            sig = _inspect.signature(func)
+            bind = sig.bind(*args, **kwargs)
+            parsed_kwargs = bind.arguments
+            func_parameters = list(sig.parameters.keys())
+            array = parsed_kwargs.pop(func_parameters[0])
+            if not isinstance(array, IsopyArray):
+                raise TypeError('Array must be an isopy array')
+            keys = array.keys()
+            out = parsed_kwargs.pop('out', None)
+            if out is None:
+                out = array._array(array.nrows, keys)
+            for key in keys:
+                out[key] = func(array[key], **parsed_kwargs)
+            return out
         else:
             raise TypeError('The use of {} is not supported by isopy arrays'.format(func.__name__))
 
@@ -2709,6 +2855,8 @@ class IsopyArray(IsopyType):
 
 class MassArray(IsopyArray):
     """
+    MassArray(values, keys=None, ndim=None, dtype=None)
+
     An array where data is stored in rows and columns with :class:`Masstring` keys.
 
     See the tutorial :ref:`working with arrays` for a description of the functionality these arrays.
@@ -2849,6 +2997,8 @@ class MassArray(IsopyArray):
 
 class ElementArray(IsopyArray):
     """
+    ElementArray(values, keys=None, ndim=None, dtype=None)
+
     An array where data is stored in rows and columns with :class:`ElementString` keys.
 
     See the tutorial :ref:`working with arrays` for a description of the functionality these arrays.
@@ -2989,6 +3139,8 @@ class ElementArray(IsopyArray):
 
 class IsotopeArray(IsopyArray):
     """
+    IsotopeArray(values, keys=None, ndim=None, dtype=None)
+
     An array where data is stored in rows and columns with :class:`IsotopeString` keys.
 
     See the tutorial :ref:`working with arrays` for a description of the functionality these arrays.
@@ -3129,6 +3281,8 @@ class IsotopeArray(IsopyArray):
 
 class RatioArray(IsopyArray):
     """
+    RatioArray(values, keys=None, ndim=None, dtype=None)
+
     An array where data is stored in rows and columns with :class:`RatioString` keys.
 
     See the tutorial :ref:`working with arrays` for a description of the functionality these arrays.
@@ -3264,7 +3418,7 @@ class RatioArray(IsopyArray):
         #Must have a common denominator
         denominator = self.keys().get_common_denominator()
 
-        out = RatioArray(self, keys=self.keys().numerators())
+        out = array(self, self.keys().numerators())
         if denominator not in out.keys():
             out = _np.append(out, asarray(out.nrows, keys=denominator), axis=1)
 
@@ -3454,6 +3608,11 @@ class IsopyNdarray(IsopyArray, _np.ndarray):
                 key = self._string(key).identifier()
             except:
                 pass
+        elif isinstance(key, list):
+            try:
+                key = self._list(key).identifiers()
+            except:
+                pass
         super(IsopyNdarray, self).__setitem__(key, value)
 
     def __getitem__(self, key):
@@ -3466,7 +3625,6 @@ class IsopyNdarray(IsopyArray, _np.ndarray):
             if len(key) == 0:
                 return _np.array([])
             elif isinstance(key[0], str):
-                # Can be smarter
                 try:
                     key = self._list(key).identifiers()
                 except:
@@ -3507,9 +3665,7 @@ class IsopyVoid(IsopyArray, _np.void):
         return void.view((cls, void.dtype))
 
     def __len__(self):
-        # Should raise same error as ndarray
-        raise NotImplemented()
-        #pass
+        raise TypeError('len() of unsized object')
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
@@ -3523,7 +3679,7 @@ class IsopyVoid(IsopyArray, _np.void):
 
     def __getitem__(self, key):
         if isinstance(key, (int, slice)):
-            raise IndexError('{} cannot be indexed by position'.format(self.__class__.__name__))
+            raise IndexError('{} cannot be indexed by row'.format(self.__class__.__name__))
         elif isinstance(key, str):
             try:
                 key = self._string(key).identifier()
@@ -3533,12 +3689,10 @@ class IsopyVoid(IsopyArray, _np.void):
             if len(key) == 0:
                 return _np.array([])
             elif isinstance(key[0], str):
-                # Can be smarter
                 try:
-                    key = [k.identifier() for k in self._list(key)]
+                    key = self._list(key).identifiers()
                 except:
                     pass
-        # TODO check if it return IsopyVoid
         return super(IsopyVoid, self).__getitem__(key)
 
 

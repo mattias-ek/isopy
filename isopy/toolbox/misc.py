@@ -1,8 +1,7 @@
 from matplotlib.axes import Axes as _Axes
 from matplotlib.patches import Polygon as _Polygon
 import numpy as _np
-from isopy import exceptions as _e
-from isopy import dtypes as _dt
+import isopy as _isopy
 
 
 
@@ -111,12 +110,12 @@ def york_regression(X, Y, Xerr, Yerr, r=0, tol=0.00001):
     --------
     :class:`YorkRegression`, :func:`plot_york_regression`
     """
-    X = _e.check_type('X', X, _np.ndarray, coerce=True, coerce_into=_np.array)
-    Y = _e.check_type('Y', Y, _np.ndarray, coerce=True, coerce_into=_np.array)
-    Xerr = _e.check_type('Xerr', Xerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
-    Yerr = _e.check_type('Yerr', Yerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
-    r = _e.check_type('r', r, _np.float, coerce=True)
-    tol = _e.check_type('tol', tol, _np.float, coerce=True)
+    X = _isopy.core.check_type('X', X, _np.ndarray, coerce=True, coerce_into=_np.array)
+    Y = _isopy.core.check_type('Y', Y, _np.ndarray, coerce=True, coerce_into=_np.array)
+    Xerr = _isopy.core.check_type('Xerr', Xerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
+    Yerr = _isopy.core.check_type('Yerr', Yerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
+    r = _isopy.core.check_type('r', r, _np.float, coerce=True)
+    tol = _isopy.core.check_type('tol', tol, _np.float, coerce=True)
 
     if r > 1 or r < 0:
         raise ValueError('r must be between 0 and 1')
@@ -290,16 +289,16 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
         The noise in V for the given voltage/set of voltages.
     """
 
-    voltage = _e.check_type('voltage', voltage, _dt.IsotopeArray, _np.ndarray, _np.float, coerce=True,
-                            coerce_into=[_dt.IsotopeArray, _np.float, _np.array])
-    resistor = _e.check_type('resistor', resistor, _dt.IsotopeArray, _np.ndarray, _np.float, coerce=True,
-                             coerce_into=[_dt.IsotopeArray, _np.float, _np.array])
-    integration_time = _e.check_type('integration_time', integration_time, _np.float, coerce=True)
-    include_counting_statistics = _e.check_type('include_counting_statistics', include_counting_statistics,
+    voltage = _isopy.core.check_type('voltage', voltage, _isopy.core.IsotopeArray, _np.ndarray, _np.float, coerce=True,
+                            coerce_into=[_isopy.core.IsotopeArray, _np.float, _np.array])
+    resistor = _isopy.core.check_type('resistor', resistor, _isopy.core.IsotopeArray, _np.ndarray, _np.float, coerce=True,
+                             coerce_into=[_isopy.core.IsotopeArray, _np.float, _np.array])
+    integration_time = _isopy.core.check_type('integration_time', integration_time, _np.float, coerce=True)
+    include_counting_statistics = _isopy.core.check_type('include_counting_statistics', include_counting_statistics,
                                                 bool)
-    T = _e.check_type('T', T, _np.float, coerce=True)
-    R = _e.check_type('R', R, _np.float, coerce=True)
-    cpv = _e.check_type('cpv', cpv, _np.float, coerce=True)
+    T = _isopy.core.check_type('T', T, _np.float, coerce=True)
+    R = _isopy.core.check_type('R', R, _np.float, coerce=True)
+    cpv = _isopy.core.check_type('cpv', cpv, _np.float, coerce=True)
 
     kB = _np.float(1.3806488E-023) # Boltsman constant
 
