@@ -1,10 +1,9 @@
-__version__ = '0.3.4'
-
-import isopy.core
-import isopy.io
-import isopy.toolbox
+__version__ = '0.4.0'
 
 from .core import *
 from .io import *
-import isopy.tb
+from .array_functions import *
+from .reference_values import *
 
+from . import tb
+from . import ep

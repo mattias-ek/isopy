@@ -1,11 +1,11 @@
-RatioArray
+﻿RatioArray
 ==========
 
 .. currentmodule:: isopy
 
 .. autoclass:: RatioArray
     :members:
-    :inherited-members: str
+    :inherited-members:
     :member-order: bysource
 
 

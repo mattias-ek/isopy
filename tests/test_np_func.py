@@ -2,10 +2,13 @@ import isopy
 import numpy as np
 import pytest
 
+import isopy.core
+
+
 def test_sd():
     keys = ['Ru', 'Pd', 'Cd']
     data = [1,2,3]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.std(data, ddof=1)
@@ -28,7 +31,7 @@ def test_sd():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [1, 2, np.nan]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.std(data, ddof=1)
@@ -51,7 +54,7 @@ def test_sd():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [[1, 2, np.nan], [2,3,4], [8,3,1], [11,15,13]]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
     for axis in [None, 1]:
         correct = np.std(data, ddof=1, axis=axis)
         test = isopy.tb.sd(array, axis=axis)
@@ -73,7 +76,7 @@ def test_sd():
 def test_nansd():
     keys = ['Ru', 'Pd', 'Cd']
     data = [1,2,3]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.nanstd(data, ddof=1)
@@ -96,7 +99,7 @@ def test_nansd():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [1, 2, np.nan]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.std(data, ddof=1)
@@ -119,7 +122,7 @@ def test_nansd():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [[1, 2, np.nan], [2,3,4], [8,3,1], [11,15,13]]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
     for axis in [None, 1]:
         correct = np.std(data, ddof=1, axis=axis)
         test = isopy.tb.sd(array, axis=axis)
@@ -141,7 +144,7 @@ def test_nansd():
 def test_se():
     keys = ['Ru', 'Pd', 'Cd']
     data = [1, 2, 3]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.std(data, ddof=1) / np.sqrt(3)
@@ -164,7 +167,7 @@ def test_se():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [1, 2, np.nan]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.std(data, ddof=1) / np.sqrt(3)
@@ -187,7 +190,7 @@ def test_se():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [[1, 2, np.nan], [2, 3, 4], [8, 3, 1], [11, 15, 13]]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     correct = np.std(data, ddof=1, axis=None) / np.sqrt(12)
     test = isopy.tb.se(array, axis=None)
@@ -210,7 +213,7 @@ def test_se():
 def test_nanse():
     keys = ['Ru', 'Pd', 'Cd']
     data = [1, 2, 3]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.nanstd(data, ddof=1) / np.sqrt(3)
@@ -233,7 +236,7 @@ def test_nanse():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [1, 2, np.nan]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     for axis in [None, 1]:
         correct = np.nanstd(data, ddof=1) / np.sqrt(2)
@@ -256,7 +259,7 @@ def test_nanse():
     np.testing.assert_allclose(test, correct, 1E-10)
 
     data = [[1, 2, np.nan], [2, 3, 4], [8, 3, 1], [11, 15, 13]]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     correct = np.nanstd(data, ddof=1, axis=None) / np.sqrt(11)
     test = isopy.tb.nanse(array, axis=None)
@@ -279,7 +282,7 @@ def test_nanse():
 def test_count_notnan():
     keys = ['Ru', 'Pd', 'Cd']
     data = [1, 2, 3]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     assert isopy.tb.count_notnan(array, None) == 3
     assert isopy.tb.count_notnan(array, axis=1) == 3
@@ -293,7 +296,7 @@ def test_count_notnan():
         isopy.tb.count_notnan(data, axis=1)
 
     data = [1, 2, np.nan]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     assert isopy.tb.count_notnan(array, None) == 2
     assert isopy.tb.count_notnan(array, axis=1) == 2
@@ -308,10 +311,10 @@ def test_count_notnan():
         isopy.tb.count_notnan(data, axis=1)
 
     data = [[1, 2, np.nan], [2, 3, 4], [8, 3, 1], [11, 15, 13]]
-    array = isopy.array(data, keys)
+    array = isopy.core.array(data, keys)
 
     assert isopy.tb.count_notnan(array, None) == 11
-    np.testing.assert_allclose(isopy.tb.count_notnan(array, axis=1), [2,3,3,3])
+    np.testing.assert_allclose(isopy.tb.count_notnan(array, axis=1), [2, 3, 3, 3])
     test = isopy.tb.count_notnan(array, axis=0)
     correct = [4, 4, 3]
     for i, key in enumerate(keys):
@@ -319,7 +322,7 @@ def test_count_notnan():
 
     assert isopy.tb.count_notnan(data) == 11
     np.testing.assert_allclose(isopy.tb.count_notnan(data, axis=0), [4, 4, 3])
-    np.testing.assert_allclose(isopy.tb.count_notnan(data, axis=1), [2,3,3,3])
+    np.testing.assert_allclose(isopy.tb.count_notnan(data, axis=1), [2, 3, 3, 3])
 
 
 

@@ -1,84 +1,69 @@
 Toolbox
 *******
 
-Here is a list of all the toolboxes that are currently avaliable in isopy. The most common functions are avaliable in
-the ``isopypy.tb`` namespace. More specific functions/classes can be accessed via ``isopy.toolbox.<toolbox>``.
-
-Note that using ``from isopy.toolbox.<toolbox> import *`` will only import the functions
-present in ``isopy.tb``. Use ``from isopy.toolbox import <toolbox>`` instead to import a specific toolbox.
-
-General Data Processing
-=======================
-This toolbox contains functions for general data processing.
-
-Avaliable in ``isopy.tb`` and ``isopy.toolbox.general``
-
-.. currentmodule:: isopy.tb
-.. autosummary::
-    :toctree: tb_general
-
-    normalise_data
-    denomralise_data
-    find_outliers
-    find_outliers_mad
+The isopy toolbox contains an number of useful functions for processing and evaluating
+geochemical data. You can access the toolbox through the ``isopy.tb`` namespace.
 
 Isotope Data Processing
 =======================
-This toolbox contains functions for processing of isotope data.
-
-Avaliable in ``isopy.tb`` and ``isopy.toolbox.isotope``
+The following functions are useful for processing isotopic data.
 
 .. currentmodule:: isopy.tb
 .. autosummary::
-    :toctree: tb_isotope
+    :toctree: tb_reduce_iso
 
-    make_sample
+    normalise_data
+    denormalise_data
+    find_outliers
+    johnson_nyquist_noise
+    make_ms_array
+    make_ms_beams
+    make_ms_sample
     mass_independent_correction
     calculate_mass_fractionation_factor
     remove_mass_fractionation
     add_mass_fractionation
     remove_isobaric_interferences
-    add_isobaric_interferences
+    ds_inversion
+    ds_correction
 
-Miscellaneous
+Regressions
 =============
-This toolbox contains miscellaneous functions and classes.
-
-Avaliable in ``isopy.tb`` and ``isopy.toolbox.misc``
+Below are functions for calculating regressions
 
 .. currentmodule:: isopy.tb
 .. autosummary::
-    :toctree: tb_misc
+    :toctree: tb_regress
 
-    york_regression
-    plot_york_regression
-    johnson_nyquist_noise
+    regression_york1
+    regression_york2
+    regression_linear
 
-Only avaliable in ``isopy.toolbox.misc``
 
-.. currentmodule:: isopy.toolbox.misc
+Plotting
+=========
+Below are functions for plotting geochemical data using matplotlib
+
+.. currentmodule:: isopy.tb
 .. autosummary::
-    :toctree: tb_misc
+    :toctree: tb_plotting
 
-    YorkRegression
+    update_figure
+    create_subplots
+    plot_scatter
+    plot_regression
+    plot_spider
+    plot_vstack
+    plot_hstack
+    plot_vcompare
+    plot_hcompare
 
+    :template: cycler_template.rst
 
-Numpy like functions
-====================
-The functions in this toolbox behave like numpy functions.
+    Colors
+    ColorPairs
+    Markers
 
-Avaliable in ``isopy.tb`` and ``isopy.toolbox.np_like``
-
-.. currentmodule:: isopy.toolbox.np_func
-.. autosummary::
-    :toctree: tb_np_func
-
-    sd
-    se
-    mad
-    nansd
-    nanse
-    nanmad
 
 
 

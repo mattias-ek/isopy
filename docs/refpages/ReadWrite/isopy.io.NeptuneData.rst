@@ -1,8 +1,0 @@
-NeptuneData
-===========
-
-.. currentmodule:: isopy.io
-
-.. autoclass:: NeptuneData
-    :members:
-    :member-order: bysource

@@ -39,12 +39,14 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel']
+    'sphinx.ext.autosectionlabel',
+    'sphinx_autodoc_typehints']
 
 autosummary_generate = True
 autosummary_generate_overwrite = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+autodoc_typehints = "description"
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:

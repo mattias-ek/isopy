@@ -4,8 +4,8 @@
 
 .. autoclass:: {{ objname }}
     :members:
-    :inherited-members: list
-    :exclude-members: count, index, insert, remove
+    :inherited-members: tuple
+    :exclude-members: count, index
     :member-order: bysource
 
 

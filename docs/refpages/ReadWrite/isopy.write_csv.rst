@@ -1,4 +1,4 @@
-write\_csv
+﻿write\_csv
 ==========
 
 .. currentmodule:: isopy
