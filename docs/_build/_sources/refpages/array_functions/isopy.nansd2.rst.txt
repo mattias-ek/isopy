@@ -1,6 +1,0 @@
-﻿nansd2
-======
-
-.. currentmodule:: isopy
-
-.. autofunction:: nansd2

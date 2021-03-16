@@ -1,6 +1,0 @@
-﻿se2
-===
-
-.. currentmodule:: isopy
-
-.. autofunction:: se2

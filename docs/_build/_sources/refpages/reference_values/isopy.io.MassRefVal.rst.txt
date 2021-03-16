@@ -1,9 +1,0 @@
-﻿MassRefVal
-==========
-
-.. currentmodule:: isopy.io
-
-.. autoclass:: MassRefVal
-    :members:
-    :inherited-members:
-    :member-order: bysource

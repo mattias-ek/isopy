@@ -1,6 +1,0 @@
-﻿isotope.initial\_abundance\_L09
-===============================
-
-.. currentmodule:: isopy.reference_values
-
-.. autoattribute:: isotope.initial_abundance_L09

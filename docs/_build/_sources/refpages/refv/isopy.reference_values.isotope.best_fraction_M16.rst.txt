@@ -1,6 +1,0 @@
-﻿isotope.best\_fraction\_M16
-===========================
-
-.. currentmodule:: isopy.reference_values
-
-.. autoattribute:: isotope.best_fraction_M16
