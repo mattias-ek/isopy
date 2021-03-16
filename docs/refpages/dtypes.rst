@@ -23,8 +23,6 @@ each data type is determined by the key string(s) that it contains. The 5 differ
 * The ``General``  flavour represent data that cannot be described by any of the other flavours. The key string can be any string e.g. ``"hermione"``.
 
 
-.. _keystring:
-
 Key strings
 -----------
 Key strings are what determine the flavour of key lists and isopy arrays. Each key string has a
@@ -81,8 +79,6 @@ The following classes/functions can be used to create isopy key strings:
     IsotopeKeyString
     RatioKeyString
     GeneralKeyString
-
-.. _keylist:
 
 Key lists
 ---------
@@ -143,7 +139,6 @@ The following classes/functions can be used to create isopy key lists:
     RatioKeyList
     GeneralKeyList
 
-.. _isopyarray:
 
 Isopy arrays
 ------------
