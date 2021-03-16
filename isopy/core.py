@@ -2293,7 +2293,7 @@ class IsopyArray(IsopyFlavour):
         # TODO if sheetname is given and file exits open it and add the sheet, overwrite if nessecary
         isopy.write_xlsx(filename, comments=comments,  **{sheetname: self})
 
-    def to_dataframe(self) -> pandas.DataFrame:
+    def to_dataframe(self):
         """
         Convert array to a pandas dataframe. An exception is raised if pandas is not installed.
         """
