@@ -6,8 +6,8 @@ Installing Python 3.9
 The latest version of isopy requires python 3.9 and above.
 
 Below is a guide to install python 3.9 if you are using the
-[Anaconda](https://www.anaconda.com/products/individual) or
-[miniconda](https://docs.conda.io/en/latest/miniconda.html)
+`Anaconda <https://www.anaconda.com/products/individual>`_ or
+`miniconda <https://docs.conda.io/en/latest/miniconda.html>`_
 distributions.
 
 .. rubric:: New environment
@@ -18,7 +18,7 @@ To do this launch the anaconda prompt (Avaliable from the Anaconda
 launcher).
 
 If you havent done so already now is a good time to add the
-[conda-forge](https://conda-forge.org/) repository channel. This channel
+`conda-forge <https://conda-forge.org/>`_ repository channel. This channel
 *may* be more up to date than the default channel.
 
 .. code-block:: bash
