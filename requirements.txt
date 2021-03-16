@@ -1,0 +1,5 @@
+numpy>=1.20.1
+pyperclip>=1.8
+openpyxl>=3
+matplotlib>=3.3
+scipy>=1.6
