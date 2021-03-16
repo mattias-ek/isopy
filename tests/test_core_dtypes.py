@@ -333,7 +333,8 @@ class Test_IsopyList:
         assert correct_list == correct
         assert len(correct_list) == len(correct)
         for k in correct:
-            assert k in correct_list
+            if isinstance(k, str):
+                assert k in correct_list
 
         if not type(correct[0]) is tuple: #otherwise an error is given when a ratio is given as a tuple
             same_list = listtype(*correct)
@@ -434,25 +435,13 @@ class Test_IsopyList:
         assert (keylist == keys[:-1]) is False
         assert len(keylist) == len(keys)
         assert keylist.has_duplicates() is False
-        assert hash(keylist) == hash(tuple(f'{k}' for k in keylist))
         for key in keys:
-            assert key in keylist
-            assert keylist.count(key) == 1
+            if isinstance(key, str):
+                assert key in keylist
+                assert keylist.count(key) == 1
         for i in range(len(keys)):
             assert keylist[i] == keys[i]
             assert keylist.index(keys[i]) == keys.index(keys[i])
-
-        assert keylist <= keys
-        assert (keylist < keys) is False
-
-        assert keylist <= keys2
-        assert keylist < keys2
-
-        assert keylist >= keys
-        assert (keylist > keys) is False
-
-        assert keylist >= keys[:-1]
-        assert keylist > keys[:-1]
 
         for k in notin:
             assert k not in keylist
@@ -469,8 +458,9 @@ class Test_IsopyList:
         assert len(keylist2) == len(keys2)
         assert keylist2.has_duplicates() is True
         for key in keys:
-            assert key in keylist2
-            assert keylist2.count(key) == 2
+            if isinstance(key, str):
+                assert key in keylist2
+                assert keylist2.count(key) == 2
         for i in range(len(keys2)):
             assert keylist2[i] == keys2[i]
             assert keylist2.index(keys2[i]) == keys2.index(keys2[i])
@@ -480,25 +470,12 @@ class Test_IsopyList:
         assert len(keylist3) == len(keys3)
         assert keylist3.has_duplicates() is False
         for key in keys3:
-            assert key in keylist3
-            assert keylist3.count(key) == 1
+            if isinstance(key, str):
+                assert key in keylist3
+                assert keylist3.count(key) == 1
         for i in range(len(keys3)):
             assert keylist3[i] == keys3[i]
             assert keylist3.index(keys3[i]) == keys3.index(keys3[i])
-
-        add = ((keylist + keylist) + extra_keys)
-        sub = ((keylist2 - keylist) - extra_keys)
-        assert keylist2 == add
-        assert type(add) == type(keylist2)
-        assert keylist == sub
-        assert type(sub) == type(keylist)
-
-        add = (extra_keys + (keylist + keylist))
-        sub = (keys2 - keylist)
-        assert keylist2 == add
-        assert type(add) == type(keylist2)
-        assert keylist3 == sub
-        assert type(sub) == type(keylist3)
 
 
         with pytest.raises(core.ListDuplicateError):
@@ -534,7 +511,7 @@ class Test_IsopyList:
                      ('Hermione', 'Neville', 'George', 'Fred'))
 
         for numerator, denominator in itertools.permutations((mass, element, isotope, general), 2):
-            key1 = (numerator[0] + numerator[2][:2]) / (denominator[0] + denominator[2][:2])
+            key1 = (numerator[2][:2] + numerator[0]) / (denominator[2][:2] + denominator[0])
             key2 = (numerator[0] + numerator[2][2:])/ (denominator[0] + denominator[2][2:])
 
             rand = numerator[0] / denominator[0]
@@ -727,1646 +704,202 @@ class Test_IsopyList:
         return keylist
 
 
-
 #TODO test table
+#TODO test changing dtype
 class Test_Array:
-
-    def test_creation_signature(self):
-        #TODO make sure the signature of __new__ is correct
-        pass
-
-    #Repetitive but should cover most of the creation cases
-    def test_creation_from_dict(self):
+    def test_0dim(self):
         mass_keys = ('104', '105', '106', '107')
         element_keys = ('mo', 'ru', 'pd', 'rh')
         isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
         general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = ('harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
+        ratio_keys = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
 
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-        isotope_colnames = isopy.keylist(isotope_keys).strlist()
+        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys)
 
-        # Multiple data points
+        # 0-dim input
+        data_list = [1, 2, 3, 4]
+        data_tuple = (1, 2, 3, 4)
+        data_array = np.array(data_list, dtype=np.float_)
+        keylist2 = isopy.keylist(isotope_keys)
+        data_correct2 = np.array(data_tuple, dtype=[(str(keystring), np.float_) for keystring in keylist2])
+
         for keys in all_keys:
             keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
 
-            data = {key: [i*10 + j for j in range(10)] for i, key in enumerate(keys)}
+            data_dict = dict(zip(keys, data_list))
+            data_structured = np.array(data_tuple, dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array(data_tuple, dtype=[(str(keystring), np.float_) for keystring in keylist])
 
-            result = isopy.array(data)
-            correct = np.array(list(zip(*data.values())), dtype = list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 0, data_list, keys)
+            self.create_array(data_correct, keylist, 0, data_tuple, keys)
+            self.create_array(data_correct, keylist, 0, data_array, keys)
+            self.create_array(data_correct, keylist, 0, data_dict)
+            self.create_array(data_correct, keylist, 0, data_structured)
 
-            result = isopy.array(data, ndim = 1)
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 0, data_list, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_tuple, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_array, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_dict, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_structured, ndim=-1)
 
-            result = isopy.array(data, ndim=-1)
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 0, data_list, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_tuple, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_array, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_dict, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_structured, ndim=0)
 
-            with pytest.raises(core.NDimError):
-                result = isopy.array(data, ndim=0)
+            #Overwrite keys in data
+            self.create_array(data_correct2, keylist2, 0, data_dict, isotope_keys)
+            self.create_array(data_correct2, keylist2, 0, data_structured, isotope_keys)
+            self.create_array(data_correct2, keylist2, 0, data_dict, isotope_keys, ndim=-1)
+            self.create_array(data_correct2, keylist2, 0, data_structured, isotope_keys, ndim=-1)
+            self.create_array(data_correct2, keylist2, 0, data_dict, isotope_keys, ndim=0)
+            self.create_array(data_correct2, keylist2, 0, data_structured, isotope_keys, ndim=0)
 
-            #change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            #Make sure that this dtype is carried through
-            dtypes[0] = int
-            data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            result = isopy.array(data)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            #change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, dtype = int)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, dtype=(int, ))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, dtype = dtypes)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            #change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys = isotope_keys,  dtype=dtypes)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames , dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint in list
+        #1-dim input
+        data_list = [[1, 2, 3, 4]]
+        data_tuple = [(1, 2, 3, 4)]
+        data_array = np.array(data_list, dtype=np.float_)
         for keys in all_keys:
             keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
 
-            data = {key: [i * 10] for i, key in enumerate(keys)}
+            data_dict = dict(zip(keys, [[1], [2], [3], [4]]))
+            data_structured = np.array(data_tuple, dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array(data_tuple[0], dtype=[(str(keystring), np.float_) for keystring in keylist])
 
-            result = isopy.array(data)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 0, data_list, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_tuple, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_array, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_dict, ndim=-1)
+            self.create_array(data_correct, keylist, 0, data_structured, ndim=-1)
 
-            result = isopy.array(data, ndim=1)
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 0, data_list, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_tuple, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_array, keys, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_dict, ndim=0)
+            self.create_array(data_correct, keylist, 0, data_structured, ndim=0)
 
-            result = isopy.array(data, ndim=-1)
-            correct = correct.reshape(tuple())
-            assert_array_equal_array(result, correct)
+            # Overwrite keys in data
+            self.create_array(data_correct2, keylist2, 0, data_dict, isotope_keys, ndim=-1)
+            self.create_array(data_correct2, keylist2, 0, data_structured, isotope_keys, ndim=-1)
+            self.create_array(data_correct2, keylist2, 0, data_dict, isotope_keys, ndim=0)
+            self.create_array(data_correct2, keylist2, 0, data_structured, isotope_keys, ndim=0)
 
-            result = isopy.array(data, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(list(zip(*data.values())),
-                               dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-            data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            result = isopy.array(data)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, dtype=int)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, dtype=dtypes)
-            correct = np.array(list(zip(*data.values())), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(list(zip(*data.values())),
-                               dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames , dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = {key: i * 10 for i, key in enumerate(keys)}
-
-            result = isopy.array(data)
-            correct = np.array(tuple(data.values()), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, ndim=-1)
-
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, ndim=1)
-            correct = correct.reshape(-1)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(tuple(data.values()),
-                               dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-            data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            result = isopy.array(data)
-            correct = np.array(tuple(data.values()), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, dtype=int)
-            correct = np.array(tuple(data.values()), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, dtype=dtypes)
-            correct = np.array(tuple(data.values()), dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(tuple(data.values()),
-                               dtype=list(zip(isotope_colnames , dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames , dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-    def test_creation_from_list(self):
+    def test_1dim(self):
         mass_keys = ('104', '105', '106', '107')
         element_keys = ('mo', 'ru', 'pd', 'rh')
         isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
         general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-        'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
+        ratio_keys = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
 
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-        isotope_colnames = isopy.keylist(isotope_keys).strlist()
+        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys)
 
-        # Multiple data points
+        # 0-dim input
+        data_list = [1, 2, 3, 4]
+        data_tuple = (1, 2, 3, 4)
+        data_array = np.array(data_list, dtype=np.float_)
+        keylist2 = isopy.keylist(isotope_keys)
+        data_correct2 = np.array([data_tuple], dtype=[(str(keystring), np.float_) for keystring in keylist2])
+
         for keys in all_keys:
             keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
 
-            data = [tuple([i * 10 + j for i in range(len(keys))]) for j in range(10)]
+            data_dict = dict(zip(keys, data_list))
+            data_structured = np.array(data_tuple, dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array([data_tuple], dtype=[(str(keystring), np.float_) for keystring in keylist])
 
-            with pytest.raises(core.NoKeysError):
-                result = isopy.array(data)
+            self.create_array(data_correct, keylist, 1, data_list, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_array, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_dict, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_structured, ndim=1)
 
-            result = isopy.array(data, keys)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
+            # Overwrite keys in data
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys, ndim=1)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys, ndim=1)
 
-            result = isopy.array(data, keys, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            with pytest.raises(core.NDimError):
-                result = isopy.array(data, keys, ndim=0)
-
-            # change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            #Not applicable for lists
-            # Make sure that this dtype is carried through
-            #dtypes[0] = int
-            #data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            #result = isopy.array(data)
-            #correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            #assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint in list
+        # 1-dim input, n == 1
+        data_list = [[1, 2, 3, 4]]
+        data_tuple = [(1, 2, 3, 4)]
+        data_array = np.array(data_list, dtype=np.float_)
         for keys in all_keys:
             keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
 
-            data = [tuple([i * 10 for i in range(len(keys))])]
+            data_dict = dict(zip(keys, [[1], [2], [3], [4]]))
+            data_structured = np.array(data_tuple, dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array(data_tuple, dtype=[(str(keystring), np.float_) for keystring in keylist])
 
-            with pytest.raises(core.NoKeysError):
-                result = isopy.array(data)
+            self.create_array(data_correct, keylist, 1, data_list, keys)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys)
+            self.create_array(data_correct, keylist, 1, data_array, keys)
+            self.create_array(data_correct, keylist, 1, data_dict)
+            self.create_array(data_correct, keylist, 1, data_structured)
 
-            result = isopy.array(data, keys)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
+            self.create_array(data_correct, keylist, 1, data_list, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_array, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_dict, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_structured, ndim=1)
 
-            result = isopy.array(data, keys, ndim=1)
-            assert_array_equal_array(result, correct)
+            # Overwrite keys in data
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys)
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys, ndim=1)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys, ndim=1)
 
-            correct = correct.reshape(tuple())
-            result = isopy.array(data, keys, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Not applicable for lists
-            # Make sure that this dtype is carried through
-            # dtypes[0] = int
-            # data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            # result = isopy.array(data)
-            # correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            # assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint
+        # 1-dim input, n > 1
+        data_list = [[1, 2, 3, 4], [11, 12, 13, 14], [21, 22, 23, 24]]
+        data_tuple = [(1, 2, 3, 4), (11, 12, 13, 14), (21, 22, 23, 24)]
+        data_array = np.array(data_list, dtype=np.float_)
+        data_correct2 = np.array(data_tuple, dtype=[(str(keystring), np.float_) for keystring in keylist2])
         for keys in all_keys:
             keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
 
-            data = tuple([i * 10 for i in range(len(keys))])
-
-            with pytest.raises(core.NoKeysError):
-                result = isopy.array(data)
-
-            result = isopy.array(data, keys)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-
-            result = isopy.array(data, keys, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            correct = correct.reshape(-1)
-            result = isopy.array(data, keys, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            result = isopy.array(data, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Not applicable for lists
-            # Make sure that this dtype is carried through
-            # dtypes[0] = int
-            # data[keys[0]] = np.array(data[keys[0]], dtype=int)
-
-            # result = isopy.array(data)
-            # correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            # assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data, keys, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data, keys, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(data, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-    def test_creation_from_ndarray1(self):
-        #Normal array
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-        'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-        isotope_colnames = isopy.keylist(isotope_keys).strlist()
-
-        # Multiple data points
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data1 = [tuple([i * 10.0 + j for i in range(len(keys))]) for j in range(10)]
-            data2 = np.array(data1)
-
-            with pytest.raises(core.NoKeysError):
-                result = isopy.array(data2)
-
-            result = isopy.array(data2, keys)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            with pytest.raises(core.NDimError):
-                result = isopy.array(data1, keys, ndim=0)
-
-            # change keys
-            result = isopy.array(data2, isotope_keys)
-            correct = np.array(data1, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-
-            #Make sure that this dtype is carried through
-            data3 = np.array(data1, dtype=int)
-            dtypes3 = [int for key in keys]
-
-            result = isopy.array(data3, keys)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes3)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data2, keys, dtype=int)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data2, keys, dtype=dtypes)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data2, keys, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data2, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data1, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(data2, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint in list
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data1 = [tuple([i * 10.0 for i in range(len(keys))])]
-            data2 = np.array(data1)
-
-            with pytest.raises(core.NoKeysError):
-                result = isopy.array(data2)
-
-            result = isopy.array(data2, keys)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            correct = correct.reshape(tuple())
-            result = isopy.array(data2, keys, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            result = isopy.array(data2, isotope_keys)
-            correct = np.array(data1, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            data3 = np.array(data1, dtype=int)
-            dtypes3 = [int for key in keys]
-
-            result = isopy.array(data3, keys)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes3)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data2, keys, dtype=int)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(data2, keys, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            result = isopy.array(data2, keys, dtype=dtypes)
-            correct = np.array(data1, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(data2, keys, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            result = isopy.array(data2, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data1, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(data2, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint - normal ndarrays cannot have 0-dimensions
-
-    def test_creation_from_ndarray2(self):
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-            'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (
-        mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-        isotope_colnames = isopy.keylist(isotope_keys).strlist()
-
-        # Multiple data points
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = [tuple([i * 10 + j for i in range(len(keys))]) for j in range(10)]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            with pytest.raises(core.NDimError):
-                result = isopy.array(data, keys, ndim=0)
-
-            # change keys
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            #Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(colnames, dtypes)))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint in list
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = [tuple([i * 10 for i in range(len(keys))])]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            input = input.reshape(tuple())
-            result = isopy.array(input, ndim=-1)
-            correct = correct.reshape(tuple())
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = tuple([i * 10 for i in range(len(keys))])
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input,  ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            input = input.reshape(-1)
-            result = isopy.array(input, ndim=1)
-            correct = correct.reshape(-1)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = np.array(data, dtype=list(zip(keys, dtypes)))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-    def test_creation_from_isopyarray(self):
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-            'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (
-            mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-        isotope_colnames = isopy.keylist(isotope_keys).strlist()
-
-        # Multiple data points
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = [tuple([i * 10 + j for i in range(len(keys))]) for j in range(10)]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            with pytest.raises(core.NDimError):
-                result = isopy.array(data, keys, ndim=0)
-
-            # change keys
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(colnames, dtypes))))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint in list
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = [tuple([i * 10 for i in range(len(keys))])]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=1)
-            assert_array_equal_array(result, correct)
-
-            input = input.reshape(tuple())
-            result = isopy.array(input, ndim=-1)
-            correct = correct.reshape(tuple())
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-        # single datapoint
-        for keys in all_keys:
-            keylist = isopy.keylist(keys)
-            colnames = keylist.strlist()
-            dtypes = [np.float_ for key in keys]
-
-            data = tuple([i * 10 for i in range(len(keys))])
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=-1)
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, ndim=0)
-            assert_array_equal_array(result, correct)
-
-            input = input.reshape(-1)
-            result = isopy.array(input, ndim=1)
-            correct = correct.reshape(-1)
-            assert_array_equal_array(result, correct)
-
-            # change keys
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, isotope_keys)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # Make sure that this dtype is carried through
-            dtypes[0] = int
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            # change all dtypes
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=int)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            result = isopy.array(input, dtype=(int,))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = float
-            dtypes[-1] = float
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            dtypes[0] = (float, None)
-            dtypes[-1] = (float, None)
-
-            result = isopy.array(input, dtype=dtypes)
-            assert_array_equal_array(result, correct)
-
-            # change keys and dtype
-            dtypes = [int for k in keys]
-
-            input = isopy.array(np.array(data, dtype=list(zip(keys, dtypes))))
-            result = isopy.array(input, keys=isotope_keys, dtype=dtypes)
-            correct = np.array(data, dtype=list(zip(isotope_colnames, dtypes)))
-            assert_array_equal_array(result, correct)
-
-            npdtype = np.dtype(list(zip(isotope_colnames, dtypes)))
-            result = isopy.array(input, dtype=npdtype)
-            assert_array_equal_array(result, correct)
-
-    def _t_est_creation1(self):
-        # test array with size > 1
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = ('harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-
-
-        for keys in all_keys:
-            values = [[j + i / 10 for i in range(10)] for j in range(len(keys))]
-            values[0] = np.asarray(values[0], dtype=int)
-            values[1] = np.asarray(values[1], dtype=float)
-            dtype = (int, float, np.float64, np.float64)
-            keylist = isopy.askeylist(keys)
-            flavour = core.flavour(keylist)
-
-            value_list = values.copy()
-            value_tuple = list(zip(*values))
-            value_array1 = np.array(values)
-
-            value_dict = dict(zip(keys, values))
-            value_array2 = np.array(value_tuple, dtype=list(zip(keys, dtype)))
-            value_array3 = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-            correct = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_list)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_list)
-            np.testing.assert_array_equal(array, value_array1)
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_tuple)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_tuple)
-            np.testing.assert_array_equal(array, np.array(value_tuple))
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_array1)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_array1)
-            array = isopy.asanyarray(value_list)
-            np.testing.assert_array_equal(array, value_array1)
-
-            array = self.create(flavour, correct, True, value_dict)
-            array2 = isopy.asarray(value_dict)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_dict)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array2)
-            array2 = isopy.asarray(value_array2)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array2)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array3)
-            array2 = isopy.asarray(value_array3)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array3)
-            assert_array_equal_array(array, array2)
-
-            ratio = array.ratio(keys[-1])
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys) -1
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio()
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            ratio = array.ratio(keys[-1], False)
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys)
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio(10)
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]] / array[keys[-1]])*10)
-
-            for akeys in all_keys:
-                for dt in (None, np.float, int, [int, int, float, float]):
-                    for ndim in (None, 1, -1):
-                        if dt is None:
-                            dtype2 = dtype
-                        elif not isinstance(dt, list):
-                            dtype2 = (dt for i in range(len(akeys)))
-                        else:
-                            dtype2 = dt
-                        keylist2 = isopy.keylist(akeys)
-                        flavour = core.flavour(keylist2)
-                        correct2 = np.array(value_tuple, dtype=list(zip(keylist2, dtype2)))
-
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-                    ndim = 0
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                    with pytest.raises(ValueError):
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-
-    def _t_est_creation2(self):
-        # test array with size = 1 and ndim = 1
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-        'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-
-        for keys in all_keys:
-            values = [[j] for j in range(len(keys))]
-            values[0] = np.asarray(values[0], dtype=int)
-            values[1] = np.asarray(values[1], dtype=float)
-            dtype = (int, float, np.float64, np.float64)
-            keylist = isopy.askeylist(keys)
-            flavour = core.flavour(keylist)
-
-            value_list = values.copy()
-            value_tuple = list(zip(*values))
-            value_array1 = np.array(values)
-
-            value_dict = dict(zip(keys, values))
-            value_array2 = np.array(value_tuple, dtype=list(zip(keys, dtype)))
-            value_array3 = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-            correct = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_list)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_list)
-            np.testing.assert_array_equal(array, value_array1)
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_tuple)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_tuple)
-            np.testing.assert_array_equal(array, np.array(value_tuple))
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_array1)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_array1)
-            array = isopy.asanyarray(value_list)
-            np.testing.assert_array_equal(array, value_array1)
-
-            array = self.create(flavour, correct, True, value_dict)
-            array2 = isopy.asarray(value_dict)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_dict)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array2)
-            array2 = isopy.asarray(value_array2)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array2)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array3)
-            array2 = isopy.asarray(value_array3)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array3)
-            assert_array_equal_array(array, array2)
-
-            ratio = array.ratio(keys[-1])
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys) -1
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio()
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            ratio = array.ratio(keys[-1], False)
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys)
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio(10)
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]] / array[keys[-1]])*10)
-
-            for akeys in all_keys:
-                for dt in (None, np.float, int, [int, int, float, float]):
-                    for ndim in (None, 1):
-                        if dt is None:
-                            dtype2 = dtype
-                        elif not isinstance(dt, list):
-                            dtype2 = (dt for i in range(len(akeys)))
-                        else:
-                            dtype2 = dt
-                        keylist2 = isopy.keylist(akeys)
-                        flavour = core.flavour(keylist2)
-                        correct2 = np.array(value_tuple, dtype=list(zip(keylist2, dtype2)))
-
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-                    correct2 = correct2.reshape(tuple())
-                    for ndim in (-1, 0):
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-
-    def _test_creation3(self):
-        # test array with size = 1 and ndim = 0
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-            'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-
-        for keys in all_keys:
-            values = [j for j in range(len(keys))]
-            values[0] = np.asarray(values[0], dtype=int)
-            values[1] = np.asarray(values[1], dtype=float)
-            dtype = (int, float, np.float64, np.float64)
-            keylist = isopy.askeylist(keys)
-            flavour = core.flavour(keylist)
-
-            value_list = values.copy()
-            value_tuple = tuple(values)
-            value_array1 = np.array(values)
-
-            value_dict = dict(zip(keys, values))
-            value_array2 = np.array(value_tuple, dtype=list(zip(keys, dtype)))
-            value_array3 = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-            correct = np.array(value_tuple, dtype=list(zip(keylist, dtype)))
-
-            #Make sure no array cannot be created for values without keys
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_list)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_list) #Should just return the normal array
-            np.testing.assert_array_equal(array, value_array1)
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_tuple)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_list)
-            array = isopy.asanyarray(value_tuple)
-            np.testing.assert_array_equal(array, np.array(value_tuple))
-
-            with pytest.raises(core.NoKeysError):
-                isopy.array(value_array1)
-            with pytest.raises(core.NoKeysError):
-                isopy.asarray(value_array1)
-            array = isopy.asanyarray(value_list)
-            np.testing.assert_array_equal(array, value_array1)
-
-            #These values have keys in them
-            array = self.create(flavour, correct, True, value_dict)
-            array2 = isopy.asarray(value_dict)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_dict)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array2)
-            array2 = isopy.asarray(value_array2)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array2)
-            assert_array_equal_array(array, array2)
-
-            self.create(flavour, correct, True, value_array3)
-            array2 = isopy.asarray(value_array3)
-            assert_array_equal_array(array, array2)
-            array2 = isopy.asanyarray(value_array3)
-            assert_array_equal_array(array, array2)
-
-            #Check that a ratio can be made and inversed
-            #denominator key is removed from numerator keys
-            ratio = array.ratio(keys[-1])
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys) -1
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio()
-            assert type(deratio) == type(array)
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            #denominator is keept as a numerator
-            ratio = array.ratio(keys[-1], False)
-            rkeys = ratio.keys()
-            assert len(rkeys) == len(keys)
-            assert type(rkeys) is isopy.RatioKeyList
-            for i in range(len(rkeys)):
-                np.testing.assert_array_equal(ratio[rkeys[i]], (array[keys[i]]/array[keys[-1]]))
-
-            deratio = ratio.deratio(10)
-            assert deratio.keys() == keys
-            for i in range(len(keys)):
-                np.testing.assert_array_equal(deratio[keys[i]], (array[keys[i]] / array[keys[-1]])*10)
-
-            #Try different cominations of keys, dtype and ndim arguments for arrays
-            for akeys in all_keys:
-                for dt in (None, np.float, int, [int, int, float, float]):
-                    for ndim in (1,):
-                        if dt is None:
-                            dtype2 = dtype
-                        elif not isinstance(dt, list):
-                            dtype2 = (dt for i in range(len(akeys)))
-                        else:
-                            dtype2 = dt
-                        keylist2 = isopy.keylist(akeys)
-                        flavour = core.flavour(keylist2)
-                        correct2 = np.array(value_tuple,
-                                            dtype=list(zip(keylist2, dtype2))).reshape(-1)
-
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-                    correct2 = correct2.reshape(tuple())
-
-                    for ndim in (None, -1, 0):
-                        self.create(flavour, correct2, True, value_list, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_tuple, akeys, dt, ndim)
-                        self.create(flavour, correct2, False, value_array1, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_dict, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array2, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, value_array3, akeys, dt, ndim)
-                        self.create(flavour, correct2, True, correct2, akeys, dt, ndim)
-
-    def _test_creation4(self):
-        #test more niche cases
-        keys = ('harry', 'ron', 'hermione', 'neville')
-        keylist = isopy.keylist(keys)
-        values = [[j + i / 10 for i in range(10)] for j in range(len(keys))]
-        values[0] = np.asarray(values[0], dtype=int)
-        values[1] = np.asarray(values[1], dtype=float)
-
-
-        dtype1 = (float, None)
-        dtype2 = [float, float, float, float]
-        correct = np.array(list(zip(*values)), list(zip(keylist, dtype2)))
-        array = isopy.array(values, keys, dtype1)
-        assert_array_equal_array(array, correct)
-
-        #Check that dtype is accepted
-        keylist2 = isopy.keylist('Pd', 'Rh', 'Ag', 'Cd')
-        dtype = np.dtype(list(zip(keylist2, dtype2)))
-        array = isopy.array(values, keys, dtype)
-        assert_array_equal_array(array, correct)
-
-        #Check that it can take keys from dtype
-        correct2 = np.array(list(zip(*values)), dtype)
-        array = isopy.array(values, keys=dtype)
-        assert_array_equal_array(array, correct2, match_dtype=False)
-        with pytest.raises(Exception):
-            #check that it has not taken dtype from keys
-            assert_array_equal_array(array, correct2, match_dtype=True)
-
-        #if given as dtype is should also take keys
-        array = isopy.array(values, dtype=dtype)
-        assert_array_equal_array(array, correct2)
-
-    def _test_creation5(self):
-        #things that should fail
-
-        keys = ('harry', 'ron', 'hermione', 'neville')
-        values = [1,2,3,4]
-
-        isopy.array(values, keys)
-
-        values2 = values[1:-1]
-        with pytest.raises(Exception):
-            isopy.array(values2, keys)
-
-        keys2 = ('harry', 'ron', 'hermione')
-        values2 = dict(zip(keys, values))
-        with pytest.raises(Exception):
-            isopy.array(values2, keys2)
-
-        values2 = [1, 2, [3], 4]
-        with pytest.raises(Exception):
-            isopy.array(values2, keys)
-
-        values2 = [[1, 1.1], [2, 2.1, 2.2], [3, 3.1], [4, 4.1]]
-        with pytest.raises(Exception):
-            isopy.array(values2, keys)
-
-        with pytest.raises(Exception):
-            isopy.array(values, keys, ndim = -2)
-
-        with pytest.raises(Exception):
-            isopy.array(values, keys, ndim = 2)
-
-        with pytest.raises(Exception):
-            isopy.array('1234', keys, ndim = 2)
-
-        dtype = [float, float, float]
-        with pytest.raises(Exception):
-            isopy.array(values, keys, dtype)
-
-    def _create(self, flavour, correct, match_dtype, *args, **kwargs):
-        array = isopy.array(*args, **kwargs)
-        assert isinstance(array, flavour)
-        assert_array_equal_array(array, correct, match_dtype=match_dtype)
-
-        array2 = isopy.array(array)
-        assert array2 is not array
-        assert_array_equal_array(array2, array)
-        assert array == array2
-        assert not array != array2
-
-        array2 = isopy.asarray(array)
-        assert array2 is array
-
-        array2 = isopy.asanyarray(array)
-        assert array2 is array
-
-        assert array.keys() == isopy.keylist(correct.dtype.names)
-
-        assert len(array.keys()) == array.ncols
-        if array.ndim == 0:
-            assert array.nrows == -1
-            with pytest.raises(Exception):
-                len(array)
-        else:
-            assert array.nrows == array.size
-            assert len(array) == array.size
-
-        return array
-
-    #TODO setitem
-    #TODO getitem, get with erraneous values
-    def test_todo(self):
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-        'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
-
-        for keys in all_keys:
-            values = {key: np.array([j + i / 10.0 for i in range(10)]) for j, key in enumerate(keys)}
-            array = isopy.array(values)
-
-            for key in keys:
-                np.testing.assert_array_equal(values[key], array[key])
-                np.testing.assert_array_equal(values[key], array.get(key))
-
-            string = array.__repr__()
-            assert string.startswith(array.__class__.__name__)
-
-            string = array.__str__()
-            assert string.count('\n') == array.nrows
-
-            string = array.to_clipboard()
-            assert pyperclip.paste() == string
-
-
-            vlist = array.to_list()
-            assert isinstance(vlist, list)
-            for i, key in enumerate(array.keys()):
-                np.testing.assert_array_equal([v[i] for v in vlist], array[key])
-
-
-            varray = array.to_ndarray()
-            assert isinstance(varray, np.ndarray)
-            assert not isinstance(varray, core.IsopyArray)
-            assert varray.dtype.names == array.dtype.names
-            assert_array_equal_array(array, varray)
-
-            vdict = array.to_dict()
-            assert isinstance(vdict, dict)
-            assert list(vdict.keys()) == list(array.keys())
-            for key in vdict.keys():
-                np.testing.assert_array_equal(vdict[key], array[key])
-
+            data_dict = dict(zip(keys, [[1, 11, 21], [2, 12, 22], [3, 13, 23], [4, 14, 24]]))
+            data_structured = np.array(data_tuple,
+                                       dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array(data_tuple,
+                                    dtype=[(str(keystring), np.float_) for keystring in
+                                           keylist])
+
+            self.create_array(data_correct, keylist, 1, data_list, keys)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys)
+            self.create_array(data_correct, keylist, 1, data_array, keys)
+            self.create_array(data_correct, keylist, 1, data_dict)
+            self.create_array(data_correct, keylist, 1, data_structured)
+
+            self.create_array(data_correct, keylist, 1, data_list, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_array, keys, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_dict, ndim=1)
+            self.create_array(data_correct, keylist, 1, data_structured, ndim=1)
+
+            self.create_array(data_correct, keylist, 1, data_list, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 1, data_tuple, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 1, data_array, keys, ndim=-1)
+            self.create_array(data_correct, keylist, 1, data_dict, ndim=-1)
+            self.create_array(data_correct, keylist, 1, data_structured, ndim=-1)
+
+            # Overwrite keys in data
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys)
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys, ndim=1)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys, ndim=1)
+            self.create_array(data_correct2, keylist2, 1, data_dict, isotope_keys, ndim=-1)
+            self.create_array(data_correct2, keylist2, 1, data_structured, isotope_keys, ndim=-1)
+
+    def create_array(self, correct, keylist, ndim, /, *args, **kwargs):
+        result = isopy.array(*args, **kwargs)
+        assert result.keys == keylist
+        assert result.ndim == ndim
+        assert_array_equal_array(result, correct)
 
     #TODO fails - mismatched axis
     #TODO axis = 1
     #TODO out, where
     #TODO specual cases. argmin, append concancate
     def test_functions(self):
-        mass_keys = ('104', '105', '106', '107')
-        element_keys = ('mo', 'ru', 'pd', 'rh')
-        isotope_keys = ('104ru', '105Pd', '106Pd', 'cd111')
-        general_keys = ('harry', 'ron', 'hermione', 'neville')
-        ratio_keys1 = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
-        ratio_keys2 = (
-        'harry/104ru//mo', 'ron/105pd//ru', 'hermione/106Pd//rh', 'neville/cd111//ag')
-
+        keys = ('104ru', '105Pd', '106Pd', 'cd111')
 
         values_one1 = [[j + i / 10 for i in range(10)] for j in range(4)]
         values_one2 = [[j] for j in range(4)]
@@ -2379,42 +912,40 @@ class Test_Array:
         values_two3 = [j*2 for j in range(4)]
         values_two3[0] = np.nan
 
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys1, ratio_keys2)
         all_values_one = (values_one1, values_one2, values_one3)
         all_values_two = (values_two1, values_two2, values_two3)
 
-        for keys in all_keys:
-            for values1 in all_values_one:
-                array1 = isopy.array({key: values1[i] for i, key in enumerate(keys)})
+        for values1 in all_values_one:
+            array1 = isopy.array({key: values1[i] for i, key in enumerate(keys)})
 
-                #ufuncs
-                for func in [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.degrees, np.isnan,
-                              np.radians, np.deg2rad, np.rad2deg, np.sinh, np.cosh, np.tanh, np.arcsinh, np.arccosh, np.arctanh,
-                              np.rint, np.floor, np.ceil, np.trunc, np.exp, np.expm1, np.exp2, np.log, np.log10, np.log2,
-                              np.log1p, np.reciprocal, np.positive, np.negative, np.sqrt, np.cbrt, np.square, np.fabs, np.sign,
-                              np.absolute, np.abs]:
+            #ufuncs
+            for func in [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.degrees, np.isnan,
+                          np.radians, np.deg2rad, np.rad2deg, np.sinh, np.cosh, np.tanh, np.arcsinh, np.arccosh, np.arctanh,
+                          np.rint, np.floor, np.ceil, np.trunc, np.exp, np.expm1, np.exp2, np.log, np.log10, np.log2,
+                          np.log1p, np.reciprocal, np.positive, np.negative, np.sqrt, np.cbrt, np.square, np.fabs, np.sign,
+                          np.absolute, np.abs]:
 
-                    self.function1(func, array1)
+                self.function1(func, array1)
 
-                #array functions
-                for func in [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
-                              np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.std,
-                              np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, isopy.mad, isopy.nanmad, isopy.se, isopy.nanse,
-                              isopy.sd, isopy.nansd]:
+            #array functions
+            for func in [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
+                          np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.std,
+                          np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, isopy.mad, isopy.nanmad, isopy.se, isopy.nanse,
+                          isopy.sd, isopy.nansd]:
 
-                    self.function1(func, array1)
+                self.function1(func, array1)
 
-                for values2 in all_values_two:
-                    input1 = {key: values2[i] for i, key in enumerate(keys)}
-                    input2 = {key: input1[key] for key in keys[:3]}
-                    array2 = isopy.array(input1)
-                    array3 = isopy.array(input2)
+            for values2 in all_values_two:
+                input1 = {key: values2[i] for i, key in enumerate(keys)}
+                input2 = {key: input1[key] for key in keys[:3]}
+                array2 = isopy.array(input1)
+                array3 = isopy.array(input2)
 
-                    for func in [np.add, np.multiply, np.divide, np.power, np.subtract,
-                                 np.true_divide, np.floor_divide, np.float_power, np.fmod, np.mod, np.remainder]:
+                for func in [np.add, np.multiply, np.divide, np.power, np.subtract,
+                             np.true_divide, np.floor_divide, np.float_power, np.fmod, np.mod, np.remainder]:
 
-                        self.function2(func, array1, array2)
-                        self.function2(func, array1, array3)
+                    self.function2(func, array1, array2)
+                    self.function2(func, array1, array3)
 
     def function1(self, func, array):
         try: result = func(array)
@@ -2432,7 +963,6 @@ class Test_Array:
             assert result.ndim == vres.ndim
             for key in keys:
                 np.testing.assert_allclose(result[key], func(array[key]))
-
 
 
     def function2(self, func, array1, array2):

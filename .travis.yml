@@ -1,0 +1,20 @@
+language: python
+python:
+  - "3.9"
+install:
+  - pip install -r requirements.txt
+  - pip install codecov
+  - pip install pytest-cov
+  - pip install .
+script:
+  - pytest --cov-report=xlm --cov=deeptabular tests/
+after_sucess:
+  - codecov
+deploy:
+  provider: pypi
+  user: __token__
+  password: $PYPI_TOKEN
+  distrobutions: "sdist bdist_wheel"
+  skip_existing: true
+  on:
+    branch: master

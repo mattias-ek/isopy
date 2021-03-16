@@ -5,41 +5,6 @@ import os
 import isopy.core
 
 
-def test_read_write_csv3():
-    data = [[1,2,3], [11,12,13], [21, 22, 23]]
-
-    isopy.write_csv('test_io.csv', data)
-    data2 = isopy.read_csv('test_io.csv', keys_in=None)
-
-    assert type(data2) is list
-    for i, row in enumerate(data2):
-        assert row == [str(v) for v in data[i]]
-
-    data2 = isopy.read_csv('test_io.csv', float_preferred=True, keys_in=None)
-    np.testing.assert_allclose(data2, data)
-
-    #With a comment
-    isopy.write_csv('test_io.csv', data, comments='This is a comment')
-    data2 = isopy.read_csv('test_io.csv', keys_in=None)
-
-    assert type(data2) is list
-    for i, row in enumerate(data2):
-        assert row == [str(v) for v in data[i]]
-
-    data2 = isopy.read_csv('test_io.csv', float_preferred=True, keys_in=None)
-    np.testing.assert_allclose(data2, data)
-
-    #Several comments and different comment symbol
-    isopy.write_csv('test_io.csv', data, comments=['This is a comment', 'so is this'], comment_symbol='%')
-    data2 = isopy.read_csv('test_io.csv', comment_symbol='%', keys_in=None)
-
-    assert type(data2) is list
-    for i, row in enumerate(data2):
-        assert row == [str(v) for v in data[i]]
-
-    data2 = isopy.read_csv('test_io.csv', float_preferred=True, comment_symbol='%', keys_in=None)
-    np.testing.assert_allclose(data2, data)
-
 class Test_CSV:
     def test_dict_1d(self):
         data = dict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, 12.0, 13.0], Ru=[21.0, 22.0, 23.0])
@@ -277,7 +242,6 @@ class Test_xlsx:
         assert 'test_sheet' in read_s
         self.compare(data2, read_s['sheet1'], float)
         self.compare(data1, read_s['test_sheet'], float)
-
 
     def compare(self, written, read, t):
         if isinstance(written, (dict, isopy.core.IsopyArray)):
