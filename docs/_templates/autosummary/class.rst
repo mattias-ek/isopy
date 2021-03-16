@@ -2,7 +2,8 @@
 
 .. currentmodule:: {{ module }}
 
-.. autoclass:: {{ objname }}
+.. autoclass::  {{ objname }}
     :members:
+    :inherited-members:
     :member-order: bysource
 

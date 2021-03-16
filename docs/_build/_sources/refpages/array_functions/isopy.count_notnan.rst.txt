@@ -1,0 +1,6 @@
+﻿count\_notnan
+=============
+
+.. currentmodule:: isopy
+
+.. autofunction:: count_notnan

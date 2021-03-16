@@ -1,0 +1,9 @@
+﻿ElementRefVal
+=============
+
+.. currentmodule:: isopy.io
+
+.. autoclass:: ElementRefVal
+    :members:
+    :inherited-members:
+    :member-order: bysource

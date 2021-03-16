@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>IsotopeKeyList &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="RatioKeyList" href="isopy.RatioKeyList.html" />
+    <link rel="prev" title="ElementKeyList" href="isopy.ElementKeyList.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../dtypes.html">Data types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#flavours">Flavours</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#key-strings">Key strings</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../dtypes.html#key-lists">Key lists</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.keylist.html">keylist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.askeylist.html">askeylist</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.MassKeyList.html">MassKeyList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.ElementKeyList.html">ElementKeyList</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">IsotopeKeyList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.RatioKeyList.html">RatioKeyList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.GeneralKeyList.html">GeneralKeyList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopy-arrays">Isopy arrays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dtypes.html#isopy-dictionaries">Isopy dictionaries</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../dtypes.html">Data types</a> &raquo;</li>
+        
+      <li>IsotopeKeyList</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/Lists/isopy.IsotopeKeyList.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="isotopekeylist">
+<h1>IsotopeKeyList<a class="headerlink" href="#isotopekeylist" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="isopy.IsotopeKeyList">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">isopy.</span></code><code class="sig-name descname"><span class="pre">IsotopeKeyList</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_duplicates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_duplicates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_reformatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/core.html#IsotopeKeyList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.IsotopeKeyList" title="Permalink to this definition">¶</a></dt>
+<dd><p>A tuple consisting exclusively of <a class="reference internal" href="../Strings/isopy.IsotopeKeyString.html#isopy.IsotopeKeyString" title="isopy.IsotopeKeyString"><code class="xref py py-class docutils literal notranslate"><span class="pre">IsotopeKeyString</span></code></a> items.</p>
+<p>Behaves just like, and contains all the methods, that a normal tuple does unless otherwise noted.
+Only methods that behave differently from a normal python tuples are documented below.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<em>str</em><em>, </em><em>Sequence</em><em>[</em><em>str</em><em>]</em>) – A string or sequence of strings that can be converted to the correct key string type.</p></li>
+<li><p><strong>skip_duplicates</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> all duplicate items will be removed from the sequence.</p></li>
+<li><p><strong>allow_duplicates</strong> (<em>bool</em><em>, </em><em>Default  = True</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code> a ListDuplicateError will be raised if the sequence contains any duplicate items.</p></li>
+<li><p><strong>allow_reformatting</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the string will be reformatted to the correct format. If <code class="docutils literal notranslate"><span class="pre">False</span></code> an exception
+will be raised it the string is not correctly formatted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ListDuplicateError</strong> – Raised when a string already exist in the sequence and <code class="docutils literal notranslate"><span class="pre">allow_duplicates</span> <span class="pre">=</span> <span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeKeyList</span><span class="p">([</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span>
+<span class="go">(&#39;99Ru&#39;, &#39;105Pd&#39;, &#39;111Cd&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeKeyList</span><span class="p">(</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span> <span class="p">,</span> <span class="s1">&#39;cd111&#39;</span><span class="p">)</span>
+<span class="go">(&#39;99Ru&#39;, &#39;105Pd&#39;, &#39;111Cd&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeKeyList</span><span class="p">(</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;cd111&#39;</span><span class="p">])</span>
+<span class="go">(&#39;99Ru&#39;, &#39;105Pd&#39;, &#39;111Cd&#39;)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.mass_numbers">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">mass_numbers</span></code><a class="headerlink" href="#isopy.IsotopeKeyList.mass_numbers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a <a class="reference internal" href="isopy.MassKeyList.html#isopy.MassKeyList" title="isopy.MassKeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">MassKeyList</span></code></a> containing the mass number of each item in the list.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeKeyList</span><span class="p">([</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">()</span>
+<span class="go">(&#39;99&#39;, &#39;105&#39;, &#39;111&#39;)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">MassKeyList</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.element_symbols">
+<em class="property"><span class="pre">property</span> </em><code class="sig-name descname"><span class="pre">element_symbols</span></code><a class="headerlink" href="#isopy.IsotopeKeyList.element_symbols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an <a class="reference internal" href="isopy.ElementKeyList.html#isopy.ElementKeyList" title="isopy.ElementKeyList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementKeyList</span></code></a> containing the element symbol of each item in the list.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">IsotopeKeyList</span><span class="p">([</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">element_symbols</span><span class="p">()</span>
+<span class="go">(&#39;Ru&#39;, &#39;Pd&#39;, &#39;Cd&#39;)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementKeyList</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.filter">
+<code class="sig-name descname"><span class="pre">filter</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_neq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">mass_number_and_element_symbol_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/core.html#IsotopeKeyList.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.IsotopeKeyList.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new key string list containing only the key strings that satisfies the specified
+filters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key_eq</strong> (<em>str</em><em>, </em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>, </em><em>Optional</em>) – Only key strings equal to/found in <em>key_eq</em> pass this filter.</p></li>
+<li><p><strong>key_neq</strong> (<em>str</em><em>, </em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>, </em><em>Optional</em>) – Only key strings not equal to/found in <em>key_neq</em> pass this filter.</p></li>
+<li><p><strong>mass_number_and_element_symbol_kwargs</strong> (<em>str</em><em>, </em><em>Sequence</em><em>[</em><em>str</em><em>]</em><em>, </em><em>Optional</em>) – Filter based on the mass number or element symbol of the key strings. Prefix
+<a class="reference internal" href="isopy.MassKeyList.html#isopy.MassKeyList.filter" title="isopy.MassKeyList.filter"><code class="xref py py-func docutils literal notranslate"><span class="pre">MassKeyList.filter()</span></code></a> filters with <code class="docutils literal notranslate"><span class="pre">mass_number_</span> <span class="pre">and</span> <span class="pre">:func:`Element.filter`</span>
+<span class="pre">filters</span> <span class="pre">with</span> <span class="pre">``element_symbol</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>result</strong> – Key strings in the sequence that satisfy the specified filters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#isopy.IsotopeKeyList" title="isopy.IsotopeKeyList">IsotopeKeyList</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">keylist</span> <span class="o">=</span> <span class="n">IsotopeKeyList</span><span class="p">([</span><span class="s1">&#39;99ru&#39;</span><span class="p">,</span> <span class="s1">&#39;105pd&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keylist</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">key_eq</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;105pd&#39;</span><span class="p">,</span><span class="s1">&#39;107ag&#39;</span><span class="p">,</span> <span class="s1">&#39;111cd&#39;</span><span class="p">])</span>
+<span class="go">(&#39;105Pd&#39;, &#39;111Cd)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keylist</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">key_neq</span><span class="o">=</span><span class="s1">&#39;111cd&#39;</span><span class="p">)</span>
+<span class="go">(&#39;99Ru&#39;, &#39;105Pd&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keylist</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mass_number_key_gt</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+<span class="go">(&#39;105Pd&#39;, &#39;111Cd)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keylist</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element_symbol_key_neq</span><span class="o">=</span><span class="s1">&#39;pd&#39;</span><span class="p">])</span>
+<span class="go">(&#39;99Ru&#39;, &#39;111Cd)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.has_duplicates">
+<code class="sig-name descname"><span class="pre">has_duplicates</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.IsotopeKeyList.has_duplicates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the list contains duplicates items. Otherwise it returns <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.reversed">
+<code class="sig-name descname"><span class="pre">reversed</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.IsotopeKeyList.reversed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a reversed key string list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.sorted">
+<code class="sig-name descname"><span class="pre">sorted</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.IsotopeKeyList.sorted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a sorted key string list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="isopy.IsotopeKeyList.strlist">
+<code class="sig-name descname"><span class="pre">strlist</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#isopy.IsotopeKeyList.strlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of <code class="docutils literal notranslate"><span class="pre">str</span></code> object for each key in the key list.</p>
+<p>Analogous to <code class="docutils literal notranslate"><span class="pre">[str(key)</span> <span class="pre">for</span> <span class="pre">key</span> <span class="pre">in</span> <span class="pre">keylist]</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.RatioKeyList.html" class="btn btn-neutral float-right" title="RatioKeyList" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="isopy.ElementKeyList.html" class="btn btn-neutral float-left" title="ElementKeyList" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,43 +1,45 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Read/Write &mdash; isopy 0.3 documentation</title>
+  <title>Read/Write &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
   
 
   
   
-  
+
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="get_reference_values" href="ReadWrite/isopy.get_reference_values.html" />
-    <link rel="prev" title="ReferenceDict" href="Dicts/isopy.ReferenceDict.html" /> 
+    <link rel="next" title="read_csv" href="ReadWrite/isopy.read_csv.html" />
+    <link rel="prev" title="isotope.sprocess_abundance_B11" href="refval_isotope/isopy.reference_values.isotope.sprocess_abundance_B11.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -61,7 +63,7 @@
             
             
               <div class="version">
-                0.3
+                0.3.4
               </div>
             
           
@@ -78,6 +80,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -92,21 +95,23 @@
 <p class="caption"><span class="caption-text">Reference</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference_values.html">Reference values</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Read/Write</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.get_reference_values.html">get_reference_values</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.import_exp.html">import_exp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.read_csv.html">read_csv</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.write_csv.html">write_csv</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.read_excel.html">read_excel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.io.NeptuneData.html">NeptuneData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.read_xlsx.html">read_xlsx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.write_xlsx.html">write_xlsx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ReadWrite/isopy.read_exp.html">read_exp</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="array_functions.html">Array functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="toolbox.html">Toolbox</a></li>
 </ul>
 
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -141,18 +146,20 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Read/Write</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="../_sources/refpages/io.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -168,40 +175,27 @@
             
   <div class="section" id="read-write">
 <h1>Read/Write<a class="headerlink" href="#read-write" title="Permalink to this headline">¶</a></h1>
-<p>Below are functions for reading and writing data from various file formats that
-are included in the <code class="docutils literal notranslate"><span class="pre">isopy</span></code> namespace.</p>
+<p>These are functions to read and write data.</p>
 <table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.get_reference_values.html#isopy.get_reference_values" title="isopy.get_reference_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reference_values</span></code></a>(name)</p></td>
-<td><p>Get predefined reference values.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.read_csv.html#isopy.read_csv" title="isopy.read_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_csv</span></code></a>(filename[, comment_symbol, …])</p></td>
+<td><p>Load data from a csv file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ReadWrite/isopy.import_exp.html#isopy.import_exp" title="isopy.import_exp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_exp</span></code></a>(filename)</p></td>
-<td><p>Return the data stored in the exported files from Neptune and Triton instruments.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ReadWrite/isopy.write_csv.html#isopy.write_csv" title="isopy.write_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_csv</span></code></a>(filename, data[, comments, …])</p></td>
+<td><p>Save data to a csv file.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.read_csv.html#isopy.read_csv" title="isopy.read_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_csv</span></code></a>(filepath[, comment_symbol, …])</p></td>
-<td><p>Read data from an csv file.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.read_xlsx.html#isopy.read_xlsx" title="isopy.read_xlsx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_xlsx</span></code></a>(filename[, sheetname, keys_in, …])</p></td>
+<td><p>Load data from an excel file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ReadWrite/isopy.write_csv.html#isopy.write_csv" title="isopy.write_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_csv</span></code></a>(data, filepath[, comments, …])</p></td>
-<td><p>Write data to a csv file.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ReadWrite/isopy.write_xlsx.html#isopy.write_xlsx" title="isopy.write_xlsx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_xlsx</span></code></a>(filename, *sheets[, comments, …])</p></td>
+<td><p>Save data to an excel file.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.read_excel.html#isopy.read_excel" title="isopy.read_excel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_excel</span></code></a>(filename[, sheetname, comment_symbol])</p></td>
-<td><p>Read data from sheets in an excel file.</p></td>
-</tr>
-</tbody>
-</table>
-<p>Below are additional functions/classes that can only accessed through <code class="docutils literal notranslate"><span class="pre">isopy.io</span></code>.</p>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.io.NeptuneData.html#isopy.io.NeptuneData" title="isopy.io.NeptuneData"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeptuneData</span></code></a>(information, cycle, time, …)</p></td>
-<td><p>Returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">read_exp()</span></code>.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ReadWrite/isopy.read_exp.html#isopy.read_exp" title="isopy.read_exp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_exp</span></code></a>(filename[, rename])</p></td>
+<td><p>Load data from a Neptune/Triton export file.</p></td>
 </tr>
 </tbody>
 </table>
@@ -212,29 +206,29 @@ are included in the <code class="docutils literal notranslate"><span class="pre"
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="ReadWrite/isopy.get_reference_values.html" class="btn btn-neutral float-right" title="get_reference_values" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="Dicts/isopy.ReferenceDict.html" class="btn btn-neutral float-left" title="ReferenceDict" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="ReadWrite/isopy.read_csv.html" class="btn btn-neutral float-right" title="read_csv" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="refval_isotope/isopy.reference_values.isotope.sprocess_abundance_B11.html" class="btn btn-neutral float-left" title="isotope.sprocess_abundance_B11" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, Mattias Ek
+        &#169; Copyright 2020, Mattias Ek.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -242,7 +236,6 @@ are included in the <code class="docutils literal notranslate"><span class="pre"
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

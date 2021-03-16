@@ -1,0 +1,915 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>isopy.toolbox.doublespike &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/reference_values.html">Reference values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/toolbox.html">Toolbox</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>isopy.toolbox.doublespike</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for isopy.toolbox.doublespike</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">optimize</span>
+<span class="kn">import</span> <span class="nn">isopy</span> <span class="k">as</span> <span class="nn">isopy</span>
+<span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span> <span class="k">as</span> <span class="n">_namedtuple</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">cm</span> <span class="k">as</span> <span class="n">mplcm</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">colors</span> <span class="k">as</span> <span class="n">mplcolors</span>
+<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">core</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">isotope</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span> <span class="k">as</span> <span class="n">dt</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ds_inversion&#39;</span><span class="p">,</span> <span class="s1">&#39;ds_correction&#39;</span><span class="p">,</span> <span class="s1">&#39;ds_grid&#39;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">isopy.checks</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions for doublespike data reduction</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">_DSResult</span> <span class="o">=</span> <span class="n">_namedtuple</span><span class="p">(</span><span class="s1">&#39;DSResult&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;method&#39;</span><span class="p">,</span> <span class="s1">&#39;lambda_&#39;</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">,</span> <span class="s1">&#39;beta&#39;</span><span class="p">,</span> <span class="s1">&#39;fnat&#39;</span><span class="p">,</span> <span class="s1">&#39;fins&#39;</span><span class="p">,</span> <span class="s1">&#39;spike_faction&#39;</span><span class="p">,</span>
+                                     <span class="s1">&#39;sample_fraction&#39;</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">_inversion_rudge_function</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">lambda_</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">((</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">P</span><span class="p">))</span> <span class="o">-</span> <span class="n">m</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="n">P</span><span class="p">))</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+<span class="c1">#Currently no used as it doesnt work when the input has more than one dimension.</span>
+<span class="c1">#Might just be a matter of rearranging the output</span>
+<span class="k">def</span> <span class="nf">_inversion_rudge_jacobian</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">lambda_</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">T</span> <span class="o">-</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">P</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">P</span><span class="p">)),</span> <span class="o">-</span><span class="n">n</span> <span class="o">*</span> <span class="n">P</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">P</span><span class="p">),</span> <span class="n">m</span> <span class="o">*</span> <span class="n">P</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="n">P</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="n">output</span>
+
+<span class="c1">#split if more than x so that it doesnt break</span>
+<span class="k">def</span> <span class="nf">ds_inversion_rudge</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">xtol</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Double spike inversion using the method of Rudge et al. 2009, Chemical Geology 265 420-431.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self</span>
+<span class="sd">    m : ndarray</span>
+<span class="sd">        Measured isotope ratios. Must be an 1-dim array of size 3 or a 2-dim array with first dimension of 3.</span>
+<span class="sd">    n : ndarray</span>
+<span class="sd">        Reference isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `m`.</span>
+<span class="sd">    T : ndarray</span>
+<span class="sd">        Spike isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `m`.</span>
+<span class="sd">    P : ndarray</span>
+<span class="sd">        Log of mass isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `m`.</span>
+<span class="sd">    xtol : float</span>
+<span class="sd">        Required tolerance for inversion. Default value is 1E-10</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DSResult</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mndim</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">ndim</span>
+    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">m</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">m</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">m</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;m has to many dimensions (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">n</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of n </span><span class="si">{}</span><span class="s1"> does not match shape of m </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of T </span><span class="si">{}</span><span class="s1"> does not match shape of m </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">P</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">P</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of P </span><span class="si">{}</span><span class="s1"> does not match shape of m </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="n">xtol</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;xtol&#39;</span><span class="p">,</span> <span class="n">xtol</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">([</span><span class="n">T</span> <span class="o">-</span> <span class="n">n</span><span class="p">,</span> <span class="o">-</span><span class="n">n</span> <span class="o">*</span> <span class="n">P</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">P</span><span class="p">])</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">infodict</span><span class="p">,</span> <span class="n">ier</span><span class="p">,</span> <span class="n">mesg</span> <span class="o">=</span>  <span class="n">optimize</span><span class="o">.</span><span class="n">fsolve</span><span class="p">(</span><span class="n">_inversion_rudge_function</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">m</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">xtol</span> <span class="o">=</span> <span class="n">xtol</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ier</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="n">mndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">lambda_</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">Fnat</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">Fins</span> <span class="o">=</span> <span class="n">beta</span>
+
+    <span class="n">spike_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">lambda_</span><span class="p">)</span><span class="o">/</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">*</span> <span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">n</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">P</span><span class="p">)),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">))))</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">sample_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">spike_fraction</span><span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">sample_fraction</span> <span class="o">/</span> <span class="n">spike_fraction</span>
+
+    <span class="k">return</span> <span class="n">DSResult</span><span class="p">(</span><span class="s1">&#39;rudge&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">Fnat</span><span class="p">,</span> <span class="n">Fins</span><span class="p">,</span> <span class="n">spike_fraction</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">,</span> <span class="n">Q</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">ds_inversion_siebert</span><span class="p">(</span><span class="n">MS</span><span class="p">,</span> <span class="n">ST</span><span class="p">,</span> <span class="n">SP</span><span class="p">,</span> <span class="n">Mass</span><span class="p">,</span> <span class="n">Fins_guess</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Fnat_guess</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.00001</span><span class="p">,</span> <span class="n">outer_loop_iterations</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">inner_loop_iterations</span><span class="o">=</span><span class="mi">6</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Double spike inversion using the method of Siebert et al. 2001, Geochemistry, Geophysics, Geosystems 2,</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    self</span>
+<span class="sd">    MS : ndarray</span>
+<span class="sd">        Measured isotope ratios. Must be an 1-dim array of size 3 or a 2-dim array with first dimension of 3.</span>
+<span class="sd">    ST : ndarray</span>
+<span class="sd">        Reference isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `MS`.</span>
+<span class="sd">    SP : ndarray</span>
+<span class="sd">        Spike isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `MS`.</span>
+<span class="sd">    Mass : ndarray</span>
+<span class="sd">        Log of mass isotope ratios. Must be a 1-dim array of size 3 or a 2-dim array with the same shape as `MS`.</span>
+<span class="sd">    Fins_guess : float</span>
+<span class="sd">        Starting guess for for the instrumental fractionation factor. Default value is 2</span>
+<span class="sd">    Fnat_guess : float</span>
+<span class="sd">        Starting guess for the natural fractionation factor. Default value is -0.00001</span>
+<span class="sd">    outer_loop_iterations : int</span>
+<span class="sd">        Number of iterations of the outer loop. Default value is 3</span>
+<span class="sd">    inner_loop_iterations</span>
+<span class="sd">        Number of iterations of the inner loop. Default value is 6</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DSResult</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">mndim</span> <span class="o">=</span> <span class="n">MS</span><span class="o">.</span><span class="n">ndim</span>
+    <span class="k">if</span> <span class="n">MS</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">MS</span> <span class="o">=</span> <span class="n">MS</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">MS</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">MS</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;MS has to many dimensions (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">MS</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">ST</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">ST</span> <span class="o">=</span> <span class="n">ST</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">ST</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of ST </span><span class="si">{}</span><span class="s1"> does not match shape of MS </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ST</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">ST</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">ST</span> <span class="o">=</span> <span class="n">ST</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">ST</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of ST </span><span class="si">{}</span><span class="s1"> does not match shape of MS </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ST</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">Mass</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="n">Mass</span> <span class="o">=</span> <span class="n">Mass</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">Mass</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of Mass </span><span class="si">{}</span><span class="s1"> does not match shape of MS </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Mass</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="n">Fins_guess</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;Fins_guess&#39;</span><span class="p">,</span> <span class="n">Fins_guess</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">,</span>
+                                         <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">)</span>
+    <span class="n">Fnat_guess</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;Fnat_guess&#39;</span><span class="p">,</span> <span class="n">Fnat_guess</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">,</span>
+                                         <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">)</span>
+    <span class="n">outer_loop_iterations</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;outer_loop_iterations&#39;</span><span class="p">,</span> <span class="n">outer_loop_iterations</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="n">inner_loop_iterations</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;inner_loop_iterations&#39;</span><span class="p">,</span> <span class="n">inner_loop_iterations</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">dlen</span> <span class="o">=</span> <span class="n">MS</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">SA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">outer_loop_iterations</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dlen</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">Fins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">outer_loop_iterations</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dlen</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">Fnat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">outer_loop_iterations</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">dlen</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">MT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="n">dlen</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">Ri</span> <span class="o">=</span> <span class="n">output_index</span>
+
+    <span class="n">Fnat_Ri</span> <span class="o">=</span> <span class="n">Fnat_guess</span>
+    <span class="n">Fins_Ri</span> <span class="o">=</span> <span class="n">Fins_guess</span>
+
+    <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">outer_loop_iterations</span><span class="p">):</span>
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">**</span> <span class="n">Fnat_Ri</span>
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">**</span> <span class="n">Fnat_Ri</span>
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">**</span> <span class="n">Fnat_Ri</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]))</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]))</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span> <span class="o">*</span> <span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">inner_loop_iterations</span><span class="p">):</span>
+            <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">**</span> <span class="o">-</span><span class="n">Fins_Ri</span>
+            <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">**</span> <span class="o">-</span><span class="n">Fins_Ri</span>
+            <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mass</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">**</span> <span class="o">-</span><span class="n">Fins_Ri</span>
+
+            <span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">])</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span> <span class="o">*</span> <span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+
+            <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">g</span> <span class="o">-</span> <span class="n">b</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">e</span> <span class="o">*</span> <span class="n">f</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">f</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">d</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">e</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">g</span> <span class="o">+</span> <span class="n">d</span> <span class="o">*</span> <span class="n">g</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">f</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">d</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span>
+            <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span>
+
+            <span class="c1">#gives positive Fins</span>
+            <span class="n">Fins</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">/</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">Fins</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">/</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">y</span><span class="p">])</span>
+            <span class="n">Fins</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">/</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">z</span><span class="p">])</span>
+            <span class="n">Fins_Ri</span> <span class="o">=</span> <span class="n">Fins</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">Ri</span><span class="p">]</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]))</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]))</span> <span class="o">/</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]))</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">MS</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">MS</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span> <span class="o">*</span> <span class="n">MS</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">])</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">-</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span> <span class="o">*</span> <span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
+
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">g</span> <span class="o">-</span> <span class="n">b</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">e</span> <span class="o">*</span> <span class="n">f</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">f</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">d</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">e</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">g</span> <span class="o">+</span> <span class="n">d</span> <span class="o">*</span> <span class="n">g</span> <span class="o">-</span> <span class="n">c</span> <span class="o">*</span> <span class="n">d</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">f</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">d</span> <span class="o">-</span> <span class="n">d</span> <span class="o">*</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">b</span> <span class="o">*</span> <span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span>
+
+        <span class="n">Fnat</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">/</span> <span class="n">ST</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+        <span class="n">Fnat</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">/</span> <span class="n">ST</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">y</span><span class="p">])</span>
+        <span class="n">Fnat</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">/</span> <span class="n">ST</span><span class="p">[</span><span class="n">z</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">Mass</span><span class="p">[</span><span class="n">z</span><span class="p">])</span>
+        <span class="n">Fnat_Ri</span> <span class="o">=</span> <span class="n">Fnat</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">Ri</span><span class="p">]</span>
+
+    <span class="n">sample_fraction</span> <span class="o">=</span> <span class="p">((</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">MT</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">MT</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span> <span class="o">/</span> <span class="p">((</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="n">outer_loop_iterations</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">outer_loop_iterations</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">SA</span><span class="p">[</span><span class="n">outer_loop_iterations</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">SP</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">+</span> <span class="n">SP</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">Fnat_f</span> <span class="o">=</span> <span class="n">Fnat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">Ri</span><span class="p">]</span>
+    <span class="n">Fins_f</span> <span class="o">=</span> <span class="n">Fins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">Ri</span><span class="p">]</span>
+
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">sample_fraction</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">SA</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">SP</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">lambda_</span> <span class="o">/</span> <span class="p">(</span><span class="n">lambda_</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">mndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">sample_fraction</span> <span class="o">=</span>  <span class="n">sample_fraction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">Fnat_f</span><span class="o">=</span> <span class="n">Fnat_f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">Fins_f</span> <span class="o">=</span> <span class="n">Fins_f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lambda_</span> <span class="o">=</span> <span class="n">lambda_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">spike_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">sample_fraction</span><span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">sample_fraction</span><span class="o">/</span><span class="n">spike_fraction</span>
+
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Fnat_f</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">Fins_f</span>
+
+    <span class="k">return</span> <span class="n">DSResult</span><span class="p">(</span><span class="s1">&#39;siebert&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">Fnat_f</span><span class="p">,</span> <span class="n">Fins_f</span><span class="p">,</span> <span class="n">spike_fraction</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">,</span> <span class="n">Q</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ds_inversion"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.ds_inversion.html#isopy.tb.ds_inversion">[docs]</a><span class="k">def</span> <span class="nf">ds_inversion</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">standard</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">inversion_keys</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span><span class="s1">&#39;rudge&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Double spike inversion.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    measured : RatioArray, IsotopeArray</span>
+<span class="sd">        Measured isotope ratios</span>
+<span class="sd">    standard : RatioArray, IsotopeArray, dict</span>
+<span class="sd">        References isotope ratios or a dict or references values</span>
+<span class="sd">    spike : RatioArray, IsotopeArray, dict</span>
+<span class="sd">        Spike isotope ratios or a dict or references values</span>
+<span class="sd">    isotope_masses : RatioArray, IsotopeArray, dict, Optional</span>
+<span class="sd">        Mass isotope ratios or a dict or references values. If not given hte :attr:`isotope.mass` will be used.</span>
+<span class="sd">    inversion_keys : RatioKeyList, Optional</span>
+<span class="sd">        List of keys in measured that will be used for the inversion. Only necessary if measured contains more than 3 keys.</span>
+<span class="sd">    method : str</span>
+<span class="sd">        Inversion method to be used. Options are &#39;rudge&#39; and &#39;siebert&#39;.</span>
+<span class="sd">    method_kwargs</span>
+<span class="sd">        Keyword arguments for inversion method. See `inversion_rudge` and `inversion_siebert` for list of possible arguments.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DSResult</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">measured</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;measured&#39;</span><span class="p">,</span> <span class="n">measured</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span>
+                                       <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">spike</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;spike&#39;</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span>
+                                    <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;inversion_keys&#39;</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">,</span>
+                                             <span class="n">isopy</span><span class="o">.</span><span class="n">RatioKeyList</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">standard</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">standard</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">standard</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;standard&#39;</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span>
+                                           <span class="nb">dict</span><span class="p">,</span>
+                                           <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+    <span class="n">numer</span><span class="p">,</span> <span class="n">denom</span><span class="p">,</span> <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">_deduce_inversion_keys</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">measured</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">measured</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">measured</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">inversion_keys</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">spike</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">spike</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">spike</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">inversion_keys</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">standard</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">standard</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">standard</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">inversion_keys</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">inversion_keys</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;rudge&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">ds_inversion_rudge</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">P</span><span class="p">),</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;siebert&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">ds_inversion_siebert</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;method &quot;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s1">&quot; not recognized&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ds_correction"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.ds_correction.html#isopy.tb.ds_correction">[docs]</a><span class="k">def</span> <span class="nf">ds_correction</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">standard</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inversion_keys</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_fractions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">method</span> <span class="o">=</span><span class="s1">&#39;rudge&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">):</span>
+    <span class="n">measured</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;measured&#39;</span><span class="p">,</span> <span class="n">measured</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span>
+                                       <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span>
+                                       <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">spike</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;spike&#39;</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span>
+                                    <span class="nb">dict</span><span class="p">,</span>
+                                    <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">)</span>
+
+    <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;inversion_keys&#39;</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">,</span>
+                                             <span class="n">isopy</span><span class="o">.</span><span class="n">RatioKeyList</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">isotope_fractions</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_fractions&#39;</span><span class="p">,</span> <span class="n">isotope_fractions</span><span class="p">,</span>
+                                                           <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span>
+                                                        <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">standard</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">standard</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">standard</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;standard&#39;</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span>
+                                           <span class="nb">dict</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">)</span>
+
+
+    <span class="n">numer</span><span class="p">,</span> <span class="n">denom</span><span class="p">,</span> <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">_deduce_inversion_keys</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">)</span>
+
+    <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">isotope</span><span class="o">.</span><span class="n">_find_isobaric_interferences</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">denom</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">)</span>
+
+    <span class="n">inversion</span> <span class="o">=</span> <span class="n">ds_inversion</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+    <span class="n">fins</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">fins</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">measured2</span> <span class="o">=</span> <span class="n">measured</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">fins2</span> <span class="o">=</span> <span class="n">fins</span>
+
+        <span class="k">for</span> <span class="n">infiso</span> <span class="ow">in</span>  <span class="n">interference_isotopes</span><span class="p">:</span>
+            <span class="n">measured2</span> <span class="o">=</span> <span class="n">isotope</span><span class="o">.</span><span class="n">remove_isobaric_interferences</span><span class="p">(</span><span class="n">measured2</span><span class="p">,</span> <span class="n">infiso</span><span class="p">,</span> <span class="n">fins</span><span class="p">,</span> <span class="n">isotope_fractions</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span>
+
+        <span class="n">inversion</span> <span class="o">=</span> <span class="n">ds_inversion</span><span class="p">(</span><span class="n">measured2</span><span class="p">,</span> <span class="n">spike</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span>
+                                 <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+        <span class="n">fins</span> <span class="o">=</span> <span class="n">inversion</span><span class="o">.</span><span class="n">fins</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fins</span> <span class="o">-</span> <span class="n">fins2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.000001</span><span class="p">):</span>
+            <span class="k">break</span>  <span class="c1"># Beta value has converged so no need for more iterations.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s1">&#39;inversion did not converge after 10 iterations of the interference correction&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inversion</span></div>
+
+<span class="c1">#TODO cache for speedier grid</span>
+<span class="k">def</span> <span class="nf">_deduce_inversion_keys</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">inversion_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Can not deduce inversion keys from spike since it is not an isopy array&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;inversion keys can not be deduced from *spike* as it&#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s1"> isotope keys instead of the expected 4&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">spike</span><span class="p">)</span>
+                <span class="n">numer</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">keys</span> <span class="o">-</span> <span class="n">denom</span>
+                <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">numer</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;inversion keys can not be deduced from *spike* as it&#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s1"> ratio keys instead of the expected 3&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">common_denominator</span>
+                <span class="n">numer</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">numerators</span>
+                <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">numer</span> <span class="o">/</span> <span class="n">denom</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">)</span><span class="si">}</span><span class="s1"> inversion isotope keys instead of 4&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+                <span class="n">spike</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">key_eq</span><span class="o">=</span><span class="n">inversion_keys</span><span class="p">)</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">spike</span><span class="p">)</span>
+                <span class="n">numer</span> <span class="o">=</span> <span class="n">inversion_keys</span> <span class="o">-</span> <span class="n">denom</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">common_denominator</span>
+                <span class="n">numer</span> <span class="o">=</span> <span class="n">inversion_keys</span> <span class="o">-</span> <span class="n">denom</span>
+            <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">numer</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioKeyList</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">inversion_keys</span><span class="p">)</span><span class="si">}</span><span class="s1"> inversion ratio keys instead of 3&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">inversion_keys</span><span class="o">.</span><span class="n">has_common_denominator</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;inversion key ratios do not have a common denominator&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">denom</span> <span class="o">=</span> <span class="n">inversion_keys</span><span class="o">.</span><span class="n">common_denominator</span>
+                <span class="n">numer</span> <span class="o">=</span> <span class="n">inversion_keys</span><span class="o">.</span><span class="n">numerators</span>
+
+    <span class="k">return</span> <span class="n">numer</span><span class="p">,</span> <span class="n">denom</span><span class="p">,</span> <span class="n">inversion_keys</span>
+
+
+<div class="viewcode-block" id="ds_grid"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.ds_grid.html#isopy.tb.ds_grid">[docs]</a><span class="k">def</span> <span class="nf">ds_grid</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">spike1</span><span class="p">,</span> <span class="n">spike2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span>  <span class="o">*</span><span class="p">,</span>
+            <span class="n">fnat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fins</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">maxv</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="n">integrations</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">integration_time</span> <span class="o">=</span> <span class="mf">8.389</span><span class="p">,</span> <span class="n">resistor</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span>
+            <span class="n">random_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rudge&#39;</span><span class="p">,</span>
+            <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isotope_fractions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">correction_method</span><span class="o">=</span><span class="n">ds_correction</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">interferences</span><span class="p">):</span>
+    <span class="n">isotope_fractions</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_fractions&#39;</span><span class="p">,</span> <span class="n">isotope_fractions</span><span class="p">,</span>
+                                                           <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span>
+                                                        <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+    <span class="n">numer</span><span class="p">,</span> <span class="n">denom</span><span class="p">,</span> <span class="n">inversion_keys</span> <span class="o">=</span> <span class="n">_deduce_inversion_keys</span><span class="p">(</span><span class="n">spike1</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">)</span>
+
+    <span class="n">standard</span> <span class="o">=</span> <span class="n">isotope</span><span class="o">.</span><span class="n">make_ms_array</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">mf_factor</span><span class="o">=</span><span class="n">fnat</span><span class="p">,</span> <span class="n">isotope_fractions</span><span class="o">=</span><span class="n">isotope_fractions</span><span class="p">,</span>
+                                     <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">)</span>
+
+    <span class="n">spike_fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">spike1</span> <span class="o">=</span> <span class="n">spike1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spike1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">spike2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">spike2</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">spike1_fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">spike1_fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">spike2</span> <span class="o">=</span> <span class="n">spike2</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spike2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">result_solutions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">spike1_fraction</span> <span class="ow">in</span> <span class="n">spike1_fractions</span><span class="p">:</span>
+        <span class="n">spike_mixture</span> <span class="o">=</span> <span class="p">(</span><span class="n">spike1</span> <span class="o">*</span> <span class="n">spike1_fraction</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">spike2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">spike1_fraction</span><span class="p">))</span>
+        <span class="n">result_solutions</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">spike_fraction</span> <span class="ow">in</span> <span class="n">spike_fractions</span><span class="p">:</span>
+            <span class="n">measured</span> <span class="o">=</span> <span class="n">isotope</span><span class="o">.</span><span class="n">make_ms_sample</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">spike_mixture</span><span class="o">=</span><span class="n">spike_mixture</span><span class="p">,</span>
+                                              <span class="n">spike_fraction</span><span class="o">=</span><span class="n">spike_fraction</span><span class="p">,</span>
+                                              <span class="n">fnat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fins</span><span class="o">=</span><span class="n">fins</span><span class="p">,</span> <span class="n">maxv</span><span class="o">=</span><span class="n">maxv</span><span class="p">,</span>
+                                              <span class="n">integrations</span><span class="o">=</span><span class="n">integrations</span><span class="p">,</span>
+                                              <span class="n">integration_time</span><span class="o">=</span><span class="n">integration_time</span><span class="p">,</span>
+                                              <span class="n">resistor</span><span class="o">=</span><span class="n">resistor</span><span class="p">,</span>
+                                              <span class="n">random_seed</span><span class="o">=</span><span class="n">random_seed</span><span class="p">,</span>
+                                              <span class="n">isotope_fractions</span><span class="o">=</span><span class="n">isotope_fractions</span><span class="p">,</span>
+                                              <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">,</span> <span class="o">**</span><span class="n">interferences</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">solution</span> <span class="o">=</span> <span class="n">correction_method</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">spike_mixture</span><span class="p">,</span> <span class="n">standard</span><span class="p">,</span> <span class="n">inversion_keys</span><span class="p">,</span>
+                                         <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">,</span>
+                                         <span class="n">isotope_fractions</span><span class="o">=</span><span class="n">isotope_fractions</span><span class="p">,</span>
+                                         <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+                <span class="n">result_solutions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">solution</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">measured</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                <span class="n">solution</span> <span class="o">=</span> <span class="n">DSResult</span><span class="p">(</span><span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                                    <span class="n">named_args</span> <span class="o">=</span> <span class="p">(</span><span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">nan</span><span class="o">.</span><span class="n">copy</span><span class="p">()),</span>
+                                    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;failed&#39;</span><span class="p">)</span>
+                <span class="n">result_solutions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">solution</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">DSGridResult</span><span class="p">(</span><span class="n">spike_fractions</span><span class="p">,</span> <span class="n">spike1_fractions</span><span class="p">,</span> <span class="n">result_solutions</span><span class="p">)</span></div>
+
+<span class="k">class</span> <span class="nc">DSResult</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">fnat</span><span class="p">,</span> <span class="n">fins</span><span class="p">,</span> <span class="n">spike_fraction</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">,</span> <span class="n">Q</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">=</span> <span class="n">lambda_</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fnat</span> <span class="o">=</span> <span class="n">fnat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fins</span> <span class="o">=</span> <span class="n">fins</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spike_fraction</span> <span class="o">=</span> <span class="n">spike_fraction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sample_fraction</span> <span class="o">=</span> <span class="n">sample_fraction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Q</span> <span class="o">=</span> <span class="n">Q</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spike_fraction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__named_args</span> <span class="o">=</span> <span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">fnat</span><span class="p">,</span> <span class="n">fins</span><span class="p">,</span> <span class="n">spike_fraction</span><span class="p">,</span> <span class="n">sample_fraction</span><span class="p">,</span> <span class="n">Q</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">Delta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotope_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">isotope_masses</span><span class="o">.</span><span class="n">refv</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">mass_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fnat</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">Delta_prime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotope_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">isotope_masses</span><span class="o">.</span><span class="n">refv</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">mass_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fnat</span>
+
+    <span class="k">def</span> <span class="nf">delta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+    <span class="k">def</span> <span class="nf">delta_prime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta_prime</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+    <span class="k">def</span> <span class="nf">ppm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1E6</span>
+
+    <span class="k">def</span> <span class="nf">ppm_prime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta_prime</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1E6</span>
+
+    <span class="k">def</span> <span class="nf">__array_function__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">types</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span> <span class="o">*</span><span class="p">[</span><span class="n">func</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__named_args</span><span class="p">])</span>
+
+<span class="k">class</span> <span class="nc">DSGridResult</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">solutions</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__solutions</span> <span class="o">=</span> <span class="n">solutions</span>
+
+    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">solution</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__solutions</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__array_function__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">types</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="p">[[</span><span class="n">func</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">solution</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__solutions</span><span class="p">])</span>
+
+
+<span class="c1">#TODO double_spike_correction method</span>
+<span class="c1">#TODO allow ds_uncernianty grid to take correction funcion</span>
+
+<span class="k">def</span> <span class="nf">_ds_uncertainty_grid</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">spike1</span><span class="p">,</span> <span class="n">spike2</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">isotopes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_voltage</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">resistors</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">integration_time</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">cycles</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">resolution</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span> <span class="n">Fnat</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">Fins</span> <span class="o">=</span> <span class="mf">1.6</span><span class="p">,</span>
+                        <span class="n">ds_method</span> <span class="o">=</span><span class="s1">&#39;Siebert&#39;</span><span class="p">,</span> <span class="n">fast_mode</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">output_attr</span> <span class="o">=</span> <span class="s1">&#39;alpha&#39;</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">isotopes</span> <span class="o">=</span> <span class="n">standard</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">standard</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">):</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">standard</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">standard</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">std</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;standard must contain exactly four values&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike1</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike1: &quot;isotopes&quot; not set&#39;</span><span class="p">)</span>
+        <span class="n">sp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;f8&#39;</span><span class="p">)</span>
+        <span class="n">sp1</span><span class="p">[</span><span class="n">isotopes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">spike1</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike1</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike1: &quot;isotopes&quot; not set&#39;</span><span class="p">)</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">spike1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spike1</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sp1</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike1 must contain exactly four values&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike2</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike2: &quot;isotopes&quot; not set&#39;</span><span class="p">)</span>
+        <span class="n">sp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;f8&#39;</span><span class="p">)</span>
+        <span class="n">sp2</span><span class="p">[</span><span class="n">isotopes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">spike2</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spike2</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike2: &quot;isotopes&quot; not set&#39;</span><span class="p">)</span>
+        <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">spike2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spike2</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sp2</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spike2 must contain exactly four values&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="p">(</span><span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mass: &quot;isotopes&quot; not set&#39;</span><span class="p">)</span>
+        <span class="n">mas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">isotopes</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mass</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mas</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mass must contain exactly four values&#39;</span><span class="p">)</span>
+
+    <span class="c1">#At this point standard, spike1 and spike2 are arrays of 4.</span>
+    <span class="n">standard</span> <span class="o">=</span> <span class="n">std</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">std</span><span class="p">)</span>
+    <span class="n">spike1</span> <span class="o">=</span> <span class="n">sp1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp1</span><span class="p">)</span>
+    <span class="n">spike2</span> <span class="o">=</span> <span class="n">sp2</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sp2</span><span class="p">)</span>
+    <span class="n">mass</span> <span class="o">=</span> <span class="n">mas</span>
+
+    <span class="n">prop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">spike2</span><span class="p">)</span>
+    <span class="n">rat_index</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="n">rat_index</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">mass_ratio</span> <span class="o">=</span> <span class="n">mass</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">mass</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">ds_method</span> <span class="o">==</span> <span class="s1">&#39;Rudge&#39;</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">Rudge_inversion</span>
+        <span class="n">mass_ratio2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mass_ratio</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">ds_method</span> <span class="o">==</span> <span class="s1">&#39;Siebert&#39;</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">Siebert_inversion</span>
+        <span class="n">mass_ratio2</span> <span class="o">=</span> <span class="n">mass_ratio</span>
+
+    <span class="n">ref_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">standard</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">standard</span><span class="p">[</span><span class="n">denom</span><span class="p">])</span> <span class="o">*</span> <span class="n">mass_ratio</span> <span class="o">**</span> <span class="n">Fnat</span>
+
+    <span class="k">if</span> <span class="n">fast_mode</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">cycles</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">resolution</span><span class="p">):</span>
+            <span class="n">spike</span> <span class="o">=</span> <span class="n">prop</span><span class="p">[</span><span class="n">y</span><span class="p">]</span> <span class="o">*</span> <span class="n">spike1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">prop</span><span class="p">[</span><span class="n">y</span><span class="p">])</span> <span class="o">*</span> <span class="n">spike2</span>
+            <span class="n">sp_rat</span> <span class="o">=</span> <span class="n">spike</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">spike</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">resolution</span><span class="p">):</span>
+                <span class="n">sample</span> <span class="o">=</span> <span class="n">prop</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">spike</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">prop</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">*</span> <span class="n">standard</span>
+                <span class="n">sample</span> <span class="o">=</span> <span class="n">sample</span> <span class="o">*</span> <span class="n">max_voltage</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+                <span class="n">noise</span> <span class="o">=</span> <span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">resistors</span><span class="p">,</span> <span class="n">integration_time</span><span class="p">)</span>
+                <span class="n">noisy_sample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="p">(</span><span class="n">cycles</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                <span class="n">smp_rat</span> <span class="o">=</span> <span class="n">noisy_sample</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">noisy_sample</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span>
+                <span class="n">smp_rat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">smp_rat</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span> <span class="o">*</span> <span class="n">mass_ratio</span> <span class="o">**</span> <span class="n">Fins</span><span class="p">)</span>
+
+                <span class="n">solution</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="n">smp_rat</span><span class="p">,</span> <span class="n">ref_ratio</span><span class="p">,</span> <span class="n">sp_rat</span><span class="p">,</span> <span class="n">mass_ratio2</span><span class="p">)</span>
+                <span class="n">z</span><span class="p">[</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">output_attr</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fast_mode</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">big</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">cycles</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="n">small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+        <span class="n">spike</span> <span class="o">=</span> <span class="n">big</span> <span class="o">*</span> <span class="n">spike1</span> <span class="o">*</span> <span class="n">prop</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">big</span> <span class="o">*</span> <span class="n">spike2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">prop</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>                                                                                          <span class="mi">1</span><span class="p">)</span>
+        <span class="n">smp</span> <span class="o">=</span> <span class="n">spike</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">prop</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">small</span> <span class="o">*</span> <span class="n">standard</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">prop</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span>
+                                                                                                         <span class="mi">1</span><span class="p">)</span>
+        <span class="n">smp</span> <span class="o">=</span> <span class="n">smp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">smp</span> <span class="o">=</span> <span class="n">smp</span> <span class="o">*</span> <span class="p">(</span><span class="n">max_voltage</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">smp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">noise</span> <span class="o">=</span> <span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">smp</span><span class="p">,</span> <span class="n">resistors</span><span class="p">,</span> <span class="n">integration_time</span><span class="p">)</span>
+
+        <span class="n">noisy_sample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">smp</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="p">(</span><span class="n">cycles</span><span class="p">,</span> <span class="n">resolution</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="n">noisy_sample</span> <span class="o">=</span> <span class="n">noisy_sample</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">smp_ratio</span> <span class="o">=</span> <span class="n">noisy_sample</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">noisy_sample</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">mass_ratio</span> <span class="o">**</span> <span class="n">Fins</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">spike</span> <span class="o">=</span> <span class="n">spike</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="n">sp_ratio</span> <span class="o">=</span> <span class="n">spike</span><span class="p">[</span><span class="n">rat_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">spike</span><span class="p">[</span><span class="n">denom</span><span class="p">]</span>
+
+        <span class="c1">#TODO check error that comes from rudge and do a specieal error</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="n">smp_ratio</span><span class="p">,</span> <span class="n">ref_ratio</span><span class="p">,</span> <span class="n">sp_ratio</span><span class="p">,</span> <span class="n">mass_ratio2</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">output_attr</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">resolution</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">std</span><span class="p">[</span><span class="n">count</span> <span class="o">&lt;</span> <span class="n">cycles</span> <span class="o">*</span> <span class="mf">0.9</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="n">output_attr</span> <span class="o">==</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">std</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mean</span> <span class="o">-</span> <span class="n">Fnat</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">std</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">argmin_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="n">std</span><span class="p">)</span>
+    <span class="n">min_x_pos</span> <span class="o">=</span> <span class="n">argmin_z</span> <span class="o">%</span> <span class="n">std</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">min_y_pos</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">argmin_z</span> <span class="o">/</span> <span class="n">std</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1">#x = sp in sp+smp, y = sp1 in sp1+sp2</span>
+    <span class="k">return</span> <span class="n">prop</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">std</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="p">(</span><span class="n">min_y_pos</span><span class="p">,</span> <span class="n">min_x_pos</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_plot_ds_uncertainty_grid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">best</span> <span class="o">=</span> <span class="n">ds_uncertainty_grid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">levels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.0001</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.001</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.01</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span>
+                                                                                             <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">]</span>
+    <span class="n">min_z</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">best</span><span class="p">]</span>
+    <span class="n">min_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">min_y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">title</span> <span class="o">=</span> <span class="s1">&#39;Smallest uncertianty: </span><span class="si">{:.5f}</span><span class="s1"> ($2</span><span class="se">\\</span><span class="s1">sigma/</span><span class="se">\\</span><span class="s1">sqrt</span><span class="si">{}</span><span class="s1">n</span><span class="si">{}</span><span class="s1">$) &#39;</span> \
+            <span class="s1">&#39;at x: </span><span class="si">{:.2f}</span><span class="s1">, y: </span><span class="si">{:.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">min_z</span><span class="p">,</span> <span class="s1">&#39;{&#39;</span><span class="p">,</span> <span class="s1">&#39;}&#39;</span><span class="p">,</span> <span class="n">min_x</span><span class="p">,</span> <span class="n">min_y</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">CS</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">mplcm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">mplcm</span><span class="o">.</span><span class="n">jet</span><span class="p">),</span> <span class="n">norm</span><span class="o">=</span><span class="n">mplcolors</span><span class="o">.</span><span class="n">PowerNorm</span><span class="p">(</span><span class="mf">0.23</span><span class="p">))</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">CS</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">ticks</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Spike fraction in Spike/Sample mix&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Spike1 fraction in Spike1/Spike2 mix&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_ds_cocktail_list</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">spikes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotopes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">output_mass_ratio</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">output_multiple</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">isotopes</span> <span class="o">=</span> <span class="n">standard</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;isotopes&quot; not given&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;standard&quot; must be either a IsotopeArrray or a IsopyDict&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;isotopes&quot; not given&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">isotopes</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;At least 4 isotopes are needed&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">spikes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">spikes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spikes</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;spikes&quot; must be a dict&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spikes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Each entry in &quot;spikes&quot; must be either a IsotopeArrray or a IsopyDict&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="p">(</span><span class="n">_dtypes</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">_dtypes</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;mass&quot; must be either a IsotopeArray or a IsopyDict&#39;</span><span class="p">)</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">iso</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">isotopes</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">spike</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">iso</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">best</span> <span class="o">=</span> <span class="n">uncertianty_grid</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">spikes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">spike</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">spike</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">spikes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">spike</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">spike</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">mass</span><span class="p">,</span> <span class="n">isotopes</span> <span class="o">=</span> <span class="n">iso</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="n">x_min</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">y_min</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+            <span class="n">z_min</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">best</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">output_mass_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">z_min</span> <span class="o">=</span> <span class="p">(</span><span class="n">output_mass_ratio</span> <span class="o">**</span> <span class="n">z</span><span class="p">[</span><span class="n">best</span><span class="p">]</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">output_multiple</span>
+
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="nb">tuple</span><span class="p">(</span><span class="n">iso</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">spike</span><span class="p">),</span> <span class="p">(</span><span class="n">x_min</span><span class="p">,</span> <span class="n">y_min</span><span class="p">,</span> <span class="n">z_min</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">best</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">output</span>
+
+
+
+
+
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

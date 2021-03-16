@@ -1,0 +1,353 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>plot_vstack &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="plot_hstack" href="isopy.tb.plot_hstack.html" />
+    <link rel="prev" title="plot_spider" href="isopy.tb.plot_spider.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#isotope-data-processing">Isotope Data Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#regressions">Regressions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#plotting">Plotting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.update_figure.html">update_figure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.create_subplots.html">create_subplots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_scatter.html">plot_scatter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_regression.html">plot_regression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_spider.html">plot_spider</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">plot_vstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_hstack.html">plot_hstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_vcompare.html">plot_vcompare</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_hcompare.html">plot_hcompare</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.Colors.html">Colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ColorPairs.html">ColorPairs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.Markers.html">Markers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>plot_vstack</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/tb_plotting/isopy.tb.plot_vstack.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="plot-vstack">
+<h1>plot_vstack<a class="headerlink" href="#plot-vstack" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.plot_vstack">
+<code class="sig-prename descclassname"><span class="pre">isopy.tb.</span></code><code class="sig-name descname"><span class="pre">plot_vstack</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xerr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ystart</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outliers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pmval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pmline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">box</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">box_pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_yaxis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/plotting.html#plot_vstack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.tb.plot_vstack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.</p>
+<p>Can also take an array in which case it will create a grid of subplots, one for each column in
+the array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>axes</em><em>, </em><em>figure</em><em>, </em><em>plt</em>) – If <em>x</em> is a numpy array <em>axes</em> must be a matplotlib axes object or
+object with a gca() method that return a matplotlib axes object, such as a matplotlib
+pyplot instance. If <em>x</em> is an isopy array <em>axes</em> must be a matplotlib Figure or any object
+with a <code class="docutils literal notranslate"><span class="pre">.gcf()</span></code> method that returns a matplotlib Figure object, Such as a matplotlib
+pyplot instance.</p></li>
+<li><p><strong>x</strong> (<em>numpy_array_like</em><em>, </em><em>isopy_array</em>) – Any object that can be converted to a numpy array. Multidimensional
+array will be flattened. ‘x* and <em>y</em> must be the same size.</p></li>
+<li><p><strong>xerr</strong> (<em>numpy_array_like</em><em>, </em><em>isopy_array</em><em>, </em><em>Optional</em>) – Uncertianties associated with <em>y</em> values. Must be an object that can be converted to a
+numpy array. Multidimensional array will be flattened. Must either be an array with the same
+size as <em>y</em> or a single value which will be used for all values of <em>y</em>.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code> no errorbars are shown.</p></li>
+<li><p><strong>ystart</strong> (<em>scalar</em><em>, </em><em>Optional</em>) – The starting valeu on the yaxis. If <code class="docutils literal notranslate"><span class="pre">None</span></code> it is inferred from values already plotted on
+the <em>axes</em>. If <em>x</em> is an isopy array the <em>ystart</em> will be the same for all subplots.</p></li>
+<li><p><strong>outliers</strong> (<em>bool</em><em>, </em><em>Optional</em>) – A boolean array same size as <em>x</em> where <code class="docutils literal notranslate"><span class="pre">True</span></code> means a data point is
+considered an outlier.</p></li>
+<li><p><strong>cval</strong> (<em>scalar</em><em>, </em><em>Callable</em><em>, </em><em>Optional</em>) – The center value of the data. Can either be a scalar or a function that returns a scalar
+when called with <em>x</em>. If <em>cval</em> is a function is it called on the values that are not
+outliers.</p></li>
+<li><p><strong>pmval</strong> (<em>scalar</em><em>, </em><em>Callable</em><em>, </em><em>Optional</em>) – The uncertainty of the the data. Can either be a scalar or a function that returns a scalar
+when called with <em>x</em>. If <em>pmval</em> is a function is it called on the values that are not
+outliers.</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>Optional</em>) – Color of the marker face and line between points, if <em>marker</em> and <em>line</em> are not <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+Accepted strings are named colour in matplotlib or a string of a hex triplet begining with “#”.
+See <a class="reference external" href="https://matplotlib.org/stable/gallery/color/named_colors.html">here</a> for a list of
+named colours in matplotlib. If not given the next colour on the internal matplotlib colour
+cycle is used.</p></li>
+<li><p><strong>marker</strong> (<em>bool</em><em>, </em><em>str</em><em>, </em><em>Default = True</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> a marker is shown for each data point. If <code class="docutils literal notranslate"><span class="pre">`False</span></code> no marker is shown. Can also be a
+string describing any marker accepted by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/api/markers_api.html">here</a> for a list of avaliable markers.</p>
+</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>str</em><em>, </em><em>Default = False</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> a line is drawn between each datapoint. If <code class="docutils literal notranslate"><span class="pre">False</span></code> no line is shown. Can also
+be a string describing a linestyle defined by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html">here</a> for a list
+of avaliable linestyles. <code class="docutils literal notranslate"><span class="pre">True</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;solid&quot;</span></code>.</p>
+</p></li>
+<li><p><strong>cline</strong> (<em>bool</em><em>, </em><em>str</em><em>, </em><em>Default = True</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> a center line is drawn at <em>cval</em> alongside the data points. If <code class="docutils literal notranslate"><span class="pre">False</span></code> no line is shown.
+Can also be a string describing a linestyle defined by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html">here</a> for a list
+of avaliable linestyles. <code class="docutils literal notranslate"><span class="pre">True</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;solid&quot;</span></code>. Only shown if <em>cval</em> is given.</p>
+</p></li>
+<li><p><strong>pmline</strong> (<em>bool</em><em>, </em><em>str</em><em>, </em><em>Default = False</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> two lines at the upper uncertainty (<code class="docutils literal notranslate"><span class="pre">cval+pmval</span></code>) and lower uncertainty
+(<code class="docutils literal notranslate"><span class="pre">cval-pmval</span></code>) alongside the data points, . If <code class="docutils literal notranslate"><span class="pre">False</span></code> no line is shown.
+Can also be a string describing a linestyle defined by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html">here</a> for a list
+of avaliable linestyles. <code class="docutils literal notranslate"><span class="pre">True</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;solid&quot;</span></code>. Only shown if <em>cval</em> and <em>pmval</em>
+are given.</p>
+</p></li>
+<li><p><strong>box</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> a semitransparent box is drawn alongisde the data points basedon the <em>cval</em>
+and <em>pmval</em> values.</p></li>
+<li><p><strong>pad</strong> (<em>scalar</em><em>, </em><em>Default = 2</em>) – The space between previous data points and the new data points on the y-axis.</p></li>
+<li><p><strong>box_pad</strong> (<em>scalar</em><em>, </em><em>Optional</em>) – The space the cline, pmline and box extends past the data points on the y-axis. If <code class="docutils literal notranslate"><span class="pre">None</span></code>
+a 1/4 of <em>pad</em> is used.</p></li>
+<li><p><strong>spacing</strong> (<em>scalar</em><em>, </em><em>Default = 1</em>) – The space between data points on the y-axis.</p></li>
+<li><p><strong>hide_yaxis</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – Hides the y-axis ticks and label.</p></li>
+<li><p><strong>kwargs</strong> – <p>Any keyword argument accepted by matplotlib axes methods. By default kwargs are
+attributed to the data points. Prefix kwargs for the center line
+with <code class="docutils literal notranslate"><span class="pre">cline_</span></code>, kwargs for the  plus/minus lines with <code class="docutils literal notranslate"><span class="pre">pmline_</span></code> and kwargs for the
+box area with <code class="docutils literal notranslate"><span class="pre">box_</span></code>.
+See <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.errorbar.htm">here</a>
+for a list of keyword arguments for the data points.
+See <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html">here</a>
+for a list of keyword arguments for the center and plus/minus lines.
+See <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html">here</a>
+for a list of keyword arguments for the box area.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array1</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_beams</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array2</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_beams</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_vstack</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">array1</span><span class="p">[</span><span class="s1">&#39;105pd&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_vstack</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">array2</span><span class="p">[</span><span class="s1">&#39;105pd&#39;</span><span class="p">],</span> <span class="n">cval</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">pmval</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">sd2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_vstack1.png" />
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">keylist</span><span class="p">(</span><span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;ru101&#39;</span><span class="p">,</span> <span class="s1">&#39;cd111&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">create_subplots</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="p">[[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="o">.</span><span class="n">sorted</span><span class="p">()]],</span> <span class="n">figwidth</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array1</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_beams</span><span class="p">(</span><span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;cd111&#39;</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array2</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_beams</span><span class="p">(</span><span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;ru101&#39;</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_vstack</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">array1</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">Colors</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_vstack</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">array2</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">pmval</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">sd2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">Colors</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_vstack2.png" />
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">update_figure</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">figwidth</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">colorpairs</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">ColorPairs</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_beams</span><span class="p">(</span><span class="s1">&#39;pd104&#39;</span><span class="p">,</span> <span class="s1">&#39;pd105&#39;</span><span class="p">,</span> <span class="s1">&#39;pd106&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sd2</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">sd2</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outliers</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">toolbox</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">find_outliers</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sd2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_vstack</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">outliers</span><span class="o">=</span><span class="n">outliers</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="n">mean</span><span class="p">,</span> <span class="n">pmval</span><span class="o">=</span><span class="n">sd2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colorpairs</span><span class="o">.</span><span class="n">current</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_vstack3.png" />
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.tb.plot_hstack.html" class="btn btn-neutral float-right" title="plot_hstack" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="isopy.tb.plot_spider.html" class="btn btn-neutral float-left" title="plot_spider" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -4,7 +4,7 @@
 
 .. autoclass:: {{ objname }}
     :members:
-    :inherited-members: str
+    :inherited-members:
     :member-order: bysource
 
 

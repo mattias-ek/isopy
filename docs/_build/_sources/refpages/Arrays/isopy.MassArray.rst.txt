@@ -1,11 +1,11 @@
-MassArray
+﻿MassArray
 =========
 
 .. currentmodule:: isopy
 
 .. autoclass:: MassArray
     :members:
-    :inherited-members: str
+    :inherited-members:
     :member-order: bysource
 
 

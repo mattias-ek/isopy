@@ -1,29 +1,29 @@
 .. isopy documentation master file, created by
    sphinx-quickstart on Thu Nov  8 10:01:21 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
-isopy: A python package for data processing in geo/cosmochemistry
-*****************************************************************
-
-isopy is a package which aims to simplify the processing of data commonly in geo/cosmochemistry. At its heart it a
-set of custom data arrays for storing and manipulation of three types of data: elemental, isotopic and ratios of one or
-two of the aforementioned data types. A number of toolboxes is also available providing functions for performing common
-tasks.
+isopy: A python package for data processing in isotope geo/cosmochemistry
+*************************************************************************
+Isopy is a python 3 package that provides a set of custom numpy arrays
+that aims to simplify data processing in geo/cosmochemistry. The library
+comes with a toolbox of useful functions that are currently geared towards
+processing of isotopic data.
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents
 
-   Tutorial <tutorial_page>
+   Installation <installation>
+   Examples <examples>
 
 .. toctree::
    :maxdepth: 1
    :caption: Reference
 
    Data types <refpages/dtypes>
+   Reference values <refpages/reference_values>
    Read/Write <refpages/io>
+   Array functions <refpages/array_functions>
    Toolbox <refpages/toolbox>
 
 

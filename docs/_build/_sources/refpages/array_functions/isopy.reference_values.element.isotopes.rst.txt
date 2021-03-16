@@ -1,0 +1,6 @@
+﻿isopy.reference\_values.element.isotopes
+========================================
+
+.. currentmodule:: isopy.reference_values
+
+.. autoproperty:: element.isotopes

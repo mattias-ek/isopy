@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>remove_mass_fractionation &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="add_mass_fractionation" href="isopy.tb.add_mass_fractionation.html" />
+    <link rel="prev" title="calculate_mass_fractionation_factor" href="isopy.tb.calculate_mass_fractionation_factor.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#data-processing">Data Processing</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.normalise_data.html">normalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.denormalise_data.html">denormalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.find_outliers.html">find_outliers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.johnson_nyquist_noise.html">johnson_nyquist_noise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_array.html">make_ms_array</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_beams.html">make_ms_beams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_sample.html">make_ms_sample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.mass_independent_correction.html">mass_independent_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.calculate_mass_fractionation_factor.html">calculate_mass_fractionation_factor</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">remove_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.add_mass_fractionation.html">add_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_isobaric_interferences.html">remove_isobaric_interferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_inversion.html">ds_inversion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_correction.html">ds_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_grid.html">ds_grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#regressions">Regressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#plotting">Plotting</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>remove_mass_fractionation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/tb_reduce_iso/isopy.tb.remove_mass_fractionation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="remove-mass-fractionation">
+<h1>remove_mass_fractionation<a class="headerlink" href="#remove-mass-fractionation" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.remove_mass_fractionation">
+<code class="sig-prename descclassname"><span class="pre">isopy.tb.</span></code><code class="sig-name descname"><span class="pre">remove_mass_fractionation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fractionation_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isotope_masses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/isotope.html#remove_mass_fractionation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.tb.remove_mass_fractionation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove exponential mass fractionation from <em>data</em>.</p>
+<p>Calculated using:</p>
+<div class="math notranslate nohighlight">
+\[R_{n,d} = \frac{r_{n,d}}{(m_{n,d})^{ \alpha }}\]</div>
+<p>where <span class="math notranslate nohighlight">\(n\)</span> is the numerator isotope and <span class="math notranslate nohighlight">\(d\)</span> is the denominator isotope.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="../Arrays/isopy.RatioArray.html#isopy.RatioArray" title="isopy.RatioArray"><em>RatioArray</em></a>) – Array containing data to be changed. <span class="math notranslate nohighlight">\(r\)</span> in the equation above.</p></li>
+<li><p><strong>fractionation_factor</strong> (<em>float</em>) – Fractionation factor to be applied. <span class="math notranslate nohighlight">\(\alpha\)</span> in the equation above</p></li>
+<li><p><strong>isotope_masses</strong> – Reference value for the isotope masses of different elements.
+Defaults to <code class="docutils literal notranslate"><span class="pre">isopy.refv.isotope.mass</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Will have the same flavour as <em>data</em>. <span class="math notranslate nohighlight">\(R\)</span> in the equation above.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../Arrays/isopy.RatioArray.html#isopy.RatioArray" title="isopy.RatioArray">RatioArray</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_array</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="s1">&#39;105pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span>
+<span class="go">(row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="go">None  , 0.04568     , 0.49888     , 1.22391     , 1.18495     , 0.52485</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">remove_mass_fractionation</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span>
+<span class="go">(row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="go">None  , 0.04588     , 0.49960     , 1.22218     , 1.17995     , 0.52120</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="s1">&#39;108pd/105pd&#39;</span><span class="p">)</span>
+<span class="go">-0.1500000000000046</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="isopy.tb.add_mass_fractionation.html#isopy.tb.add_mass_fractionation" title="isopy.tb.add_mass_fractionation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isopy.tb.add_mass_fractionation</span></code></a></p>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.tb.add_mass_fractionation.html" class="btn btn-neutral float-right" title="add_mass_fractionation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="isopy.tb.calculate_mass_fractionation_factor.html" class="btn btn-neutral float-left" title="calculate_mass_fractionation_factor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

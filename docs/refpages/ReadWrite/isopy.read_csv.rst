@@ -1,4 +1,4 @@
-read\_csv
+﻿read\_csv
 =========
 
 .. currentmodule:: isopy

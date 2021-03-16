@@ -1,4 +1,4 @@
 from isopy.toolbox.isotope import *
-from isopy.toolbox.misc import *
-from isopy.toolbox.general import *
-from isopy.toolbox.np_func import *
+from isopy.toolbox.regress import *
+from isopy.toolbox.plotting import *
+from isopy.toolbox.doublespike import *

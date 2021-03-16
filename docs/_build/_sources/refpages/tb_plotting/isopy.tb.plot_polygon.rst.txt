@@ -1,0 +1,6 @@
+﻿plot\_polygon
+=============
+
+.. currentmodule:: isopy.tb
+
+.. autofunction:: plot_polygon

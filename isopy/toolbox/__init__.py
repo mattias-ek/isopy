@@ -1,4 +1,4 @@
-import isopy.toolbox.general
-import isopy.toolbox.isotope
-import isopy.toolbox.misc
-import isopy.toolbox.np_func
+from . import doublespike
+from . import isotope
+from . import plotting
+from . import regress

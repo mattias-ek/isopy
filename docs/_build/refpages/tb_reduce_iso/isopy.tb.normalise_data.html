@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>normalise_data &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="denormalise_data" href="isopy.tb.denormalise_data.html" />
+    <link rel="prev" title="Toolbox" href="../toolbox.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#data-processing">Data Processing</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">normalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.denormalise_data.html">denormalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.find_outliers.html">find_outliers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.johnson_nyquist_noise.html">johnson_nyquist_noise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_array.html">make_ms_array</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_beams.html">make_ms_beams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_sample.html">make_ms_sample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.mass_independent_correction.html">mass_independent_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.calculate_mass_fractionation_factor.html">calculate_mass_fractionation_factor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_mass_fractionation.html">remove_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.add_mass_fractionation.html">add_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_isobaric_interferences.html">remove_isobaric_interferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_inversion.html">ds_inversion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_correction.html">ds_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_grid.html">ds_grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#regressions">Regressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#plotting">Plotting</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>normalise_data</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/tb_reduce_iso/isopy.tb.normalise_data.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="normalise-data">
+<h1>normalise_data<a class="headerlink" href="#normalise-data" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.normalise_data">
+<code class="sig-prename descclassname"><span class="pre">isopy.tb.</span></code><code class="sig-name descname"><span class="pre">normalise_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_deviation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/isotope.html#normalise_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.tb.normalise_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalise data to the given reference values.</p>
+<div class="math notranslate nohighlight">
+\[n = (\frac{m} {r} - d ) * f\]</div>
+<p>where <em>n</em> is the normalised data, <em>m</em> is <em>data</em>, <em>f</em> is <em>factor</em>, <em>r</em> is <em>reference_data</em>,
+and <em>d</em> is 1 if <em>is_deviation</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code> and 0 if <em>is_deviation</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Data to be normalised</p></li>
+<li><p><strong>reference_data</strong> – The reference values used to normalise the data. Multiple values can be passed in a list.
+If multiple values are passed or <em>reference_values</em> has a size larger than 1 the mean of
+the values are used.</p></li>
+<li><p><strong>factor</strong> – The multiplication factor to be applied to <em>data</em> during the normalisation.</p></li>
+<li><p><strong>is_deviation</strong> – Set to <code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>data</em> represents a deviation from the
+reference values.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ref</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_array</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="s1">&#39;105pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_sample</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">,</span> <span class="n">fins</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maxv</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="s1">&#39;105pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">norm</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">normalise_data</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">norm</span>
+<span class="go">(row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="go">0     , -28.60967   , -9.54006    , 9.50745     , 28.57674    , 47.70528</span>
+<span class="go">1     , -28.76605   , -9.52060    , 9.53867     , 28.61274    , 47.69063</span>
+<span class="go">2     , -28.73309   , -9.56115    , 9.51017     , 28.57170    , 47.63513</span>
+<span class="go">3     , -28.53972   , -9.60582    , 9.48726     , 28.57055    , 47.60977</span>
+<span class="go">4     , -28.69282   , -9.59705    , 9.50470     , 28.55289    , 47.65280</span>
+<span class="gp">... </span>  <span class="p">,</span> <span class="o">...</span>         <span class="p">,</span> <span class="o">...</span>         <span class="p">,</span> <span class="o">...</span>         <span class="p">,</span> <span class="o">...</span>         <span class="p">,</span> <span class="o">...</span>
+<span class="go">95    , -28.50008   , -9.60504    , 9.52317     , 28.56964    , 47.66661</span>
+<span class="go">96    , -28.64389   , -9.47620    , 9.52398     , 28.59006    , 47.70599</span>
+<span class="go">97    , -28.64383   , -9.55584    , 9.48523     , 28.58221    , 47.67802</span>
+<span class="go">98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902</span>
+<span class="go">99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">normalise_data</span><span class="p">(</span><span class="n">isopy</span><span class="o">.</span><span class="n">sd2</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="n">ref</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">is_deviation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">(row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="go">None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">sd2</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+<span class="go">(row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="go">None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.tb.denormalise_data.html" class="btn btn-neutral float-right" title="denormalise_data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../toolbox.html" class="btn btn-neutral float-left" title="Toolbox" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

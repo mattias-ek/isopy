@@ -1,11 +1,11 @@
-ElementArray
+﻿ElementArray
 ============
 
 .. currentmodule:: isopy
 
 .. autoclass:: ElementArray
     :members:
-    :inherited-members: str
+    :inherited-members:
     :member-order: bysource
 
 

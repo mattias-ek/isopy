@@ -1,4 +1,4 @@
-plot\_york\_regression
+﻿plot\_york\_regression
 ======================
 
 .. currentmodule:: isopy.tb

@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>johnson_nyquist_noise &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="make_ms_array" href="isopy.tb.make_ms_array.html" />
+    <link rel="prev" title="find_outliers" href="isopy.tb.find_outliers.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#data-processing">Data Processing</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.normalise_data.html">normalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.denormalise_data.html">denormalise_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.find_outliers.html">find_outliers</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">johnson_nyquist_noise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_array.html">make_ms_array</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_beams.html">make_ms_beams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.make_ms_sample.html">make_ms_sample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.mass_independent_correction.html">mass_independent_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.calculate_mass_fractionation_factor.html">calculate_mass_fractionation_factor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_mass_fractionation.html">remove_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.add_mass_fractionation.html">add_mass_fractionation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.remove_isobaric_interferences.html">remove_isobaric_interferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_inversion.html">ds_inversion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_correction.html">ds_correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ds_grid.html">ds_grid</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#regressions">Regressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#plotting">Plotting</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>johnson_nyquist_noise</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/tb_reduce_iso/isopy.tb.johnson_nyquist_noise.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="johnson-nyquist-noise">
+<h1>johnson_nyquist_noise<a class="headerlink" href="#johnson-nyquist-noise" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.johnson_nyquist_noise">
+<code class="sig-prename descclassname"><span class="pre">isopy.tb.</span></code><code class="sig-name descname"><span class="pre">johnson_nyquist_noise</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resistor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">integration_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8.389</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_counting_statistics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">309</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">62500000.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/isotope.html#johnson_nyquist_noise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.tb.johnson_nyquist_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the Johnson-Nyquist noise and counting statistics for a given voltage.</p>
+<p>The Johnson-Nyquist noise (<span class="math notranslate nohighlight">\(n_{jn}\)</span> is calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{jn} = \sqrt{ \frac{4*k_{b}*T*r} {t} } * \frac{R} {r}\]</div>
+<p>The counting statistics, or shot noise, (<span class="math notranslate nohighlight">\(n_{cs}\)</span> is calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{cs} = \sqrt{ \frac{1} {v * c_{V} * t}} * v\]</div>
+<p>The two are combined as:</p>
+<div class="math notranslate nohighlight">
+\[n_{all} = \sqrt{ (n_{jn})^2 + (n_{cs})^2 }\]</div>
+<p>The noise for a specific isotope ratio can be calculated as:</p>
+<div class="math notranslate nohighlight">
+\[n_{n,d} = \sqrt{ (n_{n})^2 + (n_{d})^2 }\]</div>
+<p>where <span class="math notranslate nohighlight">\(n\)</span> is the numerator isotope and <span class="math notranslate nohighlight">\(d\)</span> is the denominator isotope.</p>
+<p>Adapted from the equations in <a class="reference external" href="https://doi.org/10.1016/j.chemgeo.2013.11.008">Liu &amp; Pearson (2014) Chemical Geology, 10, 301-311</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>voltage</strong> (<a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>float</em><em>, </em><em>np.ndarray</em>) – The measured voltages. <span class="math notranslate nohighlight">\(v\)</span> in the equations above.</p></li>
+<li><p><strong>resistor</strong> (<a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray"><em>IsotopeArray</em></a><em>, </em><em>float</em><em>, </em><em>np.ndarray</em><em>, </em><em>dict</em>) – The resistor for the measurement. Default value is <code class="docutils literal notranslate"><span class="pre">1E11</span></code>. <span class="math notranslate nohighlight">\(r\)</span> in the equations above.
+If <em>resistor</em> is a dictionary <code class="docutils literal notranslate"><span class="pre">1E11</span></code> will be used for values not in the dictionary.</p></li>
+<li><p><strong>integration_time</strong> (<em>float</em><em>, </em><em>optional</em>) – The integration time in seconds for a single measurement. Default value is <code class="docutils literal notranslate"><span class="pre">8.389</span></code>.
+<span class="math notranslate nohighlight">\(t\)</span> in the equations above.</p></li>
+<li><p><strong>include_counting_statistics</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> then the counting statistics are included in the returned value. Default value is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>T</strong> (<em>float</em><em>, </em><em>optional</em>) – Amplifier housing temperature in kelvin. Default value is <code class="docutils literal notranslate"><span class="pre">309</span></code>. <span class="math notranslate nohighlight">\(T\)</span> in the equations above.</p></li>
+<li><p><strong>R</strong> (<em>float</em><em>, </em><em>optional</em>) – <em>voltage</em> values are reported as volts for this resistor value. Default value is
+<code class="docutils literal notranslate"><span class="pre">1E11</span></code>. <span class="math notranslate nohighlight">\(R\)</span> in the equations above.</p></li>
+<li><p><strong>cpv</strong> (<em>float</em><em>, </em><em>optional</em>) – Counts per volt per second. Default value is <code class="docutils literal notranslate"><span class="pre">6.25E7</span></code>. <span class="math notranslate nohighlight">\(C_{V}\)</span> in the equations above.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>noise</strong> – The noise in V for the given voltage/set of voltages.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.float or np.ndarray or <a class="reference internal" href="../Arrays/isopy.IsotopeArray.html#isopy.IsotopeArray" title="isopy.IsotopeArray">IsotopeArray</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="c1">#in millivolts</span>
+<span class="go">0.13883808575503015</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">1E10</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+<span class="go">0.14528174343845432</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">make_ms_array</span><span class="p">(</span><span class="s1">&#39;pd&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">array</span> <span class="o">*</span> <span class="p">(</span><span class="mi">10</span> <span class="o">/</span> <span class="n">array</span><span class="p">[</span><span class="s1">&#39;106pd&#39;</span><span class="p">])</span> <span class="c1">#10v on the largest isotope</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="c1">#in millivolts</span>
+<span class="go">(row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="go">None  , 0.03025 , 0.08932 , 0.12565 , 0.13884 , 0.13663 , 0.09156</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resistors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pd102</span><span class="o">=</span><span class="mf">1E13</span><span class="p">,</span> <span class="n">pd106</span><span class="o">=</span><span class="mf">1E10</span><span class="p">)</span> <span class="c1">#1E11 is used for missing keys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">resistors</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+<span class="go">(row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="go">None  , 0.02672 , 0.08932 , 0.12565 , 0.14528 , 0.13663 , 0.09156</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.tb.make_ms_array.html" class="btn btn-neutral float-right" title="make_ms_array" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="isopy.tb.find_outliers.html" class="btn btn-neutral float-left" title="find_outliers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,39 +1,41 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>isopy.toolbox.isotope &mdash; isopy 0.3 documentation</title>
+  <title>isopy.toolbox.isotope &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
   
 
   
   
-  
+
   
 
   
-  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
         <script src="../../../_static/jquery.js"></script>
         <script src="../../../_static/underscore.js"></script>
         <script src="../../../_static/doctools.js"></script>
-        <script src="../../../_static/language_data.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
 </head>
@@ -59,7 +61,7 @@
             
             
               <div class="version">
-                0.3
+                0.3.4
               </div>
             
           
@@ -76,6 +78,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -91,12 +94,15 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../refpages/dtypes.html">Data types</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../refpages/io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/array_functions.html">Array functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../refpages/reference_values.html">Reference values</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../refpages/toolbox.html">Toolbox</a></li>
 </ul>
 
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -131,11 +137,13 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
@@ -155,142 +163,423 @@
            <div itemprop="articleBody">
             
   <h1>Source code for isopy.toolbox.isotope</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">_np</span>
-<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">dtypes</span> <span class="k">as</span> <span class="n">_dt</span>
-<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">exceptions</span> <span class="k">as</span> <span class="n">_e</span>
-<span class="kn">from</span> <span class="nn">isopy.toolbox</span> <span class="kn">import</span> <span class="n">general</span> <span class="k">as</span> <span class="n">_g</span>
-<span class="kn">from</span> <span class="nn">isopy.toolbox</span> <span class="kn">import</span> <span class="n">misc</span> <span class="k">as</span> <span class="n">_m</span>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">isopy</span> <span class="k">as</span> <span class="nn">isopy</span>
+<span class="kn">from</span> <span class="nn">isopy</span> <span class="kn">import</span> <span class="n">core</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;make_sample&#39;</span><span class="p">,</span> <span class="s1">&#39;remove_mass_fractionation&#39;</span><span class="p">,</span> <span class="s1">&#39;add_mass_fractionation&#39;</span><span class="p">,</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;remove_mass_fractionation&#39;</span><span class="p">,</span> <span class="s1">&#39;add_mass_fractionation&#39;</span><span class="p">,</span>
            <span class="s1">&#39;calculate_mass_fractionation_factor&#39;</span><span class="p">,</span> <span class="s1">&#39;mass_independent_correction&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;add_isobaric_interferences&#39;</span><span class="p">,</span> <span class="s1">&#39;remove_isobaric_interferences&#39;</span><span class="p">]</span>
+           <span class="s1">&#39;remove_isobaric_interferences&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;make_ms_array&#39;</span><span class="p">,</span> <span class="s1">&#39;make_ms_beams&#39;</span><span class="p">,</span> <span class="s1">&#39;make_ms_sample&#39;</span><span class="p">,</span> <span class="s1">&#39;johnson_nyquist_noise&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;normalise_data&#39;</span><span class="p">,</span> <span class="s1">&#39;denormalise_data&#39;</span><span class="p">,</span> <span class="s1">&#39;find_outliers&#39;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">isopy.checks</span>
+<span class="kn">import</span> <span class="nn">isopy.core</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Functions for isotope data reduction</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="make_sample"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.make_sample.html#isopy.tb.make_sample">[docs]</a><span class="k">def</span> <span class="nf">make_sample</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">interference_values</span><span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
-                <span class="n">integration_time</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">maxv</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">fins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fnat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sprocess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_abu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">sprocess_fractions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="johnson_nyquist_noise"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.johnson_nyquist_noise.html#isopy.tb.johnson_nyquist_noise">[docs]</a><span class="k">def</span> <span class="nf">johnson_nyquist_noise</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">resistor</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span> <span class="n">integration_time</span> <span class="o">=</span> <span class="mf">8.389</span><span class="p">,</span> <span class="n">include_counting_statistics</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                          <span class="n">T</span> <span class="o">=</span> <span class="mi">309</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span> <span class="n">cpv</span> <span class="o">=</span> <span class="mf">6.25E7</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns a simulated measurement for all isotopes of *element*.</span>
+<span class="sd">    Calculate the Johnson-Nyquist noise and counting statistics for a given voltage.</span>
 
-<span class="sd">    The measured values are calculated using a normal distribution of the Johnson-Nyquist noise and counting statistics.</span>
+<span class="sd">    The Johnson-Nyquist noise (:math:`n_{jn}` is calculated as:</span>
 
-<span class="sd">    The sample is created in the following order:</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{jn} = \\sqrt{ \\frac{4*k_{b}*T*r} {t} } * \\frac{R} {r}</span>
 
-<span class="sd">    * s-process contributions added</span>
+<span class="sd">    The counting statistics, or shot noise, (:math:`n_{cs}` is calculated as:</span>
 
-<span class="sd">    * natural fractionation is added</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{cs} = \\sqrt{ \\frac{1} {v * c_{V} * t}} * v</span>
 
-<span class="sd">    * isobaric interferences are added</span>
+<span class="sd">    The two are combined as:</span>
 
-<span class="sd">    * instrumental fractionation is added</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{all} = \\sqrt{ (n_{jn})^2 + (n_{cs})^2 }</span>
 
-<span class="sd">    * Johnson-Nyquist noise is added</span>
+<span class="sd">    The noise for a specific isotope ratio can be calculated as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n_{n,d} = \\sqrt{ (n_{n})^2 + (n_{d})^2 }</span>
+
+<span class="sd">    where :math:`n` is the numerator isotope and :math:`d` is the denominator isotope.</span>
+
+<span class="sd">    Adapted from the equations in `Liu &amp; Pearson (2014) Chemical Geology, 10, 301-311</span>
+<span class="sd">    &lt;https://doi.org/10.1016/j.chemgeo.2013.11.008&gt;`_.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    element : ElementString</span>
-<span class="sd">        All isotopes of this element will be included in the returned array.</span>
-<span class="sd">    interference_isotopes : IsotopeList, optional</span>
-<span class="sd">        If given then each isotope in *interference_isotopes* is added to the returned array and the isobaric</span>
-<span class="sd">        interferences of the element is added to all isotopes in the array.</span>
-<span class="sd">    interference_values : list of floats, optional</span>
-<span class="sd">        The value of each isotope in *interference_isotope* when isobaric interferences is calculated. Must be given</span>
-<span class="sd">        if *interference_isotopes* is given.</span>
-<span class="sd">    integrations : int, optional</span>
-<span class="sd">        The number of integrations in the returned array. Default value is ``100``</span>
+<span class="sd">    voltage : IsotopeArray, float, np.ndarray</span>
+<span class="sd">        The measured voltages. :math:`v` in the equations above.</span>
+<span class="sd">    resistor : IsotopeArray, float, np.ndarray, dict</span>
+<span class="sd">        The resistor for the measurement. Default value is ``1E11``. :math:`r` in the equations above.</span>
+<span class="sd">        If *resistor* is a dictionary ``1E11`` will be used for values not in the dictionary.</span>
 <span class="sd">    integration_time : float, optional</span>
-<span class="sd">        The integration time for each integration in the returned array. Used to calculate the Johnson_Nyquist noise.</span>
-<span class="sd">        Default value is ``4.0``</span>
-<span class="sd">    maxv : float, optional</span>
-<span class="sd">        The voltage of the *element* isotopes with the highest abundance. Default value is ``10.0``</span>
-<span class="sd">    fins : float, optional</span>
-<span class="sd">        If given then an instrumental fractionation factor of *fins* is added to the data.</span>
-<span class="sd">    fnat : float, optional</span>
-<span class="sd">        If given then an natural fractionation factor of *fnat* is added to the data.</span>
-<span class="sd">    sprocess : float, optional</span>
-<span class="sd">        If given then *sprocess* amounts of s-process isotopes are added to the data. Given in permil.</span>
-<span class="sd">    std_abu : IsotopeArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the abundance of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;best isotope fraction&quot; reference values.</span>
-<span class="sd">    std_mass : IsotopeArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values.</span>
-<span class="sd">    sprocess_fractions : IsotopeArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the s-process fraction of each isotope needed</span>
-<span class="sd">        for this function. Default is the &quot;sprocess isotope fraction&quot; reference values.</span>
+<span class="sd">        The integration time in seconds for a single measurement. Default value is ``8.389``.</span>
+<span class="sd">        :math:`t` in the equations above.</span>
+<span class="sd">    include_counting_statistics: bool, optional</span>
+<span class="sd">        If ``True`` then the counting statistics are included in the returned value. Default value is ``True``.</span>
+<span class="sd">    T : float, optional</span>
+<span class="sd">        Amplifier housing temperature in kelvin. Default value is ``309``. :math:`T` in the equations above.</span>
+<span class="sd">    R : float, optional</span>
+<span class="sd">        *voltage* values are reported as volts for this resistor value. Default value is</span>
+<span class="sd">        ``1E11``. :math:`R` in the equations above.</span>
+<span class="sd">    cpv : float, optional</span>
+<span class="sd">        Counts per volt per second. Default value is ``6.25E7``. :math:`C_{V}` in the equations above.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    noise: np.float or np.ndarray or IsotopeArray</span>
+<span class="sd">        The noise in V for the given voltage/set of voltages.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.johnson_nyquist_noise(10) * 1000 #in millivolts</span>
+<span class="sd">    0.13883808575503015</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.johnson_nyquist_noise(10, 1E10) * 1000</span>
+<span class="sd">    0.14528174343845432</span>
+
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array = array * (10 / array[&#39;106pd&#39;]) #10v on the largest isotope</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.johnson_nyquist_noise(array) * 1000 #in millivolts</span>
+<span class="sd">    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.03025 , 0.08932 , 0.12565 , 0.13884 , 0.13663 , 0.09156</span>
+<span class="sd">    &gt;&gt;&gt; resistors = dict(pd102=1E13, pd106=1E10) #1E11 is used for missing keys</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.johnson_nyquist_noise(array, resistors) * 1000</span>
+<span class="sd">    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.02672 , 0.08932 , 0.12565 , 0.14528 , 0.13663 , 0.09156</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">voltage</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;voltage&#39;</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                      <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">resistor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;resistor&#39;</span><span class="p">,</span> <span class="n">resistor</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">])</span>
+    <span class="n">integration_time</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;integration_time&#39;</span><span class="p">,</span> <span class="n">integration_time</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">include_counting_statistics</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;include_counting_statistics&#39;</span><span class="p">,</span> <span class="n">include_counting_statistics</span><span class="p">,</span>
+                                                          <span class="nb">bool</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resistor</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">resistor</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">IsopyDict</span><span class="p">(</span><span class="n">resistor</span><span class="p">,</span> <span class="n">default_value</span><span class="o">=</span><span class="mf">1E11</span><span class="p">)</span>
+        <span class="n">resistor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">resistor</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">voltage</span><span class="o">.</span><span class="n">keys</span><span class="p">})</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cpv</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;cpv&#39;</span><span class="p">,</span> <span class="n">cpv</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">kB</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="mf">1.3806488E-023</span><span class="p">)</span> <span class="c1"># Boltsman constant</span>
+
+    <span class="n">t_noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">4</span> <span class="o">*</span> <span class="n">kB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">*</span> <span class="n">resistor</span><span class="p">)</span> <span class="o">/</span> <span class="n">integration_time</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">R</span> <span class="o">/</span> <span class="n">resistor</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_counting_statistics</span><span class="p">:</span>
+        <span class="n">c_stat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">voltage</span> <span class="o">*</span> <span class="n">cpv</span> <span class="o">*</span> <span class="n">integration_time</span><span class="p">))</span> <span class="o">*</span> <span class="n">voltage</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">c_stat</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t_noise</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">t_noise</span></div>
+
+<div class="viewcode-block" id="make_ms_array"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.make_ms_array.html#isopy.tb.make_ms_array">[docs]</a><span class="k">def</span> <span class="nf">make_ms_array</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructs an isotope array where the first created isotope contains the sum of all given</span>
+<span class="sd">    isotopes with the same mass number. The construction order is first *args* and then *kwargs*.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    args</span>
+<span class="sd">        Each arg can be either a isotope array, a element key or an isotope key string.</span>
+<span class="sd">        If arg is an isotope array an exception will be raised if two or more isotopes have the</span>
+<span class="sd">        same mass number. If arg is an element key string then all isotopes of that element are</span>
+<span class="sd">        added to the array. If arg is an isotope key string then only that isotope and isotopes</span>
+<span class="sd">        with the same mass number as any other isotope in the array is added.</span>
+<span class="sd">    mf_factor</span>
+<span class="sd">        If given this mass fractionation factor is applied to all isotopes of an element</span>
+<span class="sd">        prior to being added to the result.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``.</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Each kwarg key must be either an element key string or an isotope key string. The isotope</span>
+<span class="sd">        fractions added to the array based on the kwarg key are multiplied by the kwarg value.</span>
+<span class="sd">        Otherwise behaves the same as for *args*.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    result : IsotopeArray</span>
+<span class="sd">        The constructed isotope array.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;)</span>
+<span class="sd">    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.01020 , 0.11140 , 0.22330 , 0.27330 , 0.26460 , 0.11720</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;, ru101=0.1)</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.01706 , 0.04175 , 0.13002 , 0.22330 , 0.27330 , 0.26460 , 0.11720</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;, ru101=0.1, ru99=0) #99Ru doesnt contribute anything to the array but gets a contribution from 101Ru.</span>
+<span class="sd">    (row) , 99Ru    , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.01276 , 0.01706 , 0.04175 , 0.13002 , 0.22330 , 0.27330 , 0.26460 , 0.11720</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;, &#39;cd&#39;)</span>
+<span class="sd">    102Pd  , 104Pd  , 105Pd  , 106Pd   , 108Pd  , 110Pd   , 111Cd   , 112Cd   , 113Cd   , 114Cd   , 116Cd</span>
+<span class="sd">    0.0102 , 0.1114 , 0.2233 , 0.28579 , 0.2735 , 0.24205 , 0.12804 , 0.24117 , 0.12225 , 0.28729 , 0.07501</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;, cd=1) #Same as example above</span>
+<span class="sd">    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd   , 111Cd   , 112Cd   , 113Cd   , 114Cd   , 116Cd</span>
+<span class="sd">    None  , 0.01020 , 0.11140 , 0.22330 , 0.28579 , 0.27350 , 0.24205 , 0.12804 , 0.24117 , 0.12225 , 0.28729 , 0.07501</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    make_ms_beams, make_ms_sample</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_abundances&#39;</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span>
+                                                           <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span>
+                                                        <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
+
+    <span class="nb">input</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="nb">input</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+
+    <span class="n">isotope_keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">askeystring</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">ElementKeyString</span><span class="p">):</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">isotopes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyString</span><span class="p">):</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;args must be an element or isotope key string&#39;</span><span class="p">)</span>
+
+        <span class="n">isotope_keys</span> <span class="o">+=</span> <span class="n">keys</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mass_number_neq</span> <span class="o">=</span> <span class="n">isotope_keys</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">)</span>
+
+    <span class="n">isotope_keys</span> <span class="o">=</span> <span class="n">isotope_keys</span><span class="o">.</span><span class="n">sorted</span><span class="p">()</span>
+    <span class="n">mass_keys</span> <span class="o">=</span> <span class="n">isotope_keys</span><span class="o">.</span><span class="n">mass_numbers</span>
+    <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">mass_keys</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">):</span>
+            <span class="n">array</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">askeystring</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">ElementKeyString</span><span class="p">):</span>
+                <span class="n">element</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">element</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">element_symbol</span>
+
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">isotopes</span><span class="p">[</span><span class="n">element</span><span class="p">]</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">mass_number_eq</span><span class="o">=</span><span class="n">mass_keys</span><span class="p">)</span>
+            <span class="n">array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span> <span class="o">*</span> <span class="n">isotope_abundances</span> <span class="o">*</span> <span class="n">val</span>
+
+        <span class="k">if</span> <span class="n">mf_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">array</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">)</span>
+
+        <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">mass_array</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">keys</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">),</span> <span class="n">default_value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">(</span><span class="n">mass_array</span><span class="p">,</span> <span class="n">isotope_keys</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="make_ms_beams"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.make_ms_beams.html#isopy.tb.make_ms_beams">[docs]</a><span class="k">def</span> <span class="nf">make_ms_beams</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">mf_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maxv</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">integrations</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">integration_time</span><span class="o">=</span><span class="mf">8.389</span><span class="p">,</span> <span class="n">resistor</span><span class="o">=</span><span class="mf">1E11</span><span class="p">,</span>
+                  <span class="n">random_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simulates a series of measurements with a standard deviation equal to the johnson-nyquist noise</span>
+<span class="sd">    and counting statistics.</span>
+
+<span class="sd">    *args* and *kwargs* are passed to ``isopy.tb.make_ms_array()`` to create the ms array.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    args</span>
+<span class="sd">        Each arg can be either a isotope array, a element key or an isotope key string.</span>
+<span class="sd">        If arg is an isotope array an exception will be raised if two or more isotopes have the</span>
+<span class="sd">        same mass number. If arg is an element key string then all isotopes of that element are</span>
+<span class="sd">        added to the array. If arg is an isotope key string then only that isotope and isotopes</span>
+<span class="sd">        with the same mass number as any other isotope in the array is added.</span>
+<span class="sd">    mf_factor</span>
+<span class="sd">        If given this mass fractionation factor is applied to all isotopes of an element</span>
+<span class="sd">        prior to being added to the result.</span>
+<span class="sd">    maxv</span>
+<span class="sd">        The voltage of the most abundant isotope in the array. The value for all other isotopes in</span>
+<span class="sd">        the array are adjusted accordingly.</span>
+<span class="sd">    integrations</span>
+<span class="sd">        The number of simulated measurements. If ``None`` no measurements are simulated and the</span>
+<span class="sd">        retured array contains the true values.</span>
+<span class="sd">    integration_time</span>
+<span class="sd">        The integration time for each simulated measurement.</span>
+<span class="sd">    resistor</span>
+<span class="sd">        The resistor used for each measurement. A isotope array or a dictionary can be passed to</span>
+<span class="sd">        to give different resistor values for different isotopes.</span>
+<span class="sd">    random_seed</span>
+<span class="sd">        Must be an integer. Seed given to the random generator.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``.</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Each kwarg key must be either an element key string or an isotope key string. The isotope</span>
+<span class="sd">        fractions added to the array based on the kwarg key are multiplied by the kwarg value.</span>
+<span class="sd">        Otherwise behaves the same as for *args*.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    IsotopeArray</span>
-<span class="sd">        An array with size of *integrations*</span>
+<span class="sd">        The simulated measurements.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_beams(&#39;pd&#39;, ru101=0.01).pprint(nrows=10)</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd    , 108Pd   , 110Pd</span>
+<span class="sd">    0     , 0.06243 , 0.48869 , 4.14431 , 8.17035 , 9.99984  , 9.68171 , 4.28824</span>
+<span class="sd">    1     , 0.06241 , 0.48865 , 4.14423 , 8.17033 , 9.99990  , 9.68189 , 4.28823</span>
+<span class="sd">    2     , 0.06245 , 0.48872 , 4.14423 , 8.17058 , 9.99992  , 9.68178 , 4.28837</span>
+<span class="sd">    3     , 0.06241 , 0.48868 , 4.14430 , 8.17042 , 10.00005 , 9.68161 , 4.28839</span>
+<span class="sd">    4     , 0.06240 , 0.48870 , 4.14417 , 8.17053 , 10.00018 , 9.68180 , 4.28834</span>
+<span class="sd">    ...   , ...     , ...     , ...     , ...     , ...      , ...     , ...</span>
+<span class="sd">    95    , 0.06244 , 0.48866 , 4.14432 , 8.17056 , 10.00010 , 9.68187 , 4.28827</span>
+<span class="sd">    96    , 0.06243 , 0.48870 , 4.14410 , 8.17044 , 10.00014 , 9.68184 , 4.28848</span>
+<span class="sd">    97    , 0.06238 , 0.48867 , 4.14404 , 8.17048 , 9.99992  , 9.68159 , 4.28840</span>
+<span class="sd">    98    , 0.06245 , 0.48871 , 4.14434 , 8.17031 , 9.99998  , 9.68169 , 4.28829</span>
+<span class="sd">    99    , 0.06243 , 0.48863 , 4.14438 , 8.17047 , 10.00003 , 9.68145 , 4.28832</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    make_ms_array, make_ms_sample</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1">#Check input</span>
-    <span class="n">element</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;element&#39;</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">ElementString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;interference_isotopes&#39;</span><span class="p">,</span> <span class="n">interference_isotopes</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeList</span><span class="p">,</span>
-                                          <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">interference_values</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type_list</span><span class="p">(</span><span class="s1">&#39;interference_values&#39;</span><span class="p">,</span> <span class="n">interference_values</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                             <span class="n">make_list</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="p">(</span><span class="n">interference_isotopes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">interference_isotopes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">interference_values</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">interference_isotopes</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;size of &quot;interference_isotopes&quot; and &quot;interference_values&quot; do not match&#39;</span><span class="p">)</span>
-    <span class="n">integrations</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;integrations&#39;</span><span class="p">,</span> <span class="n">integrations</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">integration_time</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;integration_time&#39;</span><span class="p">,</span> <span class="n">integration_time</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">maxv</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;maxv&#39;</span><span class="p">,</span> <span class="n">maxv</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">fins</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fins&#39;</span><span class="p">,</span> <span class="n">fins</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">fnat</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fnat&#39;</span><span class="p">,</span> <span class="n">fnat</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">sprocess</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;sprocess&#39;</span><span class="p">,</span> <span class="n">sprocess</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_abu</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_abu&#39;</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="s1">&#39;best isotope fraction&#39;</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
-    <span class="n">sprocess_fractions</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;sprocess_fractions&#39;</span><span class="p">,</span> <span class="n">sprocess_fractions</span><span class="p">,</span>
-                                                          <span class="s1">&#39;sprocess isotope fraction&#39;</span><span class="p">)</span>
 
-    <span class="n">data</span> <span class="o">=</span> <span class="n">std_abu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">std_abu</span><span class="o">.</span><span class="n">isotope_keys</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol</span><span class="o">=</span><span class="n">element</span><span class="p">))</span>
-    <span class="n">denom</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">beams</span> <span class="o">=</span> <span class="n">make_ms_array</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">mf_factor</span><span class="o">=</span><span class="n">mf_factor</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="o">=</span><span class="n">isotope_abundances</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">beams</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The constructed ms array has a size larger than one&#39;</span><span class="p">)</span>
 
-    <span class="c1">#add s-process anomaly</span>
-    <span class="k">if</span> <span class="n">sprocess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">data</span> <span class="o">=</span> <span class="n">data</span> <span class="o">+</span> <span class="p">(</span><span class="n">data</span> <span class="o">*</span> <span class="n">sprocess_fractions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">sprocess</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">maxv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="n">beams</span> <span class="o">*</span> <span class="p">(</span><span class="n">maxv</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
 
-    <span class="c1"># add natural fractionation</span>
-    <span class="n">rat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">denom</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">fnat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">rat</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">fnat</span><span class="p">)</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">integration_time</span><span class="o">=</span><span class="n">integration_time</span><span class="p">,</span> <span class="n">resistor</span><span class="o">=</span><span class="n">resistor</span><span class="p">)</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
 
-    <span class="c1">#Add isobaric interferences</span>
-    <span class="k">if</span> <span class="n">interference_isotopes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1">#add the interfering isotopes to the array</span>
-        <span class="c1">#This is done here so that any isobaric interferences on these isotopes is included</span>
-        <span class="n">rat</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">(</span><span class="n">rat</span><span class="o">.</span><span class="n">nrows</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="n">iso</span> <span class="o">/</span> <span class="n">denom</span> <span class="k">for</span> <span class="n">iso</span> <span class="ow">in</span> <span class="n">interference_isotopes</span><span class="p">]))</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">interference_isotopes</span><span class="p">)):</span>
-            <span class="n">isotope</span> <span class="o">=</span> <span class="n">interference_isotopes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="n">interference_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">maxv</span>
-            <span class="n">rat</span> <span class="o">=</span> <span class="n">add_isobaric_interferences</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">isotope</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span><span class="n">std_abu</span><span class="o">=</span><span class="n">std_abu</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="n">std_mass</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">integrations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">beams</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">beams</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">noise</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">integrations</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">beams</span><span class="o">.</span><span class="n">keys</span><span class="p">()})</span></div>
 
 
-    <span class="c1">#add intrumental fractionation</span>
-    <span class="k">if</span> <span class="n">fins</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">rat</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">fins</span><span class="p">)</span>
+<div class="viewcode-block" id="make_ms_sample"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.make_ms_sample.html#isopy.tb.make_ms_sample">[docs]</a><span class="k">def</span> <span class="nf">make_ms_sample</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fnat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fins</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="n">maxv</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                   <span class="n">spike_mixture</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">spike_fraction</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                   <span class="n">integrations</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">integration_time</span> <span class="o">=</span> <span class="mf">8.389</span><span class="p">,</span> <span class="n">resistor</span> <span class="o">=</span> <span class="mf">1E11</span><span class="p">,</span>
+                   <span class="n">random_seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">isotope_abundances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">interferences</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a simulated the measurement of a sample with natural and instrumental mass</span>
+<span class="sd">    fractionation added to the array. The standard deviation of measurements for each isotope</span>
+<span class="sd">    is equal to the johnson-nyquist noise and counting statistics.</span>
 
-    <span class="c1">#convert back into isotopes and set max voltage</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">rat</span><span class="o">.</span><span class="n">deratio</span><span class="p">(</span><span class="n">maxv</span><span class="p">)</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ms_array</span>
+<span class="sd">        Any object that can be singularly passed to ``make_ms_array`` which returns valid array.</span>
+<span class="sd">    fnat</span>
+<span class="sd">        If given, the natural fractionation fractionation factor is applied to the ms_array</span>
+<span class="sd">        before *interferences* are added to the ms_array.</span>
+<span class="sd">    fins</span>
+<span class="sd">        If given, the instrumental mass fractionation factor is applied to the ms_array</span>
+<span class="sd">        at the same time the *interferences* are added to the ms_array.</span>
+<span class="sd">    spike_mixture</span>
+<span class="sd">        If given this spike mixture will be added ms_array after *fnat* but before *fins* and</span>
+<span class="sd">        *interferences* are added to the array.</span>
+<span class="sd">    spike_fraction</span>
+<span class="sd">        The fraction of spike in the final mixture based on the isotopes in *spike_mixture*.</span>
+<span class="sd">    maxv</span>
+<span class="sd">        The voltage of the most abundant isotope in the array. The value for all other isotopes in</span>
+<span class="sd">        the array are adjusted accordingly.</span>
+<span class="sd">    integrations</span>
+<span class="sd">        The number of simulated measurements. If ``None`` no measurements are simulated and the</span>
+<span class="sd">        retured array contains the true values.</span>
+<span class="sd">    integration_time</span>
+<span class="sd">        The integration time for each simulated measurement.</span>
+<span class="sd">    resistor</span>
+<span class="sd">        The resistor used for each measurement. A isotope array or a dictionary can be passed to</span>
+<span class="sd">        to give different resistor values for different isotopes.</span>
+<span class="sd">    random_seed</span>
+<span class="sd">        Must be an integer. Seed given to the random generator.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``.</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
+<span class="sd">    interferences</span>
+<span class="sd">        Each kwarg key must be either an element key string or an isotope key string. The isotope</span>
+<span class="sd">        fractions added to the array based on the kwarg key are multiplied by the kwarg value.</span>
+<span class="sd">        Otherwise behaves the same as for *args*.</span>
 
-    <span class="c1">#calculate jk noise</span>
-    <span class="n">noise</span> <span class="o">=</span> <span class="n">_m</span><span class="o">.</span><span class="n">johnson_nyquist_noise</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">integration_time</span><span class="o">=</span><span class="n">integration_time</span><span class="p">)</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    IsotopeArray</span>
+<span class="sd">        The simulated measurements.</span>
 
-    <span class="c1">#create measured data</span>
-    <span class="n">random_generator</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
-    <span class="n">measured_data</span> <span class="o">=</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">(</span><span class="n">integrations</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">measured_data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="n">measured_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">noise</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">integrations</span><span class="p">)</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_sample(&#39;pd&#39;, ru101=0.01, cd111=0.001, fnat = 0.1, fins=-1.6).pprint(nrows=10)</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd    , 108Pd   , 110Pd   , 111Cd</span>
+<span class="sd">    0     , 0.06343 , 0.51076 , 4.26008 , 8.28716 , 9.99964  , 9.41352 , 4.06078 , 0.00468</span>
+<span class="sd">    1     , 0.06340 , 0.51082 , 4.26016 , 8.28714 , 10.00006 , 9.41351 , 4.06064 , 0.00466</span>
+<span class="sd">    2     , 0.06340 , 0.51083 , 4.26006 , 8.28692 , 9.99981  , 9.41356 , 4.06047 , 0.00470</span>
+<span class="sd">    3     , 0.06339 , 0.51079 , 4.26018 , 8.28711 , 10.00002 , 9.41349 , 4.06073 , 0.00471</span>
+<span class="sd">    4     , 0.06341 , 0.51087 , 4.26022 , 8.28713 , 9.99986  , 9.41357 , 4.06062 , 0.00465</span>
+<span class="sd">    ...   , ...     , ...     , ...     , ...     , ...      , ...     , ...     , ...</span>
+<span class="sd">    95    , 0.06341 , 0.51080 , 4.26010 , 8.28729 , 9.99992  , 9.41332 , 4.06070 , 0.00465</span>
+<span class="sd">    96    , 0.06339 , 0.51082 , 4.25994 , 8.28712 , 10.00012 , 9.41364 , 4.06071 , 0.00467</span>
+<span class="sd">    97    , 0.06339 , 0.51083 , 4.26012 , 8.28728 , 9.99976  , 9.41363 , 4.06069 , 0.00468</span>
+<span class="sd">    98    , 0.06341 , 0.51078 , 4.26010 , 8.28700 , 9.99994  , 9.41348 , 4.06065 , 0.00469</span>
+<span class="sd">    99    , 0.06339 , 0.51082 , 4.26010 , 8.28705 , 9.99997  , 9.41386 , 4.06072 , 0.00468</span>
 
-    <span class="k">return</span> <span class="n">measured_data</span></div>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    make_ms_array, make_ms_beams</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ms_array</span> <span class="o">=</span> <span class="n">make_ms_array</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="n">fnat</span><span class="p">,</span>
+                          <span class="n">isotope_abundances</span><span class="o">=</span><span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">spike_mixture</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">spike_mixture</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spike_mixture</span><span class="p">)</span>
+        <span class="n">ms_array</span> <span class="o">=</span> <span class="n">make_ms_array</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="o">=</span><span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">)</span>
+
+        <span class="n">spsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spike_mixture</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">smpsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ms_array</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">key_eq</span><span class="o">=</span><span class="n">spike_mixture</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">spike_mixture</span> <span class="o">=</span> <span class="n">spike_mixture</span> <span class="o">/</span> <span class="n">spsum</span> <span class="o">*</span> <span class="n">smpsum</span>
+        <span class="n">spike_mixture</span> <span class="o">=</span> <span class="n">spike_mixture</span> <span class="o">*</span> <span class="p">(</span><span class="n">spike_fraction</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">spike_fraction</span><span class="p">))</span>
+        <span class="n">ms_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="n">spike_mixture</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">ms_array</span> <span class="o">=</span> <span class="n">make_ms_array</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="n">fins</span><span class="p">,</span>
+                          <span class="n">isotope_abundances</span><span class="o">=</span><span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">,</span>
+                           <span class="o">**</span><span class="n">interferences</span><span class="p">)</span>
+
+    <span class="n">ms_array</span> <span class="o">=</span> <span class="n">make_ms_beams</span><span class="p">(</span><span class="n">ms_array</span><span class="p">,</span> <span class="n">maxv</span><span class="o">=</span><span class="n">maxv</span><span class="p">,</span> <span class="n">integrations</span><span class="o">=</span><span class="n">integrations</span><span class="p">,</span>
+                          <span class="n">integration_time</span><span class="o">=</span><span class="n">integration_time</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="n">random_seed</span><span class="p">,</span>
+                          <span class="n">resistor</span><span class="o">=</span><span class="n">resistor</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="o">=</span><span class="n">isotope_abundances</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ms_array</span></div>
 
 
-<div class="viewcode-block" id="mass_independent_correction"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.mass_independent_correction.html#isopy.tb.mass_independent_correction">[docs]</a><span class="k">def</span> <span class="nf">mass_independent_correction</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_abu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="mass_independent_correction"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.mass_independent_correction.html#isopy.tb.mass_independent_correction">[docs]</a><span class="k">def</span> <span class="nf">mass_independent_correction</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">normalisation_value</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">isotope_abundances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A quick function for mass-independent data correction.</span>
 
 <span class="sd">    The data is corrected for mass fractionation, isobaric interferences and finally, if *normalisation_factor* is given,</span>
-<span class="sd">    normalised to the values in *std_abu*. If *normalisation_factor* is not given the unnormalised corrected data is</span>
+<span class="sd">    normalised to the *isotope_abundances*. If *normalisation_factor* is not given the unnormalised corrected data is</span>
 <span class="sd">    returned.</span>
 
 <span class="sd">    An interference correction will be applied for all isotopes that are different from the *mf_ratio* numerator</span>
@@ -299,64 +588,121 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : IsotopeArray</span>
-<span class="sd">        The data to be corrected.</span>
-<span class="sd">    mf_ratio : RatioString</span>
-<span class="sd">        The data will be internally normalised to this ratio.</span>
-<span class="sd">    normalisation_factor : float, optional</span>
-<span class="sd">        If given the corrected data is passed to :func:`normalise_data` together with the *std_abu* and with</span>
-<span class="sd">        *normalisation_factor*.</span>
-<span class="sd">    std_abu : dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the abundance of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;best isotope fraction&quot; reference values.</span>
-<span class="sd">    std_mass : dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values.</span>
+<span class="sd">    data</span>
+<span class="sd">        The data to be corrected. Can be either an isotope array or a ratio array.</span>
+<span class="sd">    mf_ratio</span>
+<span class="sd">        The data will be internally normalised to this ratio. Must be present in data.</span>
+<span class="sd">    normalisation_value</span>
+<span class="sd">        If given the result in normalised to this value with *normalisation_factor*. If</span>
+<span class="sd">        *normalisation_factor* is not given a normalisation factor of 1 is used.</span>
+<span class="sd">    normalisation_factor</span>
+<span class="sd">        If given and *normalisation_value* is not the result is normalised against</span>
+<span class="sd">        *isotope_abundances*.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    RatioArray</span>
-<span class="sd">        The data corrected for mass-independent variation. Only the isotopes of the element in *mf_ratio* is returned.</span>
-
+<span class="sd">    IsotopeArray or RatioArray</span>
+<span class="sd">        The corrected data, will be the same flavour *data*. Interference isotope keys will be</span>
+<span class="sd">        removed from the returned array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">mf_ratio</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;mf_ratio&#39;</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">normalisation_factor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;normalisation_factor&#39;</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_abu</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_abu&#39;</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="s1">&#39;best isotope fraction&#39;</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">mf_ratio</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;mf_ratio&#39;</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioKeyString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">normalisation_factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;normalisation_factor&#39;</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_abundances&#39;</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
 
-    <span class="c1">#Find the isotopes that can cause isobaric interferences.</span>
-    <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol_not</span><span class="o">=</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">has_common_denominator</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;data must hav a common denominator&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">common_denominator</span> <span class="o">!=</span> <span class="n">mf_ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;data and mf_ratio do not have the same denominator&#39;</span><span class="p">)</span>
+        <span class="n">rat</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">)</span>
+
+    <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">_find_isobaric_interferences</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">)</span>
 
     <span class="c1">#Convert the data into a ratio array</span>
-    <span class="n">rat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span>
 
     <span class="c1">#Do a combined mass fractionation and isobaric interference correction.</span>
     <span class="c1">#This can account for isobaric interferences on isotopes in *mf_ratio*</span>
-    <span class="n">prev_beta</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-        <span class="c1">#Calculate the mass fractionation.</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="n">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">rat2</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+        <span class="n">rat2</span> <span class="o">=</span> <span class="n">rat</span>
+        <span class="n">prev_beta</span> <span class="o">=</span> <span class="n">beta</span>
 
-        <span class="n">rat2</span> <span class="o">=</span> <span class="n">rat</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1">#get a fresh copy of ratio for interference corrections.</span>
         <span class="k">for</span> <span class="n">infiso</span> <span class="ow">in</span> <span class="n">interference_isotopes</span><span class="p">:</span>
-            <span class="n">rat2</span> <span class="o">=</span> <span class="n">remove_isobaric_interferences</span><span class="p">(</span><span class="n">rat2</span><span class="p">,</span> <span class="n">infiso</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">)</span>
+            <span class="n">rat2</span> <span class="o">=</span> <span class="n">remove_isobaric_interferences</span><span class="p">(</span><span class="n">rat2</span><span class="p">,</span> <span class="n">infiso</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">beta</span><span class="o">/</span><span class="n">prev_beta</span> <span class="o">&lt;</span> <span class="mf">0.0001</span><span class="p">:</span>
+        <span class="c1"># Calculate the mass fractionation.</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">rat2</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">beta</span> <span class="o">-</span> <span class="n">prev_beta</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.000001</span><span class="p">):</span>
             <span class="k">break</span> <span class="c1">#Beta value has converged so no need for more iterations.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;values did not converge after 100 iterations of the interference correction&#39;</span><span class="p">)</span>
 
     <span class="c1">#Remove the isotopes on interfering elements</span>
-    <span class="n">rat</span> <span class="o">=</span> <span class="n">rat2</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol</span><span class="o">=</span> <span class="n">mf_ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">)</span>
+    <span class="n">rat</span> <span class="o">=</span> <span class="n">rat2</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">numerator_element_symbol_eq</span><span class="o">=</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">normalisation_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1">#Normalise the corrected data relative to *std_abu* and return</span>
-        <span class="n">rat</span> <span class="o">=</span>  <span class="n">_g</span><span class="o">.</span><span class="n">normalise_data</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">)</span>
+    <span class="c1">#Correct for mass fractionation</span>
+    <span class="n">rat</span> <span class="o">=</span> <span class="n">remove_mass_fractionation</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">normalisation_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">normalisation_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">normalisation_factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">rat</span> <span class="o">=</span> <span class="n">normalise_data</span><span class="p">(</span><span class="n">rat</span><span class="p">,</span> <span class="n">normalisation_value</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">normalisation_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rat</span> <span class="o">=</span> <span class="n">normalise_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">)</span>
 
     <span class="c1"># Return the corrected data</span>
     <span class="k">return</span> <span class="n">rat</span></div>
 
+<span class="k">def</span> <span class="nf">_find_isobaric_interferences</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
+        <span class="c1"># Find the isotopes that can cause isobaric interferences.</span>
+        <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">measured</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">numerators</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">numerator_element_symbol_neq</span><span class="o">=</span><span class="n">element</span><span class="p">)</span>
 
-<div class="viewcode-block" id="calculate_mass_fractionation_factor"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.calculate_mass_fractionation_factor.html#isopy.tb.calculate_mass_fractionation_factor">[docs]</a><span class="k">def</span> <span class="nf">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">std_abu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Only do the correction for the isotope on interfering element with the biggest beam</span>
+        <span class="n">interference_elements</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">ElementKeyList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">iso</span> <span class="ow">in</span> <span class="n">interference_isotopes</span><span class="p">:</span>  <span class="c1"># This preserves the order of the elements</span>
+            <span class="k">if</span> <span class="n">iso</span><span class="o">.</span><span class="n">numerator</span><span class="o">.</span><span class="n">element_symbol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">interference_elements</span><span class="p">:</span>
+                <span class="n">interference_elements</span> <span class="o">+=</span> <span class="n">iso</span><span class="o">.</span><span class="n">element_symbol</span>
+
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">RatioKeyList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">interference_element</span> <span class="ow">in</span> <span class="n">interference_elements</span><span class="p">:</span>
+            <span class="n">biggest</span> <span class="o">=</span> <span class="n">measured</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">numerator_element_symbol_eq</span><span class="o">=</span><span class="n">interference_element</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">biggest</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">interference_isotopes</span> <span class="o">=</span> <span class="n">measured</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">element_symbol_neq</span><span class="o">=</span><span class="n">element</span><span class="p">)</span>
+
+        <span class="n">interference_elements</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">ElementKeyList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">iso</span> <span class="ow">in</span> <span class="n">interference_isotopes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">iso</span><span class="o">.</span><span class="n">element_symbol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">interference_elements</span><span class="p">:</span>
+                <span class="n">interference_elements</span> <span class="o">+=</span> <span class="n">iso</span><span class="o">.</span><span class="n">element_symbol</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeKeyList</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">interference_element</span> <span class="ow">in</span> <span class="n">interference_elements</span><span class="p">:</span>
+            <span class="n">biggest</span> <span class="o">=</span> <span class="n">measured</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol_eq</span><span class="o">=</span><span class="n">interference_element</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">biggest</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+
+
+<div class="viewcode-block" id="calculate_mass_fractionation_factor"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.calculate_mass_fractionation_factor.html#isopy.tb.calculate_mass_fractionation_factor">[docs]</a><span class="k">def</span> <span class="nf">calculate_mass_fractionation_factor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculate the mass fractionation factor for a given ratio in *data*.</span>
 
@@ -367,33 +713,54 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : RatioArray</span>
+<span class="sd">    data</span>
 <span class="sd">        Fractionated data. :math:`r` in the equation above.</span>
-<span class="sd">    ratio : RatioString</span>
+<span class="sd">    mf_ratio</span>
 <span class="sd">        The isotope ratio from which the fractionation factor should be calculated. :math:`n,d` in the equation above.</span>
-<span class="sd">    std_abu : RatioArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the abundance of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;best isotope fraction&quot; reference values. :math:`R` in the equation above.</span>
-<span class="sd">    std_mass : RatioArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values. :math:`m` in the equation above.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``.</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    float</span>
 <span class="sd">        The fractionation factor for *ratio* in *data*. :math:`\\alpha` in the equation above.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.add_mass_fractionation(array, 0.1)</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.calculate_mass_fractionation_factor(array, &#39;108pd/105pd&#39;)</span>
+<span class="sd">    0.09999999999999679</span>
+
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.remove_mass_fractionation(array, 0.15)</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.calculate_mass_fractionation_factor(array, &#39;108pd/105pd&#39;)</span>
+<span class="sd">    -0.1500000000000046</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    remove_mass_fractionation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">ratio</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_abu</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_abu&#39;</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="s1">&#39;best isotope fraction&#39;</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">mf_ratio</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">mf_ratio</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioKeyString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_abundances&#39;</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="p">(</span><span class="n">_np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span> <span class="o">/</span> <span class="n">std_abu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span> <span class="o">/</span> <span class="n">_np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">std_mass</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ratio</span><span class="p">)))</span></div>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">numerator</span><span class="p">)</span> <span class="o">/</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mf_ratio</span><span class="o">.</span><span class="n">denominator</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mf_ratio</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span> <span class="o">/</span> <span class="n">isotope_abundances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mf_ratio</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mf_ratio</span><span class="p">)))</span></div>
 
 
-<div class="viewcode-block" id="remove_mass_fractionation"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.remove_mass_fractionation.html#isopy.tb.remove_mass_fractionation">[docs]</a><span class="k">def</span> <span class="nf">remove_mass_fractionation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="remove_mass_fractionation"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.remove_mass_fractionation.html#isopy.tb.remove_mass_fractionation">[docs]</a><span class="k">def</span> <span class="nf">remove_mass_fractionation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Remove exponential mass fractionation from the data.</span>
+<span class="sd">    Remove exponential mass fractionation from *data*.</span>
 
 <span class="sd">    Calculated using:</span>
 
@@ -408,25 +775,53 @@
 <span class="sd">        Array containing data to be changed. :math:`r` in the equation above.</span>
 <span class="sd">    fractionation_factor : float</span>
 <span class="sd">        Fractionation factor to be applied. :math:`\\alpha` in the equation above</span>
-<span class="sd">    std_mass : RatioArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values. :math:`m` in the equation above</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    RatioArray</span>
-<span class="sd">        The corrected data. :math:`R` in the equation above.</span>
+<span class="sd">        Will have the same flavour as *data*. :math:`R` in the equation above.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    None  , 0.04568     , 0.49888     , 1.22391     , 1.18495     , 0.52485</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.remove_mass_fractionation(array, 0.15)</span>
+<span class="sd">    &gt;&gt;&gt; array</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    None  , 0.04588     , 0.49960     , 1.22218     , 1.17995     , 0.52120</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.calculate_mass_fractionation_factor(array, &#39;108pd/105pd&#39;)</span>
+<span class="sd">    -0.1500000000000046</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    isopy.tb.add_mass_fractionation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">fractionation_factor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fractionation_factor&#39;</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fractionation_factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fractionation_factor&#39;</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                                   <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">data</span> <span class="o">/</span> <span class="p">(</span><span class="n">std_mass</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">**</span> <span class="n">fractionation_factor</span><span class="p">)</span></div>
+
+    <span class="k">if</span> <span class="n">fractionation_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">/</span> <span class="n">denom</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="k">return</span> <span class="n">data</span> <span class="o">/</span> <span class="p">(</span><span class="n">mass_array</span> <span class="o">**</span> <span class="n">fractionation_factor</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="add_mass_fractionation"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.add_mass_fractionation.html#isopy.tb.add_mass_fractionation">[docs]</a><span class="k">def</span> <span class="nf">add_mass_fractionation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="add_mass_fractionation"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.add_mass_fractionation.html#isopy.tb.add_mass_fractionation">[docs]</a><span class="k">def</span> <span class="nf">add_mass_fractionation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Add exponential mass fractionation to the data.</span>
+<span class="sd">    Add exponential mass fractionation to *data*.</span>
 
 <span class="sd">    Calculated using:</span>
 
@@ -437,64 +832,109 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : RatioArray</span>
-<span class="sd">        Array containing data to be changed. :math:`r` in the equation above.</span>
-<span class="sd">    fractionation_factor : float</span>
+<span class="sd">    data</span>
+<span class="sd">        Array containing data to which the mass fractionation will be applied. :math:`r` in the equation above.</span>
+<span class="sd">    fractionation_factor</span>
 <span class="sd">        Fractionation factor to be applied. :math:`\\alpha` in the equation above</span>
-<span class="sd">    std_mass : RatioArray, dict, optional</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values. :math:`m` in the equation above</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    RatioArray</span>
-<span class="sd">        The corrected data. :math:`R` in the equation above.</span>
+<span class="sd">    RatioArray, IsotopeArray</span>
+<span class="sd">        Will have the same flavour as *data*. :math:`R` in the equation above.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    None  , 0.04568     , 0.49888     , 1.22391     , 1.18495     , 0.52485</span>
+
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.add_mass_fractionation(array, 0.1)</span>
+<span class="sd">    &gt;&gt;&gt; array</span>
+<span class="sd">    102Pd/105Pd         , 104Pd/105Pd         , 106Pd/105Pd        , 108Pd/105Pd       , 110Pd/105Pd</span>
+<span class="sd">    0.04554614408342225 , 0.49840232023288333 , 1.2250738795847462 , 1.188297479483829 , 0.5273039811481615</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.calculate_mass_fractionation_factor(array, &#39;108pd/105pd&#39;)</span>
+<span class="sd">    0.09999999999999679</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    isopy.tb.add_mass_fractionation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">fractionation_factor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fractionation_factor&#39;</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fractionation_factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;fractionation_factor&#39;</span><span class="p">,</span> <span class="n">fractionation_factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                                                   <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">data</span> <span class="o">*</span> <span class="p">(</span><span class="n">std_mass</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">**</span> <span class="n">fractionation_factor</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="n">fractionation_factor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">argmaxkey</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">/</span> <span class="n">denom</span><span class="p">),</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mass_array</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">isotope_masses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+        <span class="k">return</span>  <span class="n">data</span> <span class="o">*</span> <span class="p">(</span><span class="n">mass_array</span> <span class="o">**</span> <span class="n">fractionation_factor</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="remove_isobaric_interferences"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.remove_isobaric_interferences.html#isopy.tb.remove_isobaric_interferences">[docs]</a><span class="k">def</span> <span class="nf">remove_isobaric_interferences</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isotope</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">std_abu</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="remove_isobaric_interferences"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.remove_isobaric_interferences.html#isopy.tb.remove_isobaric_interferences">[docs]</a><span class="k">def</span> <span class="nf">remove_isobaric_interferences</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">interference_isotope</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Remove all isobaric interferences for a given element.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : IsotopeArray, RatioArray</span>
+<span class="sd">    data</span>
 <span class="sd">        The data that isobaric interferences should be removed from.</span>
-<span class="sd">    isotope : IsotopeString</span>
-<span class="sd">        The isotope of the interfering element that should be used for the correction. Must be present in *data*</span>
-<span class="sd">    mf_factor : float, optional</span>
-<span class="sd">        If given then this amount of exponential mass fractionation is added to the isobaric interferences values before</span>
-<span class="sd">        they are removed from *data*.</span>
-<span class="sd">    std_abu : IsotopeArray, dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the abundance of each isotope/ratio needed for</span>
-<span class="sd">        this function.Default is the &quot;best isotope fraction&quot; reference values.</span>
-<span class="sd">    std_mass : RatioArray, dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values.</span>
+<span class="sd">    interference_isotope</span>
+<span class="sd">        The isotope of the interfering element that should be used for the correction. Must be</span>
+<span class="sd">        present in *data*.</span>
+<span class="sd">    mf_factor</span>
+<span class="sd">        If given, this mass fractionation factor is applied to the values for for the correction.</span>
+<span class="sd">    isotope_abundances</span>
+<span class="sd">        Reference value for the isotope fractions of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.fraction``.</span>
+<span class="sd">    isotope_masses</span>
+<span class="sd">        Reference value for the isotope masses of different elements.</span>
+<span class="sd">        Defaults to ``isopy.refv.isotope.mass``.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    IsotopeArray or RatioArray</span>
-<span class="sd">        Data minus the isobaric interferences.</span>
+<span class="sd">        The interference corrected array</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.make_ms_array(&#39;pd&#39;, ru101=0, mf_factor=-1.6)</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.00000 , 0.01085 , 0.11485 , 0.22671 , 0.27330 , 0.25680 , 0.11045</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_array(&#39;pd&#39;, ru101=0.01, mf_factor=-1.6)</span>
+<span class="sd">    &gt;&gt;&gt; array</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.00173 , 0.01400 , 0.11665 , 0.22671 , 0.27330 , 0.25680 , 0.11045</span>
+<span class="sd">    &gt;&gt;&gt; beta = isopy.tb.calculate_mass_fractionation_factor(array, &#39;108pd/105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.remove_isobaric_interferences(array, &#39;ru101&#39;, beta).pprint()</span>
+<span class="sd">    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd</span>
+<span class="sd">    None  , 0.00000 , 0.01085 , 0.11485 , 0.22671 , 0.27330 , 0.25680 , 0.11045</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">isotope</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;isotope&#39;</span><span class="p">,</span> <span class="n">isotope</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">mf_factor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;mf_factor&#39;</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_abu</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_abu&#39;</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="s1">&#39;best isotope fraction&#39;</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">interference_isotope</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;interference_isotope&#39;</span><span class="p">,</span> <span class="n">interference_isotope</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeKeyString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">mf_factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;mf_factor&#39;</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">coerce_into</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">isotope_abundances</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_abundances&#39;</span><span class="p">,</span> <span class="n">isotope_abundances</span><span class="p">,</span>
+                                                           <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">abundance</span><span class="p">)</span>
+    <span class="n">isotope_masses</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;isotope_masses&#39;</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">refval</span><span class="o">.</span><span class="n">isotope</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
 
     <span class="c1">#Get the information we need to make the correction that works</span>
     <span class="c1"># for both isotope arrays and ratio arrays</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">numer</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">numerators</span><span class="p">()</span>
-        <span class="n">denom</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">get_common_denominator</span><span class="p">()</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
+        <span class="n">numer</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">numerators</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">common_denominator</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
         <span class="n">numer</span> <span class="o">=</span> <span class="n">keys</span>
         <span class="n">denom</span> <span class="o">=</span> <span class="kc">None</span>
@@ -502,26 +942,28 @@
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;variable &quot;data&quot; must be a IsotopeArray or a RatioArray not </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
 
     <span class="c1">#Get the abundances of all isotopes of the interfering element</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">std_abu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">std_abu</span><span class="o">.</span><span class="n">isotope_keys</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol</span><span class="o">=</span><span class="n">isotope</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">))</span>
+    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">(</span><span class="n">isotope_abundances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">element_symbol_eq</span><span class="o">=</span><span class="n">interference_isotope</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">))</span>
 
     <span class="c1">#Turn into a ratio relative to *isotope*</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">isotope</span><span class="p">)</span>
+    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">interference_isotope</span><span class="p">,</span> <span class="n">remove_denominator</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="c1">#Account for mass fractionation of *mf_factor* is given</span>
-    <span class="k">if</span> <span class="n">mf_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">inf_data</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="n">std_mass</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mf_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">inf_data</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">isotope_masses</span><span class="o">=</span><span class="n">isotope_masses</span><span class="p">)</span>
+
 
     <span class="c1">#Scale relative to the measured value of *isotope*</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">numer</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">isotope</span><span class="p">)]]</span>
+    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">numer</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">interference_isotope</span><span class="p">)]]</span>
 
     <span class="c1">#Convert to a mass array for easy lookup later</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">_dt</span><span class="o">.</span><span class="n">MassArray</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">inf_data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">numerators</span><span class="p">()</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">())</span>
+    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">MassArray</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">inf_data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">numerators</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">)</span>
 
     <span class="c1">#Create the output array</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">_dt</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">nrows</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">nrows</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
 
     <span class="c1">#Loop through each key in *out* and remove interference</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)):</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">-</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">numer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">mass_number</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">-</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">numer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">mass_number</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
     <span class="c1">#If *data* is a ratio array then correct for any interference on the denominator</span>
     <span class="k">if</span> <span class="n">denom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -530,111 +972,281 @@
     <span class="k">return</span> <span class="n">out</span></div>
 
 
-<div class="viewcode-block" id="add_isobaric_interferences"><a class="viewcode-back" href="../../../refpages/tb_isotope/isopy.tb.add_isobaric_interferences.html#isopy.tb.add_isobaric_interferences">[docs]</a><span class="k">def</span> <span class="nf">add_isobaric_interferences</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">isotope</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">mf_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">std_abu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="normalise_data"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.normalise_data.html#isopy.tb.normalise_data">[docs]</a><span class="k">def</span> <span class="nf">normalise_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reference_data</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">is_deviation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Add isobaric interferences of a given element to the data.</span>
+<span class="sd">    Normalise data to the given reference values.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        n = (\\frac{m} {r} - d ) * f</span>
+
+<span class="sd">    where *n* is the normalised data, *m* is *data*, *f* is *factor*, *r* is *reference_data*,</span>
+<span class="sd">    and *d* is 1 if *is_deviation* is ``False`` and 0 if *is_deviation* is ``True``.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    data : IsotopeArray, RatioArray</span>
-<span class="sd">        The data that isobaric interferences should be added to.</span>
-<span class="sd">    isotope : IsotopeString</span>
-<span class="sd">        The isotope of the interfering element that should be used to add isobaric interferences. If not already</span>
-<span class="sd">        present, a columns with this key will be added to the data.</span>
-<span class="sd">    value : float</span>
-<span class="sd">        This amount of *isotope* will be added to the data. The contribution from the other isotopes of the element</span>
-<span class="sd">        is scaled to this value.</span>
-<span class="sd">    mf_factor : float, optional</span>
-<span class="sd">        If given then this amount of exponential mass fractionation is added to the isobaric interferences values before</span>
-<span class="sd">        they are added to *data*.</span>
-<span class="sd">    std_abu : IsotopeArray, dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the abundance of each isotope/ratio needed for</span>
-<span class="sd">        this function.Default is the &quot;best isotope fraction&quot; reference values.</span>
-<span class="sd">    std_mass : RatioArray, dict</span>
-<span class="sd">        An object with a &quot;.get(item, default_value)&quot; method containing the masses of each isotope/ratio needed for</span>
-<span class="sd">        this function. Default is the &quot;isotope mass&quot; reference values.</span>
+<span class="sd">    data</span>
+<span class="sd">        Data to be normalised</span>
+<span class="sd">    reference_data</span>
+<span class="sd">        The reference values used to normalise the data. Multiple values can be passed in a list.</span>
+<span class="sd">        If multiple values are passed or *reference_values* has a size larger than 1 the mean of</span>
+<span class="sd">        the values are used.</span>
+<span class="sd">    factor</span>
+<span class="sd">        The multiplication factor to be applied to *data* during the normalisation.</span>
+<span class="sd">    is_deviation</span>
+<span class="sd">        Set to ``True`` if *data* represents a deviation from the</span>
+<span class="sd">        reference values.</span>
 
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    IsotopeArray or RatioArray</span>
-<span class="sd">        Data plus the isobaric interferences.</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; ref = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_sample(&#39;pd&#39;, fins=1, maxv=0.1).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; norm = isopy.tb.normalise_data(array, ref)</span>
+<span class="sd">    &gt;&gt;&gt; norm</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    0     , -28.60967   , -9.54006    , 9.50745     , 28.57674    , 47.70528</span>
+<span class="sd">    1     , -28.76605   , -9.52060    , 9.53867     , 28.61274    , 47.69063</span>
+<span class="sd">    2     , -28.73309   , -9.56115    , 9.51017     , 28.57170    , 47.63513</span>
+<span class="sd">    3     , -28.53972   , -9.60582    , 9.48726     , 28.57055    , 47.60977</span>
+<span class="sd">    4     , -28.69282   , -9.59705    , 9.50470     , 28.55289    , 47.65280</span>
+<span class="sd">    ...   , ...         , ...         , ...         , ...         , ...</span>
+<span class="sd">    95    , -28.50008   , -9.60504    , 9.52317     , 28.56964    , 47.66661</span>
+<span class="sd">    96    , -28.64389   , -9.47620    , 9.52398     , 28.59006    , 47.70599</span>
+<span class="sd">    97    , -28.64383   , -9.55584    , 9.48523     , 28.58221    , 47.67802</span>
+<span class="sd">    98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902</span>
+<span class="sd">    99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.normalise_data(isopy.sd2(array), ref, 1000, is_deviation=True)</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946</span>
+<span class="sd">    &gt;&gt;&gt; isopy.sd2(norm)</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">isotope</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;isotope&#39;</span><span class="p">,</span> <span class="n">isotope</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeString</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">mf_factor</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;mf_factor&#39;</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">_np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">std_abu</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_abu&#39;</span><span class="p">,</span> <span class="n">std_abu</span><span class="p">,</span> <span class="s1">&#39;best isotope fraction&#39;</span><span class="p">)</span>
-    <span class="n">std_mass</span> <span class="o">=</span> <span class="n">_e</span><span class="o">.</span><span class="n">check_reference_value</span><span class="p">(</span><span class="s1">&#39;std_mass&#39;</span><span class="p">,</span> <span class="n">std_mass</span><span class="p">,</span> <span class="s1">&#39;isotope mass&#39;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">asarray</span><span class="p">)</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;factor&#39;</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;delta&#39;</span><span class="p">,</span> <span class="s1">&#39;permil&#39;</span><span class="p">,</span> <span class="s1">&#39;ppt&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="k">elif</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;epsilon&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="k">elif</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">,</span> <span class="s1">&#39;ppm&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">1000000</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;parameter &quot;factor&quot;: &quot;</span><span class="si">{}</span><span class="s1">&quot; not an avaliable option.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">factor</span><span class="p">))</span>
+    <span class="n">is_deviation</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;is_deviation&#39;</span><span class="p">,</span> <span class="n">is_deviation</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
 
-    <span class="c1"># Get the information we need to make the correction that works</span>
-    <span class="c1"># for both isotope arrays and ratio arrays</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">RatioArray</span><span class="p">):</span>
-        <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">numer</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">numerators</span><span class="p">()</span>
-        <span class="n">denom</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">get_common_denominator</span><span class="p">()</span>
-        <span class="n">out_keys</span> <span class="o">=</span> <span class="n">keys</span>
-        <span class="c1">#Make sure that *isotope* is part of the returned array</span>
-        <span class="k">if</span> <span class="n">isotope</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">:</span> <span class="n">out_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">isotope</span><span class="o">/</span><span class="n">denom</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">_dt</span><span class="o">.</span><span class="n">IsotopeArray</span><span class="p">):</span>
-        <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">numer</span> <span class="o">=</span> <span class="n">keys</span>
-        <span class="n">denom</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">out_keys</span> <span class="o">=</span> <span class="n">keys</span>
-        <span class="c1"># Make sure that *isotope* is part of the returned array</span>
-        <span class="k">if</span> <span class="n">isotope</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">numer</span><span class="p">:</span> <span class="n">out_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">isotope</span><span class="p">)</span>
+    <span class="n">reference_data</span> <span class="o">=</span> <span class="n">_combine</span><span class="p">(</span><span class="n">reference_data</span><span class="p">)</span>
+
+    <span class="n">new</span> <span class="o">=</span> <span class="n">data</span> <span class="o">/</span> <span class="n">reference_data</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_deviation</span><span class="p">:</span> <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="n">factor</span>
+
+    <span class="k">return</span> <span class="n">new</span></div>
+
+
+<div class="viewcode-block" id="denormalise_data"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.denormalise_data.html#isopy.tb.denormalise_data">[docs]</a><span class="k">def</span> <span class="nf">denormalise_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">reference_data</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">is_deviation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Denormalise data to the given reference values.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        m = (\\frac{n} {f} + d ) * r</span>
+
+<span class="sd">    *m* is the denormalised data, *n* is the normalised *data*,  *f* is *factor*,</span>
+<span class="sd">    *r* is *reference_values*,  and *d* is 1 if *is_deviation* is ``False`` and</span>
+<span class="sd">    0 if *is_deviation* is ``True``.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data</span>
+<span class="sd">        Normalised data to be denormalised</span>
+<span class="sd">    reference_data</span>
+<span class="sd">        The reference values used to denormalise the data.</span>
+<span class="sd">    factor</span>
+<span class="sd">        The multiplication factor applied to *data* during the normalisation.</span>
+<span class="sd">    is_deviation</span>
+<span class="sd">        Set to ``True`` if *data* represents a deviation from the</span>
+<span class="sd">        reference values.</span>
+
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; ref = isopy.tb.make_ms_array(&#39;pd&#39;).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_sample(&#39;pd&#39;, fins=1).ratio(&#39;105pd&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; norm = isopy.toolbox.isotope.normalise_data(array, ref, 1000)</span>
+<span class="sd">    &gt;&gt;&gt; denorm = isopy.tb.denormalise_data(norm, ref, 1000)</span>
+<span class="sd">    &gt;&gt;&gt; denorm</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    0     , 0.04437     , 0.49412     , 1.23554     , 1.21881     , 0.54985</span>
+<span class="sd">    1     , 0.04437     , 0.49413     , 1.23556     , 1.21882     , 0.54986</span>
+<span class="sd">    2     , 0.04437     , 0.49412     , 1.23558     , 1.21887     , 0.54988</span>
+<span class="sd">    3     , 0.04438     , 0.49413     , 1.23560     , 1.21887     , 0.54988</span>
+<span class="sd">    4     , 0.04437     , 0.49413     , 1.23553     , 1.21879     , 0.54985</span>
+<span class="sd">    ...   , ...         , ...         , ...         , ...         , ...</span>
+<span class="sd">    95    , 0.04436     , 0.49415     , 1.23562     , 1.21883     , 0.54989</span>
+<span class="sd">    96    , 0.04438     , 0.49412     , 1.23558     , 1.21884     , 0.54988</span>
+<span class="sd">    97    , 0.04437     , 0.49412     , 1.23555     , 1.21888     , 0.54986</span>
+<span class="sd">    98    , 0.04437     , 0.49411     , 1.23557     , 1.21880     , 0.54986</span>
+<span class="sd">    99    , 0.04438     , 0.49410     , 1.23558     , 1.21884     , 0.54987</span>
+<span class="sd">    &gt;&gt;&gt; denorm/array</span>
+<span class="sd">    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd</span>
+<span class="sd">    0     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    1     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    2     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    3     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    4     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    ...   , ...         , ...         , ...         , ...         , ...</span>
+<span class="sd">    95    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    96    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    97    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    98    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    99    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coerce_into</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">asarray</span><span class="p">)</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;factor&#39;</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;delta&#39;</span><span class="p">,</span> <span class="s1">&#39;permil&#39;</span><span class="p">,</span> <span class="s1">&#39;ppt&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="k">elif</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;epsilon&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="k">elif</span> <span class="n">factor</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">,</span> <span class="s1">&#39;ppm&#39;</span><span class="p">]:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">1000000</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;parameter &quot;factor&quot;: &quot;</span><span class="si">{}</span><span class="s1">&quot; not an avaliable option.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">factor</span><span class="p">))</span>
+    <span class="n">is_deviation</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;is_deviation&#39;</span><span class="p">,</span> <span class="n">is_deviation</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+
+    <span class="n">reference_data</span> <span class="o">=</span> <span class="n">_combine</span><span class="p">(</span><span class="n">reference_data</span><span class="p">)</span>
+
+    <span class="n">new</span> <span class="o">=</span> <span class="n">data</span> <span class="o">/</span> <span class="n">factor</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_deviation</span><span class="p">:</span> <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="n">reference_data</span>
+
+    <span class="k">return</span> <span class="n">new</span></div>
+
+
+<span class="k">def</span> <span class="nf">_combine</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">values</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">isopy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;variable &quot;data&quot; must be a IsotopeArray or a RatioArray not </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
-    <span class="c1"># Get the abundances of all isotopes of the interfering element</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">std_abu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">std_abu</span><span class="o">.</span><span class="n">isotope_keys</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">element_symbol</span><span class="o">=</span><span class="n">isotope</span><span class="o">.</span><span class="n">element_symbol</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
-    <span class="c1"># Turn into a ratio relative to *isotope*</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">isotope</span><span class="p">)</span>
-
-    <span class="c1"># Account for mass fractionation of *mf_factor* is given</span>
-    <span class="k">if</span> <span class="n">mf_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">inf_data</span> <span class="o">=</span> <span class="n">add_mass_fractionation</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">mf_factor</span><span class="p">,</span> <span class="n">std_mass</span><span class="o">=</span><span class="n">std_mass</span><span class="p">)</span>
-
-    <span class="c1"># Scale relative to the measured value of *isotope*</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">inf_data</span> <span class="o">*</span> <span class="n">value</span>
-
-    <span class="c1"># Convert to a mass array for easy lookup later</span>
-    <span class="n">inf_data</span> <span class="o">=</span> <span class="n">_dt</span><span class="o">.</span><span class="n">MassArray</span><span class="p">(</span><span class="n">inf_data</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">inf_data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="o">.</span><span class="n">numerators</span><span class="p">()</span><span class="o">.</span><span class="n">mass_numbers</span><span class="p">())</span>
-
-    <span class="c1"># Create the output array</span>
-
-    <span class="n">out</span> <span class="o">=</span> <span class="n">_dt</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">nrows</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">out_keys</span><span class="p">)</span>
-
-    <span class="c1"># Loop through each key in *out* and add interference</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">out_keys</span><span class="p">)):</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">numer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">mass_number</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-    <span class="c1"># If *data* is a ratio array then correct for any interference on the denominator</span>
-    <span class="k">if</span> <span class="n">denom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">inf_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">denom</span><span class="o">.</span><span class="n">mass_number</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
-
-    <span class="k">return</span> <span class="n">out</span></div>
+    <span class="k">return</span> <span class="n">values</span>
 
 
+<div class="viewcode-block" id="find_outliers"><a class="viewcode-back" href="../../../refpages/tb_reduce_iso/isopy.tb.find_outliers.html#isopy.tb.find_outliers">[docs]</a><span class="k">def</span> <span class="nf">find_outliers</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">,</span> <span class="n">pmval</span><span class="o">=</span><span class="n">isopy</span><span class="o">.</span><span class="n">mad3</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find all outliers in data.</span>
 
+<span class="sd">    Returns an array where outliers are marked with ``True`` and everything else ``False``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : isopy_array_like</span>
+<span class="sd">        The outliers will be calculated for each column in *data*.</span>
+<span class="sd">    cval : scalar, Callable</span>
+<span class="sd">        Either the center value or a function that returns the center</span>
+<span class="sd">        value when called with *data*.</span>
+<span class="sd">    pmval : scalar, Callable</span>
+<span class="sd">        Either the uncertainty value or a function that returns the</span>
+<span class="sd">        uncertainty when called with *data*.</span>
+<span class="sd">    axis : {0, 1}, Optional</span>
+<span class="sd">        If not given then an array with each individual outlier marked is returned. Otherwise</span>
+<span class="sd">        ``np.any(outliers, axis)`` is returned.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; array = isopy.tb.make_ms_sample(&#39;pd&#39;, integrations=10)</span>
+<span class="sd">    &gt;&gt;&gt; array[&#39;pd102&#39;][:2] *= 2</span>
+<span class="sd">    &gt;&gt;&gt; array[&#39;pd110&#39;][-1] *= 2</span>
+<span class="sd">    &gt;&gt;&gt; isopy.tb.find_outliers(array)</span>
+<span class="sd">    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd</span>
+<span class="sd">    0     , True  , False , True  , False , False , False</span>
+<span class="sd">    1     , True  , False , False , False , False , False</span>
+<span class="sd">    2     , False , False , False , False , False , False</span>
+<span class="sd">    3     , False , False , False , False , False , False</span>
+<span class="sd">    4     , False , False , False , False , False , False</span>
+<span class="sd">    5     , False , False , False , False , False , False</span>
+<span class="sd">    6     , False , False , False , False , False , False</span>
+<span class="sd">    7     , False , False , False , False , False , False</span>
+<span class="sd">    8     , False , False , False , False , False , False</span>
+<span class="sd">    9     , False , False , False , False , False , True</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.find_outliers(array, axis=1)</span>
+<span class="sd">    array([ True,  True, False, False, False, False, False, False, False, True])</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.find_outliers(array, np.mean, isopy.sd2)</span>
+<span class="sd">    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd</span>
+<span class="sd">    0     , False , False , True  , False , False , False</span>
+<span class="sd">    1     , False , False , False , False , False , False</span>
+<span class="sd">    2     , False , False , False , False , False , False</span>
+<span class="sd">    3     , False , False , False , False , False , False</span>
+<span class="sd">    4     , False , False , False , False , False , False</span>
+<span class="sd">    5     , False , False , False , False , False , False</span>
+<span class="sd">    6     , False , False , False , False , False , False</span>
+<span class="sd">    7     , False , False , False , False , False , False</span>
+<span class="sd">    8     , False , False , False , False , False , False</span>
+<span class="sd">    9     , False , False , False , False , False , True</span>
+
+<span class="sd">    &gt;&gt;&gt; isopy.tb.find_outliers(array, np.mean(array), isopy.sd2(array))</span>
+<span class="sd">    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd</span>
+<span class="sd">    0     , False , False , True  , False , False , False</span>
+<span class="sd">    1     , False , False , False , False , False , False</span>
+<span class="sd">    2     , False , False , False , False , False , False</span>
+<span class="sd">    3     , False , False , False , False , False , False</span>
+<span class="sd">    4     , False , False , False , False , False , False</span>
+<span class="sd">    5     , False , False , False , False , False , False</span>
+<span class="sd">    6     , False , False , False , False , False , False</span>
+<span class="sd">    7     , False , False , False , False , False , False</span>
+<span class="sd">    8     , False , False , False , False , False , False</span>
+<span class="sd">    9     , False , False , False , False , False , True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">isopy</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">IsopyArray</span><span class="p">,</span> <span class="n">coerce</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">checks</span><span class="o">.</span><span class="n">check_type</span><span class="p">(</span><span class="s1">&#39;axis&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">cval</span><span class="p">):</span>
+        <span class="n">cval</span> <span class="o">=</span> <span class="n">cval</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">pmval</span><span class="p">):</span>
+        <span class="n">pmval</span> <span class="o">=</span> <span class="n">pmval</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">pmval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pmval</span><span class="p">)</span>
+
+    <span class="n">outliers</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">cval</span> <span class="o">+</span> <span class="n">pmval</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="n">data</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">cval</span> <span class="o">-</span> <span class="n">pmval</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">outliers</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">outliers</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2020, Mattias Ek
+        &#169; Copyright 2020, Mattias Ek.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -642,7 +1254,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

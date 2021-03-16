@@ -1,11 +1,11 @@
-IsotopeArray
+﻿IsotopeArray
 ============
 
 .. currentmodule:: isopy
 
 .. autoclass:: IsotopeArray
     :members:
-    :inherited-members: str
+    :inherited-members:
     :member-order: bysource
 
 

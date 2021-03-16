@@ -1,0 +1,9 @@
+﻿IsotopeRefVal
+=============
+
+.. currentmodule:: isopy.io
+
+.. autoclass:: IsotopeRefVal
+    :members:
+    :inherited-members:
+    :member-order: bysource

@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>plot_regression &mdash; isopy 0.3.4 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="plot_spider" href="isopy.tb.plot_spider.html" />
+    <link rel="prev" title="plot_scatter" href="isopy.tb.plot_scatter.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> isopy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.3.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial_page.html">Tutorial</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dtypes.html">Data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference_values.html">Reference values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../io.html">Read/Write</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../array_functions.html">Array functions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../toolbox.html">Toolbox</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#isotope-data-processing">Isotope Data Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../toolbox.html#regressions">Regressions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../toolbox.html#plotting">Plotting</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.update_figure.html">update_figure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.create_subplots.html">create_subplots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_scatter.html">plot_scatter</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">plot_regression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_spider.html">plot_spider</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_vstack.html">plot_vstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_hstack.html">plot_hstack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_vcompare.html">plot_vcompare</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.plot_hcompare.html">plot_hcompare</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.Colors.html">Colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.ColorPairs.html">ColorPairs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="isopy.tb.Markers.html">Markers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">isopy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../toolbox.html">Toolbox</a> &raquo;</li>
+        
+      <li>plot_regression</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/refpages/tb_plotting/isopy.tb.plot_regression.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="plot-regression">
+<h1>plot_regression<a class="headerlink" href="#plot-regression" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="isopy.tb.plot_regression">
+<code class="sig-prename descclassname"><span class="pre">isopy.tb.</span></code><code class="sig-name descname"><span class="pre">plot_regression</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autoscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edgeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/isopy/toolbox/plotting.html#plot_regression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#isopy.tb.plot_regression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the result of a regression on matplotlib <em>axes</em>.</p>
+<p>If <em>regression_result</em> has a <code class="docutils literal notranslate"><span class="pre">.yerr(x)</span> <span class="pre">-&gt;</span> <span class="pre">yerr</span></code> method the error envelope of the regression
+will also be plotted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axes</strong> (<em>axes</em><em>, </em><em>plt</em>) – If <em>y</em> is a numpy array <em>axes</em> must be a matplotlib axes object or
+object with a gca() method that return a matplotlib axes object, such as a matplotlib
+pyplot instance. If <em>y</em> is an isopy array <em>axes</em> must be a matplotlib Figure or any object
+with a <code class="docutils literal notranslate"><span class="pre">.gcf()</span></code> method that returns a matplotlib Figure object, Such as a matplotlib
+pyplot instance.</p></li>
+<li><p><strong>regression_result</strong> – Any object returned by one of isopy’s regression functions, an object with <code class="docutils literal notranslate"><span class="pre">.slope</span></code> and
+<code class="docutils literal notranslate"><span class="pre">.intercept</span></code> attributes or a callable object which takes the x value and returns the y
+value.</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>Optional</em>) – Color of the regression line if <em>line</em> is not <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+Accepted strings are named colour in matplotlib or a string of a hex triplet begining with “#”.
+See <a class="reference external" href="https://matplotlib.org/stable/gallery/color/named_colors.html">here</a> for a list of
+named colours in matplotlib. If not given the next colour on the internal matplotlib colour
+cycle is used.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>str</em><em>, </em><em>Default = True</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> a the regression line is drawn within <em>xlim</em>.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code> no line is shown. Can also
+be a string describing a linestyle defined by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html">here</a> for a list
+of avaliable linestyles. <code class="docutils literal notranslate"><span class="pre">True</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;solid&quot;</span></code>.</p>
+</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>]</em>) – A tuple of the lower and upper x value for which to plot the regression line.
+If <code class="docutils literal notranslate"><span class="pre">None</span></code> the current xlim of the axes is used.</p></li>
+<li><p><strong>autoscale</strong> (<em>bool</em><em>, </em><em>Default = False</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code> the regression will not be taken into account when figure is rescaled.
+This if not officially supported by matplotlib and thus might not always work.</p></li>
+<li><p><strong>fill</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the error enveloped is filled in with <em>color</em>. If <code class="docutils literal notranslate"><span class="pre">False</span></code> the error envelope
+is not filled in.</p></li>
+<li><p><strong>edgeline</strong> (<em>bool</em><em>, </em><em>Default = True</em>) – <p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> the edges of the error envelope are drawn as a line.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code> no line is shown. Can also
+be a string describing a linestyle defined by matplotlib. See <a class="reference external" href="https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html">here</a> for a list
+of avaliable linestyles. <code class="docutils literal notranslate"><span class="pre">True</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;dashed&quot;</span></code>.</p>
+</p></li>
+<li><p><strong>label</strong> (<em>bool</em><em>, </em><em>str</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> a legend label in the form of <em>y=mc+c</em> used when creating the regression <em>line</em>.
+If <em>label</em> is a string that string will be used as the legend label.</p></li>
+<li><p><strong>kwargs</strong> – <p>Any keyword argument accepted by matplotlib axes methods. By default kwargs are
+attributed to the regression line. Prefix kwargs for the
+fill area with <code class="docutils literal notranslate"><span class="pre">fill_</span></code> and kwargs for the edge lines with <code class="docutils literal notranslate"><span class="pre">edgeline_</span></code>.
+See <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html">here</a>
+for a list of keyword arguments for the regression line and edge lines.
+See <a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html">here</a>
+for a list of keyword arguments for the fill area.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">regression</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">regression_linear</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_scatter</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_regression</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">regression</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_regression1.png" />
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">regression</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">4</span> <span class="c1">#Any callable that takes x and return y is a valid</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_scatter</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_regression</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">regression</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">1.8</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_regression2.png" />
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">xerr</span> <span class="o">=</span> <span class="mf">0.2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">yerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">regression</span> <span class="o">=</span> <span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">regression_york1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xerr</span><span class="p">,</span> <span class="n">yerr</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_scatter</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xerr</span><span class="p">,</span> <span class="n">yerr</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_regression</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">regression</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_regression3.png" />
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_scatter</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xerr</span><span class="p">,</span> <span class="n">yerr</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">isopy</span><span class="o">.</span><span class="n">tb</span><span class="o">.</span><span class="n">plot_regression</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="n">regression</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> <span class="n">edgeline</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="output of the example above" src="../../_images/plot_regression4.png" />
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="isopy.tb.plot_spider.html" class="btn btn-neutral float-right" title="plot_spider" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="isopy.tb.plot_scatter.html" class="btn btn-neutral float-left" title="plot_scatter" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Mattias Ek.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

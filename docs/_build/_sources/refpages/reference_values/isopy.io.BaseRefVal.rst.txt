@@ -1,0 +1,9 @@
+﻿BaseRefVal
+==========
+
+.. currentmodule:: isopy.io
+
+.. autoclass:: BaseRefVal
+    :members:
+    :inherited-members:
+    :member-order: bysource
