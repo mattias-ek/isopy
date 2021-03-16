@@ -59,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'isopy'
-copyright = '2020, Mattias Ek'
+copyright = '2021, Mattias Ek'
 author = 'Mattias Ek'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -161,7 +161,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'isopy', 'isopy Documentation',
-     author, 'isopy', 'One line description of project.',
+     author, 'isopy', 'Library for data processing in isotope geo/cosmochemistry.',
      'Miscellaneous'),
 ]
 
