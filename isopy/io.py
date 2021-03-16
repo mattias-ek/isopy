@@ -1,18 +1,14 @@
 import os as _os
 from isopy import core
-
 import csv as csv
 import datetime as dt
 import numpy as np
 import chardet
 import openpyxl
 from openpyxl import load_workbook
-import functools
 import itertools
 import io
-import pkg_resources as _pkgr
-from typing import TypeVar, Union, Optional, Any, NoReturn, NamedTuple, Literal, Callable
-from collections.abc import Sequence, Iterable
+
 
 __all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx']
 
