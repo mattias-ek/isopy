@@ -1,6 +1,0 @@
-﻿isotope.initial\_fraction\_L09
-==============================
-
-.. currentmodule:: isopy.reference_values
-
-.. autoattribute:: isotope.initial_fraction_L09

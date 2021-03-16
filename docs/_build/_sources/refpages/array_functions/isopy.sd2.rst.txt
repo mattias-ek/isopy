@@ -1,6 +1,0 @@
-﻿sd2
-===
-
-.. currentmodule:: isopy
-
-.. autofunction:: sd2

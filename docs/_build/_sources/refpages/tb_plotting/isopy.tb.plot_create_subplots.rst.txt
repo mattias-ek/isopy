@@ -1,6 +1,0 @@
-﻿plot\_create\_subplots
-======================
-
-.. currentmodule:: isopy.tb
-
-.. autofunction:: plot_create_subplots

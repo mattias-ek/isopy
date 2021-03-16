@@ -1,6 +1,0 @@
-﻿isotope.sprocess\_fraction
-==========================
-
-.. currentmodule:: isopy.reference_values
-
-.. autoattribute:: isotope.sprocess_fraction

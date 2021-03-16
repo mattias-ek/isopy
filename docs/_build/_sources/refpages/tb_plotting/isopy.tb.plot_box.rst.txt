@@ -1,6 +1,0 @@
-﻿plot\_box
-=========
-
-.. currentmodule:: isopy.tb
-
-.. autofunction:: plot_box
