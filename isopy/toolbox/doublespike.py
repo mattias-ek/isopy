@@ -9,7 +9,7 @@ from isopy import core
 from . import isotope
 from datetime import datetime as dt
 
-__all__ = ['ds_inversion', 'ds_correction', 'ds_grid']
+__all__ = ['ds_inversion', 'ds_correction']
 
 import isopy.checks
 
@@ -307,6 +307,33 @@ def ds_inversion(measured, spike, standard = None, isotope_masses = None, invers
 
 def ds_correction(measured, spike, standard=None, inversion_keys = None, *, isotope_masses = None, isotope_fractions=None,
                   method ='rudge', **method_kwargs):
+    """
+    Do an iterative double spike inversion to correct for isobaric interferences.
+
+    An isobaric interference correction is applied for all isotopes in *measured* that have
+    a different element symbol from that in *spike*.
+
+    Parameters
+    ----------
+    measured : RatioArray, IsotopeArray
+        Measured isotope ratios
+    standard : RatioArray, IsotopeArray, dict
+        References isotope ratios or a dict or references values
+    spike : RatioArray, IsotopeArray, dict
+        Spike isotope ratios or a dict or references values
+    isotope_masses : RatioArray, IsotopeArray, dict, Optional
+        Mass isotope ratios or a dict or references values. If not given hte :attr:`isotope.mass` will be used.
+    inversion_keys : RatioKeyList, Optional
+        List of keys in measured that will be used for the inversion. Only necessary if measured contains more than 3 keys.
+    method : str
+        Inversion method to be used. Options are 'rudge' and 'siebert'.
+    method_kwargs
+        Keyword arguments for inversion method. See `inversion_rudge` and `inversion_siebert` for list of possible arguments.
+
+    Returns
+    -------
+    DSResult
+    """
     measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray,
                                        isopy.IsotopeArray,
                                        coerce=True)
