@@ -9,7 +9,7 @@ from isopy import core
 from . import isotope
 from datetime import datetime as dt
 
-__all__ = ['ds_inversion', 'ds_correction']
+__all__ = ['ds_inversion', 'ds_correction', 'DSResult']
 
 import isopy.checks
 
@@ -483,7 +483,43 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99,  *,
     return DSGridResult(spike_fractions, spike1_fractions, result_solutions)
 
 class DSResult:
+    """
+    The results from a double spike inversion.
+
+    This object contains both output values as defined by Rudge and Siebert.
+
+    Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
+    function will be performed on each attribute and a new :class:`DSResult`_ object returned.
+
+    Attributes
+    ----------
+    method
+        Name of the method used to do the inversion.
+    alpha
+        The natural fractionation factor as defined by Rudge (N -> n)
+        **Note** this value has the opposite sign to *fnat*.
+    beta
+        The instrumental mass fractionation factor as defined by Rudge (M -> m).
+        Same as *fins*.
+    lambda_
+        The lambda value defined by rudge.
+    fnat
+        The natural fractionation factor as defined by Siebert (ST -> SA)
+        **Note** this value has the opposite sign to *alpha*.
+    fins
+        The instrumental fractionation factor as defined by Siebers (MS -> MT).
+        Same as *beta*.
+    spike_fraction
+        The fraction of spike in the sample-spike mixture. Calculated on the
+        basis of the four isotopes used in the inversion.
+    sample_fraction
+        The fraction of sample in the sample-spike mixture. Calculated on the
+        basis of the four isotopes used in the inversion.
+    Q
+        The sample fraction divided by the spike fraction.
+    """
     def __init__(self, method, alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction, Q):
+
         self.alpha = alpha
         self.beta = beta
         self.lambda_ = lambda_
@@ -497,33 +533,120 @@ class DSResult:
         self.p = self.spike_fraction
         self.method = method
 
+        self.__named_names = ("alpha", "beta", "lambda_", "fnat", "fins", "spike_fraction", "sample_fraction", "Q")
         self.__named_args = (alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction, Q)
 
-    def Delta(self, mass_ratio, isotope_masses = None):
-        if isotope_masses is None: isotope_masses.refv.isotope.mass
+    def __repr__(self):
+        string = f'{self.__class__.__name__}(method = "{self.method}",'
+        args = ',\n'.join([f'{name} = {value}' for name, value in zip(self.__named_names, self.__named_args)])
+
+    def Delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
+        """
+        Calculate the Δ value of the sample for *mass_ratio* value using the inversion results.
+
+        .. math::
+
+            \\Delta \\frac{smp_{i}} {smp_{j}} = \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} -1
+
+        Where *fnat* is the difference between the sample and optional standard.
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
+        """
+        if type(standard_fnat) is DSResult:
+            standard_fnat = standard_fnat.fnat
+
+        fnat = self.fnat - standard_fnat
+        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
         if isinstance(mass_ratio, str):
-            mass_ratio = self.__isotope_masses.get(mass_ratio)
+            mass_ratio = isotope_masses.get(mass_ratio)
 
-        return np.power(mass_ratio, self.fnat) - 1
+        return np.power(mass_ratio, fnat) - 1
 
-    def Delta_prime(self, mass_ratio, isotope_masses = None):
-        if isotope_masses is None: isotope_masses.refv.isotope.mass
+    def Delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
+        """
+        Calculate the Δ' value of the sample for *mass_ratio* value using the inversion results.
+
+        .. math::
+
+             \\Delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat}
+
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
+        """
+        if type(standard_fnat) is DSResult:
+            standard_fnat = standard_fnat.fnat
+
+        fnat = self.fnat - standard_fnat
+        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
         if isinstance(mass_ratio, str):
-            mass_ratio = self.__isotope_masses.get(mass_ratio)
+            mass_ratio = isotope_masses.get(mass_ratio)
 
-        return np.log(mass_ratio) * self.fnat
+        return np.log(mass_ratio) * fnat
 
-    def delta(self, mass_ratio, isotope_masses = None):
-        return self.Delta(mass_ratio, isotope_masses) * 1000
+    def delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
+        """
+        Calculate the δ value of the sample for *mass_ratio* value using the inversion results.
 
-    def delta_prime(self, mass_ratio, isotope_masses = None):
-        return self.Delta_prime(mass_ratio, isotope_masses) * 1000
+        .. math::
 
-    def ppm(self, mass_ratio, isotope_masses = None):
-        return self.Delta(mass_ratio, isotope_masses) * 1E6
+            \\delta \\frac{smp_{i}} {smp_{j}} = \\left(\\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right)*1000
 
-    def ppm_prime(self, mass_ratio, isotope_masses = None):
-        return self.Delta_prime(mass_ratio, isotope_masses) * 1E6
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
+        """
+        return self.Delta(mass_ratio, standard_fnat, isotope_masses) * 1000
+
+    def delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
+        """
+        Calculate the δ' value of the sample for *mass_ratio* value using the inversion results.
+
+        .. math::
+
+             \\delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat} *1000
+
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
+        """
+        return self.Delta_prime(mass_ratio, standard_fnat, isotope_masses) * 1000
+
+    def keys(self):
+        """
+        Returns a list containing the names of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return self.__named_names
+
+    def values(self):
+        """
+        Returns a list containing the values of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return self.__named_args
+
+    def items(self):
+        """
+        Returns a list of tuples containing the name and value of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return list(zip(self.__named_names, self.__named_args))
 
     def __array_function__(self, func, types, args, kwargs):
         return self.__class__(self.method, *[func(value, **kwargs) for value in self.__named_args])

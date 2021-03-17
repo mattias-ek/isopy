@@ -22,6 +22,7 @@ spider_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'el
 box_style = dict(color='black', zorder = 0.9, alpha=0.1)
 polygon_style = dict(color='black', zorder = 0.9, alpha=0.1)
 
+#__class_getitem__ to return colors of soiginal list
 class RotatingList(list):
     """
     Rotates through a list of *items*
@@ -29,10 +30,16 @@ class RotatingList(list):
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
     """
-    def __init__(self, items):
-        super(RotatingList, self).__init__(items)
-        self._original = items[:]
+    _original = [None]
+    def __init__(self):
+        super(RotatingList, self).__init__()
         self.reset()
+        
+    def __getitem__(self, item):
+        return super(RotatingList, self).__getitem__(item % len(self))
+
+    def __class_getitem__(cls, item):
+        return cls._original[item % len(cls._original)]
 
     def reset(self):
         """Reset to the initial condition"""
@@ -76,8 +83,7 @@ class Markers(RotatingList):
             :alt: output of the example above
             :align: center
     """
-    def __init__(self,):
-        super(Markers, self).__init__(['o', 's', '^', 'D', 'P', 'X', 'p'])
+    _original = ['o', 's', '^', 'D', 'P', 'X', 'p']
 
 
 class ColorPairs(RotatingList):
@@ -102,10 +108,8 @@ class ColorPairs(RotatingList):
             :alt: output of the example above
             :align: center
     """
-    def __init__(self):
-        super(ColorPairs, self).__init__([('#1f78b4', '#a6cee3'), ('#e31a1c', '#fb9a99'),('#33a02c', '#b2df8a'),
-                            ('#ff7f00', '#fdbf6f'), ('#6a3d9a', '#cab2d6'), ('#b15928', '#ffff99')])
-
+    _original = [('#1f78b4', '#a6cee3'), ('#e31a1c', '#fb9a99'),('#33a02c', '#b2df8a'),
+                            ('#ff7f00', '#fdbf6f'), ('#6a3d9a', '#cab2d6'), ('#b15928', '#ffff99')]
 
 class Colors(RotatingList):
     """
@@ -129,9 +133,8 @@ class Colors(RotatingList):
             :alt: output of the example above
             :align: center
     """
-    def __init__(self):
-        super(Colors, self).__init__(['#377eb8', '#e41a1c', '#4daf4a', '#ff7f00', '#984ea3',
-                                      '#a65628', '#ffff33', '#f781bf', '#999999'])
+    _original = ['#377eb8', '#e41a1c', '#4daf4a', '#ff7f00', '#984ea3',
+                                      '#a65628', '#ffff33', '#f781bf', '#999999']
 
 
 def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=None, edgecolor=None,
@@ -796,11 +799,11 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     cval : scalar, Callable, Optional
         The center value of the data. Can either be a scalar or a function that returns a scalar
         when called with *x*. If *cval* is a function is it called on the values that are not
-        outliers.
+        outliers. If *cval* is ``True`` ``np.mean`` is used to calculate *cval*.
     pmval : scalar, Callable, Optional
         The uncertainty of the the data. Can either be a scalar or a function that returns a scalar
         when called with *x*. If *pmval* is a function is it called on the values that are not
-        outliers.
+        outliers. If *pmval* is ``True`` ``isopt.sd2`` is used to calculate *pmval*.
     color : str, Optional
         Color of the marker face and line between points, if *marker* and *line* are not ``False``.
         Accepted strings are named colour in matplotlib or a string of a hex triplet begining with "#".
@@ -957,11 +960,11 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     cval : scalar, Callable, Optional
         The center value of the data. Can either be a scalar or a function that returns a scalar
         when called with *x*. If *cval* is a function is it called on the values that are not
-        outliers.
+        outliers. If *cval* is ``True`` ``np.mean`` is used to calculate *cval*.
     pmval : scalar, Callable, Optional
         The uncertainty of the the data. Can either be a scalar or a function that returns a scalar
         when called with *x*. If *pmval* is a function is it called on the values that are not
-        outliers.
+        outliers. If *pmval* is ``True`` ``isopt.sd2`` is used to calculate *pmval*.
     color : str, Optional
         Color of the marker face and line between points, if *marker* and *line* are not ``False``.
         Accepted strings are named colour in matplotlib or a string of a hex triplet begining with "#".
@@ -1107,6 +1110,8 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     wstop = w[-1]
 
     if box_cval:
+        if box_cval is True:
+            box_cval = np.mean
         if callable(box_cval):
             box_cval = box_cval(v[include])
         try:
@@ -1116,6 +1121,8 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
 
 
     if box_pmval:
+        if box_pmval is True:
+            box_pmval = isopy.sd2
         if callable(box_pmval):
             box_pmval = box_pmval(v[include])
 
