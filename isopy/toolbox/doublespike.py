@@ -391,7 +391,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
                 raise ValueError(f'inversion keys can not be deduced from *spike* as it'
                                  f'has {len(spike.keys)} isotope keys instead of the expected 4')
             else:
-                denom = isopy.argmaxkey(spike)
+                denom = isopy.keymax(spike)
                 numer = spike.keys - denom
                 inversion_keys = numer / denom
         elif isinstance(spike, isopy.RatioArray):
@@ -408,7 +408,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
                 raise ValueError(f'got {len(inversion_keys)} inversion isotope keys instead of 4')
             elif isinstance(spike, isopy.IsotopeArray):
                 spike = spike.copy(key_eq=inversion_keys)
-                denom = isopy.argmaxkey(spike)
+                denom = isopy.keymax(spike)
                 numer = inversion_keys - denom
             elif isinstance(spike, isopy.RatioArray):
                 denom = spike.keys.common_denominator
