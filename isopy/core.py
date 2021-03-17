@@ -2154,10 +2154,10 @@ class IsopyArray(IsopyFlavour):
         """
         if denominator is None:
             denominator = isopy.keymax(self)
-        else:
-            keys = self.keys()
-            if denominator not in keys:
-                raise ValueError(f'key "{denominator}" not found in keys of the array')
+
+        keys = self.keys()
+        if denominator not in keys:
+            raise ValueError(f'key "{denominator}" not found in keys of the array')
 
         if remove_denominator:
             keys = keys - denominator
