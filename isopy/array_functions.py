@@ -8,7 +8,7 @@ from . import core
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
            'count_finite',
            'add', 'subtract', 'divide', 'multiply', 'power',
-           'argmaxkey', 'argminkey']
+           'keymax', 'keymin']
 
 ##########################
 ### Dispatch functions ###
