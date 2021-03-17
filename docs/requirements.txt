@@ -1,0 +1,2 @@
+isopy
+sphinx_autodoc_typehints
