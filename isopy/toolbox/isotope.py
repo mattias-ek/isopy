@@ -1047,7 +1047,6 @@ def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=
     8     , False , False , False , False , False , False
     9     , False , False , False , False , False , True
     """
-    data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True)
     axis = isopy.checks.check_type('axis', axis, int, allow_none=True)
 
     if callable(cval):
