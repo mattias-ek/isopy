@@ -8,7 +8,7 @@ from . import core
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
            'count_finite',
            'add', 'subtract', 'divide', 'multiply', 'power',
-           'argmaxkey', 'argminkey']
+           'keymax', 'keymin']
 
 ##########################
 ### Dispatch functions ###
@@ -459,7 +459,7 @@ def power(x1, x2, default_value=np.nan):
     """
     return core.array_function(np.power, x1, x2, default_value=default_value)
 
-def argmaxkey(a):
+def keymax(a):
     """
     Return the name of the column where the largest value of the array is found.
 
@@ -468,13 +468,13 @@ def argmaxkey(a):
     Examples
     --------
     >>> array = isopy.tb.make_ms_array('pd')
-    >>> isopy.argmaxkey(array)
+    >>> isopy.keymax(array)
     IsotopeKeyString('106Pd')
     """
     array = core.asarray(a)
-    return array.keys[np.argmax([np.max(array[key]) for key in array.keys()])]
+    return array.keys[np.nanargmax([np.nanmax(array[key]) for key in array.keys()])]
 
-def argminkey(a):
+def keymin(a):
     """
     Return the name of the column where the smallest value of the array is found.
 
@@ -483,10 +483,10 @@ def argminkey(a):
     Examples
     --------
     >>> array = isopy.tb.make_ms_array('pd')
-    >>> isopy.argminkey(array)
+    >>> isopy.keymin(array)
     IsotopeKeyString('102Pd')
     """
     array = core.asarray(a)
-    return array.keys[np.argmin([np.min(array[key]) for key in array.keys()])]
+    return array.keys[np.nanargmin([np.nanmin(array[key]) for key in array.keys()])]
 
 

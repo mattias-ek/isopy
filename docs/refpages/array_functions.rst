@@ -55,8 +55,8 @@ The following isopy array functions require that at least one isopy array as inp
 .. autosummary::
     :toctree: array_functions
 
-    argmaxkey
-    argminkey
+    keymax
+    keymin
     add
     subtract
     multiply

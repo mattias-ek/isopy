@@ -2145,16 +2145,21 @@ class IsopyArray(IsopyFlavour):
         else:
             return super(IsopyArray, self).copy()
 
-    def ratio(self, denominator, remove_denominator = True):
+    def ratio(self, denominator=None, remove_denominator = True):
         """
         Divide all values in the array by the *denominator* column and return a :class:`RatioArray`.
-        If *remove_denominator* is ``True`` the denominator/denominator ratio is not included in
-        the returned array.
+        If not denominator is given the key in the array with the largest value will be used as
+        the denominator. If *remove_denominator* is ``True`` the denominator/denominator ratio
+        is not included in the returned array.
         """
-        keys = self.keys()
-        if denominator not in keys:
-            raise ValueError(f'key "{denominator}" not found in keys of the array')
-        elif remove_denominator:
+        if denominator is None:
+            denominator = isopy.keymax(self)
+        else:
+            keys = self.keys()
+            if denominator not in keys:
+                raise ValueError(f'key "{denominator}" not found in keys of the array')
+
+        if remove_denominator:
             keys = keys - denominator
 
         return RatioArray(self[keys] / self[denominator], keys=keys/denominator)
