@@ -19,7 +19,9 @@
 #
 import os
 import sys
-from isopy.version import __version__
+import isopy
+from importlib.metadata import version
+__version__ = version('isopy')
 sys.path.insert(0, os.path.abspath('./../'))
 
 

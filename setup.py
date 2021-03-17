@@ -1,12 +1,11 @@
 import setuptools
-from isopy.version import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="isopy",
-    version=__version__,
+    version='0.4.5',
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy>=>1.20',
                       'pyperclip>=1.8',
