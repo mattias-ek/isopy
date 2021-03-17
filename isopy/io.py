@@ -89,6 +89,7 @@ def read_exp(filename, rename = None) -> NeptuneData:
     else:
         raise TypeError('rename must be a dict or a callable function')
 
+    data.pop("")
     cycle = np.array(data.pop('Cycle'), dtype ='int')
     time = data.pop('Time')
     time =[dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
@@ -98,30 +99,30 @@ def read_exp(filename, rename = None) -> NeptuneData:
 
     for key in data:
         if ":" in key:
-            line, text = key.split(":", 1)
+            line, keystring = key.split(":", 1)
             line = int(line)
         else:
             line = 1
-            text = key
-        text = renamer(text)
+            keystring = key
+        keystring = renamer(keystring)
 
         try:
-            text = isopy.IsotopeKeyString(text)
+            keystring = isopy.IsotopeKeyString(keystring)
         except:
             pass
         else:
-            isotope_data.setdefault(line, {})[text] == data[key]
+            isotope_data.setdefault(line, {})[keystring] = data[key]
             continue
 
         try:
-            text = isopy.RatioKeyString(text)
+            keystring = isopy.RatioKeyString(keystring)
         except:
             pass
         else:
-            ratio_data.setdefault(line, {})[text] == data[key]
+            ratio_data.setdefault(line, {})[keystring] = data[key]
             continue
 
-        other_data.setdefault(line, {})[text] = data[key]
+        other_data.setdefault(line, {})[keystring] = data[key]
 
     isotope_data = {line: isopy.core.IsotopeArray(isotope_data[line]) for line in isotope_data}
     ratio_data = {line: isopy.core.RatioArray(ratio_data[line]) for line in ratio_data}
@@ -199,9 +200,13 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
             continue
 
         if keys_in == 'c':
-            return _read_csv_ckeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
+            data =  _read_csv_ckeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
+            data.pop("")
+            return data
         elif keys_in == 'r':
-            return _read_csv_rkeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
+            data =  _read_csv_rkeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
+            data.pop("")
+            return data
         elif keys_in is None:
             return _read_csv_nokeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
         else:
