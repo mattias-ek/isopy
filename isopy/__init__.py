@@ -1,5 +1,3 @@
-__version__ = '0.4.2'
-
 from .core import *
 from .io import *
 from .array_functions import *

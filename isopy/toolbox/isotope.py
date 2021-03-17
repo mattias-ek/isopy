@@ -975,11 +975,14 @@ def _combine(values):
     return values
 
 
-def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None):
+def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=False):
     """
     Find all outliers in data.
 
-    Returns an array where outliers are marked with ``True`` and everything else ``False``.
+    If *invert* is ``False`` the result will be an array where outliers
+    are marked with ``True`` and everything else ``False``. If *invert*
+    is ``True`` the result is inverted so outliers are marked with
+    ``False``.
 
     Parameters
     ----------
@@ -994,6 +997,8 @@ def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None):
     axis : {0, 1}, Optional
         If not given then an array with each individual outlier marked is returned. Otherwise
         ``np.any(outliers, axis)`` is returned.
+    invert : bool
+        If ``True`` the output is inverted.
 
     Examples
     --------
@@ -1053,7 +1058,10 @@ def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None):
 
     outliers = (data > (cval + pmval)) + (data < (cval - pmval))
 
-    if axis is None:
-        return outliers
-    else:
-        return np.any(outliers, axis=axis)
+    if axis is not None:
+        outliers = np.any(outliers, axis=axis)
+
+    if invert:
+        outliers = np.invert(outliers)
+
+    return outliers
