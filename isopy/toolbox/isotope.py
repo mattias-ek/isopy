@@ -484,8 +484,8 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
     else:
         raise ValueError('values did not converge after 100 iterations of the interference correction')
 
-    #Remove the isotopes on interfering elements
-    rat = rat2.copy(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol)
+    #Remove the isotopes on interfering elements and the mass bias ratio
+    rat = rat2.copy(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol, key_neq=mf_ratio)
 
     #Correct for mass fractionation
     rat = remove_mass_fractionation(rat, beta, isotope_masses)
