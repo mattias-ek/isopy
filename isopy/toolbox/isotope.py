@@ -515,7 +515,7 @@ def _find_isobaric_interferences(measured, element):
         result = isopy.RatioKeyList()
         for interference_element in interference_elements:
             biggest = measured.copy(numerator_element_symbol_eq=interference_element)
-            result += isopy.argmaxkey(biggest)
+            result += isopy.keymax(biggest)
 
         return result
 
@@ -531,7 +531,7 @@ def _find_isobaric_interferences(measured, element):
 
         for interference_element in interference_elements:
             biggest = measured.copy(element_symbol_eq=interference_element)
-            result += isopy.argmaxkey(biggest)
+            result += isopy.keymax(biggest)
 
         return result
 
@@ -646,7 +646,7 @@ def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         return data
     else:
         if isinstance(data, core.IsotopeArray):
-            denom = isopy.argmaxkey(data)
+            denom = isopy.keymax(data)
             mass_array = isopy.array(isotope_masses.get(data.keys() / denom), data.keys())
         else:
             mass_array = isopy.array(isotope_masses.get(data.keys()))
@@ -707,7 +707,7 @@ def add_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         return data
     else:
         if isinstance(data, core.IsotopeArray):
-            denom = isopy.argmaxkey(data)
+            denom = isopy.keymax(data)
             mass_array = isopy.array(isotope_masses.get(data.keys() / denom), data.keys())
         else:
             mass_array = isopy.array(isotope_masses.get(data.keys()))

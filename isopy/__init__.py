@@ -5,4 +5,3 @@ from .reference_values import *
 
 from . import tb
 from . import ep
-print('init')
