@@ -11,6 +11,15 @@ __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
 import isopy.checks
 import isopy.core
 
+def preset_arguments(**lambdas):
+    def funcall(func):
+        for name, lam in lambdas:
+            lam.__doc__ = func.__doc__
+            setattr(func, name, lam)
+        return func
+    return funcall
+
+
 """
 Functions for isotope data reduction
 """
@@ -806,7 +815,9 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
 
     return out
 
-
+@preset_arguments(delta = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1000, is_deviation),
+                  epsilon = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1E5, is_deviation),
+                  mu = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1E6, is_deviation))
 def normalise_data(data, reference_data, factor=1, is_deviation=False):
     """
     Normalise data to the given reference values.
@@ -878,7 +889,9 @@ def normalise_data(data, reference_data, factor=1, is_deviation=False):
 
     return new
 
-
+@preset_arguments(delta = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1000, is_deviation),
+                  epsilon = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1E5, is_deviation),
+                  mu = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1E6, is_deviation))
 def denormalise_data(data, reference_data, factor=1, is_deviation=False):
     """
     Denormalise data to the given reference values.
