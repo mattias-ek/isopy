@@ -9,7 +9,7 @@ from isopy import core
 from . import isotope
 from datetime import datetime as dt
 
-__all__ = ['ds_inversion', 'ds_correction', 'DSResult']
+__all__ = ['ds_inversion', 'ds_correction', 'ds_Delta', 'ds_Delta_prime']
 
 import isopy.checks
 
@@ -260,7 +260,35 @@ def ds_inversion(measured, spike, standard = None, isotope_masses = None, invers
 
     Returns
     -------
-    DSResult
+    inversion_result : DSResult
+        The returned *DSResult* object contains the the following attributes:
+
+        * ``method`` - Name of the method used to do the inversion.
+
+        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * m^\\alpha`).
+          **Note** this value has the opposite sign to *fnat*.
+
+        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * m^\\beta`).
+          Same as *fins*.
+
+        * ``lambda_`` - The lambda value defined by rudge.
+
+        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * m^\\alpha`).
+          **Note** this value has the opposite sign to *alpha*.
+
+        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MT} = \\textrm{MS} * m^\\alpha`).
+          Same as *beta*.
+
+        * ``spike_fraction`` - The fraction of spike in the sample-spike mixture. Calculated on the
+          basis of the four isotopes used in the inversion.
+
+        * ``sample_fraction`` - The fraction of sample in the sample-spike mixture. Calculated on the
+          basis of the four isotopes used in the inversion.
+
+        * ``Q`` - The *sample_fraction* to *spike_fraction* ratio.
+
+        Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
+        function will be performed on each attribute and a new *DSResult* object returned.
     """
     measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray, isopy.IsotopeArray,
                                        coerce=True)
@@ -332,7 +360,35 @@ def ds_correction(measured, spike, standard=None, inversion_keys = None, *, isot
 
     Returns
     -------
-    DSResult
+    inversion_result : DSResult
+        The returned *DSResult* object contains the the following attributes:
+
+        * ``method`` - Name of the method used to do the inversion.
+
+        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * m^\\alpha`).
+          **Note** this value has the opposite sign to *fnat*.
+
+        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * m^\\beta`).
+          Same as *fins*.
+
+        * ``lambda_`` - The lambda value defined by rudge.
+
+        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * m^\\alpha`).
+          **Note** this value has the opposite sign to *alpha*.
+
+        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MT} = \\textrm{MS} * m^\\alpha`).
+          Same as *beta*.
+
+        * ``spike_fraction`` - The fraction of spike in the sample-spike mixture. Calculated on the
+          basis of the four isotopes used in the inversion.
+
+        * ``sample_fraction`` - The fraction of sample in the sample-spike mixture. Calculated on the
+          basis of the four isotopes used in the inversion.
+
+        * ``Q`` - The *sample_fraction* to *spike_fraction* ratio.
+
+        Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
+        function will be performed on each attribute and a new *DSResult* object returned.
     """
     measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray,
                                        isopy.IsotopeArray,
@@ -482,32 +538,100 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99,  *,
 
     return DSGridResult(spike_fractions, spike1_fractions, result_solutions)
 
+def ds_Delta(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
+    """
+    Calculate the Δ value for *mass_ratio* of a sample using the *fnat* mass fractionation factor.
+
+    .. math::
+
+        \\Delta \\frac{smp_{i}} {smp_{j}} = \\left( \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right) * \\textrm{norm}
+
+    Where *norm* is the normalisation factor and *fnat* is the difference
+    between the sample and optional standard:
+
+    .. math::
+
+        fnat = fnat_{smp} - fnat_{std}
+    """
+    if type(fnat) is DSResult:
+        fnat = fnat.fnat
+
+    if type(reference_fnat) is DSResult:
+        reference_fnat = reference_fnat.fnat
+
+    if normalisation_factor == 'delta':
+        normalisation_factor = 1000
+
+    if isotope_masses is None:
+        isotope_masses = isopy.refval.isotope.mass
+
+    fnat = fnat - reference_fnat
+
+    if isinstance(mass_ratio, str):
+        mass_ratio = isotope_masses.get(mass_ratio)
+
+    return (np.power(mass_ratio, fnat) - 1) * normalisation_factor
+
+def ds_Delta_prime(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
+    """
+    Calculate the Δ' value for *mass_ratio* of a sample using the *fnat* mass fractionation factor.
+
+    .. math::
+
+         \\Delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = \\textrm{norm} * fnat * log\\left(\\frac{mass_i} {mass_j} \\right)
+
+    Where *norm* is the normalisation factor and *fnat* is the difference
+    between the sample and optional standard:
+
+    .. math::
+
+        fnat = fnat_{smp} - fnat_{std}
+
+    """
+    if type(fnat) is DSResult:
+        fnat = fnat.fnat
+
+    if normalisation_factor == 'delta':
+        normalisation_factor = 1000
+
+    if type(reference_fnat) is DSResult:
+        reference_fnat = reference_fnat.fnat
+
+    if isotope_masses is None:
+        isotope_masses = isopy.refval.isotope.mass
+
+    fnat = fnat - reference_fnat
+
+    if isinstance(mass_ratio, str):
+        mass_ratio = isotope_masses.get(mass_ratio)
+
+    return np.log(mass_ratio) * fnat * normalisation_factor
+
 class DSResult:
     """
-    The results from a double spike inversion.
+    The returned *DSResult* object contains the the following attributes:
 
     This object contains both output values as defined by Rudge and Siebert.
 
-    Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
-    function will be performed on each attribute and a new :class:`DSResult`_ object returned.
+
 
     Attributes
     ----------
     method
         Name of the method used to do the inversion.
     alpha
-        The natural fractionation factor as defined by Rudge (N -> n)
+        The natural fractionation factor as defined by Rudge (:math:`n = N * m^\\alpha`).
         **Note** this value has the opposite sign to *fnat*.
     beta
-        The instrumental mass fractionation factor as defined by Rudge (M -> m).
+        The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * m^\\beta`).
         Same as *fins*.
     lambda_
         The lambda value defined by rudge.
     fnat
-        The natural fractionation factor as defined by Siebert (ST -> SA)
+        The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * m^\\alpha`).
         **Note** this value has the opposite sign to *alpha*.
     fins
-        The instrumental fractionation factor as defined by Siebers (MS -> MT).
+        The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MT} = \\textrm{MS} * m^\\alpha`).
         Same as *beta*.
     spike_fraction
         The fraction of spike in the sample-spike mixture. Calculated on the
@@ -516,7 +640,10 @@ class DSResult:
         The fraction of sample in the sample-spike mixture. Calculated on the
         basis of the four isotopes used in the inversion.
     Q
-        The sample fraction divided by the spike fraction.
+        The *sample_fraction* to *spike_fraction* ratio.
+
+    Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
+    function will be performed on each attribute and a new :class:`DSResult`_ object returned.
     """
     def __init__(self, method, alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction, Q):
 
@@ -540,89 +667,8 @@ class DSResult:
         string = f'{self.__class__.__name__}(method = "{self.method}",'
         args = ',\n'.join([f'{name} = {value}' for name, value in zip(self.__named_names, self.__named_args)])
 
-    def Delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
-        """
-        Calculate the Δ value of the sample for *mass_ratio* value using the inversion results.
-
-        .. math::
-
-            \\Delta \\frac{smp_{i}} {smp_{j}} = \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} -1
-
-        Where *fnat* is the difference between the sample and optional standard.
-
-        .. math::
-
-            fnat = fnat_{smp} - fnat_{std}
-
-        """
-        if type(standard_fnat) is DSResult:
-            standard_fnat = standard_fnat.fnat
-
-        fnat = self.fnat - standard_fnat
-        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
-        if isinstance(mass_ratio, str):
-            mass_ratio = isotope_masses.get(mass_ratio)
-
-        return np.power(mass_ratio, fnat) - 1
-
-    def Delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
-        """
-        Calculate the Δ' value of the sample for *mass_ratio* value using the inversion results.
-
-        .. math::
-
-             \\Delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat}
-
-        Where *fnat* is the difference between the sample fnat and *standard_fnat*
-
-        .. math::
-
-            fnat = fnat_{smp} - fnat_{std}
-
-        """
-        if type(standard_fnat) is DSResult:
-            standard_fnat = standard_fnat.fnat
-
-        fnat = self.fnat - standard_fnat
-        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
-        if isinstance(mass_ratio, str):
-            mass_ratio = isotope_masses.get(mass_ratio)
-
-        return np.log(mass_ratio) * fnat
-
-    def delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
-        """
-        Calculate the δ value of the sample for *mass_ratio* value using the inversion results.
-
-        .. math::
-
-            \\delta \\frac{smp_{i}} {smp_{j}} = \\left(\\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right)*1000
-
-        Where *fnat* is the difference between the sample fnat and *standard_fnat*
-
-        .. math::
-
-            fnat = fnat_{smp} - fnat_{std}
-
-        """
-        return self.Delta(mass_ratio, standard_fnat, isotope_masses) * 1000
-
-    def delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
-        """
-        Calculate the δ' value of the sample for *mass_ratio* value using the inversion results.
-
-        .. math::
-
-             \\delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat} *1000
-
-        Where *fnat* is the difference between the sample fnat and *standard_fnat*
-
-        .. math::
-
-            fnat = fnat_{smp} - fnat_{std}
-
-        """
-        return self.Delta_prime(mass_ratio, standard_fnat, isotope_masses) * 1000
+    def __iter__(self):
+        return self.keys().__iter__()
 
     def keys(self):
         """

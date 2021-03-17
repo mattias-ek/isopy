@@ -26,7 +26,8 @@ The following functions are useful for processing isotopic data.
     remove_isobaric_interferences
     ds_inversion
     ds_correction
-    DSResult
+    ds_Delta
+    ds_Delta_prime
 
 Regressions
 =============
