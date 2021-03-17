@@ -89,7 +89,7 @@ def read_exp(filename, rename = None) -> NeptuneData:
     else:
         raise TypeError('rename must be a dict or a callable function')
 
-    data.pop("")
+    data.pop("", None)
     cycle = np.array(data.pop('Cycle'), dtype ='int')
     time = data.pop('Time')
     time =[dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
@@ -201,11 +201,11 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
 
         if keys_in == 'c':
             data =  _read_csv_ckeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
-            data.pop("")
+            data.pop("", None)
             return data
         elif keys_in == 'r':
             data =  _read_csv_rkeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
-            data.pop("")
+            data.pop("", None)
             return data
         elif keys_in is None:
             return _read_csv_nokeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
