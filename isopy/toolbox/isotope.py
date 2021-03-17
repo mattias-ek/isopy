@@ -131,10 +131,10 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
         prior to being added to the result.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.fraction``.
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
     kwargs
         Each kwarg key must be either an element key string or an isotope key string. The isotope
         fractions added to the array based on the kwarg key are multiplied by the kwarg value.
@@ -258,10 +258,10 @@ def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integrat
         Must be an integer. Seed given to the random generator.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.fraction``.
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
     kwargs
         Each kwarg key must be either an element key string or an isotope key string. The isotope
         fractions added to the array based on the kwarg key are multiplied by the kwarg value.
@@ -349,10 +349,10 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None,  maxv = 10,
         Must be an integer. Seed given to the random generator.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.fraction``.
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
     interferences
         Each kwarg key must be either an element key string or an isotope key string. The isotope
         fractions added to the array based on the kwarg key are multiplied by the kwarg value.
@@ -435,10 +435,10 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
         *isotope_abundances*.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``
+        Defaults to ``isopy.refval.isotope.fraction``
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``
+        Defaults to ``isopy.refval.isotope.mass``
 
     Returns
     -------
@@ -554,10 +554,10 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None,
         The isotope ratio from which the fractionation factor should be calculated. :math:`n,d` in the equation above.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.fraction``.
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
 
     Returns
     -------
@@ -612,7 +612,7 @@ def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         Fractionation factor to be applied. :math:`\\alpha` in the equation above
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
 
     Returns
     -------
@@ -673,7 +673,7 @@ def add_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         Fractionation factor to be applied. :math:`\\alpha` in the equation above
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
 
     Returns
     -------
@@ -730,10 +730,10 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
         If given, this mass fractionation factor is applied to the values for for the correction.
     isotope_abundances
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refv.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.fraction``.
     isotope_masses
         Reference value for the isotope masses of different elements.
-        Defaults to ``isopy.refv.isotope.mass``.
+        Defaults to ``isopy.refval.isotope.mass``.
 
     Returns
     -------

@@ -540,7 +540,7 @@ class DSResult:
         string = f'{self.__class__.__name__}(method = "{self.method}",'
         args = ',\n'.join([f'{name} = {value}' for name, value in zip(self.__named_names, self.__named_args)])
 
-    def Delta(self, mass_ratio, isotope_masses = None):
+    def Delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
         """
         Calculate the Δ value of the sample for *mass_ratio* value using the inversion results.
 
@@ -548,14 +548,24 @@ class DSResult:
 
             \\Delta \\frac{smp_{i}} {smp_{j}} = \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} -1
 
+        Where *fnat* is the difference between the sample and optional standard.
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
         """
-        if isotope_masses is None: isotope_masses.refv.isotope.mass
+        if type(standard_fnat) is DSResult:
+            standard_fnat = standard_fnat.fnat
+
+        fnat = self.fnat - standard_fnat
+        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
         if isinstance(mass_ratio, str):
-            mass_ratio = self.__isotope_masses.get(mass_ratio)
+            mass_ratio = isotope_masses.get(mass_ratio)
 
-        return np.power(mass_ratio, self.fnat) - 1
+        return np.power(mass_ratio, fnat) - 1
 
-    def Delta_prime(self, mass_ratio, isotope_masses = None):
+    def Delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
         """
         Calculate the Δ' value of the sample for *mass_ratio* value using the inversion results.
 
@@ -563,14 +573,24 @@ class DSResult:
 
              \\Delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat}
 
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
         """
-        if isotope_masses is None: isotope_masses.refv.isotope.mass
+        if type(standard_fnat) is DSResult:
+            standard_fnat = standard_fnat.fnat
+
+        fnat = self.fnat - standard_fnat
+        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
         if isinstance(mass_ratio, str):
-            mass_ratio = self.__isotope_masses.get(mass_ratio)
+            mass_ratio = isotope_masses.get(mass_ratio)
 
-        return np.log(mass_ratio) * self.fnat
+        return np.log(mass_ratio) * fnat
 
-    def delta(self, mass_ratio, isotope_masses = None):
+    def delta(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
         """
         Calculate the δ value of the sample for *mass_ratio* value using the inversion results.
 
@@ -578,10 +598,16 @@ class DSResult:
 
             \\delta \\frac{smp_{i}} {smp_{j}} = \\left(\\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right)*1000
 
-        """
-        return self.Delta(mass_ratio, isotope_masses) * 1000
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
 
-    def delta_prime(self, mass_ratio, isotope_masses = None):
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
+        """
+        return self.Delta(mass_ratio, standard_fnat, isotope_masses) * 1000
+
+    def delta_prime(self, mass_ratio, standard_fnat = 0, isotope_masses = None):
         """
         Calculate the δ' value of the sample for *mass_ratio* value using the inversion results.
 
@@ -589,8 +615,38 @@ class DSResult:
 
              \\delta^{\\prime}  \\frac{smp_{i}} {smp_{j}} = log\\left(\\frac{mass_i} {mass_j} \\right)*{fnat} *1000
 
+        Where *fnat* is the difference between the sample fnat and *standard_fnat*
+
+        .. math::
+
+            fnat = fnat_{smp} - fnat_{std}
+
         """
-        return self.Delta_prime(mass_ratio, isotope_masses) * 1000
+        return self.Delta_prime(mass_ratio, standard_fnat, isotope_masses) * 1000
+
+    def keys(self):
+        """
+        Returns a list containing the names of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return self.__named_names
+
+    def values(self):
+        """
+        Returns a list containing the values of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return self.__named_args
+
+    def items(self):
+        """
+        Returns a list of tuples containing the name and value of each stored attribute.
+
+        **Note** does not include the *method* attribute.
+        """
+        return list(zip(self.__named_names, self.__named_args))
 
     def __array_function__(self, func, types, args, kwargs):
         return self.__class__(self.method, *[func(value, **kwargs) for value in self.__named_args])
