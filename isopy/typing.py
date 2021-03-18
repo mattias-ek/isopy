@@ -12,6 +12,8 @@ CHECK_INPUT = True
 ISOPYTYPES = {}
 
 #TODO special case for when single value shoudl always return list
+#TODO CoerceList - makes list if it isnt already. Wont corce items in list though
+#TODO HasAttr['items', 'get']
 
 def create_type(name, check_function=None):
     """

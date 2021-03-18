@@ -192,10 +192,7 @@ def _update_figure(func):
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        fig_kwargs = {}
-        for kwarg in list(kwargs.keys()):
-            if kwarg.startswith('figure_'):
-                fig_kwargs[kwarg.removeprefix('figure_')] = kwargs.pop(kwarg)
+        fig_kwargs = _extract_kwargs(kwargs, 'figure')
         if fig_kwargs and len(args) > 0:
             update_figure(args[0], **fig_kwargs)
 
@@ -203,7 +200,7 @@ def _update_figure(func):
     return wrapper
 
 @_update_figure
-def create_subplots(figure, subplots, *, constrained_layout=True):
+def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
     """
     Create subplots for a figure.
 
@@ -217,6 +214,10 @@ def create_subplots(figure, subplots, *, constrained_layout=True):
         A nested list of subplot names. A visual layout of how you want your subplots
         to be arranged labeled as strings. *subplots* must be a 2-dimensional but items in the
         list can contain futher 2-dimensional lists. Use ``None`` for empty spaces.
+    grid : tuple[int, int]
+        If supplied then subplots will be arranged into grid with this shape. One dimension can
+        be -1 and it wil be calculated based on the size of *subplots* and the other given
+        dimension. Required that *subplots* is a one dimensional sequence.
     constraned_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure. Advised to avoid
         overlapping axis labels.
@@ -238,8 +239,8 @@ def create_subplots(figure, subplots, *, constrained_layout=True):
             :align: center
 
 
-    >>> subplots = [['one'], ['two'], ['three'], ['four']]
-    >>> axes = isopy.tb.create_subplots(plt, subplots)
+    >>> subplots = ['one', 'two', 'three', 'four']
+    >>> axes = isopy.tb.create_subplots(plt, subplots, (-1, 1))
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
@@ -257,9 +258,34 @@ def create_subplots(figure, subplots, *, constrained_layout=True):
             :alt: output of the example above
             :align: center
     """
+    empty_sentinel = None
     figure = _check_figure('figure', figure)
     update_figure(figure, constrained_layout=constrained_layout)
-    axes = figure.subplot_mosaic(subplots, empty_sentinel=None)
+
+    if grid is not None:
+        nrows = grid[0]
+        ncols = grid[1]
+        if nrows < 1 and ncols < 1:
+            raise ValueError('Invalid grid values')
+        if nrows == -1:
+            nrows = len(subplots) // ncols
+            if len(subplots) % ncols > 0: nrows += 1
+        elif ncols == -1:
+            ncols = len(subplots) // nrows
+            if len(subplots) % nrows > 0: ncols += 1
+
+        grid = []
+        for r in range(nrows):
+            grid_row = []
+            for c in range(ncols):
+                try:
+                    grid_row.append(subplots[r*ncols + c])
+                except:
+                    grid_row.append(empty_sentinel)
+            grid.append(grid_row)
+        subplots = grid
+
+    axes = figure.subplot_mosaic(subplots, empty_sentinel=empty_sentinel)
 
     #Make sure that no key strings are used.
     out = {}
@@ -522,8 +548,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     style.setdefault('edgeline_zorder', style['zorder']-0.001)
     style.setdefault('fill_zorder', style['zorder']-0.002)
 
-    fill_style = _extract_style(style, 'fill')
-    edge_style = _extract_style(style, 'edgeline')
+    fill_style = _extract_kwargs(style, 'fill')
+    edge_style = _extract_kwargs(style, 'edgeline')
 
     if not xlim:
         xlim = axes.get_xlim()
@@ -765,7 +791,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     style.setdefault('markerfacecolor', style['color'])
     style.setdefault('zorder', 2)
 
-    regress_style = _extract_style(style, 'regress')
+    regress_style = _extract_kwargs(style, 'regress')
     regress_style.setdefault('color', style['color'])
 
     for i in range(x.shape[0]):
@@ -783,13 +809,12 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 @_update_figure
 def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
-                spacing = -1, hide_yaxis=True, **kwargs):
+                spacing = -1, hide_yaxis=True, compare=False, subplots_grid = (1, -1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
 
     Can also take an array in which case it will create a grid of subplots, one for each column in
     the array.
-
 
     Parameters
     ----------
@@ -860,6 +885,10 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         The space between data points on the y-axis.
     hide_yaxis : bool, Default = True
         Hides the y-axis ticks and label.
+    compare : bool
+        If ``True`` *axes* is passed to ``plot_vcompare`` at the end of the function.
+    subplots_grid : tuple[int, int]
+        The shape of the grid to be created if nessecary.
     kwargs
         Any keyword argument accepted by matplotlib axes methods. By default kwargs are
         attributed to the data points. Prefix kwargs for the center line
@@ -918,10 +947,10 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         x, xerr = x
 
     if hasattr(x, 'items'):
-        _plot_stack_array(plot_vstack, axes, 'x', type(x), x=x, xerr=xerr, ystart=ystart, cval=cval,
+        _plot_stack_array(plot_vstack, axes, 'x', type(x), subplots_grid, x=x, xerr=xerr, ystart=ystart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
-                          outliers=outliers, hide_yaxis=hide_yaxis, **kwargs)
+                          outliers=outliers, hide_yaxis=hide_yaxis, compare=compare, **kwargs)
 
     else:
         axes = _check_axes(axes)
@@ -936,16 +965,19 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
                 ystart = _axes_data_func(axes, 'y', np.nanmin, default_value=np.nan) - pad
         if np.isnan(ystart): ystart = 0
 
-        x, y, xerr, cx, cy, pmx, pmy, boxx, boxy, styles = _plot_stack_step1(axes, x, xerr, ystart, cval, pmval, color,
+        x, y, xerr, cx, cy, pmx, pmy, boxx, boxy, styles, compare_kwargs = _plot_stack_step1(axes, x, xerr, ystart, cval, pmval, color,
                                                                              marker, line, cline, pmline, box, pad, box_pad, spacing, outliers, **kwargs)
 
         axes.get_yaxis().set_visible(not hide_yaxis)
         _plot_stack_step2(axes, x, y, xerr, None, cx, cy, pmx, pmy, boxx, boxy, styles, outliers)
 
+        if compare:
+            plot_vcompare(axes, **compare_kwargs)
+
 @_update_figure
 def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
-                spacing = 1, hide_xaxis=True, **kwargs):
+                spacing = 1, hide_xaxis=True, compare=False, subplots_grid = (-1, 1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
 
@@ -1022,6 +1054,10 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
         The space between data points on the x-axis.
     hide_yaxis : bool, Default = True
         Hides the x-axis ticks and label.
+    compare : bool
+        If ``True`` *axes* is passed to ``plot_vcompare`` at the end of the function.
+    subplots_grid : tuple[int, int]
+        The shape of the grid to be created if nessecary.
     kwargs
         Any keyword argument accepted by matplotlib axes methods. By default kwargs are
         attributed to the data points. Prefix kwargs for the center line
@@ -1078,10 +1114,10 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     if isinstance(y, tuple) and len(y) == 2: y, yerr = y
 
     if hasattr(y, 'items'):
-        _plot_stack_array(plot_hstack, axes, 'y', type(y), y=y, yerr=yerr, xstart=xstart, cval=cval,
+        _plot_stack_array(plot_hstack, axes, 'y', type(y), subplots_grid, y=y, yerr=yerr, xstart=xstart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
-                          outliers=outliers, hide_xaxis=hide_xaxis, **kwargs)
+                          outliers=outliers, hide_xaxis=hide_xaxis, compare=compare, **kwargs)
 
     else:
         axes = _check_axes(axes)
@@ -1096,11 +1132,14 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
                 xstart = _axes_data_func(axes, 'x', np.nanmin, default_value=np.nan) - pad
         if np.isnan(xstart): xstart = 0
 
-        y, x, yerr, cy, cx, pmy, pmx, boxy, boxx, styles = _plot_stack_step1(axes, y, yerr, xstart, cval, pmval, color,
+        y, x, yerr, cy, cx, pmy, pmx, boxy, boxx, styles, compare_kwargs = _plot_stack_step1(axes, y, yerr, xstart, cval, pmval, color,
                                                                              marker, line, cline, pmline, box, pad, box_pad, spacing, outliers, **kwargs)
 
         axes.get_xaxis().set_visible(not hide_xaxis)
         _plot_stack_step2(axes, x, y, None, yerr, cx, cy, pmx, pmy, boxx, boxy, styles, outliers)
+
+        if compare:
+            plot_hcompare(axes, **compare_kwargs)
 
 def _plot_stack_step2(axes, x, y, xerr, yerr, cx, cy, pmx, pmy, boxx, boxy, styles, isoutlier):
     _plot_errorbar(axes, x, y, xerr, yerr, np.invert(isoutlier), styles['main'])
@@ -1149,6 +1188,8 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         except:
             raise ValueError(f'unable to convert pmval {box_pmval} to float')
 
+    _extract_kwargs(kwargs, 'subplots') #get rid of these
+    compare_kwargs = _extract_kwargs(kwargs, 'compare')
     style = {}
     style.update(stack_style)
     style.update(kwargs)
@@ -1186,11 +1227,11 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     style.setdefault('cline_zorder', style['zorder'] - 0.001)
     style.setdefault('box_zorder', style['zorder'] - 0.002)
 
-    cline_style = _extract_style(style, 'cline')
-    pmline_style = _extract_style(style, 'pmline')
-    box_style = _extract_style(style, 'box')
+    cline_style = _extract_kwargs(style, 'cline')
+    pmline_style = _extract_kwargs(style, 'pmline')
+    box_style = _extract_kwargs(style, 'box')
 
-    temp_style = _extract_style(style, 'outlier')
+    temp_style = _extract_kwargs(style, 'outlier')
     outlier_style = style.copy()
     outlier_style.pop('label', None) #Otherwise the label gets shown twice
     outlier_style.update(temp_style)
@@ -1224,9 +1265,9 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         boxv = None
         boxw = None
 
-    return v, w, verr, cv, cw, pmv, pmw, boxv, boxw, styles
+    return v, w, verr, cv, cw, pmv, pmw, boxv, boxw, styles, compare_kwargs
 
-def _plot_stack_array(func, axes, vaxis, vtype, /, **kwargs):
+def _plot_stack_array(func, axes, vaxis, vtype, grid, /, **kwargs):
     if vaxis == 'x':
         waxis = 'y'
     elif vaxis == 'y':
@@ -1235,6 +1276,7 @@ def _plot_stack_array(func, axes, vaxis, vtype, /, **kwargs):
         raise ValueError('vaxis incorrect')
 
     keys = kwargs[vaxis].keys()
+    subplot_kwargs = _extract_kwargs(kwargs, 'subplots')
 
     if isinstance(axes, dict):
         named_axes = axes
@@ -1242,11 +1284,7 @@ def _plot_stack_array(func, axes, vaxis, vtype, /, **kwargs):
         figure =_check_figure('axes', axes)
         axes = figure.get_axes()
         if len(axes) == 0:
-            if vaxis == 'y':
-                subplots = [[str(key)] for key in keys]
-            else:
-                subplots = [[str(key) for key in keys]]
-            named_axes = create_subplots(figure, subplots)
+            named_axes = create_subplots(figure, [str(key) for key in keys], grid, **subplot_kwargs)
         else:
             named_axes = {str(ax.get_label()): ax for ax in axes}
 
@@ -1812,14 +1850,14 @@ def _plot_polygon(axes, coordinates, autoscale = True, **style):
         if upl_func:
             axes._update_patch_limits = upl_func
 
-def _extract_style(style, prefix):
-    new_style = {}
-    keys = list(style.keys())
-    for thing in keys:
-        things = thing.split('_', 1)
-        if things[0] == prefix and len(things) == 2:
-            new_style[things[1]] = style.pop(thing)
-    return new_style
+def _extract_kwargs(kwargs, prefix):
+    new_kwargs = {}
+    for kwarg in list(kwargs.keys()):
+        prefix_ = f'{prefix}_'
+        if kwarg.startswith(prefix_):
+            new_kwargs[kwarg.removeprefix(prefix_)] = kwargs.pop(kwarg)
+
+    return new_kwargs
 
 def _check_axes(axes):
     if not isinstance(axes, mpl.axes.Axes):
