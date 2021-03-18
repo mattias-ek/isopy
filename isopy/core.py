@@ -2164,6 +2164,22 @@ class IsopyArray(IsopyFlavour):
 
         return RatioArray(self[keys] / self[denominator], keys=keys/denominator)
 
+    def items(self):
+        """
+        Returns a list containing a tuple with the key and the column values for each key in the array
+
+        Equivalent to ``[(key, array[key]) for key in array.keys]``
+        """
+        return [(key, self[key]) for key in self.keys]
+
+    def values(self):
+        """
+        Returns a list containing the column values for each key in the array
+
+        Equivalent to ``[array[key] for key in array.keys]``
+        """
+        return [self[key] for key in self.keys]
+
     @property
     def keys(self):
         """

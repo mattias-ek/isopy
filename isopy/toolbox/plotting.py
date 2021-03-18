@@ -6,6 +6,7 @@ import matplotlib as mpl
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
 import numpy as np
+import functools
 from typing import Optional, Union, Literal
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
@@ -137,7 +138,7 @@ class Colors(RotatingList):
                                       '#a65628', '#ffff33', '#f781bf', '#999999']
 
 
-def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=None, edgecolor=None,
+def update_figure(figure, width=None, height=None, dpi=None, facecolor=None, edgecolor=None,
                   frameon=None, tight_layout=None, constrained_layout=None):
     """
     Update the figure options.
@@ -152,9 +153,9 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
         A matplotlib Figure object or any object
         with a ``.gcf()`` method that returns a matplotlib Figure object, Such as a matplotlib
         pyplot instance.
-    figwidth : scalar
+    width : scalar
         Width of *figure* in inches
-    figheight : scalar
+    height : scalar
         Width of *figure* in inches
     dpi : scalar
         Resolution of *figure* in dots per inch
@@ -175,8 +176,8 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
         Returns the figure
     """
     figure = _check_figure('figure', figure)
-    if figwidth is not None: figure.set_figwidth(figwidth)
-    if figheight is not None: figure.set_figheight(figheight)
+    if width is not None: figure.set_figwidth(width)
+    if height is not None: figure.set_figheight(height)
     if dpi is not None: figure.set_dpi(dpi)
     if facecolor is not None: figure.set_facecolor(facecolor)
     if edgecolor is not None: figure.set_edgecolor(edgecolor)
@@ -185,7 +186,24 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
     if constrained_layout is not None: figure.set_constrained_layout(constrained_layout)
     return figure
 
-def create_subplots(figure, subplots, *, constrained_layout=True, **figure_options):
+def _update_figure(func):
+    """
+    Allows figure kwargs to be passed to functions
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        fig_kwargs = {}
+        for kwarg in list(kwargs.keys()):
+            if kwarg.startswith('figure_'):
+                fig_kwargs[kwarg.removeprefix('figure_')] = kwargs.pop(kwarg)
+        if fig_kwargs and len(args) > 0:
+            update_figure(args[0], **fig_kwargs)
+
+        return func(*args, **kwargs)
+    return wrapper
+
+@_update_figure
+def create_subplots(figure, subplots, *, constrained_layout=True):
     """
     Create subplots for a figure.
 
@@ -202,8 +220,6 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
     constraned_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure. Advised to avoid
         overlapping axis labels.
-    figure_options
-        Any valid option for :func:`update_figure`.
 
     Returns
     -------
@@ -242,7 +258,7 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
             :align: center
     """
     figure = _check_figure('figure', figure)
-    update_figure(figure, constrained_layout=constrained_layout, **figure_options)
+    update_figure(figure, constrained_layout=constrained_layout)
     axes = figure.subplot_mosaic(subplots, empty_sentinel=None)
 
     #Make sure that no key strings are used.
@@ -252,7 +268,7 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
         out[str(key)] = ax
     return out
 
-
+@_update_figure
 def plot_scatter(axes, x, y, xerr = None, yerr = None,
                  color= None, marker = True, line = False, regression = None, **kwargs):
     """
@@ -363,6 +379,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
             raise ValueError(f'"{regression}" not a valid regression')
         plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
 
+@_update_figure
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
                     fill = True, edgeline = True,  **kwargs):
     """
@@ -553,7 +570,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     if yerr_eq is not None and fill:
         _plot_polygon(axes, yerr_coordinates, autoscale, **fill_style)
 
-
+@_update_figure
 def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = None, color = None, marker = True, line = True, **kwargs):
     """
     Plot data as a spider diagram on matplotlib *axes* .
@@ -763,7 +780,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     _axes_add_data(axes, x, y, None, yerr=yerr)
 
-
+@_update_figure
 def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
                 spacing = -1, hide_yaxis=True, **kwargs):
@@ -883,7 +900,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         :align: center
 
 
-    >>> isopy.tb.update_figure(plt, figwidth=8)
+    >>> isopy.tb.update_figure(plt, width=8)
     >>> colorpairs = isopy.tb.ColorPairs()
     >>> array = isopy.tb.make_ms_beams('pd104', 'pd105', 'pd106')
     >>> mean = np.mean(array)
@@ -900,8 +917,8 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     if isinstance(x, tuple) and len(x) == 2:
         x, xerr = x
 
-    if isinstance(x, core.IsopyArray):
-        _plot_stack_array(plot_vstack, axes, 'x', x=x, xerr=xerr, ystart=ystart, cval=cval,
+    if hasattr(x, 'items'):
+        _plot_stack_array(plot_vstack, axes, 'x', type(x), x=x, xerr=xerr, ystart=ystart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
                           outliers=outliers, hide_yaxis=hide_yaxis, **kwargs)
@@ -925,6 +942,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         axes.get_yaxis().set_visible(not hide_yaxis)
         _plot_stack_step2(axes, x, y, xerr, None, cx, cy, pmx, pmy, boxx, boxy, styles, outliers)
 
+@_update_figure
 def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
                 spacing = 1, hide_xaxis=True, **kwargs):
@@ -1059,8 +1077,8 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     """
     if isinstance(y, tuple) and len(y) == 2: y, yerr = y
 
-    if isinstance(y, core.IsopyArray):
-        _plot_stack_array(plot_hstack, axes, 'y', y=y, yerr=yerr, xstart=xstart, cval=cval,
+    if hasattr(y, 'items'):
+        _plot_stack_array(plot_hstack, axes, 'y', type(y), y=y, yerr=yerr, xstart=xstart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
                           outliers=outliers, hide_xaxis=hide_xaxis, **kwargs)
@@ -1208,7 +1226,7 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
 
     return v, w, verr, cv, cw, pmv, pmw, boxv, boxw, styles
 
-def _plot_stack_array(func, axes, vaxis, /, **kwargs):
+def _plot_stack_array(func, axes, vaxis, vtype, /, **kwargs):
     if vaxis == 'x':
         waxis = 'y'
     elif vaxis == 'y':
@@ -1256,7 +1274,7 @@ def _plot_stack_array(func, axes, vaxis, /, **kwargs):
             ax = named_axes[str(key)]
         except KeyError:
             raise KeyError(f'axes with name "{key}" not found')
-        func(ax, **{k: v.get(str(key)) if isinstance(v, core.IsopyArray) else v for k, v in
+        func(ax, **{k: v.get(str(key)) if type(v) is vtype else v for k, v in
                     kwargs.items()})
 
         if waxis == 'x':
@@ -1288,7 +1306,7 @@ def _plot_errorbar(axes, x, y, xerr = None, yerr = None, mask=None, style={}):
     else:
         axes.errorbar(x, y, yerr, xerr, **style)
 
-
+@_update_figure
 def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline=True, pmline=True,
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1390,7 +1408,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         :alt: output of the example above
         :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, figheight=6)
+    >>> figure = isopy.tb.update_figure(plt, height=6)
     >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> isopy.tb.plot_hstack(plt, array1)
@@ -1441,6 +1459,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         elif axis_color is not None:
             axes.tick_params(axis='y', colors=axis_color)
 
+@_update_figure
 def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline='-', pmline='--',
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1542,7 +1561,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             :alt: output of the example above
             :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, figwidth=8)
+    >>> figure = isopy.tb.update_figure(plt, width=8)
     >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> isopy.tb.plot_vstack(plt, array1)

@@ -16,30 +16,36 @@ import isopy.checks
 """
 Functions for doublespike data reduction
 """
-_DSResult = _namedtuple('DSResult', ('method', 'lambda_', 'alpha', 'beta', 'fnat', 'fins', 'spike_faction',
-                                     'sample_fraction', 'Q'))
+_DSResult = _namedtuple('DSResult',
+                        ('method', 'lambda_', 'alpha', 'beta', 'fnat', 'fins', 'spike_faction',
+                         'sample_fraction', 'Q'))
 
-def _inversion_rudge_function( x, P, n, T, m):
-    x = x.reshape(3,-1)
+
+def _inversion_rudge_function(x, P, n, T, m):
+    x = x.reshape(3, -1)
     lambda_ = x[0]
-    alpha = x[1]/(1-lambda_)
+    alpha = x[1] / (1 - lambda_)
     beta = x[2]
 
-    return ((lambda_ * T) + ((1-lambda_) * n * np.exp(-alpha * P)) - m * np.exp(-beta * P)).flatten()
+    return ((lambda_ * T) + ((1 - lambda_) * n * np.exp(-alpha * P)) - m * np.exp(
+        -beta * P)).flatten()
 
-#Currently no used as it doesnt work when the input has more than one dimension.
-#Might just be a matter of rearranging the output
-def _inversion_rudge_jacobian( x, P, n, T, m):
 
-    x = x.reshape(3,-1)
+# Currently no used as it doesnt work when the input has more than one dimension.
+# Might just be a matter of rearranging the output
+def _inversion_rudge_jacobian(x, P, n, T, m):
+    x = x.reshape(3, -1)
     lambda_ = x[0]
-    alpha = x[1]/(1-lambda_)
+    alpha = x[1] / (1 - lambda_)
     beta = x[2]
-    output = np.transpose([T - (n * np.exp(-alpha * P) * (1 + alpha * P)), -n * P * np.exp(-alpha * P), m * P * np.exp(-beta * P)])
+    output = np.transpose(
+        [T - (n * np.exp(-alpha * P) * (1 + alpha * P)), -n * P * np.exp(-alpha * P),
+         m * P * np.exp(-beta * P)])
     return output
 
-#split if more than x so that it doesnt break
-def ds_inversion_rudge(m, n, T, P, xtol = 1e-10):
+
+# split if more than x so that it doesnt break
+def ds_inversion_rudge(m, n, T, P, xtol=1e-10):
     """
     Double spike inversion using the method of Rudge et al. 2009, Chemical Geology 265 420-431.
 
@@ -62,20 +68,29 @@ def ds_inversion_rudge(m, n, T, P, xtol = 1e-10):
     DSResult
     """
     mndim = m.ndim
-    if m.size == 3: m = m.reshape(3,1)
-    elif m.ndim == 1: raise ValueError()
+    if m.size == 3:
+        m = m.reshape(3, 1)
+    elif m.ndim == 1:
+        raise ValueError()
     elif m.ndim == 2:
         if m.shape[0] != 3: raise ValueError()
-    else: raise ValueError('m has to many dimensions ({})'.format(m.ndim))
+    else:
+        raise ValueError('m has to many dimensions ({})'.format(m.ndim))
 
-    if n.size == 3: n = np.ones(m.shape) * n.reshape(3, 1)
-    elif n.shape != m.shape: raise ValueError('Shape of n {} does not match shape of m {}'.format(n.shape, m.shape))
+    if n.size == 3:
+        n = np.ones(m.shape) * n.reshape(3, 1)
+    elif n.shape != m.shape:
+        raise ValueError('Shape of n {} does not match shape of m {}'.format(n.shape, m.shape))
 
-    if T.size == 3: T = np.ones(m.shape) * T.reshape(3, 1)
-    elif T.shape != m.shape: ValueError('Shape of T {} does not match shape of m {}'.format(T.shape, m.shape))
+    if T.size == 3:
+        T = np.ones(m.shape) * T.reshape(3, 1)
+    elif T.shape != m.shape:
+        ValueError('Shape of T {} does not match shape of m {}'.format(T.shape, m.shape))
 
-    if P.size == 3: P = np.ones(m.shape) * P.reshape(3, 1)
-    elif P.shape != m.shape: ValueError('Shape of P {} does not match shape of m {}'.format(P.shape, m.shape))
+    if P.size == 3:
+        P = np.ones(m.shape) * P.reshape(3, 1)
+    elif P.shape != m.shape:
+        ValueError('Shape of P {} does not match shape of m {}'.format(P.shape, m.shape))
 
     xtol = isopy.checks.check_type('xtol', xtol, np.float_, float, coerce=True)
 
@@ -83,26 +98,30 @@ def ds_inversion_rudge(m, n, T, P, xtol = 1e-10):
     b = np.transpose(m - n)
     x0 = np.transpose(np.linalg.solve(A, b))
 
-    x, infodict, ier, mesg =  optimize.fsolve(_inversion_rudge_function, x0, (P, n, T, m), None, True, xtol = xtol)
+    x, infodict, ier, mesg = optimize.fsolve(_inversion_rudge_function, x0, (P, n, T, m), None,
+                                             True, xtol=xtol)
 
     if ier != 1:
         x = np.ones(m.shape) * np.nan
 
-    if mndim == 2: x = x.reshape(3,-1)
+    if mndim == 2: x = x.reshape(3, -1)
     lambda_ = x[0]
-    alpha = x[1]/(1-lambda_)
+    alpha = x[1] / (1 - lambda_)
     beta = x[2]
 
     Fnat = alpha * -1
     Fins = beta
 
-    spike_fraction = (1 + ((1-lambda_)/lambda_) * ((1 + np.sum((n / np.exp(alpha * P)), axis = 0)) / (1 + np.sum(T, axis = 0)))) ** (-1)
-    sample_fraction = (1-spike_fraction)
+    spike_fraction = (1 + ((1 - lambda_) / lambda_) * (
+                (1 + np.sum((n / np.exp(alpha * P)), axis=0)) / (1 + np.sum(T, axis=0)))) ** (-1)
+    sample_fraction = (1 - spike_fraction)
     Q = sample_fraction / spike_fraction
 
     return DSResult('rudge', alpha, beta, lambda_, Fnat, Fins, spike_fraction, sample_fraction, Q)
 
-def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess = 2, Fnat_guess = -0.00001, outer_loop_iterations = 3, inner_loop_iterations=6):
+
+def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess=2, Fnat_guess=-0.00001,
+                         outer_loop_iterations=3, inner_loop_iterations=6):
     """
     Double spike inversion using the method of Siebert et al. 2001, Geochemistry, Geophysics, Geosystems 2,
 
@@ -134,32 +153,42 @@ def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess = 2, Fnat_guess = -0.00001
     mndim = MS.ndim
     if MS.size == 3:
         MS = MS.reshape(3, 1)
-    elif MS.ndim == 1: raise ValueError()
+    elif MS.ndim == 1:
+        raise ValueError()
     elif MS.ndim == 2:
         if MS.shape[0] != 3: raise ValueError()
-    else: raise ValueError('MS has to many dimensions ({})'.format(MS.ndim))
+    else:
+        raise ValueError('MS has to many dimensions ({})'.format(MS.ndim))
 
-    if ST.size == 3: ST = ST.reshape(3)
-    elif ST.shape != MS.shape: raise ValueError('Shape of ST {} does not match shape of MS {}'.format(ST.shape, MS.shape))
+    if ST.size == 3:
+        ST = ST.reshape(3)
+    elif ST.shape != MS.shape:
+        raise ValueError('Shape of ST {} does not match shape of MS {}'.format(ST.shape, MS.shape))
 
-    if ST.size == 3: ST = ST.reshape(3)
-    elif ST.shape != MS.shape: ValueError('Shape of ST {} does not match shape of MS {}'.format(ST.shape, MS.shape))
+    if ST.size == 3:
+        ST = ST.reshape(3)
+    elif ST.shape != MS.shape:
+        ValueError('Shape of ST {} does not match shape of MS {}'.format(ST.shape, MS.shape))
 
-    if Mass.size == 3: Mass = Mass.reshape(3)
-    elif Mass.shape != MS.shape: ValueError('Shape of Mass {} does not match shape of MS {}'.format(Mass.shape, MS.shape))
+    if Mass.size == 3:
+        Mass = Mass.reshape(3)
+    elif Mass.shape != MS.shape:
+        ValueError('Shape of Mass {} does not match shape of MS {}'.format(Mass.shape, MS.shape))
 
     Fins_guess = isopy.checks.check_type('Fins_guess', Fins_guess, float, np.float_,
                                          coerce=True, coerce_into=np.float_)
     Fnat_guess = isopy.checks.check_type('Fnat_guess', Fnat_guess, float, np.float_,
                                          coerce=True, coerce_into=np.float_)
-    outer_loop_iterations = isopy.checks.check_type('outer_loop_iterations', outer_loop_iterations, int)
-    inner_loop_iterations = isopy.checks.check_type('inner_loop_iterations', inner_loop_iterations, int)
+    outer_loop_iterations = isopy.checks.check_type('outer_loop_iterations', outer_loop_iterations,
+                                                    int)
+    inner_loop_iterations = isopy.checks.check_type('inner_loop_iterations', inner_loop_iterations,
+                                                    int)
 
     dlen = MS.shape[1]
-    SA = np.zeros((outer_loop_iterations, 3, dlen), dtype = np.float64)
-    Fins = np.zeros((outer_loop_iterations, 3, dlen), dtype = np.float64)
-    Fnat = np.zeros((outer_loop_iterations, 3, dlen), dtype = np.float64)
-    MT = np.zeros((3, dlen), dtype = np.float64)
+    SA = np.zeros((outer_loop_iterations, 3, dlen), dtype=np.float64)
+    Fins = np.zeros((outer_loop_iterations, 3, dlen), dtype=np.float64)
+    Fnat = np.zeros((outer_loop_iterations, 3, dlen), dtype=np.float64)
+    MT = np.zeros((3, dlen), dtype=np.float64)
 
     x = 0
     y = 1
@@ -170,12 +199,18 @@ def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess = 2, Fnat_guess = -0.00001
     Fins_Ri = Fins_guess
 
     for i1 in range(outer_loop_iterations):
-        SA[i1, x,:] = ST[x] * Mass[x] ** Fnat_Ri
-        SA[i1, y,:] = ST[y] * Mass[y] ** Fnat_Ri
-        SA[i1, z,:] = ST[z] * Mass[z] ** Fnat_Ri
+        SA[i1, x, :] = ST[x] * Mass[x] ** Fnat_Ri
+        SA[i1, y, :] = ST[y] * Mass[y] ** Fnat_Ri
+        SA[i1, z, :] = ST[z] * Mass[z] ** Fnat_Ri
 
-        a = (ST[y] * (SA[i1, z] - SP[z]) + SA[i1, y] * (SP[z] - ST[z]) + SP[y] * (ST[z] - SA[i1, z])) / (ST[y] * (SA[i1, x] - SP[x]) + SA[i1, y] * (SP[x] - ST[x]) + SP[y] * (ST[x] - SA[i1, x]))
-        b = (ST[x] * (SA[i1, z] - SP[z]) + SA[i1, x] * (SP[z] - ST[z]) + SP[x] * (ST[z] - SA[i1, z])) / (ST[x] * (SA[i1, y] - SP[y]) + SA[i1, x] * (SP[y] - ST[y]) + SP[x] * (ST[y] - SA[i1, y]))
+        a = (ST[y] * (SA[i1, z] - SP[z]) + SA[i1, y] * (SP[z] - ST[z]) + SP[y] * (
+                    ST[z] - SA[i1, z])) / (
+                        ST[y] * (SA[i1, x] - SP[x]) + SA[i1, y] * (SP[x] - ST[x]) + SP[y] * (
+                            ST[x] - SA[i1, x]))
+        b = (ST[x] * (SA[i1, z] - SP[z]) + SA[i1, x] * (SP[z] - ST[z]) + SP[x] * (
+                    ST[z] - SA[i1, z])) / (
+                        ST[x] * (SA[i1, y] - SP[y]) + SA[i1, x] * (SP[y] - ST[y]) + SP[x] * (
+                            ST[y] - SA[i1, y]))
         c = ST[z] - a * ST[x] - b * ST[y]
 
         for i2 in range(inner_loop_iterations):
@@ -192,14 +227,16 @@ def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess = 2, Fnat_guess = -0.00001
             MT[y] = (a * e - a * g + d * g - c * d) / (a * f + b * d - d * f)
             MT[z] = a * MT[x] + b * MT[y] + c
 
-            #gives positive Fins
+            # gives positive Fins
             Fins[i1, 0] = np.log(MS[x] / MT[x]) / np.log(Mass[x])
             Fins[i1, 1] = np.log(MS[y] / MT[y]) / np.log(Mass[y])
             Fins[i1, 2] = np.log(MS[z] / MT[z]) / np.log(Mass[z])
             Fins_Ri = Fins[i1, Ri]
 
-        a = (MS[y] * (MT[z] - SP[z]) + MT[y] * (SP[z] - MS[z]) + SP[y] * (MS[z] - MT[z])) / (MS[y] * (MT[x] - SP[x]) + MT[y] * (SP[x] - MS[x]) + SP[y] * (MS[x] - MT[x]))
-        b = (MS[x] * (MT[z] - SP[z]) + MT[x] * (SP[z] - MS[z]) + SP[x] * (MS[z] - MT[z])) / (MS[x] * (MT[y] - SP[y]) + MT[x] * (SP[y] - MS[y]) + SP[x] * (MS[y] - MT[y]))
+        a = (MS[y] * (MT[z] - SP[z]) + MT[y] * (SP[z] - MS[z]) + SP[y] * (MS[z] - MT[z])) / (
+                    MS[y] * (MT[x] - SP[x]) + MT[y] * (SP[x] - MS[x]) + SP[y] * (MS[x] - MT[x]))
+        b = (MS[x] * (MT[z] - SP[z]) + MT[x] * (SP[z] - MS[z]) + SP[x] * (MS[z] - MT[z])) / (
+                    MS[x] * (MT[y] - SP[y]) + MT[x] * (SP[y] - MS[y]) + SP[x] * (MS[y] - MT[y]))
         c = MS[z] - a * MS[x] - b * MS[y]
 
         d = (ST[z] - SA[i1, z]) / (ST[x] - SA[i1, x])
@@ -216,28 +253,46 @@ def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess = 2, Fnat_guess = -0.00001
         Fnat[i1, z] = np.log(SA[i1, z] / ST[z]) / np.log(Mass[z])
         Fnat_Ri = Fnat[i1, Ri]
 
-    sample_fraction = ((1 / (MT[x] + MT[y] + MT[z] + 1)) - (1 / (SP[x] + SP[y] + SP[z] + 1))) / ((1 / (SA[outer_loop_iterations - 1, x] + SA[outer_loop_iterations - 1, y] + SA[outer_loop_iterations - 1, z] + 1)) - (1 / (SP[x] + SP[y] + SP[z] + 1)))
+    sample_fraction = ((1 / (MT[x] + MT[y] + MT[z] + 1)) - (1 / (SP[x] + SP[y] + SP[z] + 1))) / ((
+                                                                                                             1 / (
+                                                                                                                 SA[
+                                                                                                                     outer_loop_iterations - 1, x] +
+                                                                                                                 SA[
+                                                                                                                     outer_loop_iterations - 1, y] +
+                                                                                                                 SA[
+                                                                                                                     outer_loop_iterations - 1, z] + 1)) - (
+                                                                                                             1 / (
+                                                                                                                 SP[
+                                                                                                                     x] +
+                                                                                                                 SP[
+                                                                                                                     y] +
+                                                                                                                 SP[
+                                                                                                                     z] + 1)))
     Fnat_f = Fnat[-1, Ri]
     Fins_f = Fins[-1, Ri]
 
-    lambda_ = ((1-sample_fraction) ** (-1) - 1) / ((1 + np.sum(SA[-1], axis=0)) / (1 + np.sum(SP, axis=0)))
+    lambda_ = ((1 - sample_fraction) ** (-1) - 1) / (
+                (1 + np.sum(SA[-1], axis=0)) / (1 + np.sum(SP, axis=0)))
     lambda_ = 1 - (lambda_ / (lambda_ + 1))
 
     if mndim == 1:
-        sample_fraction =  sample_fraction[0]
-        Fnat_f= Fnat_f[0]
+        sample_fraction = sample_fraction[0]
+        Fnat_f = Fnat_f[0]
         Fins_f = Fins_f[0]
         lambda_ = lambda_[0]
 
-    spike_fraction = (1-sample_fraction)
-    Q = sample_fraction/spike_fraction
+    spike_fraction = (1 - sample_fraction)
+    Q = sample_fraction / spike_fraction
 
     alpha = Fnat_f * -1
     beta = Fins_f
 
-    return DSResult('siebert', alpha, beta, lambda_, Fnat_f, Fins_f, spike_fraction, sample_fraction, Q)
+    return DSResult('siebert', alpha, beta, lambda_, Fnat_f, Fins_f, spike_fraction,
+                    sample_fraction, Q)
 
-def ds_inversion(measured, spike, standard = None, isotope_masses = None, inversion_keys = None, method ='rudge', **method_kwargs):
+
+def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_keys=None,
+                 method='rudge', **method_kwargs):
     """
     Double spike inversion.
 
@@ -290,7 +345,8 @@ def ds_inversion(measured, spike, standard = None, isotope_masses = None, invers
         Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
         function will be performed on each attribute and a new *DSResult* object returned.
     """
-    measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray, isopy.IsotopeArray,
+    measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray,
+                                       isopy.IsotopeArray,
                                        coerce=True)
 
     spike = isopy.checks.check_type('spike', spike, core.RatioArray, core.IsotopeArray, dict,
@@ -305,7 +361,8 @@ def ds_inversion(measured, spike, standard = None, isotope_masses = None, invers
                                            dict,
                                            coerce=True)
 
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
+                                                        isopy.refval.isotope.mass)
 
     numer, denom, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
 
@@ -329,17 +386,23 @@ def ds_inversion(measured, spike, standard = None, isotope_masses = None, invers
     else:
         P = np.array([isotope_masses.get(key) for key in inversion_keys])
 
-    if method == 'rudge': return ds_inversion_rudge(m, n, T, np.log(P), **method_kwargs)
-    elif method == 'siebert': return ds_inversion_siebert(m, n, T, P, **method_kwargs)
-    else: raise ValueError(f'method "{method}" not recognized')
+    if method == 'rudge':
+        return ds_inversion_rudge(m, n, T, np.log(P), **method_kwargs)
+    elif method == 'siebert':
+        return ds_inversion_siebert(m, n, T, P, **method_kwargs)
+    else:
+        raise ValueError(f'method "{method}" not recognized')
 
-def ds_correction(measured, spike, standard=None, inversion_keys = None, *, isotope_masses = None, isotope_fractions=None,
-                  method ='rudge', **method_kwargs):
+
+def ds_correction(measured, spike, standard=None, inversion_keys=None, *, isotope_masses=None,
+                  isotope_fractions=None,
+                  method='rudge', fins_tol = 0.000001, **method_kwargs):
     """
     Do an iterative double spike inversion to correct for isobaric interferences.
 
     An isobaric interference correction is applied for all isotopes in *measured* that have
-    a different element symbol from that in *spike*.
+    a different element symbol from that in *spike*. If more than one isotope exists for an
+    an element the largest isotope is used for the interference correction.
 
     Parameters
     ----------
@@ -355,6 +418,9 @@ def ds_correction(measured, spike, standard=None, inversion_keys = None, *, isot
         List of keys in measured that will be used for the inversion. Only necessary if measured contains more than 3 keys.
     method : str
         Inversion method to be used. Options are 'rudge' and 'siebert'.
+    fins_tol : float
+        The interference correction is considered a success once the difference between the current and the
+        previous *fins* value is below this value.
     method_kwargs
         Keyword arguments for inversion method. See `inversion_rudge` and `inversion_siebert` for list of possible arguments.
 
@@ -411,37 +477,49 @@ def ds_correction(measured, spike, standard=None, inversion_keys = None, *, isot
         standard = isopy.checks.check_type('standard', standard, core.RatioArray, core.IsotopeArray,
                                            dict, coerce=True, coerce_into=isopy.core.RatioArray)
 
-
+    # If inversion keys are not given they are inferred from the spike
     numer, denom, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
 
+    # Find isotopes of potential isobaric interferences
+    # If more than one isotope of an element exits the correction is made with the largest one
+    # Thus only the largest isotope is returned from this function
     interference_isotopes = isotope._find_isobaric_interferences(measured, denom.element_symbol)
 
-    inversion = ds_inversion(measured, spike, standard, isotope_masses, inversion_keys, method, **method_kwargs)
+    # Calculate the starting value
+    inversion = ds_inversion(measured, spike, standard, isotope_masses, inversion_keys, method,
+                             **method_kwargs)
     fins = inversion.fins
 
+    # Iteratively perform the interference correction
+    # Once the result converges
     for i in range(10):
         measured2 = measured.copy()
         fins2 = fins
 
-        for infiso in  interference_isotopes:
-            measured2 = isotope.remove_isobaric_interferences(measured2, infiso, fins, isotope_fractions, isotope_masses)
-
+        for infiso in interference_isotopes:
+            #Remove isobaric interferences
+            measured2 = isotope.remove_isobaric_interferences(measured2, infiso, fins,
+                                                              isotope_fractions, isotope_masses)
+        #Recalculate the instrumental fractionation
         inversion = ds_inversion(measured2, spike, standard, isotope_masses, inversion_keys, method,
                                  **method_kwargs)
         fins = inversion.fins
 
-        if np.all(np.abs(fins - fins2) < 0.000001):
+        if np.all(np.abs(fins - fins2) < fins_tol):
             break  # Beta value has converged so no need for more iterations.
     else:
         raise ValueError(
             'inversion did not converge after 10 iterations of the interference correction')
+
     return inversion
 
-#TODO cache for speedier grid
+
+# TODO cache for speedier grid
 def _deduce_inversion_keys(spike, inversion_keys):
     if inversion_keys is None:
         if not isinstance(spike, core.IsopyArray):
-            raise ValueError(f'Can not deduce inversion keys from spike since it is not an isopy array')
+            raise ValueError(
+                f'Can not deduce inversion keys from spike since it is not an isopy array')
         elif isinstance(spike, isopy.IsotopeArray):
             if len(spike.keys) != 4:
                 raise ValueError(f'inversion keys can not be deduced from *spike* as it'
@@ -482,11 +560,11 @@ def _deduce_inversion_keys(spike, inversion_keys):
     return numer, denom, inversion_keys
 
 
-def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99,  *,
-            fnat = None, fins = 2,  maxv = 10,
-            integrations = 100, integration_time = 8.389, resistor = 1E11,
-            random_seed = None, method='rudge',
-            isotope_masses=None, isotope_fractions = None,
+def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99, *,
+            fnat=None, fins=2, maxv=10,
+            integrations=100, integration_time=8.389, resistor=1E11,
+            random_seed=None, method='rudge',
+            isotope_masses=None, isotope_fractions=None,
             correction_method=ds_correction,
             **interferences):
     isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
@@ -506,12 +584,12 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99,  *,
         spike2 = 0
         spike1_fractions = np.array([1])
     else:
-        spike1_fractions = np.linspace(0, 1, n+2)[1:-1]
+        spike1_fractions = np.linspace(0, 1, n + 2)[1:-1]
         spike2 = spike2 / np.sum(spike2, axis=None)
 
     result_solutions = []
     for spike1_fraction in spike1_fractions:
-        spike_mixture = (spike1 * spike1_fraction) + (spike2 * (1-spike1_fraction))
+        spike_mixture = (spike1 * spike1_fraction) + (spike2 * (1 - spike1_fraction))
         result_solutions.append([])
         for spike_fraction in spike_fractions:
             measured = isotope.make_ms_sample(standard, spike_mixture=spike_mixture,
@@ -525,21 +603,24 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99,  *,
                                               isotope_masses=isotope_masses, **interferences)
             try:
                 solution = correction_method(measured, spike_mixture, standard, inversion_keys,
-                                         isotope_masses=isotope_masses,
-                                         isotope_fractions=isotope_fractions,
-                                         method=method)
+                                             isotope_masses=isotope_masses,
+                                             isotope_fractions=isotope_fractions,
+                                             method=method)
                 result_solutions[-1].append(solution)
             except:
                 nan = np.full(measured.size, np.nan)
                 solution = DSResult(nan.copy(), nan.copy(), nan.copy(),
-                                    named_args = (nan.copy(), nan.copy(), nan.copy(), nan.copy(), nan.copy(), nan.copy(), nan.copy()),
+                                    named_args=(
+                                    nan.copy(), nan.copy(), nan.copy(), nan.copy(), nan.copy(),
+                                    nan.copy(), nan.copy()),
                                     method='failed')
                 result_solutions[-1].append(solution)
 
     return DSGridResult(spike_fractions, spike1_fractions, result_solutions)
 
+
 @isotope.preset_arguments(delta=lambda mass_ratio, fnat, reference_fnat, isotope_masses:
-                          ds_Delta(mass_ratio, fnat, reference_fnat, 1000, isotope_masses))
+ds_Delta(mass_ratio, fnat, reference_fnat, 1000, isotope_masses))
 def ds_Delta(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
     """
     Calculate the Δ value for *mass_ratio* of a sample using the *fnat* mass fractionation factor.
@@ -573,6 +654,7 @@ def ds_Delta(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope
         mass_ratio = isotope_masses.get(mass_ratio)
 
     return (np.power(mass_ratio, fnat) - 1) * normalisation_factor
+
 
 def ds_Delta_prime(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
     """
@@ -608,6 +690,7 @@ def ds_Delta_prime(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, i
         mass_ratio = isotope_masses.get(mass_ratio)
 
     return np.log(mass_ratio) * fnat * normalisation_factor
+
 
 class DSResult:
     """
@@ -647,8 +730,9 @@ class DSResult:
     Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
     function will be performed on each attribute and a new :class:`DSResult`_ object returned.
     """
-    def __init__(self, method, alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction, Q):
 
+    def __init__(self, method, alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction,
+                 Q):
         self.alpha = alpha
         self.beta = beta
         self.lambda_ = lambda_
@@ -662,12 +746,15 @@ class DSResult:
         self.p = self.spike_fraction
         self.method = method
 
-        self.__named_names = ("alpha", "beta", "lambda_", "fnat", "fins", "spike_fraction", "sample_fraction", "Q")
+        self.__named_names = (
+        "alpha", "beta", "lambda_", "fnat", "fins", "spike_fraction", "sample_fraction", "Q")
         self.__named_args = (alpha, beta, lambda_, fnat, fins, spike_fraction, sample_fraction, Q)
 
     def __repr__(self):
         string = f'{self.__class__.__name__}(method = "{self.method}",'
-        args = ',\n'.join([f'{name} = {value}' for name, value in zip(self.__named_names, self.__named_args)])
+        args = ',\n'.join(
+            [f'{name} = {value}' for name, value in zip(self.__named_names, self.__named_args)])
+        return f'{string}\n{args})'
 
     def __iter__(self):
         return self.keys().__iter__()
@@ -696,8 +783,12 @@ class DSResult:
         """
         return list(zip(self.__named_names, self.__named_args))
 
+    def get(self, name):
+        return getattr(self, name)
+
     def __array_function__(self, func, types, args, kwargs):
         return self.__class__(self.method, *[func(value, **kwargs) for value in self.__named_args])
+
 
 class DSGridResult:
     def __init__(self, x, y, solutions):
@@ -709,16 +800,18 @@ class DSGridResult:
         return np.array([[getattr(solution, attr) for solution in row] for row in self.__solutions])
 
     def __array_function__(self, func, types, args, kwargs):
-        return self.__class__(self.x, self.y, [[func(solution, **kwargs) for solution in row] for row in self.__solutions])
+        return self.__class__(self.x, self.y,
+                              [[func(solution, **kwargs) for solution in row] for row in
+                               self.__solutions])
 
 
-#TODO double_spike_correction method
-#TODO allow ds_uncernianty grid to take correction funcion
+# TODO double_spike_correction method
+# TODO allow ds_uncernianty grid to take correction funcion
 
-def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes = None, max_voltage = 10, resistors = None,
-                        integration_time = 4, cycles = 100, resolution = 19, Fnat = 0.1, Fins = 1.6,
-                        ds_method ='Siebert', fast_mode = True, output_attr = 'alpha'):
-
+def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes=None, max_voltage=10,
+                         resistors=None,
+                         integration_time=4, cycles=100, resolution=19, Fnat=0.1, Fins=1.6,
+                         ds_method='Siebert', fast_mode=True, output_attr='alpha'):
     if isinstance(standard, _dtypes.IsotopeArray):
         if isotopes is None: isotopes = standard.keys()
         std = np.array([standard[i] for i in isotopes]).flatten()
@@ -758,7 +851,7 @@ def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes = None, max
         mas = np.asarray(mass).flatten()
     if mas.size != 4: raise ValueError('mass must contain exactly four values')
 
-    #At this point standard, spike1 and spike2 are arrays of 4.
+    # At this point standard, spike1 and spike2 are arrays of 4.
     standard = std / np.sum(std)
     spike1 = sp1 / np.sum(sp1)
     spike2 = sp2 / np.sum(sp2)
@@ -785,7 +878,7 @@ def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes = None, max
     if fast_mode is False:
         z = np.zeros((resolution, resolution, cycles), dtype=np.float64) * np.nan
         for y in range(resolution):
-            spike = prop[y] * spike1 + (1-prop[y]) * spike2
+            spike = prop[y] * spike1 + (1 - prop[y]) * spike2
             sp_rat = spike[rat_index] / spike[denom]
             for x in range(resolution):
                 sample = prop[x] * spike + (1 - prop[x]) * standard
@@ -796,29 +889,33 @@ def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes = None, max
                 smp_rat = np.transpose(smp_rat.transpose() * mass_ratio ** Fins)
 
                 solution = method(smp_rat, ref_ratio, sp_rat, mass_ratio2)
-                z[y,x, :] = solution.__getattribute__(output_attr)
+                z[y, x, :] = solution.__getattribute__(output_attr)
 
     if fast_mode is True:
         big = np.ones((resolution, resolution, cycles, 4))
         small = np.ones((resolution, resolution, 4))
 
-        spike = big * spike1 * prop.reshape(resolution, 1, 1, 1) + big * spike2 * (1 - prop).reshape(resolution, 1, 1,                                                                                          1)
-        smp = spike[:, :, 1, :] * prop.reshape(1, resolution, 1) + small * standard * (1 - prop).reshape(1, resolution,
-                                                                                                         1)
+        spike = big * spike1 * prop.reshape(resolution, 1, 1, 1) + big * spike2 * (
+                    1 - prop).reshape(resolution, 1, 1, 1)
+        smp = spike[:, :, 1, :] * prop.reshape(1, resolution, 1) + small * standard * (
+                    1 - prop).reshape(1, resolution,
+                                      1)
         smp = smp.reshape(-1, 4)
         smp = smp * (max_voltage / np.max(smp, axis=1).reshape(-1, 1))
         noise = johnson_nyquist_noise(smp, resistors, integration_time)
 
         noisy_sample = np.random.normal(smp, noise, (cycles, resolution ** 2, 4))
         noisy_sample = noisy_sample.transpose().reshape(4, -1)
-        smp_ratio = noisy_sample[rat_index] / noisy_sample[denom] * (mass_ratio ** Fins).reshape(3, 1)
+        smp_ratio = noisy_sample[rat_index] / noisy_sample[denom] * (mass_ratio ** Fins).reshape(3,
+                                                                                                 1)
 
         spike = spike.flatten().reshape(-1, 4).transpose()
         sp_ratio = spike[rat_index] / spike[denom]
 
-        #TODO check error that comes from rudge and do a specieal error
+        # TODO check error that comes from rudge and do a specieal error
         solution = method(smp_ratio, ref_ratio, sp_ratio, mass_ratio2)
-        z = solution.__getattribute__(output_attr).transpose().flatten().reshape(resolution, resolution, -1)
+        z = solution.__getattribute__(output_attr).transpose().flatten().reshape(resolution,
+                                                                                 resolution, -1)
 
     std = np.nanstd(z, axis=2) * 2
     count = np.count_nonzero(~np.isnan(z), axis=2)
@@ -833,14 +930,16 @@ def _ds_uncertainty_grid(standard, spike1, spike2, mass, *, isotopes = None, max
     min_x_pos = argmin_z % std.shape[0]
     min_y_pos = int(argmin_z / std.shape[0])
 
-    #x = sp in sp+smp, y = sp1 in sp1+sp2
+    # x = sp in sp+smp, y = sp1 in sp1+sp2
     return prop, prop, std / np.sqrt(count), (min_y_pos, min_x_pos)
+
 
 def _plot_ds_uncertainty_grid(*args, **kwargs):
     x, y, z, best = ds_uncertainty_grid(*args, **kwargs)
 
-    levels = [0] + [x * 0.0001 for x in range(1, 10)] + [x * 0.001 for x in range(1, 10)] + [x * 0.01 for x in
-                                                                                             range(1, 10)] + [0.1]
+    levels = [0] + [x * 0.0001 for x in range(1, 10)] + [x * 0.001 for x in range(1, 10)] + [
+        x * 0.01 for x in
+        range(1, 10)] + [0.1]
     min_z = z[best]
     min_x = x[best[1]]
     min_y = y[best[0]]
@@ -850,7 +949,8 @@ def _plot_ds_uncertainty_grid(*args, **kwargs):
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
     fig.subplots_adjust(hspace=0.3)
-    CS = ax.contourf(x, y, z, levels=levels, cmap=mplcm.get_cmap(mplcm.jet), norm=mplcolors.PowerNorm(0.23))
+    CS = ax.contourf(x, y, z, levels=levels, cmap=mplcm.get_cmap(mplcm.jet),
+                     norm=mplcolors.PowerNorm(0.23))
     fig.colorbar(CS, ax=ax, ticks=[0, 0.001, 0.01, 0.1, 1])
     plt.xlabel('Spike fraction in Spike/Sample mix')
     plt.ylabel('Spike1 fraction in Spike1/Spike2 mix')
@@ -858,7 +958,8 @@ def _plot_ds_uncertainty_grid(*args, **kwargs):
     plt.show()
 
 
-def _ds_cocktail_list(standard, mass, spikes = None, isotopes = None, output_mass_ratio = None, output_multiple = 1000, **kwargs):
+def _ds_cocktail_list(standard, mass, spikes=None, isotopes=None, output_mass_ratio=None,
+                      output_multiple=1000, **kwargs):
     if isinstance(standard, _dtypes.IsotopeArray):
         if isotopes is None: isotopes = standard.keys()
     elif isinstance(standard, _dtypes.IsopyDict):
@@ -881,7 +982,9 @@ def _ds_cocktail_list(standard, mass, spikes = None, isotopes = None, output_mas
     output = []
     for iso in itertools.combinations(isotopes, 4):
         for spike in itertools.combinations(iso, 2):
-            x, y, z, best = uncertianty_grid(standard, spikes.get(spike[0], spike[0]), spikes.get(spike[1], spike[1]), mass, isotopes = iso, **kwargs)
+            x, y, z, best = uncertianty_grid(standard, spikes.get(spike[0], spike[0]),
+                                             spikes.get(spike[1], spike[1]), mass, isotopes=iso,
+                                             **kwargs)
 
             x_min = x[best[1]]
             y_min = y[best[0]]
@@ -889,14 +992,7 @@ def _ds_cocktail_list(standard, mass, spikes = None, isotopes = None, output_mas
             z_min = z[best]
 
             if output_mass_ratio is not None:
-                z_min = (output_mass_ratio ** z[best] -1) * output_multiple
+                z_min = (output_mass_ratio ** z[best] - 1) * output_multiple
 
             output.append([tuple(iso), tuple(spike), (x_min, y_min, z_min), x, y, z, best])
     return output
-
-
-
-
-
-
-

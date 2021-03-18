@@ -13,7 +13,7 @@ import isopy.core
 
 def preset_arguments(**lambdas):
     def funcall(func):
-        for name, lam in lambdas:
+        for name, lam in lambdas.items():
             lam.__doc__ = func.__doc__
             setattr(func, name, lam)
         return func
