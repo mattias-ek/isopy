@@ -7,6 +7,7 @@ from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
 import numpy as np
 import functools
+import warnings
 from typing import Optional, Union, Literal
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
@@ -1293,19 +1294,22 @@ def _plot_stack_array(func, axes, vaxis, vtype, grid, /, **kwargs):
     else:
         find_wstart = False
 
-    if find_wstart:
-        wstart = np.nan
-        for name, ax in named_axes.items():
-            if name == '_': continue
-            if kwargs['spacing'] > 0:
-                wstart = np.nanmax([wstart, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
-            else:
-                wstart = np.nanmin([wstart, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
-        if kwargs['spacing'] > 0:
-            kwargs[f'{waxis}start'] = wstart + kwargs['pad']
-        else:
-            kwargs[f'{waxis}start'] = wstart - kwargs['pad']
+        if find_wstart:
+            wstart = np.nan
+            for name, ax in named_axes.items():
+                if name == '_': continue
+                if kwargs['spacing'] > 0:
+                    wstart = np.nanmax([wstart, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
+                else:
+                    wstart = np.nanmin([wstart, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+
+            if kwargs['spacing'] > 0:
+                kwargs[f'{waxis}start'] = wstart + kwargs['pad']
+            else:
+                kwargs[f'{waxis}start'] = wstart - kwargs['pad']
 
     for key in keys:
         try:
@@ -1960,13 +1964,16 @@ def _axes_data_func(axes, var, func, ignore_outliers=False, default_value = None
         else:
             raise ValueError('axes has no data stored')
 
-    if ignore_outliers:
-        data = np.concatenate(
-            [v[axes._ip__data['isnotoutlier'][i]] for i, v in enumerate(axes._ip__data[var]) if v is not None])
-    else:
-        data = np.concatenate([v for v in axes._ip__data[var] if v is not None])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
-    return func(data) * multiplier
+        if ignore_outliers:
+            data = np.concatenate(
+                [v[axes._ip__data['isnotoutlier'][i]] for i, v in enumerate(axes._ip__data[var]) if v is not None])
+        else:
+            data = np.concatenate([v for v in axes._ip__data[var] if v is not None])
+
+        return func(data) * multiplier
 
 def _axes_data_lim(axes, axis, ignore_outliers=False):
     if not hasattr(axes, '_ip__data'):
