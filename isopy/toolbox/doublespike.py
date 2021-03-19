@@ -619,31 +619,50 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99, *,
     return DSGridResult(spike_fractions, spike1_fractions, result_solutions)
 
 
-@isotope.preset_arguments(delta=lambda mass_ratio, fnat, reference_fnat, isotope_masses:
-ds_Delta(mass_ratio, fnat, reference_fnat, 1000, isotope_masses))
-def ds_Delta(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
+@isotope.preset_arguments(delta=lambda mass_ratio, fnat, *reference_fnat, isotope_masses=None:
+ds_Delta(mass_ratio, fnat, *reference_fnat, factor=1000, isotope_masses=isotope_masses))
+def ds_Delta(mass_ratio, fnat, *reference_fnat, factor=1, isotope_masses=None):
     """
     Calculate the Δ value for *mass_ratio* of a sample using the *fnat* mass fractionation factor.
 
     .. math::
 
-        \\Delta \\frac{smp_{i}} {smp_{j}} = \\left( \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right) * \\textrm{norm}
+        \\Delta \\frac{smp_{i}} {smp_{j}} = \\left( \\left(\\frac{mass_i} {mass_j} \\right)^{fnat} - 1\\right) * \\textrm{factor}
 
-    Where *norm* is the normalisation factor and *fnat* is the difference
-    between the sample and optional standard:
+    Where :math:`norm` is the normalisation factor. If *reference_fnat* values are given :math:`fnat` is the difference
+    between the *fnat* and *reference_fnat*:
 
     .. math::
 
-        fnat = fnat_{smp} - fnat_{std}
+        fnat = fnat_{smp} - fnat_{ref}
+
+    If multiple *reference_fnat* values are passed the mean of those values is used. If the each
+    *reference_fnat* passed has more than one value the mean is used.
     """
     if type(fnat) is DSResult:
         fnat = fnat.fnat
 
-    if type(reference_fnat) is DSResult:
-        reference_fnat = reference_fnat.fnat
+    if len(reference_fnat) == 0:
+        reference_fnat = 0
+    else:
+        reference_fnats = []
+        for value in reference_fnat:
+            if type(value) is DSResult:
+                value = value.fnat
+            value = np.asarray(value)
 
-    if normalisation_factor == 'delta':
-        normalisation_factor = 1000
+            if value.size > 1:
+                value = np.nanmean(value)
+
+            reference_fnats.append(value)
+
+        if len(reference_fnats) == 1:
+            reference_fnat = reference_fnats[0]
+        else:
+            reference_fnat = np.nanmean(reference_fnats)
+
+    if factor == 'delta':
+        factor = 1000
 
     if isotope_masses is None:
         isotope_masses = isopy.refval.isotope.mass
@@ -653,7 +672,7 @@ def ds_Delta(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope
     if isinstance(mass_ratio, str):
         mass_ratio = isotope_masses.get(mass_ratio)
 
-    return (np.power(mass_ratio, fnat) - 1) * normalisation_factor
+    return (np.power(mass_ratio, fnat) - 1) * factor
 
 
 def ds_Delta_prime(mass_ratio, fnat, reference_fnat=0, normalisation_factor=1, isotope_masses=None):
@@ -758,6 +777,9 @@ class DSResult:
 
     def __iter__(self):
         return self.keys().__iter__()
+
+    def __getitem__(self, item):
+        return self.__class__(self.method, *[v[item] for v in self.values()])
 
     def keys(self):
         """

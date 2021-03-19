@@ -815,10 +815,10 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
 
     return out
 
-@preset_arguments(delta = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1000, is_deviation),
-                  epsilon = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1E5, is_deviation),
-                  mu = lambda data, reference_data, is_deviation: normalise_data(data, reference_data, 1E6, is_deviation))
-def normalise_data(data, reference_data, factor=1, is_deviation=False):
+@preset_arguments(delta = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1000, is_deviation=is_deviation),
+                  epsilon = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E5, is_deviation=is_deviation),
+                  mu = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E6, is_deviation=is_deviation))
+def normalise_data(data, *reference_data, factor=1, is_deviation=False):
     """
     Normalise data to the given reference values.
 
@@ -833,9 +833,9 @@ def normalise_data(data, reference_data, factor=1, is_deviation=False):
     data
         Data to be normalised
     reference_data
-        The reference values used to normalise the data. Multiple values can be passed in a list.
-        If multiple values are passed or *reference_values* has a size larger than 1 the mean of
-        the values are used.
+        The reference values used to denormalise the data. If multiple values are passed
+        the mean of all the reference values are used. If a reference values contains more than
+        one value the mean is used.
     factor
         The multiplication factor to be applied to *data* during the normalisation.
     is_deviation
@@ -861,7 +861,7 @@ def normalise_data(data, reference_data, factor=1, is_deviation=False):
     98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902
     99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100
 
-    >>> isopy.tb.normalise_data(isopy.sd2(array), ref, 1000, is_deviation=True)
+    >>> isopy.tb.normalise_data(isopy.sd2(array), ref, factor=1000, is_deviation=True)
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
     >>> isopy.sd2(norm)
@@ -889,10 +889,10 @@ def normalise_data(data, reference_data, factor=1, is_deviation=False):
 
     return new
 
-@preset_arguments(delta = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1000, is_deviation),
-                  epsilon = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1E5, is_deviation),
-                  mu = lambda data, reference_data, is_deviation: denormalise_data(data, reference_data, 1E6, is_deviation))
-def denormalise_data(data, reference_data, factor=1, is_deviation=False):
+@preset_arguments(delta = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1000, is_deviation=is_deviation),
+                  epsilon = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E5, is_deviation=is_deviation),
+                  mu = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E6, is_deviation=is_deviation))
+def denormalise_data(data, *reference_data, factor=1, is_deviation=False):
     """
     Denormalise data to the given reference values.
 
@@ -909,7 +909,9 @@ def denormalise_data(data, reference_data, factor=1, is_deviation=False):
     data
         Normalised data to be denormalised
     reference_data
-        The reference values used to denormalise the data.
+        The reference values used to denormalise the data. If multiple values are passed
+        the mean of all the reference values are used. If a reference values contains more than
+        one value the mean is used.
     factor
         The multiplication factor applied to *data* during the normalisation.
     is_deviation
@@ -973,19 +975,20 @@ def denormalise_data(data, reference_data, factor=1, is_deviation=False):
 
 
 def _combine(values):
-    if isinstance(values, dict):
-        return values
+    if len(values) == 1 and isinstance(values[0], dict):
+        return values[0]
 
-    if type(values) is list:
-        values = [isopy.asarray(v) for v in values]
-        values = isopy.concatenate(values)
+    out = []
+    for value in values:
+        value = isopy.asarray(value)
+        if value.size > 1:
+            value = np.nanmean(value)
+        out.append(value)
+
+    if len(out) == 1:
+        return out[0]
     else:
-        values = isopy.asarray(values)
-
-    if values.size > 1:
-        values = np.nanmean(values)
-
-    return values
+        return np.nanmean(isopy.concatenate(values))
 
 
 def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=False):
