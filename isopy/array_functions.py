@@ -459,11 +459,11 @@ def power(x1, x2, default_value=np.nan):
     """
     return core.array_function(np.power, x1, x2, default_value=default_value)
 
-def keymax(a):
+def keymax(a, func = np.nanmedian):
     """
-    Return the name of the column where the largest value of the array is found.
+    Return the name of the column where the largest value returned by *func* is found.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    This function requires that *a* is an isopy array.
 
     Examples
     --------
@@ -472,11 +472,12 @@ def keymax(a):
     IsotopeKeyString('106Pd')
     """
     array = core.asarray(a)
-    return array.keys[np.nanargmax([np.nanmax(array[key]) for key in array.keys()])]
+    key_index = np.nanargmax([func(v) for v in array.values()])
+    return array.keys[key_index]
 
-def keymin(a):
+def keymin(a, func= np.nanmedian):
     """
-    Return the name of the column where the smallest value of the array is found.
+    Return the name of the column where the smallest value returned by *func* is found.
 
     This function requires that *a* is an isopy array.
 
@@ -487,6 +488,7 @@ def keymin(a):
     IsotopeKeyString('102Pd')
     """
     array = core.asarray(a)
-    return array.keys[np.nanargmin([np.nanmin(array[key]) for key in array.keys()])]
+    key_index = np.nanargmin([func(v) for v in array.values()])
+    return array.keys[key_index]
 
 

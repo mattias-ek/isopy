@@ -108,6 +108,36 @@ class Coerce(IsopyType, list):
             raise InputTypeError(name).from_dtypes(type(value), valid_types)
 
 
+class CoerceList(IsopyType, list):
+    """
+    Special isopy type that ensure that the parameter is a list. If it
+    is not a list will create a list with the item as the sole value.
+
+    **Note** Not compatible with other type checkers as it will look like a list.
+    """
+    @staticmethod
+    def check_type(name, value, valid_types):
+        if type(value) is not list:
+            value = [value]
+
+        return check_list(name, value, valid_types)
+
+#probbly wont work as it because list only accept types
+#Check what literal does
+class HasAttr(IsopyType, list):
+    """
+    Only accept items that has the supplied attributes
+    """
+
+    @staticmethod
+    def check_type(name, value, attrs):
+        for attr in attrs:
+            if not hasattr(value, attr):
+                raise InputValueError(name, f'No attribute called "{attr}" found')
+        return value
+
+
+
 array_like = create_type('array_like')
 isopy_array_like = create_type('isopy_array_like')
 numpy_array_like = create_type('numpy_array_like')
