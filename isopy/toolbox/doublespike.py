@@ -592,7 +592,7 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99, *,
         spike_mixture = (spike1 * spike1_fraction) + (spike2 * (1 - spike1_fraction))
         result_solutions.append([])
         for spike_fraction in spike_fractions:
-            measured = isotope.make_ms_sample(standard, spike_mixture=spike_mixture,
+            measured = isotope.make_ms_sample(standard, spike=spike_mixture,
                                               spike_fraction=spike_fraction,
                                               fnat=None, fins=fins, maxv=maxv,
                                               integrations=integrations,

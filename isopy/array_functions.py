@@ -7,7 +7,7 @@ from . import core
 
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
            'count_finite',
-           'add', 'subtract', 'divide', 'multiply', 'power',
+           'add', 'subtract', 'divide', 'multiply', 'power', 'arrayfunc',
            'keymax', 'keymin']
 
 ##########################
@@ -364,11 +364,14 @@ def count_finite(a, axis=core.NotGiven):
 ### Functions without dispatchers ###
 #####################################
 # These should  only be used with isopy arrays
-def add(x1, x2, default_value=np.nan):
+def add(x1, x2, default_value=np.nan, keys=None):
     """
     Add *x2* to *x1* substituting *default_value* for absent columns.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a default value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
 
     Examples
     --------
@@ -381,13 +384,16 @@ def add(x1, x2, default_value=np.nan):
     (row) , Ru      , Pd      , Cd
     0     , 1.00000 , 2.00000 , 1.00000
     """
-    return core.array_function(np.add, x1, x2, default_value=default_value)
+    return core.call_array_function(np.add, x1, x2, default_value=default_value, keys=keys)
 
-def subtract(x1, x2, default_value=np.nan):
+def subtract(x1, x2, default_value=np.nan, keys=None):
     """
     Subtract *x2* from *x1* substituting *default_value* for absent columns.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a default value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
 
     Examples
     --------
@@ -400,13 +406,16 @@ def subtract(x1, x2, default_value=np.nan):
     (row) , Ru      , Pd      , Cd
     0     , 1.00000 , 0.00000 , -1.00000
     """
-    return core.array_function(np.subtract, x1, x2, default_value=default_value)
+    return core.call_array_function(np.subtract, x1, x2, default_value=default_value, keys=keys)
 
-def multiply(x1, x2, default_value=np.nan):
+def multiply(x1, x2, default_value=np.nan, keys=None):
     """
     Multiply *x1* by *x2* substituting *default_value* for absent columns.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a default value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
 
     Examples
     --------
@@ -419,13 +428,16 @@ def multiply(x1, x2, default_value=np.nan):
     (row) , Ru      , Pd       , Cd
     0     , 2.00000 , 10.00000 , 5.00000
     """
-    return core.array_function(np.multiply, x1, x2, default_value=default_value)
+    return core.call_array_function(np.multiply, x1, x2, default_value=default_value, keys=keys)
 
-def divide(x1, x2, default_value=np.nan):
+def divide(x1, x2, default_value=np.nan, keys=None):
     """
     Divide *x1* by *x2* substituting *default_value* for absent columns.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a default value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
 
     Examples
     --------
@@ -438,13 +450,16 @@ def divide(x1, x2, default_value=np.nan):
     (row) , Ru      , Pd      , Cd
     0     , 2.00000 , 0.40000 , 0.20000
     """
-    return core.array_function(np.divide, x1, x2, default_value=default_value)
+    return core.call_array_function(np.divide, x1, x2, default_value=default_value, keys=keys)
 
-def power(x1, x2, default_value=np.nan):
+def power(x1, x2, default_value=np.nan, keys=None):
     """
     Raise *x1* to the power of *x2* substituting *default_value* for absent columns.
 
-    This function requires that *x1* and/or *x2* are isopy arrays.
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
 
     Examples
     --------
@@ -457,11 +472,36 @@ def power(x1, x2, default_value=np.nan):
     (row) , Ru      , Pd       , Cd
     0     , 2.00000 , 32.00000 , 1.00000
     """
-    return core.array_function(np.power, x1, x2, default_value=default_value)
+    return core.call_array_function(np.power, x1, x2, default_value=default_value, keys=keys)
 
-def keymax(a, func = np.nanmedian):
+def arrayfunc(func, *inputs, default_value=np.nan, keys=None, **kwargs):
     """
-    Return the name of the column where the largest value returned by *func* is found.
+    Call a numpy function *func* on the *inputs* values substituting *default_value* for absent columns.
+
+    *default_values* can either be a single value which will be used for
+    all the inputs or a tuple containing a value for each input.
+    If *keys* are given then the operation if only performed for those
+    keys.
+
+    This function is useful for calling numpy functions with the isopy specific
+    *default_value* and *keys* arguments or for array functions that dont employ
+    numpys array function dispatch.
+
+    Examples
+    --------
+    >>> array = isopy.random(100, keys=('ru', 'pd', 'cd')
+    >>> isopy.arrayfunc(np.std, array, keys=('ru', 'cd'))
+    (row) , Ru      , Cd
+    None  , 0.90836 , 0.89753
+    >>> isopy.arrayfunc(scipy.stats.sem, array) #Scipy functions do not support isopy arrays natively
+    (row) , Ru      , Pd      , Cd
+    None  , 0.09129 , 0.09430 , 0.09021
+    """
+    return core.call_array_function(func, *inputs, default_value=default_value, keys=keys, **kwargs)
+
+def keymax(a, evalfunc = np.nanmedian):
+    """
+    Return the name of the column where the largest value returned by *evalfunc* is found.
 
     This function requires that *a* is an isopy array.
 
@@ -472,12 +512,12 @@ def keymax(a, func = np.nanmedian):
     IsotopeKeyString('106Pd')
     """
     array = core.asarray(a)
-    key_index = np.nanargmax([func(v) for v in array.values()])
+    key_index = np.nanargmax([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
 
-def keymin(a, func= np.nanmedian):
+def keymin(a, evalfunc= np.nanmedian):
     """
-    Return the name of the column where the smallest value returned by *func* is found.
+    Return the name of the column where the smallest value returned by *evalfunc* is found.
 
     This function requires that *a* is an isopy array.
 
@@ -488,7 +528,7 @@ def keymin(a, func= np.nanmedian):
     IsotopeKeyString('102Pd')
     """
     array = core.asarray(a)
-    key_index = np.nanargmin([func(v) for v in array.values()])
+    key_index = np.nanargmin([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
 
 

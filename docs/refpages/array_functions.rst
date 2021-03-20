@@ -62,3 +62,4 @@ The following isopy array functions require that at least one isopy array as inp
     multiply
     divide
     power
+    arrfunc

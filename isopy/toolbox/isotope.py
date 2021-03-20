@@ -188,7 +188,13 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
 
     input = []
     for key in args:
-        input.append((key, 1))
+        if type(key) is tuple:
+            input.append((k, 1) for k in key)
+        elif isinstance(key, dict):
+            kwargs.update(key)
+        else:
+            input.append((key, 1))
+
     for item in kwargs.items():
         input.append(item)
 
@@ -307,19 +313,19 @@ def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integrat
         raise ValueError('The constructed ms array has a size larger than one')
 
     if maxv is not None:
-        beams = beams * (maxv / np.max(beams, axis=None))
-
-    noise = johnson_nyquist_noise(beams, integration_time=integration_time, resistor=resistor)
-    rng = np.random.default_rng(random_seed)
+        beams = beams.normalise(value=maxv)
 
     if integrations is None:
         return beams
     else:
+        noise = johnson_nyquist_noise(beams, integration_time=integration_time, resistor=resistor)
+        rng = np.random.default_rng(random_seed)
+
         return isopy.array({key: rng.normal(beams[key], noise[key], integrations) for key in beams.keys()})
 
 
-def make_ms_sample(ms_array, *, fnat = None, fins = None,  maxv = 10,
-                   spike_mixture = None, spike_fraction = 0.5,
+def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
+                   blank = None, blank_maxv = 0.01, spike = None, spike_fraction = 0.5,
                    integrations = 100, integration_time = 8.389, resistor = 1E11,
                    random_seed = None,
                    isotope_abundances=None, isotope_masses=None, **interferences):
@@ -332,17 +338,24 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None,  maxv = 10,
     ----------
     ms_array
         Any object that can be singularly passed to ``make_ms_array`` which returns valid array.
+        Also accepts a tuple or a dict which will be unpacked appropriately.
     fnat
         If given, the natural fractionation fractionation factor is applied to the ms_array
         before *interferences* are added to the ms_array.
     fins
         If given, the instrumental mass fractionation factor is applied to the ms_array
         at the same time the *interferences* are added to the ms_array.
-    spike_mixture
+    blank
+        The blank sample to be added to the sample. Can be object that can be singularly passed
+        to ``make_ms_array`` which returns valid array. Also accepts a tuple or a dict which will
+        be unpacked appropriately.
+    blank_maxv
+        The voltage of the largest beam in returned sample that is *blank*.
+    spike
         If given this spike mixture will be added ms_array after *fnat* but before *fins* and
         *interferences* are added to the array.
     spike_fraction
-        The fraction of spike in the final mixture based on the isotopes in *spike_mixture*.
+        The fraction of spike in the final mixture based on the isotopes in *spike*.
     maxv
         The voltage of the most abundant isotope in the array. The value for all other isotopes in
         the array are adjusted accordingly.
@@ -396,21 +409,37 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None,  maxv = 10,
     ms_array = make_ms_array(ms_array, mf_factor = fnat,
                           isotope_abundances=isotope_abundances, isotope_masses=isotope_masses)
 
-    if spike_mixture is not None:
-        spike_mixture = isopy.asarray(spike_mixture)
-        ms_array = make_ms_array(ms_array, isotope_abundances=isotope_abundances, isotope_masses=isotope_masses)
+    if spike is not None:
+        spike = isopy.asarray(spike)
 
-        spsum = np.sum(spike_mixture, axis=1)
-        smpsum = np.sum(ms_array.copy(key_eq=spike_mixture.keys()), axis = 1)
-        spike_mixture = spike_mixture / spsum * smpsum
-        spike_mixture = spike_mixture * (spike_fraction / (1-spike_fraction))
-        ms_array = isopy.add(ms_array, spike_mixture, 0)
+        spsum = np.sum(spike, axis=1)
+        smpsum = np.sum(ms_array.copy(key_eq=spike.keys()), axis = 1)
+
+        spike = spike / spsum * smpsum
+        spike = spike * spike_fraction
+        ms_array = ms_array * (1 - spike_fraction)
+
+        ms_array = isopy.add(ms_array, spike, 0)
+
 
     ms_array = make_ms_array(ms_array, mf_factor = fins,
                           isotope_abundances=isotope_abundances, isotope_masses=isotope_masses,
                            **interferences)
 
-    ms_array = make_ms_beams(ms_array, maxv=maxv, integrations=integrations,
+    ms_array = ms_array.normalise(value=maxv)
+
+    if blank is not None:
+        blank = make_ms_array(blank, mf_factor = fins, isotope_abundances=isotope_abundances,
+                              isotope_masses=isotope_masses)
+
+        blank = blank.normalise(value=blank_maxv)
+        maxkey = isopy.keymax(ms_array)
+        if maxkey in blank.keys:
+            ms_array = ms_array - ms_array.normalise(maxkey, blank[maxkey])
+
+        ms_array = isopy.add(ms_array, blank, 0)
+
+    ms_array = make_ms_beams(ms_array, maxv=None, integrations=integrations,
                           integration_time=integration_time, random_seed=random_seed,
                           resistor=resistor, isotope_abundances=isotope_abundances)
 

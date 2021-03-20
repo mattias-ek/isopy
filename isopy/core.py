@@ -30,7 +30,7 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'MassArray', 'ElementArray', 'IsotopeArray', 'RatioArray', 'GeneralArray',
            'IsopyDict', 'ScalarDict',
            'keystring', 'askeystring', 'keylist', 'askeylist', 'array', 'asarray', 'asanyarray',
-           'ones', 'zeros', 'empty', 'full',
+           'ones', 'zeros', 'empty', 'full', 'random',
            'concatenate',
            'iskeystring', 'iskeylist', 'isarray',
            'flavour', 'isflavour']
@@ -2088,7 +2088,7 @@ class IsopyArray(IsopyFlavour):
 
         else:
 
-            return array_function(ufunc, *inputs, **kwargs)
+            return call_array_function(ufunc, *inputs, **kwargs)
 
     def __array_function__(self, func, types, args, kwargs):
         if func in reimplmented_functions:
@@ -2111,7 +2111,7 @@ class IsopyArray(IsopyFlavour):
             if 'axis' in fargs and 'axis' not in kwargs:
                 kwargs['axis'] = NotGiven
 
-            return array_function(func, *args, **kwargs)
+            return call_array_function(func, *args, **kwargs)
 
     def _view(self, obj):
         if obj.dtype.names:
@@ -2179,6 +2179,23 @@ class IsopyArray(IsopyFlavour):
         Equivalent to ``[array[key] for key in array.keys]``
         """
         return [self[key] for key in self.keys]
+
+    def normalise(self, key = None, value = None):
+        """
+        Normalise all the values in the array so that the value of *key* is *value*.
+
+        If *key* is not given then *key* is set to the key of the column with the largest median
+        value. If *value* is not given then the sum of each row will be equal to 1 in the returned
+        array.
+        """
+        if key is None:
+            key = isopy.keymax(self)
+        if value is None:
+            value = 1 / np.nansum(self, axis = 1)
+        else:
+            value = value / self[key]
+
+        return self * value
 
     @property
     def keys(self):
@@ -3120,6 +3137,106 @@ def full(rows, fill_value, *, keys=None, ndim = None, dtype=float64):
     out = _new_empty_array(rows, keys, ndim, dtype, np.empty)
     return np.copyto(out, fill_value)
 
+def random(rows, random_args = None, distribution='normal', seed=None, *, keys=None, ndim = None, dtype=float64):
+    """
+    Creates an an isopy array filled with random numbers.
+
+
+    Parameters
+    ----------
+    rows : int, None
+        Number of rows in the returned array. A value of ``-1`` or ``None``
+        will return a 0-dimensional array unless overridden by *ndim*.
+    random_args
+        Arguments to be passed to the random generator when creating the random numbers for each
+        column. Can be a single value or a tuple containing several values. If you want different
+        arguments for different columns pass a list of values/tuples, one for each column.
+    distribution
+        The name of the distribution to be used when calculating the
+        random numbers. See `here <https://numpy.org/doc/stable/reference/random/generator.html?highlight=default_rng#distributions>`_ for
+        a list of avaliable distributions.
+    seed
+        The seed passed to the random generator.
+    fill_value
+        the value the array will be filled with.
+    keys : Sequence[str], Optional
+        Column names for the returned array. Can also be inferred from *dtype* if *dtype* is a
+        named ``np.dtype``.
+    ndim : {-1, 0, 1}, Optional
+        Dimensions of the final array. A value of ``-1`` will return an
+        0-dimensional array if size is 1 otherwise a 1-dimensional array is returned.
+        An exception is raised if value is ``0`` and *size* is not ``-1`` or ``1``.
+    dtype : numpy_dtype, Sequence[numpy_dtype]
+        Data type of returned array. A sequence of data types can given to specify
+        different datatypes for different columns in the final array.
+
+    Examples
+    --------
+    >>> array = isopy.random(100, keys=('ru', 'pd', 'cd'))
+    >>> array
+    (row) , Ru       , Pd       , Cd
+    0     , -0.30167 , -0.82244 , -0.91288
+    1     , -0.51438 , -0.87501 , -0.10230
+    2     , -0.72600 , -0.43822 , 1.17180
+    3     , 0.55762  , -0.52775 , -1.21364
+    4     , -0.64446 , 0.42803  , -0.42528
+    ...   , ...      , ...      , ...
+    95    , -0.51426 , 0.13598  , 1.82878
+    96    , 0.45020  , -0.70594 , -1.04865
+    97    , 1.79499  , 0.24688  , -0.18669
+    98    , 0.57716  , 0.57589  , -0.66426
+    99    , -0.25646 , -1.20771 , -0.01936
+    >>> np.mean(array)
+    (row) , Ru      , Pd       , Cd
+    None  , 0.01832 , -0.07294 , -0.00178
+    >>> isopy.sd(array)
+    (row) , Ru      , Pd      , Cd
+    None  , 0.89535 , 1.05086 , 0.91490
+
+    >>> array = isopy.random(100, [(0, 1), (1, 0.1), (-1, 10)], keys=('ru', 'pd', 'cd'))
+    >>> array
+    (row) , Ru       , Pd      , Cd
+    0     , -0.99121 , 1.03848 , -10.71260
+    1     , 0.93820  , 1.12808 , 33.88074
+    2     , -0.22853 , 1.06643 , 2.65216
+    3     , -0.05776 , 1.03931 , -7.55531
+    4     , -0.58707 , 1.03019 , 0.06148
+    ...   , ...      , ...     , ...
+    95    , 0.51169  , 1.10513 , 17.36456
+    96    , 0.21135  , 1.04240 , -8.05624
+    97    , -0.79133 , 1.08202 , -13.74861
+    98    , 1.07542  , 0.86911 , -5.70063
+    99    , 1.20108  , 0.78890 , -12.57918
+    >>> np.mean(array)
+    (row) , Ru      , Pd      , Cd
+    None  , 0.00008 , 1.00373 , -0.10169
+    >>> isopy.sd(array)
+    (row) , Ru      , Pd      , Cd
+    None  , 0.86765 , 0.09708 , 10.36754
+    """
+    array = empty(rows, keys=keys, ndim=ndim, dtype=dtype)
+
+    if random_args is None:
+        random_args = [tuple() for k in array.keys]
+    elif type(random_args) is tuple:
+        random_args = [random_args for k in array.keys]
+    elif type(random_args) is list:
+        if len(random_args) != array.ncols:
+            raise ValueError('size of "random_args" does not match the number of keys"')
+        random_args = [d if type(d) is tuple else (d,) for d in random_args]
+    else:
+        random_args = [(random_args,) for k in array.keys]
+
+    rng = np.random.default_rng(seed=seed)
+    dist = getattr(rng, distribution)
+
+    for key, args in zip(array.keys, random_args):
+        array[key] = dist(*args, size=array.shape)
+
+    return array
+
+
+
 
 def _new_empty_array(rows, keys, ndim, dtype, func):
     if rows is None: rows = -1
@@ -3362,8 +3479,7 @@ class _getter:
     def get(self, *_):
         return self.value
 
-
-def array_function(func, *inputs, axis=0, default_value= nan, **kwargs):
+def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **kwargs):
     """
     Used to call numpy ufuncs/functions on isopy arrays.
 
@@ -3426,36 +3542,44 @@ def array_function(func, *inputs, axis=0, default_value= nan, **kwargs):
     concancate, append
     """
 
+    if type(default_value) is not tuple:
+        default_value = tuple(default_value for i in range(len(inputs)))
+    elif len(default_value) != len(inputs):
+        raise ValueError('size of default value not the same as the number of inputs')
+
     new_inputs = []
-    default_values = []
-    keys = []
-    for arg in inputs:
+    new_default_values = []
+    new_keys = []
+    for i, arg in enumerate(inputs):
         if isinstance(arg, IsopyArray):
             new_inputs.append(arg)
-            default_values.append(default_value)
-            keys.append(arg.keys())
+            new_default_values.append(default_value[i])
+            new_keys.append(arg.keys())
         elif isinstance(arg, ndarray) and len(arg.dtype) > 1:
             try:
                 new_inputs.append(asarray(arg))
             except:
                 new_inputs.append(arg)
             else:
-                keys.append(new_inputs[-1].keys())
-            default_values.append(default_value)
+                new_keys.append(new_inputs[-1].keys())
+            new_default_values.append(default_value)
         elif isinstance(arg, IsopyDict):
             new_inputs.append(arg)
-            default_values.append(arg.default_value)
+            new_default_values.append(arg.default_value)
         elif isinstance(arg, dict):
             new_inputs.append(IsopyDict(arg))
-            default_values.append(default_value)
+            new_default_values.append(default_value[i])
         else:
             new_inputs.append(_getter(arg))
-            default_values.append(default_value)
+            new_default_values.append(default_value[i])
 
-    if len(keys) == 0:
-        return func(*inputs, **kwargs)
+    if keys is None:
+        if len(new_keys) == 0:
+            return func(*inputs, **kwargs)
+        else:
+            new_keys = new_keys[0].__or__(*new_keys[1:])
     else:
-        keys = keys[0].__or__(*keys[1:])
+        new_keys = isopy.askeylist(keys)
 
     if axis is NotGiven:
         kwargs['axis'] = None
@@ -3466,14 +3590,14 @@ def array_function(func, *inputs, axis=0, default_value= nan, **kwargs):
         keykwargs = {kw: kwargs.pop(kw) for kw in tuple(kwargs.keys())
                                 if isinstance(kwargs[kw], IsopyArray)}
 
-        result = [func(*(input.get(key, default_value) for input, default_value in zip(new_inputs, default_values)), **kwargs,
-                       **{k: v.get(key) for k, v in keykwargs.items()}) for key in keys]
+        result = [func(*(input.get(key, default_value) for input, default_value in zip(new_inputs, new_default_values)), **kwargs,
+                       **{k: v.get(key) for k, v in keykwargs.items()}) for key in new_keys]
         if out is None:
-            dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(keys)]
+            dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(new_keys)]
             if getattr(result[0], 'ndim', 0) == 0:
-                return keys._Flavour__view_ndarray(np.array(tuple(result), dtype=dtype))
+                return new_keys._Flavour__view_ndarray(np.array(tuple(result), dtype=dtype))
             else:
-                return keys._Flavour__view_ndarray(np.fromiter(zip(*result), dtype=dtype))
+                return new_keys._Flavour__view_ndarray(np.fromiter(zip(*result), dtype=dtype))
         else:
             return out
 
@@ -3481,8 +3605,8 @@ def array_function(func, *inputs, axis=0, default_value= nan, **kwargs):
         if axis == 1: axis = 0
         for kwk, kwv in kwargs.items():
             if isinstance(kwv, (IsopyArray, dict)):
-                kwargs['kwk'] = np.array([kwv.get(key, default_value) for key in keys])
+                kwargs['kwk'] = np.array([kwv.get(key, default_value) for key in new_keys])
 
-        new_inputs = [[input.get(key, default_value) for key in keys] if
-                      not isinstance(input, _getter) else input.get() for input in new_inputs]
+        new_inputs = [[input.get(key, default_value) for key in new_keys] if
+                      not isinstance(input, _getter) else input.get() for input, default_value in zip(new_inputs, new_default_values)]
         return func(*new_inputs, axis = axis, **kwargs)
