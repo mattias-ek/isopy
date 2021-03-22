@@ -844,9 +844,9 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
 
     return out
 
-@preset_arguments(delta = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1000, is_deviation=is_deviation),
-                  epsilon = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E5, is_deviation=is_deviation),
-                  mu = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E6, is_deviation=is_deviation))
+@core.function_preset('delta', factor=1000)
+@core.function_preset('epsilon', factor=1E5)
+@core.function_preset('mu', factor=1E6)
 def normalise_data(data, *reference_data, factor=1, is_deviation=False):
     """
     Normalise data to the given reference values.
@@ -918,9 +918,9 @@ def normalise_data(data, *reference_data, factor=1, is_deviation=False):
 
     return new
 
-@preset_arguments(delta = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1000, is_deviation=is_deviation),
-                  epsilon = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E5, is_deviation=is_deviation),
-                  mu = lambda data, *reference_data, is_deviation=False: normalise_data(data, *reference_data, factor=1E6, is_deviation=is_deviation))
+@core.function_preset('delta', factor=1000)
+@core.function_preset('epsilon', factor=1E5)
+@core.function_preset('mu', factor=1E6)
 def denormalise_data(data, *reference_data, factor=1, is_deviation=False):
     """
     Denormalise data to the given reference values.

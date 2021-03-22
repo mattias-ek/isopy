@@ -81,6 +81,12 @@ def updatedoc(ofunc=None, /, **fdict):
         return func
     return wrap
 
+def function_preset(name, *args, **kwargs):
+    def decorator(func):
+        setattr(func, name, functools.partial(func, *args, **kwargs))
+        return func
+    return decorator()
+
 ##################
 ### Exceptions ###
 ##################
@@ -1895,7 +1901,7 @@ class IsopyDict(dict):
 
     def copy(self):
         """Returns a copy of the current dictionary."""
-        return self.__class__(self, default_value = self._default_value, get_divide=self.get_divide)
+        return self.__class__(self, default_value = self._default_value)
 
     def clear(self):
         """

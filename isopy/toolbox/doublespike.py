@@ -619,8 +619,8 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=99, *,
     return DSGridResult(spike_fractions, spike1_fractions, result_solutions)
 
 
-@isotope.preset_arguments(delta=lambda mass_ratio, fnat, *reference_fnat, isotope_masses=None:
-ds_Delta(mass_ratio, fnat, *reference_fnat, factor=1000, isotope_masses=isotope_masses))
+@core.function_preset('delta', factor=1000)
+@core.function_preset('mu', factor=1E6)
 def ds_Delta(mass_ratio, fnat, *reference_fnat, factor=1, isotope_masses=None):
     """
     Calculate the Δ value for *mass_ratio* of a sample using the *fnat* mass fractionation factor.
