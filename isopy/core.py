@@ -37,7 +37,7 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'flavour', 'isflavour']
 
 CACHE_MAXSIZE = 128
-CACHES_ENABLED = False
+CACHES_ENABLED = True
 #TODO stackoverflow error that i cannot figure out
 def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
     """
@@ -446,6 +446,8 @@ class MassKeyString(MassFlavour, IsopyKeyString):
     >>> isopy.MassKeyString('76') <= 75
     False
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
             return string
@@ -592,6 +594,8 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
     >>> isopy.ElementKeyString('pd')
     'pd'
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
             return string
@@ -607,8 +611,8 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
             raise KeyValueError(cls, string, 'Cannot parse empty string')
 
         if len(string) > 2:
-            if allow_reformatting:
-                symbol = isopy.refval.element.symbol_name.get(string.capitalize(), None)
+            if allow_reformatting: #Creates circular error because of
+                symbol = isopy.refval.element.name_symbol.get(string.capitalize(), None)
             else:
                 symbol = None
             if symbol is None:
@@ -730,6 +734,8 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
     >>> 104 in isopy.IsotopeKeyString('Pd104')
     True
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
             return string
@@ -849,6 +855,7 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
 
         return options
 
+
 class RatioKeyString(RatioFlavour, IsopyKeyString):
     """
     A string representation of a ratio of two keystrings.
@@ -921,6 +928,8 @@ class RatioKeyString(RatioFlavour, IsopyKeyString):
     >>> 'as/ge' in isopy.RatioKeyString('Pd108/105pd//as/ge')
     True
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
             return string
@@ -1113,6 +1122,8 @@ class GeneralKeyString(GeneralFlavour, IsopyKeyString):
     >>> isopy.GeneralKeyString('Hermione/Ron')
     'Hermione/Ron'
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True):
 
         if isinstance(string, cls):
@@ -1170,7 +1181,7 @@ class GeneralKeyString(GeneralFlavour, IsopyKeyString):
         >>> key.str('{key} is really smart')
         'hermione is really smart'
         """
-        return super(MassKeyString, self).str(format)
+        return super(GeneralKeyString, self).str(format)
 
     def _str_options(self):
         return dict(key = str(self),
@@ -1196,6 +1207,8 @@ class IsopyKeyList(IsopyFlavour, tuple):
     will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
     that do not appear in both lists. All duplicate items will be removed from the returned lists.
     """
+
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, *keys, skip_duplicates = False,
                 allow_duplicates = True, allow_reformatting = True):
         new_keys = []
@@ -2235,6 +2248,7 @@ class ScalarDict(IsopyDict):
                 return default
         else:
             return super(ScalarDict, self).get(key, default, **key_filters)
+
 
 def parse_keyfilters(**filters):
     """

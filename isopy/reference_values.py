@@ -111,11 +111,12 @@ class element:
         >>> isopy.refval.element.symbol_name.get('ge')
         'Germanium'
         """
-        return core.IsopyDict(_load_RV_values('element_symbol_name'), readonly = True)
+        data = {isopy.ElementKeyString(key, allow_reformatting=False): value for key, value in _load_RV_values('element_symbol_name').items()}
+        return core.IsopyDict(data, readonly = True)
 
     @property
     @functools.cache
-    def name_symbol(self) -> core.IsopyDict:
+    def name_symbol(self) -> dict:
         """
         Dictionary containing the element symbol mapped to the full element name.
 
@@ -132,7 +133,7 @@ class element:
         >>> isopy.refval.element.symbol_name.get('Germanium')
         ElementKeyString('Ge')
         """
-        return core.IsopyDict({name: symbol for symbol, name in self.symbol_name.items()}, readonly = True)
+        return dict({name: symbol for symbol, name in self.symbol_name.items()}, readonly = True)
 
     @property
     @functools.cache

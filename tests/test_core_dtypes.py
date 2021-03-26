@@ -38,15 +38,15 @@ class Test_IsopyKeyString:
 
         #ElementKeyString
         self.direct_creation(core.ElementKeyString, correct ='Pd',
-                             same= ['pd', 'pD', 'PD', 'ELE_Pd', 'ELE_pd'],
-                             fails= ['', 1, '1', 'P1', '1P', '1Pd', '/Pd', '_Pd', 'Palladium',
+                             same= ['pd', 'pD', 'PD', 'ELE_Pd', 'ELE_pd', 'Palladium', 'palladium'],
+                             fails= ['', 1, '1', 'P1', '1P', '1Pd', '/Pd', '_Pd',
                                      'Pdd', 'GEN_Pd', 'ELE_p1', 'ELE__Pd'],
                              different= ['p', 'Cd', 'ru'])
 
         #IsotopeKeyString
         self.direct_creation(core.IsotopeKeyString, correct ='105Pd',
                              same= ['105PD', '105pd', '105pD', 'Pd105', 'Pd105', 'pd105',
-                                     'pD105', 'ISO_105Pd', 'ISO_pd105'],
+                                     'pD105', 'ISO_105Pd', 'ISO_pd105', '105-pd', 'palladium-105'],
                              fails= ['', 'Pd', '105', 'Pd105a', 'P105D', '105Pd/108Pd', 'ISO__pd104',
                                      'GEN_105Pd'],
                              different=['104pd', 'Pd106', '104Ru', 'cd106', '1a', 'b2'])
