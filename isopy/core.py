@@ -3,6 +3,7 @@ import numpy as np
 import pyperclip as pyperclip
 import inspect as inspect
 import functools
+import itertools
 
 #optional imports
 try:
@@ -23,7 +24,7 @@ NotGiven = NotGivenType()
 
 ALLOW_ALL_NUMPY_FUNCTIONS = False
 
-ARRAY_REPR = dict(include_row=True, include_dtype=False, nrows=10, f='{:.5f}')
+ARRAY_REPR = dict(include_row=True, include_dtype=False, nrows=10, f='{:.5g}')
 
 __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyString', 'GeneralKeyString',
            'MassKeyList', 'ElementKeyList', 'IsotopeKeyList', 'RatioKeyList', 'GeneralKeyList',
@@ -82,10 +83,13 @@ def updatedoc(ofunc=None, /, **fdict):
     return wrap
 
 def function_preset(name, *args, **kwargs):
+    if type(name) is not tuple:
+        name = (name,)
     def decorator(func):
-        setattr(func, name, functools.partial(func, *args, **kwargs))
+        for n in name:
+            setattr(func, n, functools.partial(func, *args, **kwargs))
         return func
-    return decorator()
+    return decorator
 
 ##################
 ### Exceptions ###
@@ -392,6 +396,15 @@ class IsopyKeyString(IsopyFlavour, str):
         else:
             return askeystring(other).__truediv__(self)
 
+    def str(self, format = None):
+        if format is None: return str(self)
+        options = self._str_options()
+
+        if format in options:
+            return options[format]
+        else:
+            return format.format(**options)
+
 
 class MassKeyString(MassFlavour, IsopyKeyString):
     """
@@ -517,6 +530,33 @@ class MassKeyString(MassFlavour, IsopyKeyString):
     def _sortkey(self):
         return f'{self:0>4}'
 
+    def str(self, format=None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"m"`` and ``"key"`` - Same as ``str(keystring)``
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+
+        Examples
+        --------
+        >>> key = isopy.MassKeyString('101')
+        >>> key.str()
+        '101'
+        >>> key.str('key is "{m}"')
+        'key is "101"'
+        """
+        return super(MassKeyString, self).str(format)
+
+    def _str_options(self):
+        return dict(m = str(self), key = str(self),
+                    math = fr'\mathrm{{{self}}}',
+                    latex = fr'$\mathrm{{{self}}}$')
+
 
 class ElementKeyString(ElementFlavour, IsopyKeyString):
     """
@@ -567,7 +607,14 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
             raise KeyValueError(cls, string, 'Cannot parse empty string')
 
         if len(string) > 2:
-            raise KeyValueError(cls, string, 'ElementKeyString is limited to two characters')
+            if allow_reformatting:
+                symbol = isopy.refval.element.symbol_name.get(string.capitalize(), None)
+            else:
+                symbol = None
+            if symbol is None:
+                raise KeyValueError(cls, string, 'ElementKeyString is limited to two characters')
+            else:
+                string = symbol
 
         if not string.isalpha():
             raise KeyValueError(cls, string, 'ElementKeyString is limited to alphabetical characters')
@@ -593,6 +640,40 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
     def _sortkey(self):
         z = isopy.refval.element.atomic_number.get(self, self)
         return f'{z:0>4}'
+
+    def str(self, format=None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"key"`` - Same as ``str(keystring)``.
+        * ``"Es"``, ``"es"``, ``"ES"`` - Element symbol capitalised, in lower case and in upper case respectivley.
+        * ``"Name"``, ``"name"``, ``"NAME"`` - Full element name capitalised, in lower case and in upper case respectivley.
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+
+        Examples
+        --------
+        >>> key = isopy.ElementKeyString('ru')
+        >>> key.str()
+        'Ru'
+        >>> key.str('Name')
+        'Ruthenium'
+        >>> key.str('Name of "{es}" is {Name}')
+        'name of "ru" is Ruthenium'
+        """
+        return super(ElementKeyString, self).str(format)
+
+    def _str_options(self):
+        name: str = isopy.refval.element.symbol_name[self]
+        return dict(key = str(self),
+                    es=self.lower(), ES=self.upper(), Es=str(self),
+                    name=name.lower(), NAME=name.upper(), Name=name,
+                    math = fr'\mathrm{{{self}}}',
+                    latex = fr'$\mathrm{{{self}}}$')
 
 
 class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
@@ -663,6 +744,7 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
         string = string.removeprefix('_') #For backwards compatibility
         string = string.removeprefix('Isotope_') #For backwards compatibility
         string = string.removeprefix('ISO_') #For backwards compatibility
+        if allow_reformatting: string = string.replace('-', '') #To allow e.g. 'ru-102'
 
         # If no digits in string then only Symbol is given.
         if string.isalpha():
@@ -672,22 +754,23 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
         if string.isdigit():
             raise KeyValueError(cls, string, 'string does not contain an element symbol')
 
-        # Loop through to split
-        l = len(string)
-        for i in range(1, l):
-            a = string[:i]
-            b = string[i:]
+        if allow_reformatting:
+            element = string.strip('0123456789')
+            mass = string.strip(element)
+        else:
+            element = string.lstrip('0123456789')
+            mass = string.rstrip(element)
 
-            if ((mass:=a).isdigit() and (element:=b).isalpha()) or ((mass:=b).isdigit() and (element:=a).isalpha()):
-                mass = MassKeyString(mass, allow_reformatting=allow_reformatting)
-                element = ElementKeyString(element, allow_reformatting=allow_reformatting)
+        if not element.isalpha() or not mass.isdigit():
+            raise KeyValueError(cls, string, 'unable to separate string into a mass number and an element symbol')
 
-                string = '{}{}'.format(mass, element)
-                return super(IsotopeKeyString, cls).__new__(cls, string,
-                                                           mass_number = mass,
-                                                           element_symbol = element)
+        mass = MassKeyString(mass, allow_reformatting=allow_reformatting)
+        element = ElementKeyString(element, allow_reformatting=allow_reformatting)
 
-        raise KeyValueError(cls, string, 'unable to separate string into a mass number and an element symbol')
+        string = '{}{}'.format(mass, element)
+        return super(IsotopeKeyString, cls).__new__(cls, string,
+                                                   mass_number = mass,
+                                                   element_symbol = element)
 
     def __hash__(self):
         return hash( (self.__class__, hash(self.mass_number), hash(self.element_symbol)) )
@@ -715,6 +798,56 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
     def _sortkey(self):
         return f'{self.mass_number._sortkey()}{self.element_symbol._sortkey()}'
 
+    def str(self, format=None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"key"`` - Same as ``str(keystring)``.
+        * All format options listed for :func:`MassKeyString.str`_
+        * All format options listed for :func:`ElementKeyString.str`_
+        * All combinations of mass key string format options and the element key string options, e.g. 'esm' or 'mName'.
+        * All combinations listed above but with a ``"-"`` between the two format options.
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+
+
+        Examples
+        --------
+        >>> key = isopy.IsotopeKeyString('101ru')
+        >>> key.str()
+        '101Ru'
+        >>> key.str('esm')
+        'ru101'
+        >>> key.str('esm')
+        'ru101'
+        >>> key.str('Name-m')
+        'Ruthenium-101'
+        >>> key.str('Mass {m} of element {Name}')
+        'Mass 101 of Ruthenium'
+        """
+        return super(IsotopeKeyString, self).str(format)
+        
+    def _str_options(self):
+        options = dict(key = str(self),
+                       math = fr'^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}',
+                       latex = fr'$^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}$')
+
+        mass_options = self.mass_number._str_options()
+        element_options = self.element_symbol._str_options()
+        options.update(mass_options)
+        options.update(element_options)
+
+        product = list(itertools.product(mass_options.items(), element_options.items()))
+        options.update({f'{mk}{ek}': f'{mv}{ev}' for (mk, mv), (ek, ev) in product})
+        options.update({f'{mk}-{ek}': f'{mv}{ev}' for (mk, mv), (ek, ev) in product})
+        options.update({f'{ek}{mk}': f'{ev}{mv}' for (mk, mv), (ek, ev) in product})
+        options.update({f'{ek}-{mk}': f'{ev}-{mv}' for (mk, mv), (ek, ev) in product})
+
+        return options
 
 class RatioKeyString(RatioFlavour, IsopyKeyString):
     """
@@ -876,6 +1009,74 @@ class RatioKeyString(RatioFlavour, IsopyKeyString):
     def _sortkey(self):
         return f'{self.denominator._sortkey()}/{self.numerator._sortkey()}'
 
+    def str(self, format = None, nformat=None, dformat = None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"key"`` - Same as ``str(keystring)``, does consider *nformat* and *dformat*.
+        * ``"n"`` - The numerator. *nformat* can be given to specify format of the numerator.
+        * ``"d"`` - The denominator. *dformat* can be given to specify format of the denominator.
+        * ``"n/d"`` - The ratio including *nformat* and *dformat*. This is the default is *format* is not given.
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+
+        *format* can be a tuple or a dict which will be unpacked into *format*, *nformat* and *dformat*.
+        This is useful for ratios of ratios.
+
+        Examples
+        --------
+        >>> key = isopy.RatioKeyString('101ru/104ru')
+        >>> key.str()
+        '101Ru/104Ru'
+        >>> key.str(nformat='Name-m', dformat='esm')
+        'Ruthenium-101/ru104'
+        >>> key.str('Ratio is "{n/d}"')
+        'Ratio is "101Ru/104Ru"'
+        >>> key.str('numerator is: {n}, denominator is: {d}', dformat='esm')
+        'numerator is: 101Ru, denominator is: ru104'
+        """
+        if type(format) is tuple:
+            format, nformat, dformat, *_ = itertools.chain(format, (None, None, None))
+        elif isinstance(format, dict):
+            nformat = format.get('nformat', None)
+            dformat = format.get('dformat', None)
+            format = format.get('format', None)
+
+        if format is None and nformat is None and dformat is None: return str(self)
+
+        n = self.numerator.str(nformat)
+        d = self.denominator.str(dformat)
+        nd = f'{n}/{d}'
+
+        options = self._str_options()
+        options[n] = n
+        options[d] = d
+        options['n/d'] = nd
+
+        if format in options:
+            return options[format]
+        else:
+            return format.format(**options)
+
+    def _str_options(self):
+        options = dict(key = str(self))
+
+        nmath = self.numerator.str('math')
+        if type(self.numerator) is RatioKeyString:
+            nmath = fr'\left({nmath}\right)'
+
+        dmath = self.denominator.str('math')
+        if type(self.denominator) is RatioKeyString:
+            dmath = fr'\left({dmath}\right)'
+
+        options['math'] = fr'\frac{{{nmath}}} {{{dmath}}}'
+        options['latex'] = fr'${options["math"]}$'
+        return options
+
 
 class GeneralKeyString(GeneralFlavour, IsopyKeyString):
     """
@@ -948,6 +1149,34 @@ class GeneralKeyString(GeneralFlavour, IsopyKeyString):
 
     def _sortkey(self):
         return str(self)
+
+    def str(self, format=None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"key"`` - Same as ``str(keystring)``
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+
+        Examples
+        --------
+        >>> key = isopy.GeneralKeyString('hermione')
+        >>> key.str()
+        'hermione'
+        >>> key.str('{key} is really smart')
+        'hermione is really smart'
+        """
+        return super(MassKeyString, self).str(format)
+
+    def _str_options(self):
+        return dict(key = str(self),
+                    math = fr'\mathrm{{{self}}}',
+                    plt = fr'$\mathrm{{{self}}}$',
+                    tex = str(self))
 
 
 ############
@@ -1135,13 +1364,13 @@ class IsopyKeyList(IsopyFlavour, tuple):
         """
         return len(set(self)) != len(self)
 
-    def strlist(self):
+    def strlist(self, format=None):
         """
         Return a list of ``str`` object for each key in the key list.
 
-        Analogous to ``[str(key) for key in keylist]``
+        Analogous to ``[key.str(format) for key in keylist]``
         """
-        return [str(key) for key in self]
+        return [key.str(format) for key in self]
 
     def sorted(self):
         """

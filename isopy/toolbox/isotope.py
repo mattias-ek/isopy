@@ -6,7 +6,7 @@ __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
            'calculate_mass_fractionation_factor', 'mass_independent_correction',
            'remove_isobaric_interferences',
            'make_ms_array', 'make_ms_beams', 'make_ms_sample', 'johnson_nyquist_noise',
-           'normalise_data', 'denormalise_data', 'find_outliers']
+           'Delta', 'inverse_Delta', 'find_outliers']
 
 import isopy.checks
 import isopy.core
@@ -507,6 +507,7 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
 
     #Do a combined mass fractionation and isobaric interference correction.
     #This can account for isobaric interferences on isotopes in *mf_ratio*
+
     for i in range(100):
         rat2 = rat
         prev_beta = beta
@@ -530,10 +531,10 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
 
     if normalisation_value is not None:
         if normalisation_factor is None: normalisation_factor = 1
-        rat = normalise_data(rat, normalisation_value, normalisation_factor)
+        rat = Delta(rat, normalisation_value, factor = normalisation_factor)
 
     elif normalisation_factor is not None:
-        rat = normalise_data(data, isotope_abundances, normalisation_factor)
+        rat = Delta(rat, isotope_abundances, factor = normalisation_factor)
 
     # Return the corrected data
     return rat
@@ -572,7 +573,6 @@ def _find_isobaric_interferences(measured, element):
             result += isopy.keymax(biggest)
 
         return result
-
 
 
 def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None, isotope_masses=None):
@@ -844,27 +844,27 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
 
     return out
 
-@core.function_preset('delta', factor=1000)
+@core.function_preset(('ppt', 'permil'), factor=1000)
 @core.function_preset('epsilon', factor=1E5)
-@core.function_preset('mu', factor=1E6)
-def normalise_data(data, *reference_data, factor=1, is_deviation=False):
+@core.function_preset(('mu', 'ppm'), factor=1E6)
+def Delta(data, reference_data, *, factor=1, is_deviation=False):
     """
     Normalise data to the given reference values.
 
     .. math::
-        n = (\\frac{m} {r} - d ) * f
+        \Delta n = (\\frac{m} {r} - d ) * f
 
-    where *n* is the normalised data, *m* is *data*, *f* is *factor*, *r* is *reference_data*,
-    and *d* is 1 if *is_deviation* is ``False`` and 0 if *is_deviation* is ``True``.
+    where :math:`n` is the normalised data, :math:`m` is *data*, :math:`f` is *factor*, :math:`r` is *reference_data*,
+    and :math:`d`  is 1 if *is_deviation* is ``False`` and 0 if *is_deviation* is ``True``.
 
     Parameters
     ----------
     data
         Data to be normalised
     reference_data
-        The reference values used to denormalise the data. If multiple values are passed
-        the mean of all the reference values are used. If a reference values contains more than
-        one value the mean is used.
+        The reference values used to denormalise the data. If a reference values contains more than
+        one value the mean is used. Multiple values can be passed as a tuple in which case the
+        mean of those values is used.
     factor
         The multiplication factor to be applied to *data* during the normalisation.
     is_deviation
@@ -875,7 +875,7 @@ def normalise_data(data, *reference_data, factor=1, is_deviation=False):
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.make_ms_sample('pd', fins=1, maxv=0.1).ratio('105pd')
-    >>> norm = isopy.tb.normalise_data(array, ref)
+    >>> norm = isopy.tb.Delta(array, ref)
     >>> norm
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     0     , -28.60967   , -9.54006    , 9.50745     , 28.57674    , 47.70528
@@ -890,7 +890,7 @@ def normalise_data(data, *reference_data, factor=1, is_deviation=False):
     98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902
     99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100
 
-    >>> isopy.tb.normalise_data(isopy.sd2(array), ref, factor=1000, is_deviation=True)
+    >>> isopy.tb.Delta(isopy.sd2(array), ref, factor=1000, is_deviation=True)
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
     >>> isopy.sd2(norm)
@@ -911,25 +911,25 @@ def normalise_data(data, *reference_data, factor=1, is_deviation=False):
     is_deviation = isopy.checks.check_type('is_deviation', is_deviation, bool)
 
     reference_data = _combine(reference_data)
-
     new = data / reference_data
     if not is_deviation: new = new - 1
+
     new = new * factor
 
     return new
 
-@core.function_preset('delta', factor=1000)
+@core.function_preset(('ppt', 'permil'), factor=1000)
 @core.function_preset('epsilon', factor=1E5)
-@core.function_preset('mu', factor=1E6)
-def denormalise_data(data, *reference_data, factor=1, is_deviation=False):
+@core.function_preset(('mu', 'ppm'), factor=1E6)
+def inverse_Delta(data, reference_data, *, factor=1, is_deviation=False):
     """
     Denormalise data to the given reference values.
 
     .. math::
-        m = (\\frac{n} {f} + d ) * r
+        m = (\\frac{\Delta n} {f} + d ) * r
 
-    *m* is the denormalised data, *n* is the normalised *data*,  *f* is *factor*,
-    *r* is *reference_values*,  and *d* is 1 if *is_deviation* is ``False`` and
+    :math:`m` is the denormalised data, :math:`n` is the normalised *data*,  :math:`f` is *factor*,
+    :math:`r` is *reference_values*,  and :math:`d` is 1 if *is_deviation* is ``False`` and
     0 if *is_deviation* is ``True``.
 
 
@@ -952,8 +952,8 @@ def denormalise_data(data, *reference_data, factor=1, is_deviation=False):
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.make_ms_sample('pd', fins=1).ratio('105pd')
-    >>> norm = isopy.toolbox.isotope.normalise_data(array, ref, 1000)
-    >>> denorm = isopy.tb.denormalise_data(norm, ref, 1000)
+    >>> norm = isopy.toolbox.isotope.Delta(array, ref, 1000)
+    >>> denorm = isopy.tb.inverse_Delta(norm, ref, 1000)
     >>> denorm
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     0     , 0.04437     , 0.49412     , 1.23554     , 1.21881     , 0.54985
@@ -1003,9 +1003,14 @@ def denormalise_data(data, *reference_data, factor=1, is_deviation=False):
     return new
 
 
-def _combine(values):
-    if len(values) == 1 and isinstance(values[0], dict):
-        return values[0]
+def _combine(value):
+    if isinstance(value, dict):
+        return value
+
+    if type(value) is not tuple:
+        values = (value,)
+    else:
+        values = value
 
     out = []
     for value in values:

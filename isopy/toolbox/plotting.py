@@ -139,7 +139,7 @@ class Colors(RotatingList):
                                       '#a65628', '#ffff33', '#f781bf', '#999999']
 
 
-def update_figure(figure, width=None, height=None, dpi=None, facecolor=None, edgecolor=None,
+def update_figure(figure, *, size = None, width=None, height=None, dpi=None, facecolor=None, edgecolor=None,
                   frameon=None, tight_layout=None, constrained_layout=None):
     """
     Update the figure options.
@@ -154,6 +154,8 @@ def update_figure(figure, width=None, height=None, dpi=None, facecolor=None, edg
         A matplotlib Figure object or any object
         with a ``.gcf()`` method that returns a matplotlib Figure object, Such as a matplotlib
         pyplot instance.
+    size : scalar, (scalar, scalar)
+        Either a single value representing both deimensions of a tuple consisting of width and height.
     width : scalar
         Width of *figure* in inches
     height : scalar
@@ -177,6 +179,11 @@ def update_figure(figure, width=None, height=None, dpi=None, facecolor=None, edg
         Returns the figure
     """
     figure = _check_figure('figure', figure)
+    if size is not None:
+        if type(size) is tuple:
+            width, height = size
+        else:
+            width, height = size, size
     if width is not None: figure.set_figwidth(width)
     if height is not None: figure.set_figheight(height)
     if dpi is not None: figure.set_dpi(dpi)
@@ -662,7 +669,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     >>> array = isopy.tb.make_ms_array('pd', mf_factor = [0.001, 0.002]).ratio('105pd')
-    >>> array = isopy.toolbox.isotope.normalise_data(array, isopy.refval.isotope.abundance, 1000)
+    >>> array = isopy.toolbox.isotope.Delta(array, isopy.refval.isotope.abundance, 1000)
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 0}) #Adds a zero for the denominator mass number
     >>> plt.show()
@@ -740,7 +747,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     if constants:
         if not isinstance(constants, dict):
-            raise ValueError('constants must be a dictionary')
+            raise ValueError(f'constants must be a dictionary not "{type(constants).__name__}"')
         xconstants = np.array(list(constants.keys()), dtype=np.float64)
         yconstants = np.array(list(constants.values()), dtype=np.float64)
 
@@ -752,7 +759,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         x = np.append(x, np.full((x.shape[0], xconstants.size), xconstants), axis = 1)
         y = np.append(y, np.full((y.shape[0], yconstants.size), yconstants), axis = 1)
         if yerr is not None:
-            yerr = np.append(yerr, np.full((yerr.shape[0], constants.size), np.nan), axis = 1)
+            yerr = np.append(yerr, np.full((yerr.shape[0], yconstants.size), np.nan), axis = 1)
 
     if xscatter and not isinstance(xscatter, (float, int)):
         raise TypeError(f'xscatter must be a float or an integer')
