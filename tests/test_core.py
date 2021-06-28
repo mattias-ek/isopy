@@ -2929,12 +2929,16 @@ class Test_Array:
         for key in array.keys:
             np.testing.assert_allclose(array[key], tovalue[str(key)])
 
-        array.to_clipboard()
-        assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
-        new_array1 = isopy.array_from_clipboard()
-        assert isinstance(new_array1, core.IsopyArray)
-        assert core.isflavour(new_array1, array)
-        assert_array_equal_array(new_array1, array)
+        try:
+            array.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
+            new_array1 = isopy.array_from_clipboard()
+            assert isinstance(new_array1, core.IsopyArray)
+            assert core.isflavour(new_array1, array)
+            assert_array_equal_array(new_array1, array)
 
         # Size 1, 1-dim
         array = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -2964,8 +2968,12 @@ class Test_Array:
         for key in array.keys:
             np.testing.assert_allclose(array[key], tovalue[str(key)])
 
-        array.to_clipboard()
-        assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        try:
+            array.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
         # Size 1, 0-dim
         array = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -2993,8 +3001,12 @@ class Test_Array:
         for key in array.keys:
             np.testing.assert_allclose(array[key], tovalue[str(key)])
 
-        array.to_clipboard()
-        assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        try:
+            array.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
     def test_asarray(self):
         # size 1, 0-dim
