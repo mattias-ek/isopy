@@ -4,20 +4,13 @@ from isopy import core
 
 __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
            'calculate_mass_fractionation_factor', 'mass_independent_correction',
-           'remove_isobaric_interferences',
+           'remove_isobaric_interferences', 'find_isobaric_interferences',
            'make_ms_array', 'make_ms_beams', 'make_ms_sample', 'johnson_nyquist_noise',
-           'Delta', 'inverse_Delta', 'find_outliers']
+           'rDelta', 'inverse_rDelta',
+           'find_outliers', 'upper_limit', 'lower_limit']
 
 import isopy.checks
 import isopy.core
-
-def preset_arguments(**lambdas):
-    def funcall(func):
-        for name, lam in lambdas.items():
-            lam.__doc__ = func.__doc__
-            setattr(func, name, lam)
-        return func
-    return funcall
 
 
 """
@@ -44,10 +37,6 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     .. math::
         n_{all} = \\sqrt{ (n_{jn})^2 + (n_{cs})^2 }
 
-    The noise for a specific isotope ratio can be calculated as:
-
-    .. math::
-        n_{n,d} = \\sqrt{ (n_{n})^2 + (n_{d})^2 }
 
     where :math:`n` is the numerator isotope and :math:`d` is the denominator isotope.
 
@@ -60,7 +49,7 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
         The measured voltages. :math:`v` in the equations above.
     resistor : IsotopeArray, float, np.ndarray, dict
         The resistor for the measurement. Default value is ``1E11``. :math:`r` in the equations above.
-        If *resistor* is a dictionary ``1E11`` will be used for values not in the dictionary.
+        If *resistor* is a dictionary *R* will be used for values not in the dictionary.
     integration_time : float, optional
         The integration time in seconds for a single measurement. Default value is ``8.389``.
         :math:`t` in the equations above.
@@ -97,22 +86,22 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     None  , 0.02672 , 0.08932 , 0.12565 , 0.14528 , 0.13663 , 0.09156
     """
 
-    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsotopeArray, np.ndarray, np.float, coerce=True,
-                                      coerce_into=[isopy.core.IsotopeArray, np.float, np.array])
+    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsotopeArray, np.ndarray, np.float64, coerce=True,
+                                      coerce_into=[isopy.core.IsotopeArray, np.float64, np.array])
     resistor = isopy.checks.check_type('resistor', resistor, isopy.core.IsotopeArray, np.ndarray, dict, coerce=True,
-                                       coerce_into=[isopy.core.IsotopeArray, np.float, np.array])
-    integration_time = isopy.checks.check_type('integration_time', integration_time, np.float, coerce=True)
+                                       coerce_into=[isopy.core.IsotopeArray, np.float64, np.array])
+    integration_time = isopy.checks.check_type('integration_time', integration_time, np.float64, coerce=True)
     include_counting_statistics = isopy.checks.check_type('include_counting_statistics', include_counting_statistics,
                                                           bool)
-    if isinstance(resistor, dict):
-        resistor = core.IsopyDict(resistor, default_value=1E11)
+    if isinstance(resistor, (core.IsopyArray, dict)):
+        resistor = core.ScalarDict(resistor, default_value=R)
         resistor = isopy.IsotopeArray({key: resistor.get(key) for key in voltage.keys})
 
-    T = isopy.checks.check_type('T', T, np.float, coerce=True)
-    R = isopy.checks.check_type('R', R, np.float, coerce=True)
-    cpv = isopy.checks.check_type('cpv', cpv, np.float, coerce=True)
+    T = isopy.checks.check_type('T', T, np.float64, coerce=True)
+    R = isopy.checks.check_type('R', R, np.float64, coerce=True)
+    cpv = isopy.checks.check_type('cpv', cpv, np.float64, coerce=True)
 
-    kB = np.float(1.3806488E-023) # Boltsman constant
+    kB = np.float64(1.3806488E-023) # Boltsman constant
 
     t_noise = np.sqrt((4 * kB * T * resistor) / integration_time) * (R / resistor)
 
@@ -122,7 +111,7 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     else:
         return t_noise
 
-def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_masses=None, **kwargs):
+def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_masses=None, **kwargs):
     """
     Constructs an isotope array where the first created isotope contains the sum of all given
     isotopes with the same mass number. The construction order is first *args* and then *kwargs*.
@@ -138,9 +127,9 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
     mf_factor
         If given this mass fractionation factor is applied to all isotopes of an element
         prior to being added to the result.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.abundance``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -181,8 +170,8 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
     make_ms_beams, make_ms_sample
     """
 
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances,
-                                                           isopy.refval.isotope.abundance)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
+                                                           isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
                                                         isopy.refval.isotope.mass)
 
@@ -206,21 +195,24 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
         else:
             key = isopy.askeystring(key)
             if isinstance(key, isopy.ElementKeyString):
-                keys = isopy.refval.element.isotopes[key]
+                keys = isopy.refval.element.isotopes.get(key)
+                if keys is None: raise ValueError(f'No isotopes found for {key}')
+                keys = keys.set_charges(key.charge)
             elif isinstance(key, isopy.IsotopeKeyString):
                 keys = isopy.IsotopeKeyList(key)
             else:
-                raise ValueError('args must be an element or isotope key string')
+                raise ValueError(f'Unknown input: {key}. input must be an element or isotope key string')
 
-        isotope_keys += keys.filter(mass_number_neq = isotope_keys.mass_numbers)
+        isotope_keys += keys.filter(mz_neq = isotope_keys.mz())
 
     isotope_keys = isotope_keys.sorted()
-    mass_keys = isotope_keys.mass_numbers
-    mass_array = isopy.zeros(None, mass_keys)
+    mz_keys = isotope_keys.mz()
+    out = isopy.zeros(None, isotope_keys)
+    mzkey = dict(zip(mz_keys, isotope_keys))
+
     for key, val in input:
         if isinstance(key, core.IsopyArray):
             array = key
-            keys = array.keys()
         else:
             key = isopy.askeystring(key)
             if isinstance(key, isopy.ElementKeyString):
@@ -228,19 +220,26 @@ def make_ms_array(*args, mf_factor = None, isotope_abundances = None, isotope_ma
             else:
                 element = key.element_symbol
 
-            keys = isopy.refval.element.isotopes[element].filter(mass_number_eq=mass_keys)
-            array = isopy.ones(None, keys) * isotope_abundances * val
+            keys = isopy.refval.element.isotopes.get(element, None)
+            keys = keys.set_charges(key.charge)
+            keys = keys.filter(mz_eq = mz_keys)
+
+            array = isopy.ones(None, keys) * isotope_fractions
 
         if mf_factor is not None:
             array = add_mass_fractionation(array, mf_factor, isotope_masses=isotope_masses)
+            array = array.normalise(np.sum(isotope_fractions.get(keys), axis=None))
 
-        mass_array = isopy.add(mass_array, isopy.array(array, keys.mass_numbers), default_value = 0)
+        array = array * val
 
-    return isopy.IsotopeArray(mass_array, isotope_keys)
+        for k, v in array.items():
+            out[mzkey[k.mz()]] += v
+
+    return out
 
 
-def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integration_time=8.389, resistor=1E11,
-                  random_seed = None, isotope_abundances=None, isotope_masses=None, **kwargs):
+def make_ms_beams(*args, mf_factor=None, fixed_voltage = 10, fixed_key = isopy.keymax, integrations = 100, integration_time=8.389, resistor=1E11,
+                  random_seed = None, isotope_fractions=None, isotope_masses=None, **kwargs):
     """
     Simulates a series of measurements with a standard deviation equal to the johnson-nyquist noise
     and counting statistics.
@@ -258,9 +257,12 @@ def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integrat
     mf_factor
         If given this mass fractionation factor is applied to all isotopes of an element
         prior to being added to the result.
-    maxv
-        The voltage of the most abundant isotope in the array. The value for all other isotopes in
+    fixed_voltage
+        The voltage of *fixed_key* in the array. The value for all other isotopes in
         the array are adjusted accordingly.
+    fixed_key
+        If not given then the this defaults to the most abundant isotope. If ``None`` then the sum
+        of all isotopes in the array will be set to *fixed_voltage*
     integrations
         The number of simulated measurements. If ``None`` no measurements are simulated and the
         retured array contains the true values.
@@ -271,9 +273,9 @@ def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integrat
         to give different resistor values for different isotopes.
     random_seed
         Must be an integer. Seed given to the random generator.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.abundance``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -308,27 +310,28 @@ def make_ms_beams(*args, mf_factor=None, maxv = 10, integrations = 100, integrat
     make_ms_array, make_ms_sample
     """
 
-    beams = make_ms_array(*args, **kwargs, mf_factor=mf_factor, isotope_masses=isotope_masses, isotope_abundances=isotope_abundances)
+    beams = make_ms_array(*args, **kwargs, mf_factor=mf_factor, isotope_masses=isotope_masses, isotope_fractions=isotope_fractions)
     if beams.size != 1:
         raise ValueError('The constructed ms array has a size larger than one')
 
-    if maxv is not None:
-        beams = beams.normalise(value=maxv)
+    if fixed_voltage is not None:
+        beams = beams.normalise(fixed_voltage, fixed_key)
 
     if integrations is None:
         return beams
     else:
         noise = johnson_nyquist_noise(beams, integration_time=integration_time, resistor=resistor)
-        rng = np.random.default_rng(random_seed)
 
-        return isopy.array({key: rng.normal(beams[key], noise[key], integrations) for key in beams.keys()})
+        return isopy.random(integrations, list(zip(beams.values(), noise.values())), keys=beams.keys, seed=random_seed)
 
 
-def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
-                   blank = None, blank_maxv = 0.01, spike = None, spike_fraction = 0.5,
-                   integrations = 100, integration_time = 8.389, resistor = 1E11,
+
+def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fixed_key = isopy.keymax,
+                   blank = None, blank_fixed_voltage = 0.01, blank_fixed_key = isopy.keymax,
+                   spike = None, spike_fraction = 0.5,
+                   integrations = 100, integration_time = 8.389, resistors = 1E11,
                    random_seed = None,
-                   isotope_abundances=None, isotope_masses=None, **interferences):
+                   isotope_fractions=None, isotope_masses=None, **interferences):
     """
     Creates a simulated the measurement of a sample with natural and instrumental mass
     fractionation added to the array. The standard deviation of measurements for each isotope
@@ -337,7 +340,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
     Parameters
     ----------
     ms_array
-        Any object that can be singularly passed to ``make_ms_array`` which returns valid array.
+        Any object that can be passed to ``make_ms_array`` to returns valid array.
         Also accepts a tuple or a dict which will be unpacked appropriately.
     fnat
         If given, the natural fractionation fractionation factor is applied to the ms_array
@@ -345,40 +348,47 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
     fins
         If given, the instrumental mass fractionation factor is applied to the ms_array
         at the same time the *interferences* are added to the ms_array.
+    fixed_voltage
+        The voltage of *fixed_key* in the array. The value for all other isotopes in
+        the array are adjusted accordingly.
+    fixed_key
+        If not given then the this defaults to the most abundant isotope. If ``None`` then the sum
+        of all isotopes in the array will be set to *fixed_voltage*
     blank
         The blank sample to be added to the sample. Can be object that can be singularly passed
         to ``make_ms_array`` which returns valid array. Also accepts a tuple or a dict which will
         be unpacked appropriately.
-    blank_maxv
-        The voltage of the largest beam in returned sample that is *blank*.
+    blank_fixed_voltage
+        The voltage of the *blank_fixed_key* in returned sample that is *blank*.
+    blank_fixed_key
+        If not given then the this defaults to the most abundant isotope. If ``None`` then the sum
+        of all isotopes in the array will be set to *blank_fixed_voltage*
     spike
         If given this spike mixture will be added ms_array after *fnat* but before *fins* and
         *interferences* are added to the array.
     spike_fraction
         The fraction of spike in the final mixture based on the isotopes in *spike*.
-    maxv
-        The voltage of the most abundant isotope in the array. The value for all other isotopes in
-        the array are adjusted accordingly.
     integrations
         The number of simulated measurements. If ``None`` no measurements are simulated and the
         retured array contains the true values.
     integration_time
         The integration time for each simulated measurement.
-    resistor
+    resistors
         The resistor used for each measurement. A isotope array or a dictionary can be passed to
         to give different resistor values for different isotopes.
     random_seed
         Must be an integer. Seed given to the random generator.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.abundance``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
     interferences
         Each kwarg key must be either an element key string or an isotope key string. The isotope
         fractions added to the array based on the kwarg key are multiplied by the kwarg value.
-        Otherwise behaves the same as for *args*.
+        Otherwise behaves the same as for *args*. A dictionary named interferences can be passed
+        for keys that cannot be passed as kwargs, e.g. '137Ba++'.
 
     Returns
     -------
@@ -407,7 +417,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
     make_ms_array, make_ms_beams
     """
     ms_array = make_ms_array(ms_array, mf_factor = fnat,
-                          isotope_abundances=isotope_abundances, isotope_masses=isotope_masses)
+                             isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
     if spike is not None:
         spike = isopy.asarray(spike)
@@ -421,38 +431,46 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, maxv = 10,
 
         ms_array = isopy.add(ms_array, spike, 0)
 
-
     ms_array = make_ms_array(ms_array, mf_factor = fins,
-                          isotope_abundances=isotope_abundances, isotope_masses=isotope_masses,
-                           **interferences)
+                             isotope_fractions=isotope_fractions, isotope_masses=isotope_masses,
+                             **interferences.pop('interferences', {}), **interferences)
 
-    ms_array = ms_array.normalise(value=maxv)
+    ms_array = ms_array.normalise(fixed_voltage, fixed_key)
 
     if blank is not None:
-        blank = make_ms_array(blank, mf_factor = fins, isotope_abundances=isotope_abundances,
+        blank = make_ms_array(blank, mf_factor = fins, isotope_fractions=isotope_fractions,
                               isotope_masses=isotope_masses)
 
-        blank = blank.normalise(value=blank_maxv)
-        maxkey = isopy.keymax(ms_array)
-        if maxkey in blank.keys:
-            ms_array = ms_array - ms_array.normalise(maxkey, blank[maxkey])
+        blank = blank.normalise(blank_fixed_voltage, blank_fixed_key)
+        if fixed_key is None:
+            sum = isopy.subtract(ms_array, blank, 0, ms_array.keys).sum(axis=None)
+            ms_array = ms_array.normalise(sum, None)
+        elif isinstance(fixed_key, (str, list, tuple)):
+            sum = isopy.subtract(ms_array, blank, 0, fixed_key).sum(axis=None)
+            ms_array = ms_array.normalise(sum, fixed_key)
+        else:
+            sum = isopy.subtract(ms_array, blank, 0, fixed_key(ms_array)).sum(axis=None)
+            ms_array = ms_array.normalise(sum, fixed_key(ms_array))
 
-        ms_array = isopy.add(ms_array, blank, 0)
+        ms_array = isopy.add(ms_array, blank, 0, ms_array.keys)
 
-    ms_array = make_ms_beams(ms_array, maxv=None, integrations=integrations,
-                          integration_time=integration_time, random_seed=random_seed,
-                          resistor=resistor, isotope_abundances=isotope_abundances)
+    ms_array = make_ms_beams(ms_array, fixed_voltage=None, integrations=integrations,
+                             integration_time=integration_time, random_seed=random_seed,
+                             resistor=resistors, isotope_fractions=isotope_fractions)
 
     return ms_array
 
-
+@core.append_preset_docstring
+@core.add_preset(('ppt', 'permil'), normalisation_factor=1000)
+@core.add_preset('epsilon', normalisation_factor=1E4)
+@core.add_preset(('mu', 'ppm'), normalisation_factor=1E6)
 def mass_independent_correction(data, mf_ratio, normalisation_value = None, normalisation_factor=None,
-                                isotope_abundances=None, isotope_masses=None):
+                                isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
     """
     A quick function for mass-independent data correction.
 
     The data is corrected for mass fractionation, isobaric interferences and finally, if *normalisation_factor* is given,
-    normalised to the *isotope_abundances*. If *normalisation_factor* is not given the unnormalised corrected data is
+    normalised to the *isotope_fractions*. If *normalisation_factor* is not given the unnormalised corrected data is
     returned.
 
     An interference correction will be applied for all isotopes that are different from the *mf_ratio* numerator
@@ -470,40 +488,56 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
         *normalisation_factor* is not given a normalisation factor of 1 is used.
     normalisation_factor
         If given and *normalisation_value* is not the result is normalised against
-        *isotope_abundances*.
-    isotope_abundances
+        *isotope_fractions*.
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``
+        Defaults to ``isopy.refval.isotope.abundance``
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``
+    mf_tol
+        Only when the difference between te mass_fractionation factor is below this value is
+        the interference correction assumed to have converged.
 
     Returns
     -------
     IsotopeArray or RatioArray
         The corrected data, will be the same flavour *data*. Interference isotope keys will be
         removed from the returned array.
+
+    Examples
+    --------
+    >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1, mf_factor=0.1).normalise(10, isopy.keymax)
+    >>> array
+    (row) , 101Ru   , 102Pd  , 104Pd  , 105Pd  , 106Pd , 108Pd  , 110Pd  , 111Cd
+    None  , 0.62078 , 1.5193 , 4.7295 , 8.1258 , 10    , 9.6882 , 4.7391 , 0.46637
+    >>> isopy.tb.mass_independent_correction(array, '108Pd/105Pd')
+    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
+    None  , 0.045678    , 0.49888     , 1.2239      , 0.52485
+    >>> isopy.tb.make_ms_array('pd').ratio('105pd')
+    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
+    None  , 0.045678    , 0.49888     , 1.2239      , 1.185       , 0.52485
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsotopeArray, isopy.core.RatioArray, coerce=True)
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
-    normalisation_factor = isopy.checks.check_type('normalisation_factor', normalisation_factor, np.float, str, coerce=True, allow_none=True)
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances, isopy.refval.isotope.abundance)
+    normalisation_factor = isopy.checks.check_type('normalisation_factor', normalisation_factor, np.float64, str, coerce=True, allow_none=True)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
 
     if isinstance(data, isopy.RatioArray):
-        if not data.has_common_denominator:
+        if data.keys.common_denominator is None:
             raise ValueError('data must hav a common denominator')
-        elif data.common_denominator != mf_ratio.denominator:
+        elif data.keys.common_denominator != mf_ratio.denominator:
             raise ValueError('data and mf_ratio do not have the same denominator')
         rat = data
     else:
         rat = data.ratio(mf_ratio.denominator)
 
-    interference_isotopes = _find_isobaric_interferences(data, mf_ratio.numerator.element_symbol)
+    isobaric_interferences = find_isobaric_interferences(mf_ratio.numerator.element_symbol, data)
 
     #Convert the data into a ratio array
-    beta = calculate_mass_fractionation_factor(rat, mf_ratio, isotope_abundances, isotope_masses)
+    beta = calculate_mass_fractionation_factor(rat, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
     #Do a combined mass fractionation and isobaric interference correction.
     #This can account for isobaric interferences on isotopes in *mf_ratio*
@@ -512,13 +546,13 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
         rat2 = rat
         prev_beta = beta
 
-        for infiso in interference_isotopes:
-            rat2 = remove_isobaric_interferences(rat2, infiso, beta, isotope_abundances, isotope_masses)
+        rat2 = remove_isobaric_interferences(rat2, isobaric_interferences,
+                                             beta, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
         # Calculate the mass fractionation.
-        beta = calculate_mass_fractionation_factor(rat2, mf_ratio, isotope_abundances, isotope_masses)
+        beta = calculate_mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
-        if np.all(np.abs(beta - prev_beta) < 0.000001):
+        if np.all(np.abs(beta - prev_beta) < mf_tol):
             break #Beta value has converged so no need for more iterations.
     else:
         raise ValueError('values did not converge after 100 iterations of the interference correction')
@@ -527,55 +561,19 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
     rat = rat2.copy(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol, key_neq=mf_ratio)
 
     #Correct for mass fractionation
-    rat = remove_mass_fractionation(rat, beta, isotope_masses)
+    rat = remove_mass_fractionation(rat, beta, isotope_masses=isotope_masses)
 
     if normalisation_value is not None:
         if normalisation_factor is None: normalisation_factor = 1
-        rat = Delta(rat, normalisation_value, factor = normalisation_factor)
+        rat = rDelta(rat, normalisation_value, factor = normalisation_factor)
 
     elif normalisation_factor is not None:
-        rat = Delta(rat, isotope_abundances, factor = normalisation_factor)
+        rat = rDelta(rat, isotope_fractions, factor = normalisation_factor)
 
     # Return the corrected data
     return rat
 
-def _find_isobaric_interferences(measured, element):
-    if isinstance(measured, isopy.RatioArray):
-        # Find the isotopes that can cause isobaric interferences.
-        interference_isotopes = measured.keys.numerators.filter(numerator_element_symbol_neq=element)
-
-        # Only do the correction for the isotope on interfering element with the biggest beam
-        interference_elements = isopy.ElementKeyList()
-        for iso in interference_isotopes:  # This preserves the order of the elements
-            if iso.numerator.element_symbol not in interference_elements:
-                interference_elements += iso.element_symbol
-
-
-        result = isopy.RatioKeyList()
-        for interference_element in interference_elements:
-            biggest = measured.copy(numerator_element_symbol_eq=interference_element)
-            result += isopy.keymax(biggest)
-
-        return result
-
-    if isinstance(measured, isopy.IsotopeArray):
-        interference_isotopes = measured.keys().filter(element_symbol_neq=element)
-
-        interference_elements = isopy.ElementKeyList()
-        for iso in interference_isotopes:
-            if iso.element_symbol not in interference_elements:
-                interference_elements += iso.element_symbol
-
-        result = isopy.IsotopeKeyList()
-
-        for interference_element in interference_elements:
-            biggest = measured.copy(element_symbol_eq=interference_element)
-            result += isopy.keymax(biggest)
-
-        return result
-
-
-def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None, isotope_masses=None):
+def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, isotope_masses=None):
     """
     Calculate the mass fractionation factor for a given ratio in *data*.
 
@@ -590,9 +588,9 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None,
         Fractionated data. :math:`r` in the equation above.
     mf_ratio
         The isotope ratio from which the fractionation factor should be calculated. :math:`n,d` in the equation above.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.abundance``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -620,7 +618,7 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None,
     """
     data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
     mf_ratio = isopy.checks.check_type('ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances, isopy.refval.isotope.abundance)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
     if isinstance(data, core.IsotopeArray):
@@ -628,10 +626,10 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_abundances=None,
     else:
         data = data.get(mf_ratio)
 
-    return (np.log(data / isotope_abundances.get(mf_ratio)) / np.log(isotope_masses.get(mf_ratio)))
+    return (np.log(data / isotope_fractions.get(mf_ratio)) / np.log(isotope_masses.get(mf_ratio)))
 
 
-def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
+def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_masses=None):
     """
     Remove exponential mass fractionation from *data*.
 
@@ -648,6 +646,9 @@ def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         Array containing data to be changed. :math:`r` in the equation above.
     fractionation_factor : float
         Fractionation factor to be applied. :math:`\\alpha` in the equation above
+    denom
+        The denominator isotope if *data* is an isotope array. If not given then the key with the
+        largest median value is used.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -675,8 +676,8 @@ def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
     isopy.tb.add_mass_fractionation
     """
     data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
-    fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float, np.ndarray,
-                                                   coerce=True, coerce_into=[np.float, np.array], allow_none=True)
+    fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
+                                                   coerce=True, coerce_into=[np.float64, np.array], allow_none=True)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
 
@@ -684,31 +685,35 @@ def remove_mass_fractionation(data, fractionation_factor, isotope_masses=None):
         return data
     else:
         if isinstance(data, core.IsotopeArray):
-            denom = isopy.keymax(data)
-            mass_array = isopy.array(isotope_masses.get(data.keys() / denom), data.keys())
+            if denom is None:
+                denom = isopy.keymax(data)
+            mass_array = isopy.array(isotope_masses.get(data.keys / denom), data.keys)
         else:
-            mass_array = isopy.array(isotope_masses.get(data.keys()))
+            mass_array = isopy.array(isotope_masses.get(data.keys), data.keys)
 
         return data / (mass_array ** fractionation_factor)
 
 
-def add_mass_fractionation(data, fractionation_factor, isotope_masses=None):
+def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masses=None):
     """
     Add exponential mass fractionation to *data*.
 
     Calculated using:
 
     .. math::
-        R_{n,d} = r_{n,d} * (m_{n,d})^{ \\alpha }
+        r_{n,d} = R_{n,d} * (m_{n,d})^{ \\alpha }
 
     where :math:`n` is the numerator isotope and :math:`d` is the denominator isotope.
 
     Parameters
     ----------
     data
-        Array containing data to which the mass fractionation will be applied. :math:`r` in the equation above.
+        Array containing data to which the mass fractionation will be applied. :math:`R` in the equation above.
     fractionation_factor
         Fractionation factor to be applied. :math:`\\alpha` in the equation above
+    denom
+        The denominator isotope if *data* is an isotope array. If not given then the key with the
+        largest median value is used.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -716,7 +721,7 @@ def add_mass_fractionation(data, fractionation_factor, isotope_masses=None):
     Returns
     -------
     RatioArray, IsotopeArray
-        Will have the same flavour as *data*. :math:`R` in the equation above.
+        Will have the same flavour as *data*. :math:`r` in the equation above.
 
     Examples
     --------
@@ -737,38 +742,142 @@ def add_mass_fractionation(data, fractionation_factor, isotope_masses=None):
     isopy.tb.add_mass_fractionation
     """
     data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
-    fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float, np.ndarray,
-                                                   coerce=True, coerce_into=[np.float, np.array],allow_none=True)
+    fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
+                                                   coerce=True, coerce_into=[np.float64, np.array],allow_none=True)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
     if fractionation_factor is None:
         return data
     else:
         if isinstance(data, core.IsotopeArray):
-            denom = isopy.keymax(data)
-            mass_array = isopy.array(isotope_masses.get(data.keys() / denom), data.keys())
+            if denom is None:
+                denom = isopy.keymax(data)
+            mass_array = isopy.array(isotope_masses.get(data.keys / denom), keys=data.keys)
         else:
-            mass_array = isopy.array(isotope_masses.get(data.keys()))
+            mass_array = isopy.array(isotope_masses.get(data.keys), data.keys)
 
         return  data * (mass_array ** fractionation_factor)
 
 
-def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, isotope_abundances = None, isotope_masses=None):
+def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
     """
-    Remove all isobaric interferences for a given element.
+    Find isobaric interferences for all isotopes in *main* for each element in *interferences*.
+
+    Parameters
+    ----------
+    main
+        A string, sequence of string or any object compatible with ``askeystring`` that returns a
+        element or isotope key list. For element keys it will find interferences for all isotopes
+        in *interferences* with that element symbol. If there are no isotopes in *interferences*
+        with that element symbol it will find the isobaric interferences for all naturally occurring
+        isotopes of that element.
+    interferences
+        A string, sequence of string or any object compatible with ``askeystring`` that returns a
+        element or isotope key list. It will find the isobaric interferences for all naturally
+        occurring isotopes of elements in *interferences*. If not given then it will find the
+        isobaric interferences for isotopes in main of all naturally occurring elements.
+
+    Returns
+    -------
+    isobaric_interferences
+        A dictionary containing the all isobaric interferences of isotopes in *main* for elements
+        in *interferences*.
+
+    Examples
+    --------
+    >>> isopy.tb.find_isobaric_interferences('pd', ('ru', 'cd'))
+    IsopyDict(default_value = (), readonly = False,
+    {"Ru": IsotopeKeyList('102Pd', '104Pd')
+    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+
+    >>> array = isopy.tb.make_ms_array('pd', '101ru', '111cd')
+    >>> isopy.tb.find_isobaric_interferences('pd', array)
+    IsopyDict(default_value = (), readonly = False,
+    {"Ru": IsotopeKeyList('102Pd', '104Pd')
+    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+
+    >>> isopy.tb.find_isobaric_interferences('ce')
+    IsopyDict(default_value = (), readonly = False,
+    {"Xe": IsotopeKeyList('136Ce')
+    "Ba": IsotopeKeyList('136Ce', '138Ce')
+    "La": IsotopeKeyList('138Ce')
+    "Nd": IsotopeKeyList('142Ce')})
+
+    >>> isopy.tb.find_isobaric_interferences('ce138')
+    IsopyDict(default_value = (), readonly = False,
+    {"Ba": IsotopeKeyList('138Ce')
+    "La": IsotopeKeyList('138Ce')})
+    """
+    main = isopy.askeylist(main).flatten(ignore_duplicates=True)
+    if not isinstance(main, (isopy.ElementKeyList, isopy.IsotopeKeyList)):
+        raise ValueError(f'main must be element or isotope key list not {type(main).__name__}')
+
+    if interferences is not None:
+        interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True)
+        if not isinstance(interferences, (isopy.ElementKeyList, isopy.IsotopeKeyList)):
+            raise ValueError(
+                f'interference must be element or isotope key list not {type(interferences).__name__}')
+
+        if isinstance(interferences, isopy.ElementKeyList):
+            interference_isotopes = isopy.IsotopeKeyList()
+            for element in interferences:
+                isotopes = isopy.refval.element.isotopes.get(element, None)
+                if isotopes is None: continue
+                isotopes = isotopes.set_charges(element.charge)
+                interference_isotopes += isotopes
+        else:
+            interference_isotopes = interferences
+    else:
+        interference_isotopes = isopy.IsotopeKeyList()
+
+    if isinstance(main, isopy.ElementKeyList):
+        main_isotopes = isopy.IsotopeKeyList()
+        for element in main:
+            if element in interference_isotopes.element_symbols:
+                main_isotopes += interference_isotopes.filter(element_symbol_eq=element)
+            else:
+                main_isotopes += isopy.refval.element.isotopes.get(element, tuple())
+    else:
+        main_isotopes = main
+
+    if interferences is None:
+        interference_isotopes = isopy.IsotopeKeyList()
+        for mass in main_isotopes.mass_numbers:
+            interference_isotopes += isopy.refval.mass.isotopes[mass]
+
+    interference_elements = interference_isotopes.element_symbols.flatten(ignore_duplicates=True)
+
+    result = isopy.IsopyDict(default_value=tuple())
+    for element in interference_elements:
+        interferences = isopy.refval.element.isotopes.get(element, None)
+        if interferences is None: continue
+        interferences = interferences.set_charges(element.charge)
+        main = main_isotopes.filter(element_symbol_neq=element,
+                                    mz_eq=interferences.mz())
+        if len(main) > 0:
+            result[element] = main
+    return result
+
+
+def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
+                                   isotope_fractions=None, isotope_masses=None):
+    """
+    Remove all isobaric interferences for a given element(s).
 
     Parameters
     ----------
     data
         The data that isobaric interferences should be removed from.
-    interference_isotope
-        The isotope of the interfering element that should be used for the correction. Must be
-        present in *data*.
+    isobaric_interferences
+        A dictionary mapping either the element or the isotope to be the isotopes that
+        this element has isobaric interferences on that you wish to correct for. If the key is
+        an element key string then the isotope of that element in the array with the largest
+        signal will be used for the correction.
     mf_factor
         If given, this mass fractionation factor is applied to the values for for the correction.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.fraction``.
+        Defaults to ``isopy.refval.isotope.abundance``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
@@ -780,28 +889,51 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
 
     Examples
     --------
-    >>> isopy.tb.make_ms_array('pd', ru101=0, mf_factor=-1.6)
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.00000 , 0.01085 , 0.11485 , 0.22671 , 0.27330 , 0.25680 , 0.11045
-    >>> array = isopy.tb.make_ms_array('pd', ru101=0.01, mf_factor=-1.6)
+    >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1)
     >>> array
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.00173 , 0.01400 , 0.11665 , 0.22671 , 0.27330 , 0.25680 , 0.11045
-    >>> beta = isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
-    >>> isopy.tb.remove_isobaric_interferences(array, 'ru101', beta).pprint()
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.00000 , 0.01085 , 0.11485 , 0.22671 , 0.27330 , 0.25680 , 0.11045
+    (row) , 101Ru   , 102Pd    , 104Pd   , 105Pd  , 106Pd   , 108Pd   , 110Pd   , 111Cd
+    None  , 0.01706 , 0.041752 , 0.13002 , 0.2233 , 0.27455 , 0.26549 , 0.12968 , 0.012804
+    >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
+    >>> interferences
+    IsopyDict(default_value = (), readonly = False,
+    {"Ru": IsotopeKeyList('102Pd', '104Pd')
+    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+    >>> isopy.tb.remove_isobaric_interferences(array, interferences)
+    (row) , 101Ru , 102Pd  , 104Pd  , 105Pd  , 106Pd  , 108Pd  , 110Pd  , 111Cd
+    None  , 0     , 0.0102 , 0.1114 , 0.2233 , 0.2733 , 0.2646 , 0.1172 , 0
+    >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0)
+    (row) , 101Ru , 102Pd  , 104Pd  , 105Pd  , 106Pd  , 108Pd  , 110Pd  , 111Cd
+    None  , 0     , 0.0102 , 0.1114 , 0.2233 , 0.2733 , 0.2646 , 0.1172 , 0
+
+    >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1).ratio('106pd')
+    >>> array
+    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
+    None  , 0.062138    , 0.15207     , 0.47358     , 0.81333     , 0.967       , 0.47236     , 0.046636
+    >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
+    >>> interferences
+    IsopyDict(default_value = (), readonly = False,
+    {"Ru": IsotopeKeyList('102Pd', '104Pd')
+    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+    >>> isopy.tb.remove_isobaric_interferences(array, interferences)
+    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
+    None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
+    >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0).ratio('106pd')
+    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
+    None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
     """
 
-    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.IsotopeArray, coerce=True)
-    interference_isotope = isopy.checks.check_type('interference_isotope', interference_isotope, isopy.core.IsotopeKeyString, coerce=True)
-    mf_factor = isopy.checks.check_type('mf_factor', mf_factor, np.float, np.ndarray, coerce=True,
-                                        coerce_into=[np.float, np.array], allow_none=True)
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances,
-                                                           isopy.refval.isotope.abundance)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.IsotopeArray,
+                                   coerce=True)
 
-    #Get the information we need to make the correction that works
+    mf_factor = isopy.checks.check_type('mf_factor', mf_factor, np.float64, np.ndarray, coerce=True,
+                                        coerce_into=[np.float64, np.array], allow_none=True)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions',
+                                                            isotope_fractions,
+                                                            isopy.refval.isotope.fraction)
+    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
+                                                        isopy.refval.isotope.mass)
+
+    # Get the information we need to make the correction that works
     # for both isotope arrays and ratio arrays
     if isinstance(data, isopy.core.RatioArray):
         keys = data.keys()
@@ -812,70 +944,91 @@ def remove_isobaric_interferences(data, interference_isotope, mf_factor = None, 
         numer = keys
         denom = None
     else:
-        raise TypeError('variable "data" must be a IsotopeArray or a RatioArray not {}'.format(data.__class__.__name__))
+        raise TypeError('variable "data" must be a IsotopeArray or a RatioArray not {}'.format(
+            data.__class__.__name__))
 
-    #Get the abundances of all isotopes of the interfering element
-    inf_data = isopy.IsotopeArray(isotope_abundances.get(element_symbol_eq=interference_isotope.element_symbol))
+    if isinstance(isobaric_interferences, dict) and not isinstance(isobaric_interferences, core.IsopyDict):
+        isobaric_interferences = core.IsopyDict(isobaric_interferences)
+    elif not isinstance(isobaric_interferences, isopy.IsopyDict):
+        raise ValueError('isobaric_interferences must be a dict')
 
-    #Turn into a ratio relative to *isotope*
-    inf_data = inf_data.ratio(interference_isotope, remove_denominator=False)
+    out = data.copy()
 
-    #Account for mass fractionation of *mf_factor* is given
-    if mf_factor is not None:
-        inf_data = add_mass_fractionation(inf_data, mf_factor, isotope_masses=isotope_masses)
+    for interference_element, correct_isotopes in isobaric_interferences.items():
+        #If the key of the dictionary is an isotope use this isotope to make the correction
+        if isinstance(interference_element, isopy.IsotopeKeyString):
+            if interference_element not in numer:
+                raise KeyError(f'isotope {interference_element} not in data')
+            interference_isotope = interference_element
+            interference_element = interference_isotope.element_symbol
 
+        #If the key is an element key string use the isotope of that element in the array that has the largest signal.
+        else:
+            if isinstance(data, isopy.core.RatioArray):
+                interference_isotope = isopy.keymax(data.copy(numerator_element_symbol_eq=interference_element))
+                interference_isotope = interference_isotope.numerator
+            else:
+                interference_isotope = isopy.keymax(data.copy(element_symbol_eq=interference_element))
 
-    #Scale relative to the measured value of *isotope*
-    inf_data = inf_data * data[keys[numer.index(interference_isotope)]]
+        # Get the abundances of all isotopes of the interfering element
+        inf_data = isotope_fractions.copy(element_symbol_eq=interference_isotope.element_symbol.basekey)
+        inf_data  = {key.set_charge(interference_isotope.charge): value for key, value in inf_data.items()}
+        inf_data = isopy.IsotopeArray(inf_data)
 
-    #Convert to a mass array for easy lookup later
-    inf_data = isopy.MassArray(inf_data, keys=inf_data.keys().numerators.mass_numbers)
+        # Turn into a ratio relative to interference isotope
+        inf_data = inf_data.ratio(interference_isotope, remove_denominator=False)
 
-    #Create the output array
-    out = isopy.empty(data.nrows, keys)
+        # Account for mass fractionation of *mf_factor* is given
+        if mf_factor is not None:
+            inf_data = add_mass_fractionation(inf_data, mf_factor, isotope_masses=isotope_masses)
 
-    #Loop through each key in *out* and remove interference
-    for i, key in enumerate(keys):
-        out[key] = data[key] - inf_data.get(numer[i].mass_number, 0)
+        # Scale relative to the measured value of *isotope*
+        inf_data = inf_data * data[keys[numer.index(interference_isotope)]]
 
-    #If *data* is a ratio array then correct for any interference on the denominator
-    if denom is not None:
-        out = out / (1 - inf_data.get(denom.mass_number, 0))
+        # Convert to a mass array for easy lookup later
+        inf_data = {key.numerator.mz(): value for key, value in inf_data.items()}
+
+        # Loop through each key and remove interference
+        for i, key in enumerate(keys):
+            if (numer[i] in correct_isotopes or numer[i].element_symbol == interference_element):
+                out[key] = out[key] - inf_data.get(numer[i].mz(), 0)
+
+        # If *data* is a ratio array then correct for any interference on the denominator
+        if denom is not None and denom in correct_isotopes:
+            out = out / (1 - inf_data.get(denom.mz(), 0))
 
     return out
 
-@core.function_preset(('ppt', 'permil'), factor=1000)
-@core.function_preset('epsilon', factor=1E5)
-@core.function_preset(('mu', 'ppm'), factor=1E6)
-def Delta(data, reference_data, *, factor=1, is_deviation=False):
+@core.append_preset_docstring
+@core.add_preset(('ppt', 'permil'), factor=1000)
+@core.add_preset('epsilon', factor=1E4)
+@core.add_preset(('mu', 'ppm'), factor=1E6)
+def rDelta(data, reference_data, factor=1, deviations=1):
     """
     Normalise data to the given reference values.
 
     .. math::
-        \Delta n = (\\frac{m} {r} - d ) * f
+        \Delta^{r} \\textrm{normalised} = (\\frac{\\textrm{data}} {\\textrm{reference data}} - \\textrm{deviations} ) * \\textrm{factor}
 
-    where :math:`n` is the normalised data, :math:`m` is *data*, :math:`f` is *factor*, :math:`r` is *reference_data*,
-    and :math:`d`  is 1 if *is_deviation* is ``False`` and 0 if *is_deviation* is ``True``.
 
     Parameters
     ----------
     data
         Data to be normalised
     reference_data
-        The reference values used to denormalise the data. If a reference values contains more than
+        The reference values used to normalise the data. If a reference values contains more than
         one value the mean is used. Multiple values can be passed as a tuple in which case the
         mean of those values is used.
     factor
         The multiplication factor to be applied to *data* during the normalisation.
-    is_deviation
-        Set to ``True`` if *data* represents a deviation from the
-        reference values.
+    deviations
+        ``1`` if *reference_data* should be subtracted from *data*.
 
     Examples
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
-    >>> array = isopy.tb.make_ms_sample('pd', fins=1, maxv=0.1).ratio('105pd')
-    >>> norm = isopy.tb.Delta(array, ref)
+    >>> array = isopy.tb.make_ms_sample('pd', fins=1, fixed_voltage=0.1).ratio('105pd')
+    >>> norm = isopy.tb.rDelta(array, ref)
     >>> norm
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     0     , -28.60967   , -9.54006    , 9.50745     , 28.57674    , 47.70528
@@ -890,7 +1043,7 @@ def Delta(data, reference_data, *, factor=1, is_deviation=False):
     98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902
     99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100
 
-    >>> isopy.tb.Delta(isopy.sd2(array), ref, factor=1000, is_deviation=True)
+    >>> isopy.tb.rDelta(isopy.sd2(array), ref, factor=1000, deviations=True)
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
     >>> isopy.sd2(norm)
@@ -898,39 +1051,27 @@ def Delta(data, reference_data, *, factor=1, is_deviation=False):
     None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
-    factor = isopy.checks.check_type('factor', factor, np.float, str, coerce=True)
-    if isinstance(factor, str):
-        if factor in ['delta', 'permil', 'ppt']:
-            factor = 1000
-        elif factor in ['epsilon']:
-            factor = 10000
-        elif factor in ['mu', 'ppm']:
-            factor = 1000000
-        else:
-            raise ValueError('parameter "factor": "{}" not an avaliable option.'.format(factor))
-    is_deviation = isopy.checks.check_type('is_deviation', is_deviation, bool)
+    factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
+    deviations = isopy.checks.check_type('deviations', deviations, np.float64, coerce=True)
 
-    reference_data = _combine(reference_data)
+    reference_data = _combine_reference_values(reference_data)
+
     new = data / reference_data
-    if not is_deviation: new = new - 1
-
+    new = new - deviations
     new = new * factor
 
     return new
 
-@core.function_preset(('ppt', 'permil'), factor=1000)
-@core.function_preset('epsilon', factor=1E5)
-@core.function_preset(('mu', 'ppm'), factor=1E6)
-def inverse_Delta(data, reference_data, *, factor=1, is_deviation=False):
+@core.append_preset_docstring
+@core.add_preset(('ppt', 'permil'), factor=1000)
+@core.add_preset('epsilon', factor=1E4)
+@core.add_preset(('mu', 'ppm'), factor=1E6)
+def inverse_rDelta(data, reference_data, factor=1, deviations=1):
     """
     Denormalise data to the given reference values.
 
     .. math::
-        m = (\\frac{\Delta n} {f} + d ) * r
-
-    :math:`m` is the denormalised data, :math:`n` is the normalised *data*,  :math:`f` is *factor*,
-    :math:`r` is *reference_values*,  and :math:`d` is 1 if *is_deviation* is ``False`` and
-    0 if *is_deviation* is ``True``.
+        \\textrm{denormalised data} = (\\frac{\Delta^{r} \\textrm{data}} {\\textrm{factor}} + \\textrm{deviations}) * \\textrm{reference data}
 
 
     Parameters
@@ -943,17 +1084,16 @@ def inverse_Delta(data, reference_data, *, factor=1, is_deviation=False):
         one value the mean is used.
     factor
         The multiplication factor applied to *data* during the normalisation.
-    is_deviation
-        Set to ``True`` if *data* represents a deviation from the
-        reference values.
+    deviations
+        ``1`` if *reference_data* should be added to the denormalised data.
 
 
     Examples
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.make_ms_sample('pd', fins=1).ratio('105pd')
-    >>> norm = isopy.toolbox.isotope.Delta(array, ref, 1000)
-    >>> denorm = isopy.tb.inverse_Delta(norm, ref, 1000)
+    >>> norm = isopy.toolbox.isotope.rDelta(array, ref, 1000)
+    >>> denorm = isopy.tb.inverse_rDelta(norm, ref, 1000)
     >>> denorm
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
     0     , 0.04437     , 0.49412     , 1.23554     , 1.21881     , 0.54985
@@ -982,49 +1122,49 @@ def inverse_Delta(data, reference_data, *, factor=1, is_deviation=False):
     99    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
-    factor = isopy.checks.check_type('factor', factor, np.float, str, coerce=True)
-    if isinstance(factor, str):
-        if factor in ['delta', 'permil', 'ppt']:
-            factor = 1000
-        elif factor in ['epsilon']:
-            factor = 10000
-        elif factor in ['mu', 'ppm']:
-            factor = 1000000
-        else:
-            raise ValueError('parameter "factor": "{}" not an avaliable option.'.format(factor))
-    is_deviation = isopy.checks.check_type('is_deviation', is_deviation, bool)
+    factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
+    deviations = isopy.checks.check_type('deviations', deviations, np.float64, coerce=True)
 
-    reference_data = _combine(reference_data)
+    reference_data = _combine_reference_values(reference_data)
 
     new = data / factor
-    if not is_deviation: new = new + 1
+    new = new + deviations
     new = new * reference_data
 
     return new
 
 
-def _combine(value):
-    if isinstance(value, dict):
-        return value
+def _combine_reference_values(values):
+    if isinstance(values, dict):
+        return values
 
-    if type(value) is not tuple:
-        values = (value,)
+    if not isinstance(values, (list, tuple)):
+        values = (values,)
     else:
-        values = value
+        values = values
 
     out = []
-    for value in values:
-        value = isopy.asarray(value)
-        if value.size > 1:
-            value = np.nanmean(value)
-        out.append(value)
+    for v in values:
+        v = isopy.asarray(v)
+        if v.size > 1:
+            v = np.nanmean(v)
+        out.append(v)
 
     if len(out) == 1:
-        return out[0]
+        return isopy.ScalarDict(out[0])
     else:
-        return np.nanmean(isopy.concatenate(values))
+        return isopy.ScalarDict(np.mean(isopy.concatenate(out)))
 
-
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
+@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
+@core.add_preset('se', cval=np.mean, pmval=isopy.se)
+@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
+@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
+@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
+@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
+@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
 def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=False):
     """
     Find all outliers in data.
@@ -1114,3 +1254,66 @@ def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=
         outliers = np.invert(outliers)
 
     return outliers
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
+@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
+@core.add_preset('se', cval=np.mean, pmval=isopy.se)
+@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
+@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
+@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
+@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
+@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
+def upper_limit(data, cval=np.median, pmval=isopy.mad3):
+    """
+    Calculate the upper limit of the uncertainty on *data* as ``cval + pmval``.
+
+
+    Parameters
+    ----------
+    data
+        The data on which the limit will be calculated
+    cval
+        The centre value. Can either be a scalar value or a function that returns the centre value.
+    pmval
+        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
+    """
+    if callable(cval):
+        cval = cval(data)
+    if callable(pmval):
+        pmval = pmval(data)
+    pmval = np.abs(pmval)
+
+    return cval + pmval
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
+@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
+@core.add_preset('se', cval=np.mean, pmval=isopy.se)
+@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
+@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
+@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
+@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
+@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
+def lower_limit(data, cval=np.median, pmval=isopy.mad3):
+    """
+    Calculate the lower limit of the uncertainty on *data* as ``cval + pmval``.
+
+    Parameters
+    ----------
+    data
+        The data on which the limit will be calculated
+    cval
+        The centre value. Can either be a scalar value or a function that returns the centre value.
+    pmval
+        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
+    """
+    if callable(cval):
+        cval = cval(data)
+    if callable(pmval):
+        pmval = pmval(data)
+    pmval = np.abs(pmval)
+
+    return cval - pmval

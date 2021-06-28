@@ -2,29 +2,29 @@ import numpy as np
 from numpy.lib.function_base import array_function_dispatch
 from scipy import stats
 import functools
-from typing import Optional, Union, Literal
 from . import core
 
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
-           'count_finite',
+           'nancount',
            'add', 'subtract', 'divide', 'multiply', 'power', 'arrayfunc',
            'keymax', 'keymin']
 
 ##########################
 ### Dispatch functions ###
 ##########################
-def _sd_dispatcher(a, axis=None, level = None):
+def _sd_dispatcher(a, axis=None, level = None): #, where=None):
     return (a,)
 
+@core.set_module('isopy')
 @array_function_dispatch(_sd_dispatcher)
-def sd(a, axis = core.NotGiven, level = 1):
+def sd(a, axis = None, level = 1): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom.
 
     Shortcut for ``np.std(a, ddof = 1, axis=axis) * level``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``.
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``sd2`` to ``sd5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``sd95`` is also exists which
@@ -45,29 +45,28 @@ def sd(a, axis = core.NotGiven, level = 1):
     None  , nan , 1.21106 , 2.83490
     >>> isopy.sd95(array) #same as sd(array, level=0.95)
     (row) , Ru  , Pd      , Cd
-    None  , nan , 1.18682 , 2.77815
+    None  , nan , 1.9271 , 4.511
 
     See Also
     --------
     :func:`nansd`, `np.std <https://numpy.org/devdocs/reference/generated/numpy.std.html#numpy.std>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.size(a, axis = axis) - 1
+        level = stats.t.ppf(0.5 + level/2, df)
 
-    if axis is core.NotGiven:
-        return np.std(a, ddof=1) * level
-    else:
-        return np.std(a, ddof=1, axis=axis) * level
+    return np.std(a, ddof=1, axis=axis) * level
 
+@core.set_module('isopy')
 @array_function_dispatch(_sd_dispatcher)
-def nansd(a, axis =core.NotGiven, level = 1):
+def nansd(a, axis = None, level = 1): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom, while ignoring NaNs.
 
     Shortcut for ``np.nanstd(a, ddof = 1, axis=axis) * level``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``nansd2`` to ``nansd5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``nansd95`` is also exists which
@@ -88,32 +87,31 @@ def nansd(a, axis =core.NotGiven, level = 1):
     None  , 1.11355 , 1.21106 , 2.83490
     >>> isopy.nansd95(array) #same as nansd(array, level=0.95)
     (row) , Ru      , Pd      , Cd
-    None  , 1.09126 , 1.18682 , 2.77815
+    None  , 2.3956 , 1.9271 , 4.511
 
     See Also
     --------
     :func:`sd`, `numpy.nanstd <https://numpy.org/devdocs/reference/generated/numpy.nanstd.html#numpy.nanstd>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
+        level = stats.t.ppf(0.5 + level / 2, df)
 
-    if axis is core.NotGiven:
-        return np.nanstd(a, ddof=1) * level
-    else:
-        return np.nanstd(a, ddof=1, axis=axis) * level
+    return np.nanstd(a, ddof=1, axis=axis) * level
 
-def _se_dispatcher(a, axis=None, level = None):
+def _se_dispatcher(a, axis=None, level = None): #, where = None):
     return (a,)
 
+@core.set_module('isopy')
 @array_function_dispatch(_se_dispatcher)
-def se(a, axis=core.NotGiven, level = 1):
+def se(a, axis=None, level = 1): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom.
 
     Shortcut for ``scipy.stats.sem(a, axis=axis, nan_policy='propagate') * level``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``.
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``se2`` to ``se5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``se95`` is also exists which
@@ -134,30 +132,29 @@ def se(a, axis=core.NotGiven, level = 1):
     None  , nan , 0.60553 , 1.41745
     >>> isopy.se95(array) #same as se(array, level=0.95)
     (row) , Ru  , Pd      , Cd
-    None  , nan , 0.59341 , 1.38908
+    None  , nan , 0.96353 , 2.2555
 
     See Also
     --------
     :func:`nanse`, `scipy.stats.sem <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html?highlight=sem#scipy.stats.sem>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.size(a, axis=axis) - 1
+        level = stats.t.ppf(0.5 + level / 2, df)
 
-    if axis is core.NotGiven:
-        return stats.sem(a, nan_policy='propagate') * level
-    else:
-        return stats.sem(a, axis=axis, nan_policy='propagate') * level
+    return stats.sem(a, nan_policy='propagate', axis=axis) * level
 
+@core.set_module('isopy')
 @array_function_dispatch(_se_dispatcher)
-def nanse(a, axis=core.NotGiven, level = 1):
+def nanse(a, axis=None, level = 1): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom, while ignoring
     NaNs.
 
     Shortcut for ``scipy.stats.sem(a, axis=axis, nan_policy='omit') * level``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``.
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``nanse2`` to ``nanse5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``nanse95`` is also exists which
@@ -181,32 +178,31 @@ def nanse(a, axis=core.NotGiven, level = 1):
     None  , 0.64291 , 0.60553 , 1.41745
     >>> isopy.nanse95(array) #same as nanse(array, level=0.95)
     (row) , Ru      , Pd      , Cd
-    None  , 0.63004 , 0.59341 , 1.38908
+    None  , 1.3831 , 0.96353 , 2.2555
 
     See Also
     --------
     :func:`se`, `scipy.stats.sem <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html?highlight=sem#scipy.stats.sem>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
+        level = stats.t.ppf(0.5 + level / 2, df)
 
-    if axis is core.NotGiven:
-        return stats.sem(a, nan_policy='omit') * level
-    else:
-        return stats.sem(a, axis=axis, nan_policy='omit') *level
+    return stats.sem(a, nan_policy='omit', axis=axis) * level
 
-def _mad_dispatcher(a, axis=None, scale=None, level = None):
+def _mad_dispatcher(a, axis=None, scale=None, level = None): #, where = None):
     return (a,)
 
+@core.set_module('isopy')
 @array_function_dispatch(_mad_dispatcher)
-def mad(a, axis=core.NotGiven, scale= 'normal', level = 1):
+def mad(a, axis=None, scale= 'normal', level = 1): #,  where = core.NotGiven):
     """
     Compute the median absolute deviation of the data along the given axis.
 
     Shortcut for ``scipy.stats.median_abs_deviation(a, axis, scale=scale, nan_policy='propagate') * level``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``.
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``mad2`` to ``mad5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``mad95`` is also exists which
@@ -227,29 +223,28 @@ def mad(a, axis=core.NotGiven, scale= 'normal', level = 1):
     None  , nan , 1.33434 , 2.07564
     >>> isopy.mad95(array) #same as mad(array, level=0.95)
     (row) , Ru  , Pd      , Cd
-    None  , nan , 1.30763 , 2.03409
+    None  , nan , 2.1232 , 3.3028
 
     See Also
     --------
     :func:`nanmad`, `scipy.stats.median_abs_deviation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html#scipy.stats.median_abs_deviation>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.size(a, axis=axis) - 1
+        level = stats.t.ppf(0.5 + level / 2, df)
 
-    if axis is core.NotGiven:
-        return stats.median_abs_deviation(a, scale=scale, nan_policy='propagate') * level
-    else:
-        return stats.median_abs_deviation(a, axis=axis, scale=scale, nan_policy='propagate') * level
+    return stats.median_abs_deviation(a, scale=scale, nan_policy='propagate', axis=axis) * level
 
+@core.set_module('isopy')
 @array_function_dispatch(_mad_dispatcher)
-def nanmad(a, axis=core.NotGiven, scale = 'normal', level = 1):
+def nanmad(a, axis=None, scale = 'normal', level = 1): #, where = core.NotGiven):
     """
     Compute the median absolute deviation along the specified axis, while ignoring NaNs.
 
     Shortcut for ``scipy.stats.median_abs_deviation(a, axis, scale=scale, nan_policy='omit')``.
 
-    If *level* is less than 1 it assumes *level* represents a percentage point
-    and recalculates *level* as ``scipy.stats.norm.ppf(0.5 + level/2)``.
+    If *level* is less than 1 it assumes *level* represents a t-distribution percentage point
+    and recalculates *level* using ``scipy.stats.t.ppf``.
 
     Functions ``nanmad2`` to ``nanmad5`` are also avaliable where the last digits represents the
     *level* multiplication factor of the function. ``nanmad95`` is also exists which
@@ -270,19 +265,17 @@ def nanmad(a, axis=core.NotGiven, scale = 'normal', level = 1):
     None  , 1.18608 , 1.33434 , 2.07564
     >>> isopy.nanmad95(array) #same as nanmad(array, level=0.95)
     (row) , Ru      , Pd      , Cd
-    None  , 1.16234 , 1.30763 , 2.03409
+    None  , 2.5516 , 2.1232 , 3.3028
 
     See Also
     --------
     :func:`mad`, `scipy.stats.median_abs_deviation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html#scipy.stats.median_abs_deviation>`_
     """
     if level < 1:
-        level = stats.norm.ppf(0.5 + level/2)
+        df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
+        level = stats.t.ppf(0.5 + level / 2, df)
 
-    if axis is core.NotGiven:
-        return stats.median_abs_deviation(a, scale=scale, nan_policy='omit') * level
-    else:
-        return stats.median_abs_deviation(a, axis=axis, scale=scale, nan_policy = 'omit') * level
+    return stats.median_abs_deviation(a, scale=scale, nan_policy = 'omit', axis=axis) * level
 
 ### Add multipliers
 
@@ -333,11 +326,13 @@ nanmad4 = leveller(nanmad, 4)
 nanmad5 = leveller(nanmad, 5)
 nanmad95 = leveller(nanmad, 0.95, '95')
 
-def _count_dispatcher(a, axis=None):
+def _count_dispatcher(a, axis=None): #, where = None):
     return (a,)
 
+
+@core.set_module('isopy')
 @array_function_dispatch(_count_dispatcher)
-def count_finite(a, axis=core.NotGiven):
+def nancount(a, axis=None): #, where = core.NotGiven):
     """
     Count all values in array that are not NaN or Inf along the specified axis.
 
@@ -348,22 +343,23 @@ def count_finite(a, axis=core.NotGiven):
     >>> array = isopy.array(ru = [np.nan, 1.1, 2.2, 1.8],
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
-    >>> isopy.count_finite(array)
+    >>> isopy.nancount(array)
     (row) , Ru      , Pd      , Cd
     None  , 3.00000 , 4.00000 , 4.00000
-    >>> isopy.count_finite(array, axis=1)
+    >>> isopy.nancount(array, axis=1)
     array([2, 3, 3, 3], dtype=int64)
     """
-    if axis is core.NotGiven:
-        return np.count_nonzero(np.isfinite(a))
-    else:
-        return np.count_nonzero(np.isfinite(a), axis=axis)
+    #if where is not core.NotGiven:
+    #    a = a[where]
+
+    return np.count_nonzero(np.isfinite(a), axis=axis)
 
 
 #####################################
 ### Functions without dispatchers ###
 #####################################
 # These should  only be used with isopy arrays
+@core.set_module('isopy')
 def add(x1, x2, default_value=np.nan, keys=None):
     """
     Add *x2* to *x1* substituting *default_value* for absent columns.
@@ -386,6 +382,7 @@ def add(x1, x2, default_value=np.nan, keys=None):
     """
     return core.call_array_function(np.add, x1, x2, default_value=default_value, keys=keys)
 
+@core.set_module('isopy')
 def subtract(x1, x2, default_value=np.nan, keys=None):
     """
     Subtract *x2* from *x1* substituting *default_value* for absent columns.
@@ -408,6 +405,7 @@ def subtract(x1, x2, default_value=np.nan, keys=None):
     """
     return core.call_array_function(np.subtract, x1, x2, default_value=default_value, keys=keys)
 
+@core.set_module('isopy')
 def multiply(x1, x2, default_value=np.nan, keys=None):
     """
     Multiply *x1* by *x2* substituting *default_value* for absent columns.
@@ -430,6 +428,7 @@ def multiply(x1, x2, default_value=np.nan, keys=None):
     """
     return core.call_array_function(np.multiply, x1, x2, default_value=default_value, keys=keys)
 
+@core.set_module('isopy')
 def divide(x1, x2, default_value=np.nan, keys=None):
     """
     Divide *x1* by *x2* substituting *default_value* for absent columns.
@@ -452,6 +451,7 @@ def divide(x1, x2, default_value=np.nan, keys=None):
     """
     return core.call_array_function(np.divide, x1, x2, default_value=default_value, keys=keys)
 
+@core.set_module('isopy')
 def power(x1, x2, default_value=np.nan, keys=None):
     """
     Raise *x1* to the power of *x2* substituting *default_value* for absent columns.
@@ -474,6 +474,7 @@ def power(x1, x2, default_value=np.nan, keys=None):
     """
     return core.call_array_function(np.power, x1, x2, default_value=default_value, keys=keys)
 
+@core.set_module('isopy')
 def arrayfunc(func, *inputs, default_value=np.nan, keys=None, **kwargs):
     """
     Call a numpy function *func* on the *inputs* values substituting *default_value* for absent columns.
@@ -499,9 +500,14 @@ def arrayfunc(func, *inputs, default_value=np.nan, keys=None, **kwargs):
     """
     return core.call_array_function(func, *inputs, default_value=default_value, keys=keys, **kwargs)
 
-def keymax(a, evalfunc = np.nanmedian):
+@core.set_module('isopy')
+@core.append_preset_docstring
+@core.add_preset('abs', abs = True)
+def keymax(a, evalfunc = np.nanmedian, abs=False):
     """
     Return the name of the column where the largest value returned by *evalfunc* is found.
+
+    If *abs* is ``True`` the absolute value is used.
 
     This function requires that *a* is an isopy array.
 
@@ -512,12 +518,20 @@ def keymax(a, evalfunc = np.nanmedian):
     IsotopeKeyString('106Pd')
     """
     array = core.asarray(a)
-    key_index = np.nanargmax([evalfunc(v) for v in array.values()])
+    if abs:
+        key_index = np.nanargmax([evalfunc(np.abs(v)) for v in array.values()])
+    else:
+        key_index = np.nanargmax([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
 
-def keymin(a, evalfunc= np.nanmedian):
+@core.set_module('isopy')
+@core.append_preset_docstring
+@core.add_preset('abs', abs = True)
+def keymin(a, evalfunc= np.nanmedian, abs = False):
     """
     Return the name of the column where the smallest value returned by *evalfunc* is found.
+
+    If *abs* is ``True`` the absolute value is used.
 
     This function requires that *a* is an isopy array.
 
@@ -528,7 +542,9 @@ def keymin(a, evalfunc= np.nanmedian):
     IsotopeKeyString('102Pd')
     """
     array = core.asarray(a)
-    key_index = np.nanargmin([evalfunc(v) for v in array.values()])
+    if abs:
+        key_index = np.nanargmin([evalfunc(np.abs(v)) for v in array.values()])
+    else:
+        key_index = np.nanargmin([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
-
 

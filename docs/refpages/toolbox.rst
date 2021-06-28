@@ -12,9 +12,11 @@ The following functions are useful for processing isotopic data.
 .. autosummary::
     :toctree: tb_reduce_iso
 
-    normalise_data
-    denormalise_data
+    rDelta
+    inverse_rDelta
     find_outliers
+    upper_limit
+    lower_limit
     johnson_nyquist_noise
     make_ms_array
     make_ms_beams
@@ -26,6 +28,7 @@ The following functions are useful for processing isotopic data.
     remove_isobaric_interferences
     ds_inversion
     ds_correction
+    ds_grid
     ds_Delta
     ds_Delta_prime
 
@@ -51,7 +54,9 @@ Below are functions for plotting geochemical data using matplotlib
     :toctree: tb_plotting
 
     update_figure
+    update_axes
     create_subplots
+    create_legend
     plot_scatter
     plot_regression
     plot_spider
@@ -59,6 +64,7 @@ Below are functions for plotting geochemical data using matplotlib
     plot_hstack
     plot_vcompare
     plot_hcompare
+    plot_contours
 
     :template: cycler_template.rst
 

@@ -42,6 +42,7 @@ classes/functions can be used to create isopy key lists:
     IsotopeKeyList
     RatioKeyList
     GeneralKeyList
+    MixedKeyList
 
 
 Isopy arrays
@@ -55,6 +56,9 @@ classes/functions can be used to create isopy arrays:
     array
     asarray
     asanyarray
+    array_from_csv
+    array_from_xlsx
+    array_from_clipboard
 
     :template: array_template.rst
 
@@ -63,6 +67,7 @@ classes/functions can be used to create isopy arrays:
     IsotopeArray
     RatioArray
     GeneralArray
+    MixedArray
 
     :template: autosummary/function.rst
 

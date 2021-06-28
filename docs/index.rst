@@ -20,11 +20,11 @@ processing of isotopic data.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
 
    Installation <installation>
-   Examples <examples>
+   Tutorials <tutorials>
 
 .. toctree::
    :maxdepth: 1

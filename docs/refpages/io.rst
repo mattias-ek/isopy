@@ -12,4 +12,5 @@ These are functions to read and write data.
     write_csv
     read_xlsx
     write_xlsx
+    read_clipboard
     read_exp

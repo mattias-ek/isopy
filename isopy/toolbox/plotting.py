@@ -5,14 +5,15 @@ import scipy.stats as stats
 import matplotlib as mpl
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
+from matplotlib.axes import Axes as mplAxes
 import numpy as np
 import functools
 import warnings
 from typing import Optional, Union, Literal
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
-           'plot_spider', 'plot_hcompare', 'plot_vcompare',
-           'create_subplots', 'update_figure',
+           'plot_spider', 'plot_hcompare', 'plot_vcompare', 'plot_contours',
+           'create_subplots', 'update_figure', 'update_axes', 'create_legend',
            'Markers', 'Colors', 'ColorPairs']
 
 scatter_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
@@ -23,6 +24,7 @@ stack_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'eli
 spider_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
 box_style = dict(color='black', zorder = 0.9, alpha=0.1)
 polygon_style = dict(color='black', zorder = 0.9, alpha=0.1)
+grid_style = dict(extend='both')
 
 #__class_getitem__ to return colors of soiginal list
 class RotatingList(list):
@@ -52,6 +54,11 @@ class RotatingList(list):
         """Rotate the list to the right and return the new first item."""
         self.append(self.pop(0))
         return self.current
+
+    def cnext(self):
+        """Return the first item in the list then rotate the list to the right."""
+        self.next()
+        return self[-1]
 
     def previous(self):
         """Rotate the list to the left and return the new first item."""
@@ -113,6 +120,7 @@ class ColorPairs(RotatingList):
     _original = [('#1f78b4', '#a6cee3'), ('#e31a1c', '#fb9a99'),('#33a02c', '#b2df8a'),
                             ('#ff7f00', '#fdbf6f'), ('#6a3d9a', '#cab2d6'), ('#b15928', '#ffff99')]
 
+
 class Colors(RotatingList):
     """
     Rotate through a set of colours.
@@ -148,6 +156,9 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
     `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html>`_
     for more details on these options.
 
+    All isopy plotting functions will automatically send any *kwargs* prefixed with ``figure_`` to
+    this function.
+
     Parameters
     ----------
     figure : figure, plt
@@ -177,6 +188,26 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
     -------
     figure : Figure
         Returns the figure
+
+    Examples
+    --------
+    >>> isopy.tb.update_figure(plt, size=(10,2), facecolor='orange')
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
+    >>> plt.show()
+
+    .. figure:: update_figure1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
+                     figure_size=(10, 2), figure_facecolor='orange')
+    >>> plt.savefig('update_figure2.png')
+
+    .. figure:: update_figure2.png
+            :alt: output of the example above
+            :align: center
+
+
     """
     figure = _check_figure('figure', figure)
     if size is not None:
@@ -194,21 +225,90 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
     if constrained_layout is not None: figure.set_constrained_layout(constrained_layout)
     return figure
 
-def _update_figure(func):
+def update_axes(axes, *, legend=None, **kwargs):
+    """
+    Update axes attributes.
+
+    All isopy plotting functions will automatically send any *kwargs* prefixed with ``axes_`` to
+    this function.
+
+    Parameters
+    ----------
+    axes : axes, dict[str, axes]
+        A matplotlib axes or a a dictionary of matplotlib axes. In the latter case the options are
+        applied to each axes in the dictionary.
+    legend : bool
+        If ``True`` the legend will be shown on the axes. If ``False`` no legend is shown.
+    kwargs
+        Any attribute that can be set using ``axes.set_<key>(value)``.
+        If the value is a tuple ``axes.set_<key>(*value)`` is used. If
+        the value is a dictionary ``axes.set_<key>(**value)``.
+
+    Examples
+    --------
+    >>> isopy.tb.update_axes(plt, xlabel='This it the x-axis', ylabel='This is the y-axis')
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
+    >>> plt.show()
+
+    .. figure:: update_axes1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
+                            axes_xlabel='This it the x-axis',
+                            axes_ylabel='This is the y-axis')
+    >>> plt.show()
+
+    .. figure:: update_axes2.png
+            :alt: output of the example above
+            :align: center
+    """
+    if type(axes) is dict:
+        axes = (_check_axes(ax) for ax in axes.values())
+    else:
+        axes = (_check_axes(axes),)
+
+    for ax in axes:
+        for name, value in kwargs.items():
+            set_func = getattr(ax, f'set_{name}')
+            if type(value) is tuple:
+                set_func(*value)
+            elif type(value) is dict:
+                set_func(**value)
+            else:
+                set_func(value)
+
+        if legend is True:
+            ax.legend()
+        elif legend is False:
+            try:
+                ax._remove_legend(None)
+            except:
+                pass
+
+
+def _update_figure_and_axes(func):
     """
     Allows figure kwargs to be passed to functions
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        fig_kwargs = _extract_kwargs(kwargs, 'figure')
+        fig_kwargs = core.extract_kwargs(kwargs, 'figure')
+        axes_kwargs = core.extract_kwargs(kwargs, 'axes')
+
         if fig_kwargs and len(args) > 0:
             update_figure(args[0], **fig_kwargs)
 
-        return func(*args, **kwargs)
+        ret = func(*args, **kwargs)
+
+        if axes_kwargs and len(args) > 0:
+            update_axes(args[0], **axes_kwargs)
+
+        return ret
     return wrapper
 
-@_update_figure
-def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
+@_update_figure_and_axes
+def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, **kwargs):
     """
     Create subplots for a figure.
 
@@ -229,6 +329,13 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
     constraned_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure. Advised to avoid
         overlapping axis labels.
+    kwargs
+        Prefix kwargs to be passed along witht he creation of each subplot with ``subplot_``.
+        Kwargs to be passed to the GridSpec should be prefixed ``gridspec_``. See matplotlib docs
+        for
+        `add_subplot <https://matplotlib.org/stable/api/figure_api.html?highlight=subplot_mosaic#matplotlib.figure.Figure.add_subplot>`_
+         and `Gridspec <https://matplotlib.org/stable/api/_as_gen/matplotlib.gridspec.GridSpec.html>`_
+        for a list of avaliable kwargs.
 
     Returns
     -------
@@ -247,8 +354,8 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
             :align: center
 
 
-    >>> subplots = ['one', 'two', 'three', 'four']
-    >>> axes = isopy.tb.create_subplots(plt, subplots, (-1, 1))
+    >>> subplots = ['one', 'two', 'three', 'four', 'five', 'six']
+    >>> axes = isopy.tb.create_subplots(plt, subplots, (-1, 2))
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
@@ -257,7 +364,7 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
         :align: center
 
 
-    >>> subplots = [[ [['one', 'two']] ], ['three'], ['four']]
+    >>> subplots = [['one', 'two'], ['three', 'two'], ['four', 'four']]
     >>> axes = isopy.tb.create_subplots(plt, subplots)
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
@@ -269,6 +376,8 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
     empty_sentinel = None
     figure = _check_figure('figure', figure)
     update_figure(figure, constrained_layout=constrained_layout)
+    subplot_kw = core.extract_kwargs(kwargs, 'subplot')
+    gridspec_kw = core.extract_kwargs(kwargs, 'gridspec')
 
     if grid is not None:
         nrows = grid[0]
@@ -293,7 +402,8 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
             grid.append(grid_row)
         subplots = grid
 
-    axes = figure.subplot_mosaic(subplots, empty_sentinel=empty_sentinel)
+    axes = figure.subplot_mosaic(subplots, empty_sentinel=empty_sentinel,
+                                 gridspec_kw=gridspec_kw, subplot_kw=subplot_kw)
 
     #Make sure that no key strings are used.
     out = {}
@@ -302,7 +412,88 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True):
         out[str(key)] = ax
     return out
 
-@_update_figure
+@_update_figure_and_axes
+def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
+    """
+    Create a legend encompassing multiple axes.
+
+    Items in *axes*, if there are any, will be included in the legend.
+
+    If mutilple axes contains items with the same label then only the item from the last axes is included
+    in the legend. Empty labels or labels beggining with ``'_'`` are not included in the legend.
+
+    Parameters
+    ----------
+    axes
+        The axes on which the legend will be drawn. any items in this axes will be included
+        in the legend.
+    include_axes
+        Items from axes given here will be included in the legend. Accepts a dict containing axes.
+    labels
+        If given then only items with this label will be included in the legend.
+    hide_axis
+        If ``True`` then the x and y axis of axes will be hidden. If ``None`` then the axis is hidden
+        only if *include_axes* are given and there are not items *axes* with a label.
+    kwargs
+        Any additional kwargs to be passed when creating the legend. See
+        `legend <https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure.legend>`_
+        for a list of avaliable kwargs.
+
+    Examples
+    --------
+    >>> data = isopy.random(100, keys='ru pd cd'.split())
+    >>> axes = isopy.tb.create_subplots(plt, [['left', 'right']], figure_width=8)
+    >>> isopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
+    >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
+    >>> isopy.tb.create_legend(axes['right'], axes['left'])
+    >>> plt.show()
+
+    .. figure:: create_legend1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> data = isopy.random(100, keys='ru pd cd'.split())
+    >>> axes = isopy.tb.create_subplots(plt, [['left', 'right', 'legend']],
+                                        figure_width=9, gridspec_width_ratios=[4, 4, 1])
+    >>> sopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
+    >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
+    >>> isopy.tb.create_legend(axes['legend'], axes, hide_axis=True)
+    >>> plt.show()
+
+    .. figure:: create_legend2.png
+            :alt: output of the example above
+            :align: center
+    """
+    
+    axes = _check_axes(axes)
+    ha, la = axes.get_legend_handles_labels()
+    legend = dict(zip(la, ha))
+
+    if hide_axis is None:
+        if len(include_axes) > 0 and len(legend) == 0:
+            hide_axis = True
+        else:
+            hide_axis = False
+
+    if isinstance(labels, str): labels = [labels]
+    incaxes = [axes]
+
+    for item in include_axes:
+        if isinstance(item, dict): incaxes += list(item.values())
+        else: incaxes.append(item)
+
+    for ax in incaxes:
+        ha, la = ax.get_legend_handles_labels()
+        legend.update(dict(zip(la, ha)))
+
+    if labels:
+        legend = {la: ha for la, ha in legend.items() if la in labels}
+
+    axes.legend(list(legend.values()), list(legend.keys()), **kwargs)
+    if hide_axis:
+        axes.axis(False)
+
+@_update_figure_and_axes
 def plot_scatter(axes, x, y, xerr = None, yerr = None,
                  color= None, marker = True, line = False, regression = None, **kwargs):
     """
@@ -413,7 +604,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
             raise ValueError(f'"{regression}" not a valid regression')
         plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
 
-@_update_figure
+@_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
                     fill = True, edgeline = True,  **kwargs):
     """
@@ -556,8 +747,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     style.setdefault('edgeline_zorder', style['zorder']-0.001)
     style.setdefault('fill_zorder', style['zorder']-0.002)
 
-    fill_style = _extract_kwargs(style, 'fill')
-    edge_style = _extract_kwargs(style, 'edgeline')
+    fill_style = core.extract_kwargs(style, 'fill')
+    edge_style = core.extract_kwargs(style, 'edgeline')
 
     if not xlim:
         xlim = axes.get_xlim()
@@ -604,7 +795,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     if yerr_eq is not None and fill:
         _plot_polygon(axes, yerr_coordinates, autoscale, **fill_style)
 
-@_update_figure
+@_update_figure_and_axes
 def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = None, color = None, marker = True, line = True, **kwargs):
     """
     Plot data as a spider diagram on matplotlib *axes* .
@@ -669,7 +860,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     >>> array = isopy.tb.make_ms_array('pd', mf_factor = [0.001, 0.002]).ratio('105pd')
-    >>> array = isopy.toolbox.isotope.Delta(array, isopy.refval.isotope.abundance, 1000)
+    >>> array = isopy.toolbox.isotope.rDelta(array, isopy.refval.isotope.fraction, 1000)
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 0}) #Adds a zero for the denominator mass number
     >>> plt.show()
@@ -712,7 +903,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         raise ValueError('x values could not be inferred from the y values')
 
     if type(x) is isopy.RatioKeyList:
-        if not x.has_common_denominator:
+        if x.common_denominator is None:
             raise ValueError(
                 'x values can only be inferred from a ratio key list with a common denominator')
         else:
@@ -799,7 +990,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     style.setdefault('markerfacecolor', style['color'])
     style.setdefault('zorder', 2)
 
-    regress_style = _extract_kwargs(style, 'regress')
+    regress_style = core.extract_kwargs(style, 'regress')
     regress_style.setdefault('color', style['color'])
 
     for i in range(x.shape[0]):
@@ -814,7 +1005,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     _axes_add_data(axes, x, y, None, yerr=yerr)
 
-@_update_figure
+@_update_figure_and_axes
 def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
                 spacing = -1, hide_yaxis=True, compare=False, subplots_grid = (1, -1), **kwargs):
@@ -982,7 +1173,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         if compare:
             plot_vcompare(axes, **compare_kwargs)
 
-@_update_figure
+@_update_figure_and_axes
 def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
                 spacing = 1, hide_xaxis=True, compare=False, subplots_grid = (-1, 1), **kwargs):
@@ -1196,8 +1387,8 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         except:
             raise ValueError(f'unable to convert pmval {box_pmval} to float')
 
-    _extract_kwargs(kwargs, 'subplots') #get rid of these
-    compare_kwargs = _extract_kwargs(kwargs, 'compare')
+    core.extract_kwargs(kwargs, 'subplots') #get rid of these
+    compare_kwargs = core.extract_kwargs(kwargs, 'compare')
     style = {}
     style.update(stack_style)
     style.update(kwargs)
@@ -1235,11 +1426,11 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     style.setdefault('cline_zorder', style['zorder'] - 0.001)
     style.setdefault('box_zorder', style['zorder'] - 0.002)
 
-    cline_style = _extract_kwargs(style, 'cline')
-    pmline_style = _extract_kwargs(style, 'pmline')
-    box_style = _extract_kwargs(style, 'box')
+    cline_style = core.extract_kwargs(style, 'cline')
+    pmline_style = core.extract_kwargs(style, 'pmline')
+    box_style = core.extract_kwargs(style, 'box')
 
-    temp_style = _extract_kwargs(style, 'outlier')
+    temp_style = core.extract_kwargs(style, 'outlier')
     outlier_style = style.copy()
     outlier_style.pop('label', None) #Otherwise the label gets shown twice
     outlier_style.update(temp_style)
@@ -1284,7 +1475,7 @@ def _plot_stack_array(func, axes, vaxis, vtype, grid, /, **kwargs):
         raise ValueError('vaxis incorrect')
 
     keys = kwargs[vaxis].keys()
-    subplot_kwargs = _extract_kwargs(kwargs, 'subplots')
+    subplot_kwargs = core.extract_kwargs(kwargs, 'subplots')
 
     if isinstance(axes, dict):
         named_axes = axes
@@ -1331,12 +1522,15 @@ def _plot_stack_array(func, axes, vaxis, vtype, grid, /, **kwargs):
         elif waxis == 'y':
             ax.set_xlabel(str(key))
 
-    maxw = np.nan
-    minw = np.nan
-    for name, ax in named_axes.items():
-        if name == '_': continue
-        maxw = np.nanmax([maxw, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
-        minw = np.nanmin([minw, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
+        maxw = np.nan
+        minw = np.nan
+        for name, ax in named_axes.items():
+            if name == '_': continue
+            maxw = np.nanmax([maxw, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
+            minw = np.nanmin([minw, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
 
     if not np.isnan(maxw) and not np.isnan(minw):
         for name, ax in named_axes.items():
@@ -1355,7 +1549,7 @@ def _plot_errorbar(axes, x, y, xerr = None, yerr = None, mask=None, style={}):
     else:
         axes.errorbar(x, y, yerr, xerr, **style)
 
-@_update_figure
+@_update_figure_and_axes
 def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline=True, pmline=True,
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1508,7 +1702,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         elif axis_color is not None:
             axes.tick_params(axis='y', colors=axis_color)
 
-@_update_figure
+@_update_figure_and_axes
 def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline='-', pmline='--',
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1849,6 +2043,128 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
 
     _plot_polygon(axes, coordinates, autoscale, **style)
 
+@_update_figure_and_axes
+def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
+                  colorbar=True, filled = True, nanmask = None, **kwargs):
+    """
+    Create a contour plot on *axes* from a data grid.
+
+    Parameters
+    ----------
+    axes : axes, figure, plt
+        Either a matplotlib axes object or a matplotlib Figure object. Objects with a gca() method
+        that return a matplotlib axes object, such as a matplotlib pyplot instance are also accepted.
+        If *axes* is a matplotlib Figure object then :func:`plot_vcompare` will be called on every
+        named subplot in the figure.
+    x
+        A 1-dimensional array containing the x-axis values.
+    y
+        A 1-dimensional array containing the y-axis values.
+    z
+        A 2-dimensional array containing the z-axis values.
+    zmin
+        The smallest value in the colour map. Any z values smaller than this value will
+        have the same colour as the *zmin* value.
+    zmax
+        The largest value in the colour map. Any z values larger than this value will
+        have the same colour as the *zmax* value.
+    levels
+        The number of intervals in the colour map.
+    cmap
+        The name of the colour map. Avaliable options can be found `here <https://matplotlib.org/stable/tutorials/colors/colormaps.html#>`.
+    colorbar : bool, axes
+        If ``False`` no colour bar is drawn. If ``True`` a colour bar is drawn on the same axes as
+        contours. If *colorbar* is an axes the colourbar will be drawn on that axes.
+    filled : bool
+        If ``False`` only contour lines are shown. If ```True`` filled contours are drawn.
+    nanmask
+        Can be used to mask out values by setting values that evaluate as ``True`` to ``np.nan``.
+        Must match the shape of *z*.
+    kwargs
+        Additional arguments for the matplotlib functions ``contour`` and ``contourf``. See avaliable
+        options `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contour.html>`.
+
+    Examples
+    --------
+    >>> x = np.arange(10)
+    >>> y = np.arange(10, 101, 10)
+    >>> z = np.arange(100).reshape((10, 10))
+    >>> isopy.tb.plot_contours(plt, x, y, z)
+    >>> plt.show()
+
+
+    .. figure:: plot_contours1.png
+        :alt: output of the example above
+        :align: center
+
+    >>> element = 'fe'
+    >>> spike1 = isopy.array(fe54=0, fe56=0, fe57=1, fe58=0)
+    >>> spike2 = isopy.array(fe54=0, fe56=0, fe57=0, fe58=1)
+    >>> axes_labels = dict(axes_xlabel = 'Proportion of double spike in double spike-sample mix',
+                   axes_ylabel='Proportion of spike1 in double spike',
+                   axes_title = 'Uncertainty in α (1SD)')
+    >>> dsgrid = isopy.tb.ds_grid(element, spike1, spike2)
+    >>> isopy.tb.plot_contours(plt, *dsgrid.xyz(), zmin= 0, zmax=0.01, **axes_labels)
+    >>> plt.show()
+
+    .. figure:: plot_contours2.png
+        :alt: output of the example above
+        :align: center
+
+    """
+    axes = _check_axes(axes)
+
+    x = _check_val('x', x, flatten=False)
+    y = _check_val('y', y, flatten=False)
+    z = _check_val('z', z, flatten=False)
+
+    if x.ndim != 1:
+        raise ValueError(f'x must have a dimension of 1')
+    if y.ndim != 1:
+        raise ValueError(f'y must have a dimension of 1')
+    if z.ndim != 2:
+        if z.ndim == 1 and z.size == x.size * y.size:
+            z = z.reshape((y.size, x.size))
+        else:
+            raise ValueError(f'z must have a dimension of 2')
+    elif z.shape[0] != y.size or z.shape[1] != x.size:
+        raise ValueError(f'shape of z {z.shape} does not match shape of x and z ({y.size}, {x.size})')
+
+    if nanmask is not None:
+        z = z.copy()
+        z[nanmask] = np.nan
+
+    style = dict(cmap=cmap)
+    style.update(grid_style)
+    style.update(kwargs)
+
+    if zmin is None:
+        zmin = np.nanmin(z)
+    elif callable(zmin):
+        zmin = zmin(z)
+    style.setdefault('vmin', zmin)
+
+    if zmax is None:
+        zmax = np.nanmax(z)
+    elif callable(zmax):
+        zmax = zmax(z)
+    style.setdefault('vmax', zmax)
+
+    if levels is not None:
+        levels = np.linspace(zmin, zmax, levels)
+        style['levels'] = levels
+    if filled:
+        contours = axes.contourf(x, y, z, **style)
+    else:
+        contours = axes.contour(x, y, z, **style)
+
+    if isinstance(colorbar, mplAxes):
+        figure = axes.get_figure()
+        figure.colorbar(contours, cax=colorbar)
+    elif colorbar is True:
+        figure = axes.get_figure()
+        figure.colorbar(contours, ax=axes)
+
 def _plot_polygon(axes, coordinates, autoscale = True, **style):
     upl_func = None
     if not autoscale and hasattr(axes, '_update_patch_limits'):
@@ -1861,15 +2177,6 @@ def _plot_polygon(axes, coordinates, autoscale = True, **style):
         if upl_func:
             axes._update_patch_limits = upl_func
 
-def _extract_kwargs(kwargs, prefix):
-    new_kwargs = {}
-    for kwarg in list(kwargs.keys()):
-        prefix_ = f'{prefix}_'
-        if kwarg.startswith(prefix_):
-            new_kwargs[kwarg.removeprefix(prefix_)] = kwargs.pop(kwarg)
-
-    return new_kwargs
-
 def _check_axes(axes):
     if not isinstance(axes, mpl.axes.Axes):
         try:
@@ -1881,6 +2188,8 @@ def _check_axes(axes):
     return axes
 
 def _check_figure(var_name, figure):
+    if isinstance(figure, mplAxes):
+        return figure.get_figure()
     if not isinstance(figure, mplFigure):
         try:
             figure = figure.gcf()

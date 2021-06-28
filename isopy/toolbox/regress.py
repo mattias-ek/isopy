@@ -215,7 +215,7 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
         dif = _np.abs(b2 / slope - 1)
         slope = b2
         if dif < tol: break
-    if i == 999:
+    else:
         raise ValueError('Unable to calculate a fit after 1000 iterations.')
 
     # Calculate self.intercept
