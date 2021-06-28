@@ -5,12 +5,15 @@ import scipy.stats as stats
 import matplotlib as mpl
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
+from matplotlib.axes import Axes as mplAxes
 import numpy as np
+import functools
+import warnings
 from typing import Optional, Union, Literal
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
-           'plot_spider', 'plot_hcompare', 'plot_vcompare',
-           'create_subplots', 'update_figure',
+           'plot_spider', 'plot_hcompare', 'plot_vcompare', 'plot_contours',
+           'create_subplots', 'update_figure', 'update_axes', 'create_legend',
            'Markers', 'Colors', 'ColorPairs']
 
 scatter_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
@@ -21,6 +24,7 @@ stack_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'eli
 spider_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
 box_style = dict(color='black', zorder = 0.9, alpha=0.1)
 polygon_style = dict(color='black', zorder = 0.9, alpha=0.1)
+grid_style = dict(extend='both')
 
 #__class_getitem__ to return colors of soiginal list
 class RotatingList(list):
@@ -50,6 +54,11 @@ class RotatingList(list):
         """Rotate the list to the right and return the new first item."""
         self.append(self.pop(0))
         return self.current
+
+    def cnext(self):
+        """Return the first item in the list then rotate the list to the right."""
+        self.next()
+        return self[-1]
 
     def previous(self):
         """Rotate the list to the left and return the new first item."""
@@ -111,6 +120,7 @@ class ColorPairs(RotatingList):
     _original = [('#1f78b4', '#a6cee3'), ('#e31a1c', '#fb9a99'),('#33a02c', '#b2df8a'),
                             ('#ff7f00', '#fdbf6f'), ('#6a3d9a', '#cab2d6'), ('#b15928', '#ffff99')]
 
+
 class Colors(RotatingList):
     """
     Rotate through a set of colours.
@@ -137,7 +147,7 @@ class Colors(RotatingList):
                                       '#a65628', '#ffff33', '#f781bf', '#999999']
 
 
-def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=None, edgecolor=None,
+def update_figure(figure, *, size = None, width=None, height=None, dpi=None, facecolor=None, edgecolor=None,
                   frameon=None, tight_layout=None, constrained_layout=None):
     """
     Update the figure options.
@@ -146,15 +156,20 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
     `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html>`_
     for more details on these options.
 
+    All isopy plotting functions will automatically send any *kwargs* prefixed with ``figure_`` to
+    this function.
+
     Parameters
     ----------
     figure : figure, plt
         A matplotlib Figure object or any object
         with a ``.gcf()`` method that returns a matplotlib Figure object, Such as a matplotlib
         pyplot instance.
-    figwidth : scalar
+    size : scalar, (scalar, scalar)
+        Either a single value representing both deimensions of a tuple consisting of width and height.
+    width : scalar
         Width of *figure* in inches
-    figheight : scalar
+    height : scalar
         Width of *figure* in inches
     dpi : scalar
         Resolution of *figure* in dots per inch
@@ -173,10 +188,35 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
     -------
     figure : Figure
         Returns the figure
+
+    Examples
+    --------
+    >>> isopy.tb.update_figure(plt, size=(10,2), facecolor='orange')
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
+    >>> plt.show()
+
+    .. figure:: update_figure1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
+                     figure_size=(10, 2), figure_facecolor='orange')
+    >>> plt.savefig('update_figure2.png')
+
+    .. figure:: update_figure2.png
+            :alt: output of the example above
+            :align: center
+
+
     """
     figure = _check_figure('figure', figure)
-    if figwidth is not None: figure.set_figwidth(figwidth)
-    if figheight is not None: figure.set_figheight(figheight)
+    if size is not None:
+        if type(size) is tuple:
+            width, height = size
+        else:
+            width, height = size, size
+    if width is not None: figure.set_figwidth(width)
+    if height is not None: figure.set_figheight(height)
     if dpi is not None: figure.set_dpi(dpi)
     if facecolor is not None: figure.set_facecolor(facecolor)
     if edgecolor is not None: figure.set_edgecolor(edgecolor)
@@ -185,7 +225,90 @@ def update_figure(figure, figwidth=None, figheight=None, dpi=None, facecolor=Non
     if constrained_layout is not None: figure.set_constrained_layout(constrained_layout)
     return figure
 
-def create_subplots(figure, subplots, *, constrained_layout=True, **figure_options):
+def update_axes(axes, *, legend=None, **kwargs):
+    """
+    Update axes attributes.
+
+    All isopy plotting functions will automatically send any *kwargs* prefixed with ``axes_`` to
+    this function.
+
+    Parameters
+    ----------
+    axes : axes, dict[str, axes]
+        A matplotlib axes or a a dictionary of matplotlib axes. In the latter case the options are
+        applied to each axes in the dictionary.
+    legend : bool
+        If ``True`` the legend will be shown on the axes. If ``False`` no legend is shown.
+    kwargs
+        Any attribute that can be set using ``axes.set_<key>(value)``.
+        If the value is a tuple ``axes.set_<key>(*value)`` is used. If
+        the value is a dictionary ``axes.set_<key>(**value)``.
+
+    Examples
+    --------
+    >>> isopy.tb.update_axes(plt, xlabel='This it the x-axis', ylabel='This is the y-axis')
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
+    >>> plt.show()
+
+    .. figure:: update_axes1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
+                            axes_xlabel='This it the x-axis',
+                            axes_ylabel='This is the y-axis')
+    >>> plt.show()
+
+    .. figure:: update_axes2.png
+            :alt: output of the example above
+            :align: center
+    """
+    if type(axes) is dict:
+        axes = (_check_axes(ax) for ax in axes.values())
+    else:
+        axes = (_check_axes(axes),)
+
+    for ax in axes:
+        for name, value in kwargs.items():
+            set_func = getattr(ax, f'set_{name}')
+            if type(value) is tuple:
+                set_func(*value)
+            elif type(value) is dict:
+                set_func(**value)
+            else:
+                set_func(value)
+
+        if legend is True:
+            ax.legend()
+        elif legend is False:
+            try:
+                ax._remove_legend(None)
+            except:
+                pass
+
+
+def _update_figure_and_axes(func):
+    """
+    Allows figure kwargs to be passed to functions
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        fig_kwargs = core.extract_kwargs(kwargs, 'figure')
+        axes_kwargs = core.extract_kwargs(kwargs, 'axes')
+
+        if fig_kwargs and len(args) > 0:
+            update_figure(args[0], **fig_kwargs)
+
+        ret = func(*args, **kwargs)
+
+        if axes_kwargs and len(args) > 0:
+            update_axes(args[0], **axes_kwargs)
+
+        return ret
+    return wrapper
+
+@_update_figure_and_axes
+def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, **kwargs):
     """
     Create subplots for a figure.
 
@@ -199,11 +322,20 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
         A nested list of subplot names. A visual layout of how you want your subplots
         to be arranged labeled as strings. *subplots* must be a 2-dimensional but items in the
         list can contain futher 2-dimensional lists. Use ``None`` for empty spaces.
+    grid : tuple[int, int]
+        If supplied then subplots will be arranged into grid with this shape. One dimension can
+        be -1 and it wil be calculated based on the size of *subplots* and the other given
+        dimension. Required that *subplots* is a one dimensional sequence.
     constraned_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure. Advised to avoid
         overlapping axis labels.
-    figure_options
-        Any valid option for :func:`update_figure`.
+    kwargs
+        Prefix kwargs to be passed along witht he creation of each subplot with ``subplot_``.
+        Kwargs to be passed to the GridSpec should be prefixed ``gridspec_``. See matplotlib docs
+        for
+        `add_subplot <https://matplotlib.org/stable/api/figure_api.html?highlight=subplot_mosaic#matplotlib.figure.Figure.add_subplot>`_
+         and `Gridspec <https://matplotlib.org/stable/api/_as_gen/matplotlib.gridspec.GridSpec.html>`_
+        for a list of avaliable kwargs.
 
     Returns
     -------
@@ -222,8 +354,8 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
             :align: center
 
 
-    >>> subplots = [['one'], ['two'], ['three'], ['four']]
-    >>> axes = isopy.tb.create_subplots(plt, subplots)
+    >>> subplots = ['one', 'two', 'three', 'four', 'five', 'six']
+    >>> axes = isopy.tb.create_subplots(plt, subplots, (-1, 2))
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
@@ -232,7 +364,7 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
         :align: center
 
 
-    >>> subplots = [[ [['one', 'two']] ], ['three'], ['four']]
+    >>> subplots = [['one', 'two'], ['three', 'two'], ['four', 'four']]
     >>> axes = isopy.tb.create_subplots(plt, subplots)
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
@@ -241,9 +373,37 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
             :alt: output of the example above
             :align: center
     """
+    empty_sentinel = None
     figure = _check_figure('figure', figure)
-    update_figure(figure, constrained_layout=constrained_layout, **figure_options)
-    axes = figure.subplot_mosaic(subplots, empty_sentinel=None)
+    update_figure(figure, constrained_layout=constrained_layout)
+    subplot_kw = core.extract_kwargs(kwargs, 'subplot')
+    gridspec_kw = core.extract_kwargs(kwargs, 'gridspec')
+
+    if grid is not None:
+        nrows = grid[0]
+        ncols = grid[1]
+        if nrows < 1 and ncols < 1:
+            raise ValueError('Invalid grid values')
+        if nrows == -1:
+            nrows = len(subplots) // ncols
+            if len(subplots) % ncols > 0: nrows += 1
+        elif ncols == -1:
+            ncols = len(subplots) // nrows
+            if len(subplots) % nrows > 0: ncols += 1
+
+        grid = []
+        for r in range(nrows):
+            grid_row = []
+            for c in range(ncols):
+                try:
+                    grid_row.append(subplots[r*ncols + c])
+                except:
+                    grid_row.append(empty_sentinel)
+            grid.append(grid_row)
+        subplots = grid
+
+    axes = figure.subplot_mosaic(subplots, empty_sentinel=empty_sentinel,
+                                 gridspec_kw=gridspec_kw, subplot_kw=subplot_kw)
 
     #Make sure that no key strings are used.
     out = {}
@@ -252,7 +412,88 @@ def create_subplots(figure, subplots, *, constrained_layout=True, **figure_optio
         out[str(key)] = ax
     return out
 
+@_update_figure_and_axes
+def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
+    """
+    Create a legend encompassing multiple axes.
 
+    Items in *axes*, if there are any, will be included in the legend.
+
+    If mutilple axes contains items with the same label then only the item from the last axes is included
+    in the legend. Empty labels or labels beggining with ``'_'`` are not included in the legend.
+
+    Parameters
+    ----------
+    axes
+        The axes on which the legend will be drawn. any items in this axes will be included
+        in the legend.
+    include_axes
+        Items from axes given here will be included in the legend. Accepts a dict containing axes.
+    labels
+        If given then only items with this label will be included in the legend.
+    hide_axis
+        If ``True`` then the x and y axis of axes will be hidden. If ``None`` then the axis is hidden
+        only if *include_axes* are given and there are not items *axes* with a label.
+    kwargs
+        Any additional kwargs to be passed when creating the legend. See
+        `legend <https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure.legend>`_
+        for a list of avaliable kwargs.
+
+    Examples
+    --------
+    >>> data = isopy.random(100, keys='ru pd cd'.split())
+    >>> axes = isopy.tb.create_subplots(plt, [['left', 'right']], figure_width=8)
+    >>> isopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
+    >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
+    >>> isopy.tb.create_legend(axes['right'], axes['left'])
+    >>> plt.show()
+
+    .. figure:: create_legend1.png
+            :alt: output of the example above
+            :align: center
+
+    >>> data = isopy.random(100, keys='ru pd cd'.split())
+    >>> axes = isopy.tb.create_subplots(plt, [['left', 'right', 'legend']],
+                                        figure_width=9, gridspec_width_ratios=[4, 4, 1])
+    >>> sopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
+    >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
+    >>> isopy.tb.create_legend(axes['legend'], axes, hide_axis=True)
+    >>> plt.show()
+
+    .. figure:: create_legend2.png
+            :alt: output of the example above
+            :align: center
+    """
+    
+    axes = _check_axes(axes)
+    ha, la = axes.get_legend_handles_labels()
+    legend = dict(zip(la, ha))
+
+    if hide_axis is None:
+        if len(include_axes) > 0 and len(legend) == 0:
+            hide_axis = True
+        else:
+            hide_axis = False
+
+    if isinstance(labels, str): labels = [labels]
+    incaxes = [axes]
+
+    for item in include_axes:
+        if isinstance(item, dict): incaxes += list(item.values())
+        else: incaxes.append(item)
+
+    for ax in incaxes:
+        ha, la = ax.get_legend_handles_labels()
+        legend.update(dict(zip(la, ha)))
+
+    if labels:
+        legend = {la: ha for la, ha in legend.items() if la in labels}
+
+    axes.legend(list(legend.values()), list(legend.keys()), **kwargs)
+    if hide_axis:
+        axes.axis(False)
+
+@_update_figure_and_axes
 def plot_scatter(axes, x, y, xerr = None, yerr = None,
                  color= None, marker = True, line = False, regression = None, **kwargs):
     """
@@ -363,6 +604,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
             raise ValueError(f'"{regression}" not a valid regression')
         plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
 
+@_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
                     fill = True, edgeline = True,  **kwargs):
     """
@@ -505,8 +747,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     style.setdefault('edgeline_zorder', style['zorder']-0.001)
     style.setdefault('fill_zorder', style['zorder']-0.002)
 
-    fill_style = _extract_style(style, 'fill')
-    edge_style = _extract_style(style, 'edgeline')
+    fill_style = core.extract_kwargs(style, 'fill')
+    edge_style = core.extract_kwargs(style, 'edgeline')
 
     if not xlim:
         xlim = axes.get_xlim()
@@ -553,7 +795,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     if yerr_eq is not None and fill:
         _plot_polygon(axes, yerr_coordinates, autoscale, **fill_style)
 
-
+@_update_figure_and_axes
 def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = None, color = None, marker = True, line = True, **kwargs):
     """
     Plot data as a spider diagram on matplotlib *axes* .
@@ -618,7 +860,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     >>> array = isopy.tb.make_ms_array('pd', mf_factor = [0.001, 0.002]).ratio('105pd')
-    >>> array = isopy.toolbox.isotope.normalise_data(array, isopy.refval.isotope.abundance, 1000)
+    >>> array = isopy.toolbox.isotope.rDelta(array, isopy.refval.isotope.fraction, 1000)
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 0}) #Adds a zero for the denominator mass number
     >>> plt.show()
@@ -661,7 +903,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         raise ValueError('x values could not be inferred from the y values')
 
     if type(x) is isopy.RatioKeyList:
-        if not x.has_common_denominator:
+        if x.common_denominator is None:
             raise ValueError(
                 'x values can only be inferred from a ratio key list with a common denominator')
         else:
@@ -696,7 +938,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     if constants:
         if not isinstance(constants, dict):
-            raise ValueError('constants must be a dictionary')
+            raise ValueError(f'constants must be a dictionary not "{type(constants).__name__}"')
         xconstants = np.array(list(constants.keys()), dtype=np.float64)
         yconstants = np.array(list(constants.values()), dtype=np.float64)
 
@@ -708,7 +950,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         x = np.append(x, np.full((x.shape[0], xconstants.size), xconstants), axis = 1)
         y = np.append(y, np.full((y.shape[0], yconstants.size), yconstants), axis = 1)
         if yerr is not None:
-            yerr = np.append(yerr, np.full((yerr.shape[0], constants.size), np.nan), axis = 1)
+            yerr = np.append(yerr, np.full((yerr.shape[0], yconstants.size), np.nan), axis = 1)
 
     if xscatter and not isinstance(xscatter, (float, int)):
         raise TypeError(f'xscatter must be a float or an integer')
@@ -748,7 +990,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     style.setdefault('markerfacecolor', style['color'])
     style.setdefault('zorder', 2)
 
-    regress_style = _extract_style(style, 'regress')
+    regress_style = core.extract_kwargs(style, 'regress')
     regress_style.setdefault('color', style['color'])
 
     for i in range(x.shape[0]):
@@ -763,16 +1005,15 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     _axes_add_data(axes, x, y, None, yerr=yerr)
 
-
+@_update_figure_and_axes
 def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
-                spacing = -1, hide_yaxis=True, **kwargs):
+                spacing = -1, hide_yaxis=True, compare=False, subplots_grid = (1, -1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
 
     Can also take an array in which case it will create a grid of subplots, one for each column in
     the array.
-
 
     Parameters
     ----------
@@ -843,6 +1084,10 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         The space between data points on the y-axis.
     hide_yaxis : bool, Default = True
         Hides the y-axis ticks and label.
+    compare : bool
+        If ``True`` *axes* is passed to ``plot_vcompare`` at the end of the function.
+    subplots_grid : tuple[int, int]
+        The shape of the grid to be created if nessecary.
     kwargs
         Any keyword argument accepted by matplotlib axes methods. By default kwargs are
         attributed to the data points. Prefix kwargs for the center line
@@ -883,7 +1128,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         :align: center
 
 
-    >>> isopy.tb.update_figure(plt, figwidth=8)
+    >>> isopy.tb.update_figure(plt, width=8)
     >>> colorpairs = isopy.tb.ColorPairs()
     >>> array = isopy.tb.make_ms_beams('pd104', 'pd105', 'pd106')
     >>> mean = np.mean(array)
@@ -900,11 +1145,11 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     if isinstance(x, tuple) and len(x) == 2:
         x, xerr = x
 
-    if isinstance(x, core.IsopyArray):
-        _plot_stack_array(plot_vstack, axes, 'x', x=x, xerr=xerr, ystart=ystart, cval=cval,
+    if hasattr(x, 'items'):
+        _plot_stack_array(plot_vstack, axes, 'x', type(x), subplots_grid, x=x, xerr=xerr, ystart=ystart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
-                          outliers=outliers, hide_yaxis=hide_yaxis, **kwargs)
+                          outliers=outliers, hide_yaxis=hide_yaxis, compare=compare, **kwargs)
 
     else:
         axes = _check_axes(axes)
@@ -919,15 +1164,19 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
                 ystart = _axes_data_func(axes, 'y', np.nanmin, default_value=np.nan) - pad
         if np.isnan(ystart): ystart = 0
 
-        x, y, xerr, cx, cy, pmx, pmy, boxx, boxy, styles = _plot_stack_step1(axes, x, xerr, ystart, cval, pmval, color,
+        x, y, xerr, cx, cy, pmx, pmy, boxx, boxy, styles, compare_kwargs = _plot_stack_step1(axes, x, xerr, ystart, cval, pmval, color,
                                                                              marker, line, cline, pmline, box, pad, box_pad, spacing, outliers, **kwargs)
 
         axes.get_yaxis().set_visible(not hide_yaxis)
         _plot_stack_step2(axes, x, y, xerr, None, cx, cy, pmx, pmy, boxx, boxy, styles, outliers)
 
+        if compare:
+            plot_vcompare(axes, **compare_kwargs)
+
+@_update_figure_and_axes
 def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = None, pmval=None, color=None, marker=True, line=False,
                 cline = True, pmline= False, box = True, pad = 2, box_pad = None,
-                spacing = 1, hide_xaxis=True, **kwargs):
+                spacing = 1, hide_xaxis=True, compare=False, subplots_grid = (-1, 1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
 
@@ -1004,6 +1253,10 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
         The space between data points on the x-axis.
     hide_yaxis : bool, Default = True
         Hides the x-axis ticks and label.
+    compare : bool
+        If ``True`` *axes* is passed to ``plot_vcompare`` at the end of the function.
+    subplots_grid : tuple[int, int]
+        The shape of the grid to be created if nessecary.
     kwargs
         Any keyword argument accepted by matplotlib axes methods. By default kwargs are
         attributed to the data points. Prefix kwargs for the center line
@@ -1059,11 +1312,11 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     """
     if isinstance(y, tuple) and len(y) == 2: y, yerr = y
 
-    if isinstance(y, core.IsopyArray):
-        _plot_stack_array(plot_hstack, axes, 'y', y=y, yerr=yerr, xstart=xstart, cval=cval,
+    if hasattr(y, 'items'):
+        _plot_stack_array(plot_hstack, axes, 'y', type(y), subplots_grid, y=y, yerr=yerr, xstart=xstart, cval=cval,
                           pmval=pmval, color=color, marker=marker, line=line, cline=cline,
                           pmline=pmline, box=box, pad=pad, box_pad=box_pad, spacing=spacing,
-                          outliers=outliers, hide_xaxis=hide_xaxis, **kwargs)
+                          outliers=outliers, hide_xaxis=hide_xaxis, compare=compare, **kwargs)
 
     else:
         axes = _check_axes(axes)
@@ -1078,11 +1331,14 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
                 xstart = _axes_data_func(axes, 'x', np.nanmin, default_value=np.nan) - pad
         if np.isnan(xstart): xstart = 0
 
-        y, x, yerr, cy, cx, pmy, pmx, boxy, boxx, styles = _plot_stack_step1(axes, y, yerr, xstart, cval, pmval, color,
+        y, x, yerr, cy, cx, pmy, pmx, boxy, boxx, styles, compare_kwargs = _plot_stack_step1(axes, y, yerr, xstart, cval, pmval, color,
                                                                              marker, line, cline, pmline, box, pad, box_pad, spacing, outliers, **kwargs)
 
         axes.get_xaxis().set_visible(not hide_xaxis)
         _plot_stack_step2(axes, x, y, None, yerr, cx, cy, pmx, pmy, boxx, boxy, styles, outliers)
+
+        if compare:
+            plot_hcompare(axes, **compare_kwargs)
 
 def _plot_stack_step2(axes, x, y, xerr, yerr, cx, cy, pmx, pmy, boxx, boxy, styles, isoutlier):
     _plot_errorbar(axes, x, y, xerr, yerr, np.invert(isoutlier), styles['main'])
@@ -1131,6 +1387,8 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         except:
             raise ValueError(f'unable to convert pmval {box_pmval} to float')
 
+    core.extract_kwargs(kwargs, 'subplots') #get rid of these
+    compare_kwargs = core.extract_kwargs(kwargs, 'compare')
     style = {}
     style.update(stack_style)
     style.update(kwargs)
@@ -1168,11 +1426,11 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     style.setdefault('cline_zorder', style['zorder'] - 0.001)
     style.setdefault('box_zorder', style['zorder'] - 0.002)
 
-    cline_style = _extract_style(style, 'cline')
-    pmline_style = _extract_style(style, 'pmline')
-    box_style = _extract_style(style, 'box')
+    cline_style = core.extract_kwargs(style, 'cline')
+    pmline_style = core.extract_kwargs(style, 'pmline')
+    box_style = core.extract_kwargs(style, 'box')
 
-    temp_style = _extract_style(style, 'outlier')
+    temp_style = core.extract_kwargs(style, 'outlier')
     outlier_style = style.copy()
     outlier_style.pop('label', None) #Otherwise the label gets shown twice
     outlier_style.update(temp_style)
@@ -1206,9 +1464,9 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         boxv = None
         boxw = None
 
-    return v, w, verr, cv, cw, pmv, pmw, boxv, boxw, styles
+    return v, w, verr, cv, cw, pmv, pmw, boxv, boxw, styles, compare_kwargs
 
-def _plot_stack_array(func, axes, vaxis, /, **kwargs):
+def _plot_stack_array(func, axes, vaxis, vtype, grid, /, **kwargs):
     if vaxis == 'x':
         waxis = 'y'
     elif vaxis == 'y':
@@ -1217,6 +1475,7 @@ def _plot_stack_array(func, axes, vaxis, /, **kwargs):
         raise ValueError('vaxis incorrect')
 
     keys = kwargs[vaxis].keys()
+    subplot_kwargs = core.extract_kwargs(kwargs, 'subplots')
 
     if isinstance(axes, dict):
         named_axes = axes
@@ -1224,11 +1483,7 @@ def _plot_stack_array(func, axes, vaxis, /, **kwargs):
         figure =_check_figure('axes', axes)
         axes = figure.get_axes()
         if len(axes) == 0:
-            if vaxis == 'y':
-                subplots = [[str(key)] for key in keys]
-            else:
-                subplots = [[str(key) for key in keys]]
-            named_axes = create_subplots(figure, subplots)
+            named_axes = create_subplots(figure, [str(key) for key in keys], grid, **subplot_kwargs)
         else:
             named_axes = {str(ax.get_label()): ax for ax in axes}
 
@@ -1237,26 +1492,29 @@ def _plot_stack_array(func, axes, vaxis, /, **kwargs):
     else:
         find_wstart = False
 
-    if find_wstart:
-        wstart = np.nan
-        for name, ax in named_axes.items():
-            if name == '_': continue
-            if kwargs['spacing'] > 0:
-                wstart = np.nanmax([wstart, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
-            else:
-                wstart = np.nanmin([wstart, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
-        if kwargs['spacing'] > 0:
-            kwargs[f'{waxis}start'] = wstart + kwargs['pad']
-        else:
-            kwargs[f'{waxis}start'] = wstart - kwargs['pad']
+        if find_wstart:
+            wstart = np.nan
+            for name, ax in named_axes.items():
+                if name == '_': continue
+                if kwargs['spacing'] > 0:
+                    wstart = np.nanmax([wstart, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
+                else:
+                    wstart = np.nanmin([wstart, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+
+            if kwargs['spacing'] > 0:
+                kwargs[f'{waxis}start'] = wstart + kwargs['pad']
+            else:
+                kwargs[f'{waxis}start'] = wstart - kwargs['pad']
 
     for key in keys:
         try:
             ax = named_axes[str(key)]
         except KeyError:
             raise KeyError(f'axes with name "{key}" not found')
-        func(ax, **{k: v.get(str(key)) if isinstance(v, core.IsopyArray) else v for k, v in
+        func(ax, **{k: v.get(str(key)) if type(v) is vtype else v for k, v in
                     kwargs.items()})
 
         if waxis == 'x':
@@ -1264,12 +1522,15 @@ def _plot_stack_array(func, axes, vaxis, /, **kwargs):
         elif waxis == 'y':
             ax.set_xlabel(str(key))
 
-    maxw = np.nan
-    minw = np.nan
-    for name, ax in named_axes.items():
-        if name == '_': continue
-        maxw = np.nanmax([maxw, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
-        minw = np.nanmin([minw, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
+        maxw = np.nan
+        minw = np.nan
+        for name, ax in named_axes.items():
+            if name == '_': continue
+            maxw = np.nanmax([maxw, _axes_data_func(ax, waxis, np.nanmax, default_value=np.nan)])
+            minw = np.nanmin([minw, _axes_data_func(ax, waxis, np.nanmin, default_value=np.nan)])
 
     if not np.isnan(maxw) and not np.isnan(minw):
         for name, ax in named_axes.items():
@@ -1288,7 +1549,7 @@ def _plot_errorbar(axes, x, y, xerr = None, yerr = None, mask=None, style={}):
     else:
         axes.errorbar(x, y, yerr, xerr, **style)
 
-
+@_update_figure_and_axes
 def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline=True, pmline=True,
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1390,7 +1651,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         :alt: output of the example above
         :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, figheight=6)
+    >>> figure = isopy.tb.update_figure(plt, height=6)
     >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> isopy.tb.plot_hstack(plt, array1)
@@ -1441,6 +1702,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         elif axis_color is not None:
             axes.tick_params(axis='y', colors=axis_color)
 
+@_update_figure_and_axes
 def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmunit='diff', cline='-', pmline='--',
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
@@ -1542,7 +1804,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             :alt: output of the example above
             :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, figwidth=8)
+    >>> figure = isopy.tb.update_figure(plt, width=8)
     >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
     >>> isopy.tb.plot_vstack(plt, array1)
@@ -1781,6 +2043,128 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
 
     _plot_polygon(axes, coordinates, autoscale, **style)
 
+@_update_figure_and_axes
+def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
+                  colorbar=True, filled = True, nanmask = None, **kwargs):
+    """
+    Create a contour plot on *axes* from a data grid.
+
+    Parameters
+    ----------
+    axes : axes, figure, plt
+        Either a matplotlib axes object or a matplotlib Figure object. Objects with a gca() method
+        that return a matplotlib axes object, such as a matplotlib pyplot instance are also accepted.
+        If *axes* is a matplotlib Figure object then :func:`plot_vcompare` will be called on every
+        named subplot in the figure.
+    x
+        A 1-dimensional array containing the x-axis values.
+    y
+        A 1-dimensional array containing the y-axis values.
+    z
+        A 2-dimensional array containing the z-axis values.
+    zmin
+        The smallest value in the colour map. Any z values smaller than this value will
+        have the same colour as the *zmin* value.
+    zmax
+        The largest value in the colour map. Any z values larger than this value will
+        have the same colour as the *zmax* value.
+    levels
+        The number of intervals in the colour map.
+    cmap
+        The name of the colour map. Avaliable options can be found `here <https://matplotlib.org/stable/tutorials/colors/colormaps.html#>`.
+    colorbar : bool, axes
+        If ``False`` no colour bar is drawn. If ``True`` a colour bar is drawn on the same axes as
+        contours. If *colorbar* is an axes the colourbar will be drawn on that axes.
+    filled : bool
+        If ``False`` only contour lines are shown. If ```True`` filled contours are drawn.
+    nanmask
+        Can be used to mask out values by setting values that evaluate as ``True`` to ``np.nan``.
+        Must match the shape of *z*.
+    kwargs
+        Additional arguments for the matplotlib functions ``contour`` and ``contourf``. See avaliable
+        options `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contour.html>`.
+
+    Examples
+    --------
+    >>> x = np.arange(10)
+    >>> y = np.arange(10, 101, 10)
+    >>> z = np.arange(100).reshape((10, 10))
+    >>> isopy.tb.plot_contours(plt, x, y, z)
+    >>> plt.show()
+
+
+    .. figure:: plot_contours1.png
+        :alt: output of the example above
+        :align: center
+
+    >>> element = 'fe'
+    >>> spike1 = isopy.array(fe54=0, fe56=0, fe57=1, fe58=0)
+    >>> spike2 = isopy.array(fe54=0, fe56=0, fe57=0, fe58=1)
+    >>> axes_labels = dict(axes_xlabel = 'Proportion of double spike in double spike-sample mix',
+                   axes_ylabel='Proportion of spike1 in double spike',
+                   axes_title = 'Uncertainty in α (1SD)')
+    >>> dsgrid = isopy.tb.ds_grid(element, spike1, spike2)
+    >>> isopy.tb.plot_contours(plt, *dsgrid.xyz(), zmin= 0, zmax=0.01, **axes_labels)
+    >>> plt.show()
+
+    .. figure:: plot_contours2.png
+        :alt: output of the example above
+        :align: center
+
+    """
+    axes = _check_axes(axes)
+
+    x = _check_val('x', x, flatten=False)
+    y = _check_val('y', y, flatten=False)
+    z = _check_val('z', z, flatten=False)
+
+    if x.ndim != 1:
+        raise ValueError(f'x must have a dimension of 1')
+    if y.ndim != 1:
+        raise ValueError(f'y must have a dimension of 1')
+    if z.ndim != 2:
+        if z.ndim == 1 and z.size == x.size * y.size:
+            z = z.reshape((y.size, x.size))
+        else:
+            raise ValueError(f'z must have a dimension of 2')
+    elif z.shape[0] != y.size or z.shape[1] != x.size:
+        raise ValueError(f'shape of z {z.shape} does not match shape of x and z ({y.size}, {x.size})')
+
+    if nanmask is not None:
+        z = z.copy()
+        z[nanmask] = np.nan
+
+    style = dict(cmap=cmap)
+    style.update(grid_style)
+    style.update(kwargs)
+
+    if zmin is None:
+        zmin = np.nanmin(z)
+    elif callable(zmin):
+        zmin = zmin(z)
+    style.setdefault('vmin', zmin)
+
+    if zmax is None:
+        zmax = np.nanmax(z)
+    elif callable(zmax):
+        zmax = zmax(z)
+    style.setdefault('vmax', zmax)
+
+    if levels is not None:
+        levels = np.linspace(zmin, zmax, levels)
+        style['levels'] = levels
+    if filled:
+        contours = axes.contourf(x, y, z, **style)
+    else:
+        contours = axes.contour(x, y, z, **style)
+
+    if isinstance(colorbar, mplAxes):
+        figure = axes.get_figure()
+        figure.colorbar(contours, cax=colorbar)
+    elif colorbar is True:
+        figure = axes.get_figure()
+        figure.colorbar(contours, ax=axes)
+
 def _plot_polygon(axes, coordinates, autoscale = True, **style):
     upl_func = None
     if not autoscale and hasattr(axes, '_update_patch_limits'):
@@ -1793,15 +2177,6 @@ def _plot_polygon(axes, coordinates, autoscale = True, **style):
         if upl_func:
             axes._update_patch_limits = upl_func
 
-def _extract_style(style, prefix):
-    new_style = {}
-    keys = list(style.keys())
-    for thing in keys:
-        things = thing.split('_', 1)
-        if things[0] == prefix and len(things) == 2:
-            new_style[things[1]] = style.pop(thing)
-    return new_style
-
 def _check_axes(axes):
     if not isinstance(axes, mpl.axes.Axes):
         try:
@@ -1813,6 +2188,8 @@ def _check_axes(axes):
     return axes
 
 def _check_figure(var_name, figure):
+    if isinstance(figure, mplAxes):
+        return figure.get_figure()
     if not isinstance(figure, mplFigure):
         try:
             figure = figure.gcf()
@@ -1903,13 +2280,16 @@ def _axes_data_func(axes, var, func, ignore_outliers=False, default_value = None
         else:
             raise ValueError('axes has no data stored')
 
-    if ignore_outliers:
-        data = np.concatenate(
-            [v[axes._ip__data['isnotoutlier'][i]] for i, v in enumerate(axes._ip__data[var]) if v is not None])
-    else:
-        data = np.concatenate([v for v in axes._ip__data[var] if v is not None])
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
-    return func(data) * multiplier
+        if ignore_outliers:
+            data = np.concatenate(
+                [v[axes._ip__data['isnotoutlier'][i]] for i, v in enumerate(axes._ip__data[var]) if v is not None])
+        else:
+            data = np.concatenate([v for v in axes._ip__data[var] if v is not None])
+
+        return func(data) * multiplier
 
 def _axes_data_lim(axes, axis, ignore_outliers=False):
     if not hasattr(axes, '_ip__data'):

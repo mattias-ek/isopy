@@ -5,12 +5,13 @@ import datetime as dt
 import numpy as np
 import chardet
 import openpyxl
+import pyperclip
 from openpyxl import load_workbook
 import itertools
 import io
 
 
-__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx']
+__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard']
 
 import isopy.checks
 
@@ -21,13 +22,11 @@ class NeptuneData:
     """
     Container for the data returned by ``read_exp``.
     """
-    def __init__(self, info, cycle, time, isotope_data, ratio_data, other_data):
+    def __init__(self, info, cycle, time, measurements):
         self.info = info
         self.cycle = cycle
         self.time = time
-        self.isotope_data = isotope_data
-        self.ratio_data = ratio_data
-        self.other_data = other_data
+        self.measurements = measurements
 
 def read_exp(filename, rename = None) -> NeptuneData:
     """
@@ -52,9 +51,8 @@ def read_exp(filename, rename = None) -> NeptuneData:
         * info - Dictionary containing the metadata included at the beginning of the file.
         * cycle - A list containing the cycle number for each measurement.
         * time - A list containing datetime objects for each measurement.
-        * isotope_data - A dictionary containing an isotope array, with all the data with an isotope keystring, for each line measured. Static measurements are always given as line ``1``.
-        * ratio_data - A dictionary containing an ratio array, with all the data with an ratio keystring, for each line measured. Static measurements are always given as line ``1``.
-        * other_data - A dictionary containing an general array, with all leftover data, for each line measured. Static measurements are always given as line ``1``.
+        * measurements - An dictionary containing an an isopy array with the values in for each line measured. Static measurements are always given as line ``1``.
+         to extract e.g only the isotope data from the measurement use ``neptune_data.measurement[line].copy(flavour_eq='isotope')``.
     """
     information = {}
 
@@ -92,10 +90,14 @@ def read_exp(filename, rename = None) -> NeptuneData:
     data.pop("", None)
     cycle = np.array(data.pop('Cycle'), dtype ='int')
     time = data.pop('Time')
-    time =[dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
-    isotope_data = {}
-    ratio_data = {}
-    other_data = {}
+    try:
+        time =[dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
+    except ValueError:
+        try:
+            time = [dt.datetime.fromtimestamp(time[i]).strftime('%H:%M:%S:%f') for i in range(len(time))]
+        except:
+            time = [dt.datetime.fromtimestamp(0).strftime('%H:%M:%S:%f') for i in range(len(time))]
+    measurements = {}
 
     for key in data:
         if ":" in key:
@@ -105,36 +107,18 @@ def read_exp(filename, rename = None) -> NeptuneData:
             line = 1
             keystring = key
         keystring = renamer(keystring)
+        measurements.setdefault(line, {})[isopy.keystring(keystring)] = data[key]
 
-        try:
-            keystring = isopy.IsotopeKeyString(keystring)
-        except:
-            pass
-        else:
-            isotope_data.setdefault(line, {})[keystring] = data[key]
-            continue
 
-        try:
-            keystring = isopy.RatioKeyString(keystring)
-        except:
-            pass
-        else:
-            ratio_data.setdefault(line, {})[keystring] = data[key]
-            continue
-
-        other_data.setdefault(line, {})[keystring] = data[key]
-
-    isotope_data = {line: isopy.core.IsotopeArray(isotope_data[line]) for line in isotope_data}
-    ratio_data = {line: isopy.core.RatioArray(ratio_data[line]) for line in ratio_data}
-    other_data = {line: isopy.core.GeneralArray(other_data[line]) for line in other_data}
-    return NeptuneData(information, cycle, time, isotope_data, ratio_data, other_data)
+    measurements = {line: isopy.asarray(measurements[line]) for line in measurements}
+    return NeptuneData(information, cycle, time, measurements)
 
 ######################
 ### read/write CSV ###
 ######################
 def read_csv(filename, comment_symbol ='#', keys_in = 'c',
              float_preferred = False, encoding = None,
-             dialect = None ):
+             dialect = None):
     """
     Load data from a csv file.
 
@@ -195,7 +179,7 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
             # All the columns in this row are empty. Ignore it
             continue
 
-        if comment_symbol is not None and row[0].startswith(comment_symbol):
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #startswith(comment_symbol):
             # This is a comment so ignore it.
             continue
 
@@ -212,6 +196,34 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
         else:
             raise ValueError(f'Unknown value for "keys_in" {keys_in}')
 
+def read_clipboard(comment_symbol ='#', keys_in = 'c',
+             float_preferred = False, dialect = None):
+    """
+    Load data from values in the clipboard.
+
+    Parameters
+    ----------
+    comment_symbol : str, Default = '#'
+        Rows starting with this string will be ignored.
+    keys_in : {'c', 'r', None}, Default = 'c'
+        If keys are given as the first value in each column pass ``c``. If keys are given as the
+        first value in each row pass ``r``. If there are no keys pass ``None``.
+    float_preferred : bool, Default = False
+        If `True` all values will be converted to float if possible. If conversion fails the
+        value will be left as a string.
+    dialect
+        Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
+
+    Returns
+    -------
+    data : dict or list
+        Returns a dictionary for data with keys otherwise a list.
+    """
+    data = pyperclip.paste()
+    data = data.encode('UTF-8')
+    return read_csv(data, encoding='UTF-8', comment_symbol=comment_symbol, keys_in=keys_in,
+                    float_preferred=float_preferred, dialect=dialect)
+
 
 def _read_csv_ckeys(first_row, reader, comment_symbol=None, termination_symbol=None, float_prefered = False):
     keys = first_row  # First row contains the the name of each column
@@ -221,11 +233,11 @@ def _read_csv_ckeys(first_row, reader, comment_symbol=None, termination_symbol=N
     for i, row in enumerate(reader):
         row = [r.strip() for r in row]
 
-        if termination_symbol is not None and row[0].startswith(termination_symbol):
+        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #startswith(termination_symbol):
             # Stop reading data if we find this string at the beginning of a row
             break
 
-        if comment_symbol is not None and row[0].startswith(comment_symbol):
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
             # Row is a comment, ignore
             continue
 
@@ -260,11 +272,11 @@ def _read_csv_rkeys(first_row, reader, comment_symbol=None, termination_symbol=N
     for i, row in enumerate(itertools.chain([first_row], reader)):
         row = [r.strip() for r in row]
 
-        if termination_symbol is not None and row[0].startswith(termination_symbol):
+        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #.startswith(termination_symbol):
             # Stop reading data if we find this string at the beginning of a row
             break
 
-        if comment_symbol is not None and row[0].startswith(comment_symbol):
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
             # Row is a comment, ignore
             continue
 
@@ -300,11 +312,11 @@ def _read_csv_nokeys(first_row, reader, comment_symbol=None, termination_symbol=
     for i, row in enumerate(itertools.chain([first_row], reader)):
         row = [r.strip() for r in row]
 
-        if termination_symbol is not None and row[0].startswith(termination_symbol):
+        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #.startswith(termination_symbol):
             # Stop reading data if we find this string at the beginning of a row
             break
 
-        if comment_symbol is not None and row[0].startswith(comment_symbol):
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
             # Row is a comment, ignore
             continue
 
@@ -692,77 +704,3 @@ def _write_xlsx_nokeys(worksheet, data, ri):
     for i, row in enumerate(data):
         for rj, value in enumerate(row):
             worksheet.cell(ri + i, 1 + rj).value = value
-
-#################################
-### Old versions of functions ###
-#################################
-def _read_excel(filename, sheetname = None, comment_symbol='#', default_value='nan'):
-    """
-    Read data from sheets in an excel file.
-
-    The first row of the sheet will be used as the key and the subsequent rows will be taken as the value.
-
-    Parameters
-    ----------
-    filename : str
-        Location of the file to be opened.
-    sheetname : int, str, None, optional
-        If ``int`` then the sheet at this index will be returned. If ``str`` then the sheet with this name will be
-        returned. If ``None`` a dict containing the data for all the sheets in the array will be returned.
-    comment_symbol : str, optional
-        Rows at the top of each sheet starting with *comment_symbol* will be ignored. Default value is ``"#"``.
-
-    Returns
-    -------
-    dict
-        If *sheetname* is ``None`` a dict of each sheet in the file will be returned. Otherwise a dict of the data in
-        the given sheet is returned.
-
-    Examples
-    --------
-    Need to make examples
-    """
-    wb = load_workbook(filename, data_only=True, read_only=True)
-    try:
-        if sheetname is None:
-            return {sheetname: _read_sheet(wb[sheetname], comment_symbol, default_value) for sheetname in wb.sheetnames}
-        elif isinstance(sheetname, int):
-            return _read_sheet(wb[wb.sheetnames[sheetname]], comment_symbol, default_value)
-        else:
-            return _read_sheet(wb.sheet_by_name(sheetname), comment_symbol, default_value)
-    finally:
-        wb.close()
-
-
-def _read_sheet(sheet, comment_symbol, default_value = 'nan'):
-    for ri in range(1,sheet.max_row):
-        if not ((c:=sheet.cell(ri, 1)).data_type == 's' and c.value.startswith(comment_symbol)):
-            data = {}
-            for ci in range(1, sheet.max_column+1):
-                cell = sheet.cell(ri, ci)
-                if cell.data_type == 's' and cell.value.strip() != '':
-                    column = f'{cell.value}'
-                elif cell.value is not None:
-                    column = f'column{ci}'
-                else:
-                    continue
-                data[column] = []
-                for rj in range(ri+1, sheet.max_row+1):
-                    vcell = sheet.cell(rj, ci)
-                    if vcell.data_type == 'e':
-                        data[column].append(default_value)
-                    else:
-                        data[column].append(vcell.value)
-
-            for i in range(sheet.max_row + 1 - (ri + 1)):
-                if True in (rowisnone:=[data[c][i] is None for c in data.keys()]):
-                    if set(rowisnone) == 1:
-                        #All values in row is None. In this case just remove the row
-                        for c in data.keys():
-                            data[c].pop(i)
-                    else:
-                        #Replace all None values with the default value
-                        for c in data.keys():
-                            if data[c][i] is None: data[c][i] = default_value
-
-            return data

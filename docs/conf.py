@@ -19,11 +19,10 @@
 #
 import os
 import sys
+#sys.path.insert(0, os.path.abspath('./../'))
 import isopy
 from importlib.metadata import version
 __version__ = version('isopy')
-sys.path.insert(0, os.path.abspath('./../'))
-
 
 # -- General configuration ------------------------------------------------
 
@@ -42,7 +41,9 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
-    'sphinx_autodoc_typehints']
+    'nbsphinx',
+    'sphinx_copybutton']
+#    'sphinx_autodoc_typehints']
 
 autosummary_generate = True
 autosummary_generate_overwrite = True

@@ -6,7 +6,7 @@ corrupting the values but dictionaries can be edited by creating a copy.
 
 Most of the reference values are
 :class:`IsopyDict` or :class:`ScalarDict` dictionaries that use
-isopy key string as *keys* and therfore will automatically format
+isopy key string as *keys* and therefore will automatically format
 *key* strings.
 
 Below is a list of the different reference values avaliable.
@@ -37,6 +37,7 @@ A collection of reference values relating to the element symbol.
     element.name_symbol
     element.atomic_number
     element.atomic_weight
+    element.initial_solar_system_abundance_L09
 
 refval.isotope
 --------------
@@ -47,12 +48,13 @@ A collection of reference values relating to individual isotopes.
     :template: ref_attr.rst
 
     isotope.mass
-    isotope.abundance
+    isotope.fraction
+    isotope.mass_number
     isotope.mass_W17
-    isotope.best_abundance_measurement_M16
+    isotope.best_measurement_fraction_M16
     isotope.initial_solar_system_abundance_L09
-    isotope.initial_solar_system_absolute_abundance_L09
-    isotope.sprocess_abundance_B11
+    isotope.initial_solar_system_fraction_L09
+    isotope.sprocess_fraction_B11
 
 
 
