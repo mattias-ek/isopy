@@ -540,8 +540,8 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
 
     Examples
     --------
-    >>> x = np.random.default_rng().normal(1, 0.5, 20)
-    >>> y = (x * 3) + np.random.default_rng().normal(2, 0.5, 20)
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
     >>> isopy.tb.plot_scatter(plt, x, y)
     >>> plt.show()
 
@@ -549,8 +549,10 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
             :alt: output of the example above
             :align: center
 
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
     >>> xerr = 0.2
-    >>> yerr = np.random.default_rng().normal(0.3, 0.1, 20)
+    >>> yerr = isopy.random(20, seed=48)
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york1', color='red', marker='s')
     >>> plt.show()
 
@@ -668,8 +670,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 
     Examples
     --------
-    >>> x = np.random.default_rng().normal(1, 0.5, 20)
-    >>> y = x* 3 + np.random.default_rng().normal(2, 0.5, 20)
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
     >>> regression = isopy.tb.regression_linear(x, y)
     >>> isopy.tb.plot_scatter(plt, x, y)
     >>> isopy.tb.plot_regression(plt, regression)
@@ -679,17 +681,22 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
             :alt: output of the example above
             :align: center
 
-    >>> regression = lambda x: x ** 2 + 4 #Any callable that takes x and return y is a valid
+
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
+    >>> regression = lambda x: 2 * x + x ** 2 #Any callable that takes x and return y is a valid
     >>> isopy.tb.plot_scatter(plt, x, y, color='red')
-    >>> isopy.tb.plot_regression(plt, regression, color='red', xlim=(0.6, 1.8))
+    >>> isopy.tb.plot_regression(plt, regression, color='red', xlim=(-1, 1))
     >>> plt.show()
 
     .. figure:: plot_regression2.png
             :alt: output of the example above
             :align: center
 
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
     >>> xerr = 0.2
-    >>> yerr = np.random.default_rng().normal(0.3, 0.1, 20)
+    >>> yerr = isopy.random(20, seed=48)
     >>> regression = isopy.tb.regression_york1(x, y, xerr, yerr)
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr)
     >>> isopy.tb.plot_regression(plt, regression)
@@ -699,6 +706,10 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
             :alt: output of the example above
             :align: center
 
+    >>> x = isopy.random(20, seed=46)
+    >>> y = x * 3 + isopy.random(20, seed=47)
+    >>> xerr = 0.2
+    >>> yerr = isopy.random(20, seed=48)
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr, color='red')
     >>> isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
     >>> plt.show()
@@ -849,7 +860,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     Examples
     --------
-    >>> array = isopy.tb.make_ms_array('pd')
+    >>> array = isopy.refval.isotope.fraction.asarray(element_symbol='pd')
     >>> isopy.tb.plot_spider(plt, array) #Will plot the fraction of each Pd isotope
     >>> plt.show()
 
@@ -858,11 +869,10 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         :align: center
 
 
-    >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
-    >>> array = isopy.tb.make_ms_array('pd', mf_factor = [0.001, 0.002]).ratio('105pd')
-    >>> array = isopy.toolbox.isotope.rDelta(array, isopy.refval.isotope.fraction, 1000)
+    >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']])
+    >>> array = isopy.refval.isotope.fraction.asarray(element_symbol='pd').ratio('105pd')
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
-    >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 0}) #Adds a zero for the denominator mass number
+    >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 1}) #Adds a one for the denominator
     >>> plt.show()
 
     .. figure:: plot_spider2.png
@@ -1105,10 +1115,10 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
 
     Examples
     --------
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_vstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_vstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
+    >>> array1 = isopy.random(100, -0.5, seed=46)
+    >>> array2 = isopy.random(100, 0.5, seed=47)
+    >>> isopy.tb.plot_vstack(plt, array1)
+    >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
     .. figure:: plot_vstack1.png
@@ -1116,11 +1126,11 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         :align: center
 
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
-    >>> isopy.tb.create_subplots(plt, [[key for key in keys.sorted()]], figwidth=8)
-    >>> array1 = isopy.tb.make_ms_beams('pd105', 'cd111', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd105', 'ru101', integrations = 20)
-    >>> isopy.tb.plot_vstack(plt, array1, color=isopy.tb.Colors()[0])
-    >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2, color=isopy.tb.Colors()[1])
+    >>> array1 = isopy.random(100, -0.5, keys, seed=46)
+    >>> array2 = isopy.random(100, 0.5, keys, seed=47)
+    >>> isopy.tb.create_subplots(plt, keys.sorted(), (1, -1))
+    >>> isopy.tb.plot_vstack(plt, array1)
+    >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
     .. figure:: plot_vstack2.png
@@ -1128,13 +1138,13 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         :align: center
 
 
-    >>> isopy.tb.update_figure(plt, width=8)
-    >>> colorpairs = isopy.tb.ColorPairs()
-    >>> array = isopy.tb.make_ms_beams('pd104', 'pd105', 'pd106')
-    >>> mean = np.mean(array)
-    >>> sd2 = isopy.sd2(array)
-    >>> outliers = isopy.toolbox.isotope.find_outliers(array, mean, sd2)
-    >>> isopy.tb.plot_vstack(plt, array, outliers=outliers, cval=mean, pmval=sd2, color=colorpairs.current)
+    >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
+    >>> array = isopy.random(100, -0.5, keys, seed=46)
+    >>> mean = np.mean(array);
+    >>> sd = isopy.sd(array)
+    >>> outliers = isopy.tb.find_outliers(array, mean, sd)
+    >>> isopy.tb.create_subplots(plt, keys.sorted(), (1, -1))
+    >>> isopy.tb.plot_vstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
 
     .. figure:: plot_vstack3.png
@@ -1275,10 +1285,10 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
 
     Examples
     --------
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_hstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_hstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
+    >>> array1 = isopy.random(100, -0.5, seed=46)
+    >>> array2 = isopy.random(100, 0.5, seed=47)
+    >>> isopy.tb.plot_hstack(plt, array1)
+    >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
     .. figure:: plot_hstack1.png
@@ -1286,23 +1296,24 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
         :align: center
 
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
-    >>> isopy.tb.create_subplots(plt, [[key] for key in keys.sorted()])
-    >>> array1 = isopy.tb.make_ms_beams('pd105', 'cd111', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd105', 'ru101', integrations = 20)
-    >>> isopy.tb.plot_hstack(plt, array1, color=isopy.tb.Colors()[0])
-    >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2, color=isopy.tb.Colors()[1])
+    >>> array1 = isopy.random(100, -0.5, keys, seed=46)
+    >>> array2 = isopy.random(100, 0.5, keys, seed=47)
+    >>> isopy.tb.create_subplots(plt, keys.sorted(), (-1, 1))
+    >>> isopy.tb.plot_hstack(plt, array1)
+    >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
     .. figure:: plot_hstack2.png
         :alt: output of the example above
         :align: center
 
-    >>> colorpairs = isopy.tb.ColorPairs()
-    >>> array = isopy.tb.make_ms_beams('pd104', 'pd105', 'pd106')
-    >>> mean = np.mean(array)
-    >>> sd2 = isopy.sd2(array)
-    >>> outliers = isopy.toolbox.isotope.find_outliers(array, mean, sd2)
-    >>> isopy.tb.plot_hstack(plt, array, outliers=outliers, cval=mean, pmval=sd2, color=colorpairs.current)
+    >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
+    >>> array = isopy.random(100, -0.5, keys, seed=46)
+    >>> mean = np.mean(array);
+    >>> sd = isopy.sd(array)
+    >>> outliers = isopy.tb.find_outliers(array, mean, sd)
+    >>> isopy.tb.create_subplots(plt, keys.sorted(), (-1, 1))
+    >>> isopy.tb.plot_hstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
 
     .. figure:: plot_hstack3.png
@@ -1614,10 +1625,10 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
 
     Examples
     --------
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_hstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_hstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
+    >>> array1 = isopy.random(100, 0.9, seed=46)
+    >>> array2 = isopy.random(100, 1.1, seed=47)
+    >>> isopy.tb.plot_hstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hcompare(plt)
     >>> plt.show()
 
@@ -1625,11 +1636,11 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         :alt: output of the example above
         :align: center
 
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_hstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_hstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
-    >>> isopy.tb.plot_hcompare(plt, pmval=isopy.se2, sigfig=1)
+    >>> array1 = isopy.random(100, 0.9, seed=46)
+    >>> array2 = isopy.random(100, 1.1, seed=47)
+    >>> isopy.tb.plot_hstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_hcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
 
     .. figure:: plot_hcompare2.png
@@ -1637,26 +1648,26 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         :align: center
 
     >>> pmunits = ['diff', 'abs', '%', 'ppt', 'ppm', 'ppb']
-    >>> subplots = isopy.tb.create_subplots(plt, [[unit] for unit in pmunits], figheight=6)
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
+    >>> subplots = isopy.tb.create_subplots(plt, pmunits, (-1, 1), figure_height=8)
+    >>> array1 = isopy.random(100, 0.9, seed=46)
+    >>> array2 = isopy.random(100, 1.1, seed=47)
     >>> for unit, axes in subplots.items():
-    >>>     isopy.tb.plot_hstack(axes, array1['105pd'])
-    >>>     isopy.tb.plot_hstack(axes, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
-    >>>     isopy.tb.plot_hcompare(axes, pmunit=unit, combine_ticklabels=True)
-    >>>     axes.set_ylabel(f'pmunit="{unit}"')
+            isopy.tb.plot_hstack(axes, array1, cval=np.mean, pmval=isopy.sd2)
+            isopy.tb.plot_hstack(axes, array2, cval=np.mean, pmval=isopy.sd2)
+            isopy.tb.plot_hcompare(axes, pmval=isopy.sd, pmunit=unit, combine_ticklabels=True)
+            axes.set_ylabel(f'pmunit="{unit}"')
     >>> plt.show()
 
     .. figure:: plot_hcompare3.png
         :alt: output of the example above
         :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, height=6)
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_hstack(plt, array1)
+    >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
+    >>> array1 = isopy.random(100, 0.9, keys, seed=46)
+    >>> array2 = isopy.random(100, 1.1, keys, seed=47)
+    >>> isopy.tb.plot_hstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
-    >>> isopy.tb.plot_hcompare(figure)
+    >>> isopy.tb.plot_hcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
 
     .. figure:: plot_hcompare4.png
@@ -1766,10 +1777,10 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
 
     Examples
     --------
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_vstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_vstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
+    >>> array1 = isopy.random(100, -0.5, seed=46)
+    >>> array2 = isopy.random(100, 0.5, seed=47)
+    >>> isopy.tb.plot_vstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_vcompare(plt)
     >>> plt.show()
 
@@ -1778,11 +1789,11 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         :align: center
 
 
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> isopy.tb.plot_vstack(plt, array1['105pd'])
-    >>> isopy.tb.plot_vstack(plt, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
-    >>> isopy.tb.plot_vcompare(plt, pmval=isopy.se2, sigfig=1)
+    >>> array1 = isopy.random(100, -0.5, seed=46)
+    >>> array2 = isopy.random(100, 0.5, seed=47)
+    >>> isopy.tb.plot_vstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
+    >>> isopy.tb.plot_vcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
 
     .. figure:: plot_vcompare2.png
@@ -1790,26 +1801,26 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             :align: center
 
     >>> pmunits = ['diff', 'abs', '%', 'ppt', 'ppm', 'ppb']
-    >>> subplots = isopy.tb.create_subplots(plt, [[unit for unit in pmunits]], figwidth=8)
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
+    >>> subplots = isopy.tb.create_subplots(plt, pmunits, (1, -1), figure_width=8)
+    >>> array1 = isopy.random(100, 0.9, seed=46)
+    >>> array2 = isopy.random(100, 1.1, seed=47)
     >>> for unit, axes in subplots.items():
-    >>>     isopy.tb.plot_vstack(axes, array1['105pd'])
-    >>>     isopy.tb.plot_vstack(axes, array2['105pd'], cval=np.mean, pmval=isopy.sd2)
-    >>>     isopy.tb.plot_vcompare(axes, pmunit=unit, combine_ticklabels=True)
-    >>>     axes.set_xlabel(f'pmunit="{unit}"')
+            isopy.tb.plot_vstack(axes, array1, cval=np.mean, pmval=isopy.sd2)
+            isopy.tb.plot_vstack(axes, array2, cval=np.mean, pmval=isopy.sd2)
+            isopy.tb.plot_vcompare(axes, pmval=isopy.sd, pmunit=unit, combine_ticklabels=True)
+            axes.set_xlabel(f'pmunit="{unit}"')
     >>> plt.show()
 
     .. figure:: plot_vcompare3.png
             :alt: output of the example above
             :align: center
 
-    >>> figure = isopy.tb.update_figure(plt, width=8)
-    >>> array1 = isopy.tb.make_ms_beams('pd', integrations = 20)
-    >>> array2 = isopy.tb.make_ms_beams('pd', integrations = 20)
+    >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
+    >>> array1 = isopy.random(100, 0.9, keys, seed=46)
+    >>> array2 = isopy.random(100, 1.1, keys, seed=47)
     >>> isopy.tb.plot_vstack(plt, array1)
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
-    >>> isopy.tb.plot_vcompare(figure, combine_ticklabels=True)
+    >>> isopy.tb.plot_vcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
 
     .. figure:: plot_vcompare4.png
