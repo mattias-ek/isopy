@@ -404,8 +404,8 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
         raise ValueError(f'method "{method}" not recognized')
 
 
-def ds_correction(measured, spike, standard=None, inversion_keys=None, *, isotope_masses=None,
-                  isotope_abundances=None,
+def ds_correction(measured, spike, standard=None, isotope_masses=None, inversion_keys=None,
+                  isotope_fractions=None,
                   method='rudge', fins_tol = 0.000001, **method_kwargs):
     """
     Do an iterative double spike inversion to correct for isobaric interferences.
@@ -478,12 +478,12 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None, *, isotop
     inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
                                              isopy.RatioKeyList, coerce=True, allow_none=True)
 
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances,
-                                                            isopy.refval.isotope.fraction)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_abundances', isotope_fractions,
+                                                           isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
                                                         isopy.refval.isotope.mass)
     if standard is None:
-        standard = isopy.refval.isotope.fraction
+        standard = isotope_fractions
     else:
         standard = isopy.checks.check_type('standard', standard, core.RatioArray, core.IsotopeArray,
                                            dict, coerce=True, coerce_into=isopy.core.RatioArray)
@@ -509,7 +509,7 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None, *, isotop
             fins2 = fins
 
             measured2 = isotope.remove_isobaric_interferences(measured2, isobaric_interferences,
-                                                  fins, isotope_abundances, isotope_masses)
+                                                              fins, isotope_fractions, isotope_masses)
             #Recalculate the instrumental fractionation
             inversion = ds_inversion(measured2, spike, standard, isotope_masses, inversion_keys, method,
                                      **method_kwargs)
@@ -853,7 +853,7 @@ def _combine(value):
     out = []
     for value in values:
         if type(value) is DSResult:
-            value = DSResult.fnat
+            value = value.fnat
         value = np.asarray(value)
         if value.size > 1:
             value = np.nanmean(value)
@@ -890,6 +890,18 @@ class IsopyNamedResult:
         static_items = {name: getattr(self, name) for name in self.__static_item_names}
         dynamic_items = {name: func(getattr(self, name), *args[1:], **kwargs) for name in self.__dynamic_item_names}
         return self.__class__(static_items, dynamic_items)
+
+    def __getitem__(self, name):
+        return getattr(self, name)
+
+    def items(self):
+        return ((name, getattr(self, name)) for name in self.__dynamic_item_names)
+
+    def values(self):
+        return (getattr(self, name) for name in self.__dynamic_item_names)
+
+    def keys(self):
+        return (name for name in self.__dynamic_item_names)
 
 
 class IsopyResultList(list):
