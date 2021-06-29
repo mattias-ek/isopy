@@ -15,7 +15,7 @@ setuptools.setup(
                       'chardet>=4'],
     python_requires = '>=3.8',
     setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pytest-mpl'],
     include_package_data=True,
 
     author="Mattias Ek",
