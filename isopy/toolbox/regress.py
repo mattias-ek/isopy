@@ -1,13 +1,9 @@
 from matplotlib.axes import Axes as _Axes
 from matplotlib.patches import Polygon as _Polygon
 from scipy import stats
-import numpy as _np
-import isopy as _isopy
+import numpy as np
 from isopy import core
 from isopy import toolbox
-from collections import namedtuple as _namedtuple
-from typing import NamedTuple
-
 
 
 __add__ = ['regression_york1', 'regression_york2', 'regression_linear']
@@ -60,14 +56,14 @@ def _plot_york_regression(axes, regression, color = 'black', slopeline = True, e
     xlim = axes.get_xlim()
     ylim = axes.get_ylim()
 
-    xval = _np.linspace(xlim[0], xlim[1], 10000)
+    xval = np.linspace(xlim[0], xlim[1], 10000)
     slope = xval * regression.slope + regression.intercept
     upper = slope + regression.y_error(xval)
     lower = slope - regression.y_error(xval)
 
-    index_slope = _np.all([slope > ylim[0], slope < ylim[1]], 0)
-    index_lower = _np.all([lower > ylim[0], lower < ylim[1]], 0)
-    index_upper = _np.all([upper > ylim[0], upper < ylim[1]], 0)
+    index_slope = np.all([slope > ylim[0], slope < ylim[1]], 0)
+    index_lower = np.all([lower > ylim[0], lower < ylim[1]], 0)
+    index_upper = np.all([upper > ylim[0], upper < ylim[1]], 0)
 
     upper_coordinates = [*zip(xval[index_upper], upper[index_upper])]
     lower_coordinates = [*zip(xval[index_lower], lower[index_lower])]
@@ -160,12 +156,12 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
         The returned object also behaves like a tuple so it can be
         unpacked as ``slope, intercept, slope_err, intercept_err, msdw, p = york_regression_result``
     """
-    x = isopy.checks.check_type('x', x, _np.ndarray, coerce=True, coerce_into=_np.array)
-    y = isopy.checks.check_type('y', y, _np.ndarray, coerce=True, coerce_into=_np.array)
-    xerr = isopy.checks.check_type('xerr', xerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
-    yerr = isopy.checks.check_type('yerr', yerr, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
-    r = isopy.checks.check_type('r', r, _np.ndarray, _np.float, coerce=True, coerce_into=[_np.float, _np.array])
-    tol = isopy.checks.check_type('tol', tol, _np.float, coerce=True)
+    x = isopy.checks.check_type('x', x, np.ndarray, coerce=True, coerce_into=np.array)
+    y = isopy.checks.check_type('y', y, np.ndarray, coerce=True, coerce_into=np.array)
+    xerr = isopy.checks.check_type('xerr', xerr, np.ndarray, np.float64, coerce=True, coerce_into=[np.float64, np.array])
+    yerr = isopy.checks.check_type('yerr', yerr, np.ndarray, np.float64, coerce=True, coerce_into=[np.float64, np.array])
+    r = isopy.checks.check_type('r', r, np.ndarray, np.float64, coerce=True, coerce_into=[np.float64, np.array])
+    tol = isopy.checks.check_type('tol', tol, np.float64, coerce=True)
 
     X = x
     Y = y
@@ -182,13 +178,13 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
     if X.size != Y.size:
         raise ValueError('x and y must have the same size')
 
-    if not isinstance(Xerr, _np.ndarray):
-        Xerr = _np.ones(X.size) * Xerr
+    if not isinstance(Xerr, np.ndarray):
+        Xerr = np.ones(X.size) * Xerr
     elif Xerr.size != X.size:
         raise ValueError('xerr and x must have the same size')
 
-    if not isinstance(Yerr, _np.ndarray):
-        Yerr = _np.ones(Y.size) * Yerr
+    if not isinstance(Yerr, np.ndarray):
+        Yerr = np.ones(Y.size) * Yerr
     elif Yerr.size != Y.size:
         raise ValueError('yerr and y must have the same size')
 
@@ -199,20 +195,20 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
     wX = 1 / (Xerr ** 2)
     wY = 1 / (Yerr ** 2)
 
-    k = _np.sqrt(wX * wY)
-    slope = (_np.mean(X * Y) - _np.mean(X) * _np.mean(Y)) / (_np.mean(X ** 2) - _np.mean(X) ** 2)
+    k = np.sqrt(wX * wY)
+    slope = (np.mean(X * Y) - np.mean(X) * np.mean(Y)) / (np.mean(X ** 2) - np.mean(X) ** 2)
 
     # Iterativley converge self.slope until tol is reached
     for i in range(1000):
         W = (wX * wY) / (wX + (slope ** 2) * wY - 2 * slope * r * k)
-        Xbar = _np.sum(W * X) / _np.sum(W)
-        Ybar = _np.sum(W * Y) / _np.sum(W)
+        Xbar = np.sum(W * X) / np.sum(W)
+        Ybar = np.sum(W * Y) / np.sum(W)
         U = X - Xbar
         V = Y - Ybar
         beta = W * (U / wY + (slope * V) / wX - (slope * U + V) * (r / k))
 
-        b2 = _np.sum(W * beta * V) / _np.sum(W * beta * U)
-        dif = _np.abs(b2 / slope - 1)
+        b2 = np.sum(W * beta * V) / np.sum(W * beta * U)
+        dif = np.abs(b2 / slope - 1)
         slope = b2
         if dif < tol: break
     else:
@@ -223,27 +219,27 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
 
     # Calculate adjusted points
     x = Xbar + beta
-    xbar = _np.sum(W * x) / _np.sum(W)
+    xbar = np.sum(W * x) / np.sum(W)
     u = x - xbar
 
     y = Ybar + slope * beta
-    ybar = _np.sum(W * y) / _np.sum(W)
+    ybar = np.sum(W * y) / np.sum(W)
     v = y - ybar
 
     #Calculate the uncertianty on the slope
-    slope_error = _np.sqrt(1 / _np.sum(W * (u ** 2)))
-    intercept_error = _np.sqrt(1 / _np.sum(W) + ((0 - xbar) ** 2) * (slope_error ** 2))
+    slope_error = np.sqrt(1 / np.sum(W * (u ** 2)))
+    intercept_error = np.sqrt(1 / np.sum(W) + ((0 - xbar) ** 2) * (slope_error ** 2))
 
     #Goodness of fit
-    S = _np.sum(W * (Y - slope * X - intercept) ** 2)
+    S = np.sum(W * (Y - slope * X - intercept) ** 2)
 
     dof = x.size - 2
     if dof > 0:
-        mXY = _np.array([X - x, Y - y]).T.reshape(-1, 1, 2)
-        mXYerr = _np.array([Xerr * Xerr, r * Xerr * Yerr, r * Xerr * Yerr, Yerr * Yerr]).T.reshape(-1, 2, 2)
-        miXYerr = _np.linalg.inv(mXYerr)
+        mXY = np.array([X - x, Y - y]).T.reshape(-1, 1, 2)
+        mXYerr = np.array([Xerr * Xerr, r * Xerr * Yerr, r * Xerr * Yerr, Yerr * Yerr]).T.reshape(-1, 2, 2)
+        miXYerr = np.linalg.inv(mXYerr)
         mXYt = mXY.reshape(-1, 2, 1)
-        rmXY = _np.sum(mXY @ miXYerr @ mXYt)
+        rmXY = np.sum(mXY @ miXYerr @ mXYt)
 
         msdw = rmXY / dof
         p = 1 - stats.chi2.cdf(rmXY, dof)
@@ -251,7 +247,7 @@ def regression_yorkn(x, y, xerr, yerr, r=0, tol=1e-15, n = 1):
         msdw = 1
         p = 1
 
-    return YorkregressResult(slope, intercept, slope_error,  intercept_error, msdw, p, _np.sum(W), xbar)
+    return YorkregressResult(slope, intercept, slope_error,  intercept_error, msdw, p, np.sum(W), xbar)
 
 @core.updatedoc(regression_yorkn, n = 1)
 def regression_york1(x, y, xerr, yerr, r=0, tol=1e-15):
@@ -321,7 +317,7 @@ class YorkregressResult(tuple):
         """
         Return the uncertainty of y at *x*.
         """
-        return _np.sqrt(1 / self.sumW + ((x - self.xbar) ** 2) * (self.slope_err ** 2))
+        return np.sqrt(1 / self.sumW + ((x - self.xbar) ** 2) * (self.slope_err ** 2))
 
     def label(self, sigfig = 5):
         label = 'y='
