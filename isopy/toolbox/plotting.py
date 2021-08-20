@@ -898,7 +898,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     Examples
     --------
-    >>> array = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
+    >>> array = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
     >>> isopy.tb.plot_spider(plt, array) #Will plot the fraction of each Pd isotope
     >>> plt.show()
 
@@ -908,7 +908,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
 
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']])
-    >>> array = isopy.refval.isotope.fraction.to_list(element_symbol='pd').ratio('105pd')
+    >>> array = isopy.refval.isotope.fraction.to_array(element_symbol='pd').ratio('105pd')
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 1}) #Adds a one for the denominator
     >>> plt.show()

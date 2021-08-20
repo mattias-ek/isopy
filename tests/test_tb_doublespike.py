@@ -18,8 +18,8 @@ class Test_Inversion:
                                            spike=spike, spike_fraction=spike_fraction,
                                            random_seed=46)
 
-        result_rudge = isopy.tb.ds_inversion(measured, spike)
-        result_siebert = isopy.tb.ds_inversion(measured, spike, method='siebert')
+        result_rudge = isopy.tb.ds_correction(measured, spike)
+        result_siebert = isopy.tb.ds_correction(measured, spike, method='siebert')
 
 
         assert type(result_rudge) is toolbox.doublespike.DSResult
@@ -60,8 +60,8 @@ class Test_Inversion:
                                            random_seed=46, isotope_masses=mass_ref,
                                            isotope_fractions=fraction_ref)
 
-        result_rudge = isopy.tb.ds_inversion(measured, spike, fraction_ref, mass_ref)
-        result_siebert = isopy.tb.ds_inversion(measured, spike, fraction_ref, mass_ref, method='siebert')
+        result_rudge = isopy.tb.ds_correction(measured, spike, isotope_fractions=fraction_ref, isotope_masses= mass_ref)
+        result_siebert = isopy.tb.ds_correction(measured, spike, isotope_fractions= fraction_ref, isotope_masses= mass_ref, method='siebert')
 
         assert type(result_rudge) is toolbox.doublespike.DSResult
         assert result_rudge.method == 'rudge'
@@ -100,7 +100,7 @@ class Test_Inversion:
                                            spike=spike, spike_fraction=0.5,
                                            random_seed=46)
 
-        result = isopy.tb.ds_inversion(measured, spike)
+        result = isopy.tb.ds_correction(measured, spike)
         assert type(result) is toolbox.doublespike.DSResult
         attrs = 'alpha beta lambda_ fnat fins spike_fraction sample_fraction Q'.split()
         assert list(result.keys()) == attrs
@@ -228,7 +228,7 @@ class Test_Delta:
                                            spike=spike, spike_fraction=0.5,
                                            random_seed=46)
 
-        result = isopy.tb.ds_inversion(measured, spike)
+        result = isopy.tb.ds_correction(measured, spike)
 
         mass_ratio1 = '108pd/105pd'
         mass_ratio2 = isopy.refval.isotope.mass_W17.get(mass_ratio1)

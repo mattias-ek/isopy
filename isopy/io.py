@@ -416,7 +416,7 @@ def write_csv(filename, data, comments=None, keys_in='c',
             csize = dsize
         elif keys_in is None:
             func = _write_csv_nokeys
-            data = np.array(data.to_list())
+            data = np.array(data.to_array())
             csize = csize - 1
     else:
         ndim = data.ndim

@@ -1719,7 +1719,7 @@ class Test_Dict:
         for key in isopydict:
             assert filtered[key] == isopydict[key]
 
-    def test_asarray(self):
+    def test_to_array(self):
         keys = 'ru cd 101ru 105pd 108pd 111cd'.split()
         values = [1, 2, 3, 4, 5, 6]
 
@@ -1732,8 +1732,8 @@ class Test_Dict:
         isodict1 = isopy.ScalarDict(dictionary)
         isodict2 = isopy.ScalarDict(dictionary, default_value=0)
 
-        array1 = isodict1.to_list(subkeys1)
-        array2 = isodict2.to_list(subkeys1)
+        array1 = isodict1.to_array(subkeys1)
+        array2 = isodict2.to_array(subkeys1)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'element')
@@ -1747,8 +1747,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.to_list(subkeys2)
-        array2 = isodict2.to_list(subkeys2)
+        array1 = isodict1.to_array(subkeys2)
+        array2 = isodict2.to_array(subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'mixed')
@@ -1762,8 +1762,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.to_list(flavour_eq ='isotope')
-        array2 = isodict2.to_list(flavour_eq ='isotope')
+        array1 = isodict1.to_array(flavour_eq ='isotope')
+        array2 = isodict2.to_array(flavour_eq ='isotope')
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'isotope')
@@ -1777,8 +1777,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.to_list(key_eq=subkeys2)
-        array2 = isodict2.to_list(key_eq=subkeys2)
+        array1 = isodict1.to_array(key_eq=subkeys2)
+        array2 = isodict2.to_array(key_eq=subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'mixed')

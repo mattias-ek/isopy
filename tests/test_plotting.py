@@ -26,18 +26,6 @@ def test_markers():
     return plt
 
 @pytest.mark.mpl_image_compare(tolerance=5, style='default')
-def test_colorpairs():
-    plt.close(); plt.clf()
-    colorpairs = isopy.tb.ColorPairs()
-    for i in range(len(colorpairs)):
-        isopy.tb.plot_scatter(plt, [1, 1.5], [i, i], color=colorpairs.current[0], markersize=20,
-                              line=True)
-        isopy.tb.plot_scatter(plt, [2, 2.5], [i, i], color=colorpairs.current[1], markersize=20,
-                              line=True)
-        colorpairs.next()
-    return plt
-
-@pytest.mark.mpl_image_compare(tolerance=5, style='default')
 def test_update_figure1():
     plt.close(); plt.clf()
     isopy.tb.update_figure(plt, size=(10, 2), facecolor='orange')
@@ -176,7 +164,7 @@ def test_plot_regression4():
 @pytest.mark.mpl_image_compare(tolerance=5, style='default')
 def test_plot_spider1():
     plt.close(); plt.clf()
-    array = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
+    array = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
     isopy.tb.plot_spider(plt, array)  # Will plot the fraction of each Pd isotope
     return plt
 
@@ -184,7 +172,7 @@ def test_plot_spider1():
 def test_plot_spider2():
     plt.close(); plt.clf()
     subplots = isopy.tb.create_subplots(plt, [['left', 'right']])
-    array = isopy.refval.isotope.fraction.to_list(element_symbol='pd').ratio('105pd')
+    array = isopy.refval.isotope.fraction.to_array(element_symbol='pd').ratio('105pd')
     isopy.tb.plot_spider(subplots['left'], array)  # The numerator mass numbers are used as x
     isopy.tb.plot_spider(subplots['right'], array,
                          constants={105: 1})  # Adds a 1 for the denominator

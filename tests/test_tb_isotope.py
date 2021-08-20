@@ -760,7 +760,7 @@ class Test_rDelta():
 
     def test_rDelta1(self):
         # Data is a single value
-        data = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
+        data = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
 
         # Dict
         reference =  isopy.refval.isotope.fraction
@@ -1421,7 +1421,7 @@ class Test_Make:
     def test_spike(self):
         spike = isopy.array(pd104 = 1, pd106=0, pd108=1, pd110=0)
         spike = spike.normalise(1)
-        sample = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
+        sample = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
         sample = sample.normalise(1, spike.keys)
 
         correct = isopy.add(sample * 0.5, spike * 0.5, 0)
@@ -1439,7 +1439,7 @@ class Test_Make:
         self.compare_sd(correct, 100, result)
 
     def test_blank(self):
-        sample = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
+        sample = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
         blank = isopy.ones(None, sample.keys)
         blank = blank + isopy.refval.isotope.fraction
         blank = blank.normalise(1)
@@ -1528,7 +1528,7 @@ class Test_JohnsonNyquistNoise:
         self.run(10, 1E10)
         self.run(10, cpv=1E7)
 
-        voltages = isopy.refval.isotope.fraction.to_list(element_symbol='pd').normalise(10, isopy.keymax)
+        voltages = isopy.refval.isotope.fraction.to_array(element_symbol='pd').normalise(10, isopy.keymax)
         resistors = isopy.full(None, 1E11, voltages.keys)
         resistors['102pd'] = 1E13
         resistors['106pd'] = 1E10
