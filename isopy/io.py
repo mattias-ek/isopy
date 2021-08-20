@@ -34,8 +34,9 @@ def read_exp(filename, rename = None) -> NeptuneData:
 
     Parameters
     ----------
-    filename : str, bytes
+    filename : str, bytes, StringIO, BytesIO
         Path for file to be opened. Alternatively a file like byte string can be supplied.
+        Also accepts file like objects.
     rename : dict, Callable, Optional
         For renaming keys in the analysed data. Useful for cases when the key is the mass rather
         than the isotope measured. If a dictionary is passed then every key present in the
@@ -56,15 +57,29 @@ def read_exp(filename, rename = None) -> NeptuneData:
     """
     information = {}
 
-    if type(filename) is not bytes:
-        fileio = open(filename, 'rb')
-        file = fileio.read()
-        fileio.close()
-    else:
+    # If filename is a string load the files.
+    if type(filename) is str:
+        with open(filename, 'rb') as fileio:
+            file = fileio.read()
+    elif type(filename) is bytes:
         file = filename
+    elif type(filename) is io.BytesIO:
+        filename.seek(0)
+        file = filename.read()
+    elif type(filename) is str:
+        file = filename
+    elif type(filename) is io.StringIO:
+        filename.seek(0)
+        file = filename.read()
+    else:
+        raise TypeError('filename is of unknown type')
 
-    encoding = chardet.detect(file).get('encoding')
-    file = file.decode(encoding)
+    if type(file is bytes):
+        # find the files encoding
+        encoding = chardet.detect(file).get('encoding')
+
+        # Decode the bytes into string.
+        file = file.decode(encoding)
 
     dialect = csv.Sniffer().sniff(file)
 
@@ -124,8 +139,9 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
 
     Parameters
     ----------
-    filename : str, bytes
+    filename : str, bytes, StringIO, BytesIO
         Path for file to be opened. Alternatively a file like byte string can be supplied.
+        Also accepts file like objects.
     comment_symbol : str, Default = '#'
         Rows starting with this string will be ignored.
     keys_in : {'c', 'r', None}, Default = 'c'
@@ -151,19 +167,29 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
     dialect = isopy.checks.check_type('dialect', dialect, str, allow_none=True)
 
     #If filename is a string load the files.
-    if type(filename) is not bytes:
-        fileio = open(filename, 'rb')
-        file = fileio.read()
-        fileio.close()
-    else:
+    if type(filename) is str:
+        with open(filename, 'rb') as fileio:
+            file = fileio.read()
+    elif type(filename) is bytes:
         file = filename
+    elif type(filename) is io.BytesIO:
+        filename.seek(0)
+        file = filename.read()
+    elif type(filename) is str:
+        file = filename
+    elif type(filename) is io.StringIO:
+        filename.seek(0)
+        file = filename.read()
+    else:
+        raise TypeError('filename is of unknown type')
 
-    #find the files encoding
-    if encoding is None:
-        encoding = chardet.detect(file).get('encoding')
+    if type(file is bytes):
+        #find the files encoding
+        if encoding is None:
+            encoding = chardet.detect(file).get('encoding')
 
-    #Decode the bytes into string.
-    file = file.decode(encoding)
+        #Decode the bytes into string.
+        file = file.decode(encoding)
 
     #find the csv dialect
     if dialect is None:
@@ -351,8 +377,9 @@ def write_csv(filename, data, comments=None, keys_in='c',
 
     Parameters
     ----------
-    filename : str
-        Path/name of the csv file to be created. Any existing file with the same path/name will be overwritten.
+    filename : str, StringIO, BytesIO
+        Path/name of the csv file to be created. Any existing file with the same path/name will be
+        over written. Also accepts file like objects.
     data : isopy_array_like, numpy_array_like
         Data to be saved in the array.
     comments : str, Sequence[str], Optional
@@ -365,7 +392,7 @@ def write_csv(filename, data, comments=None, keys_in='c',
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file.
     """
-    filename = isopy.checks.check_type('filename', filename, str)
+    #filename = isopy.checks.check_type('filename', filename, str)
     comments = isopy.checks.check_type_list('comments', comments, str, allow_none=True, make_list=True)
     keys_in = isopy.checks.check_type('keys_in', keys_in, str, allow_none=True)
     delimiter = isopy.checks.check_type('delimiter', delimiter, str)
@@ -403,31 +430,56 @@ def write_csv(filename, data, comments=None, keys_in='c',
         csize = data.shape[1] - 1
         func = _write_csv_nokeys
 
-    with open(filename, mode='w', newline='') as file:
+    rows = []
+
+    if comments is not None:
+        for comment in comments:
+            rows.append([f'{comment_symbol}{comment}'] + ['' for i in range(csize)])
+
+    rows += func(data, dsize)
+    if type(filename) is str:
+        with open(filename, mode='w', newline='') as file:
+            csv_writer = csv.writer(file, delimiter=delimiter)
+            for row in rows:
+                csv_writer.writerow(row)
+
+    if type(filename) is io.StringIO:
+        csv_writer = csv.writer(filename, delimiter=delimiter)
+        for row in rows:
+            csv_writer.writerow(row)
+
+    if type(filename) is io.BytesIO:
+        file = io.StringIO()
         csv_writer = csv.writer(file, delimiter=delimiter)
+        for row in rows:
+            csv_writer.writerow(row)
+        file.seek(0)
+        string = file.read()
+        filename.write(string.encode('UTF-8'))
 
-        if comments is not None:
-            for comment in comments:
-                csv_writer.writerow([f'{comment_symbol}{comment}'] + ['' for i in range(csize)])
-
-        func(csv_writer, data, dsize)
-
-def _write_csv_ckeys(csv_writer, data, dsize):
+def _write_csv_ckeys(data, dsize):
     keys = data.keys()
-
-    csv_writer.writerow([f'{key}' for key in keys])
+    rows = []
+    rows.append([f'{key}' for key in keys])
 
     for i in range(dsize):
-        csv_writer.writerow([f'{data[key][i]}' for key in keys])
+        rows.append([f'{data[key][i]}' for key in keys])
 
-def _write_csv_rkeys(csv_writer, data, dsize):
+    return rows
+
+def _write_csv_rkeys(data, dsize):
     keys = data.keys()
-    for key in keys:
-        csv_writer.writerow([f'{key}'] + [f'{data[key][i]}' for i in range(dsize)])
+    rows = []
 
-def _write_csv_nokeys(csv_writer, data, dsize):
+    for key in keys:
+        rows.append([f'{key}'] + [f'{data[key][i]}' for i in range(dsize)])
+    return rows
+
+def _write_csv_nokeys(data, dsize):
+    rows = []
     for i in range(data.shape[0]):
-        csv_writer.writerow([f'{data[i][j]}' for j in range(data.shape[-1])])
+        rows.append([f'{data[i][j]}' for j in range(data.shape[-1])])
+    return rows
 
 #######################
 ### Read/write xlsx ###
@@ -439,8 +491,8 @@ def read_xlsx(filename, sheetname=None, keys_in='c',
 
     Parameters
     ----------
-    filename : str
-        Path for file to be opened.
+    filename : str, bytes, BytesIO
+        Path for file to be opened. Also accepts file like objects.
     sheetname : str, int, Optional
         To load data from a single sheet in the workbook pass either the name of the sheet or
         the position of the sheet. If nothing is specified all the data for all sheets in the
@@ -459,6 +511,9 @@ def read_xlsx(filename, sheetname=None, keys_in='c',
         A dictionary containing the data for a single sheet or a dictionary containing the data
         for multiple sheets in the workbook indexed by sheet name.
     """
+    if filename is bytes:
+        filename = io.BytesIO(filename)
+
     workbook = openpyxl.load_workbook(filename, data_only=True, read_only=True)
 
     sheetnames = workbook.sheetnames
@@ -610,9 +665,9 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
 
     Parameters
     ----------
-    filename : str
+    filename : str, BytesIO
         Path/name of the excel file to be created. Any existing file with the same path/name
-        will be overwritten.
+        will be overwritten. Also accepts file like objects.
     sheets : isopy_array_like, numpy_array_like
         Data arrays given here will be saved as sheet1, sheet2 etc.
     comments : str, Sequence[str], Optional
@@ -628,28 +683,47 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
     sheets : isopy_array, numpy_array
         Data array given here will be saved in the workbook with the keyword as the sheet name
     """
-    if append and _os.path.exists(filename):
-        workbook = openpyxl.load_workbook(filename=filename)
-    else:
-        workbook = openpyxl.Workbook()
-        workbook.remove(workbook.active)
+
+    save = True
+    if type(filename) is openpyxl.Workbook:
+        workbook = filename
+        save = False
+    elif type(filename) is io.BytesIO:
+        if append:
+            #TODO some sort of check to make sure the file isnt empty
+            try:
+                workbook = openpyxl.load_workbook(filename=filename)
+            except:
+                workbook = openpyxl.Workbook()
+                workbook.remove(workbook.active)
+        else:
+            workbook = openpyxl.Workbook()
+            workbook.remove(workbook.active)
+    elif type(filename) is str:
+        if append and _os.path.exists(filename):
+            workbook = openpyxl.load_workbook(filename=filename)
+        else:
+            workbook = openpyxl.Workbook()
+            workbook.remove(workbook.active)
 
     sheetname_data = {f'sheet{i+1}': data for i, data in enumerate(sheets)}
     sheetname_data.update(sheetnames)
     try:
         for sheetname, data in sheetname_data.items():
+            #If appending then delete any preexisting workbooks
             if sheetname in workbook.sheetnames:
                 workbook.remove(workbook[sheetname])
 
             worksheet = workbook.create_sheet(sheetname)
             _write_xlsx(worksheet, data, comments, comment_symbol, keys_in)
 
+        #Workbooks must have at least one sheet
         if len(workbook.sheetnames) == 0:
             workbook.create_sheet('sheet1')
 
-        workbook.save(filename)
+        if save: workbook.save(filename)
     finally:
-        workbook.close()
+        if save: workbook.close()
 
 def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in):
     data = isopy.asanyarray(data)

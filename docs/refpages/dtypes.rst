@@ -2,8 +2,7 @@ Data types
 **********
 .. currentmodule:: isopy
 
-Documented here are the custom data types implemented by isopy for working with and manipulating different types of
-geochemical data.
+Documented here are the custom data types implemented by isopy and functions for creating them.
 
 Key strings
 -----------

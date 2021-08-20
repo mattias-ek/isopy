@@ -21,12 +21,12 @@ The following functions are useful for processing isotopic data.
     make_ms_array
     make_ms_beams
     make_ms_sample
-    mass_independent_correction
+    internal_normalisation
     calculate_mass_fractionation_factor
     remove_mass_fractionation
     add_mass_fractionation
+    find_isobaric_interferences
     remove_isobaric_interferences
-    ds_inversion
     ds_correction
     ds_grid
     ds_Delta
@@ -69,7 +69,6 @@ Below are functions for plotting geochemical data using matplotlib
     :template: cycler_template.rst
 
     Colors
-    ColorPairs
     Markers
 
 

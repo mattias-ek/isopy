@@ -1732,8 +1732,8 @@ class Test_Dict:
         isodict1 = isopy.ScalarDict(dictionary)
         isodict2 = isopy.ScalarDict(dictionary, default_value=0)
 
-        array1 = isodict1.asarray(subkeys1)
-        array2 = isodict2.asarray(subkeys1)
+        array1 = isodict1.to_list(subkeys1)
+        array2 = isodict2.to_list(subkeys1)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'element')
@@ -1747,8 +1747,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.asarray(subkeys2)
-        array2 = isodict2.asarray(subkeys2)
+        array1 = isodict1.to_list(subkeys2)
+        array2 = isodict2.to_list(subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'mixed')
@@ -1762,8 +1762,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.asarray(flavour_eq = 'isotope')
-        array2 = isodict2.asarray(flavour_eq = 'isotope')
+        array1 = isodict1.to_list(flavour_eq ='isotope')
+        array2 = isodict2.to_list(flavour_eq ='isotope')
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'isotope')
@@ -1777,8 +1777,8 @@ class Test_Dict:
             np.testing.assert_allclose(array2[key], isodict2.get(key))
             np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
 
-        array1 = isodict1.asarray(key_eq=subkeys2)
-        array2 = isodict2.asarray(key_eq=subkeys2)
+        array1 = isodict1.to_list(key_eq=subkeys2)
+        array2 = isodict2.to_list(key_eq=subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
         assert core.isflavour(array1, 'mixed')

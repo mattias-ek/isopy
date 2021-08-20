@@ -6,6 +6,7 @@ import functools
 import itertools
 import warnings
 import hashlib
+import warnings
 
 #optional imports
 try:
@@ -17,6 +18,11 @@ try:
     import tables
 except:
     tables = None
+
+try:
+    import IPython
+except:
+    IPython = None
 
 from numpy import ndarray, nan, float64, void
 from typing import TypeVar, Union, Optional, Any, NoReturn, Generic
@@ -170,6 +176,52 @@ def extract_kwargs(kwargs, prefix, keep_prefix=False):
                 new_kwargs[kwarg[len(prefix_):]] = kwargs.pop(kwarg)
 
     return new_kwargs
+
+def renamed_function(new_func, **renamed_args):
+    #decorate the old function which will forward the args and kwargs to the new function
+    #The old code will not be executed and can be deleted.
+    #Does not work with positional only arguments ('/' in signature)
+    def rename_function_old(old_func):
+        signature = inspect.signature(old_func)
+
+        @functools.wraps(old_func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(f'This function/method has been renamed "{new_func.__name__}". Please update code',
+                          DeprecationWarning, stacklevel=2)
+
+            #Turn positional arguments into keywords that avoids problems if the
+            #Signarure of the new_function is different
+            bound = signature.bind(*args, **kwargs)
+            new_args = []
+            new_kwargs = {}
+            for arg, value in bound.arguments.items():
+                kind = signature.parameters[arg].kind
+                if kind is inspect.Parameter.VAR_KEYWORD:
+                    new_kwargs.update(value)
+                elif kind is inspect.Parameter.POSITIONAL_ONLY:
+                    new_args.append(value)
+                else:
+                    new_kwargs[renamed_args.get(arg, arg)] = value
+
+            return new_func(*new_args, **new_kwargs)
+        return wrapper
+    return rename_function_old
+
+def renamed_kwarg(**old_new_name):
+    #decorator for functions/methods with renamed kwargs
+    def renamed_kwarg_func(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            new_kwargs = kwargs.copy()
+            for old_name, new_name in old_new_name.items():
+                if old_name in kwargs:
+                    warnings.warn(f'Kwargs "{old_name}" has been renamed "{new_name}". Please update code', stacklevel=2)
+                    if new_name in kwargs: new_kwargs.pop(old_name)
+                    else: new_kwargs[new_name] = new_kwargs.pop(old_name)
+
+            return func(*args, **new_kwargs)
+        return wrapper
+    return renamed_kwarg_func
 
 def hashstr(string):
     return hashlib.md5(string.encode('UTF-8')).hexdigest()
@@ -2605,7 +2657,8 @@ class ScalarDict(IsopyDict):
         else:
             return super(ScalarDict, self).get(key, default)
 
-    def asarray(self, keys = None, default=NotGiven, **key_filters):
+
+    def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
         Returns an isopy array based on values in the dictionary.
 
@@ -2624,6 +2677,10 @@ class ScalarDict(IsopyDict):
             d = {k: d.get(k, default=default) for k in askeylist(keys)}
 
         return array(d)
+
+    @renamed_function(to_array)
+    def asarray(self, keys=None, default=NotGiven, **key_filters):
+        pass
 
 #############
 ### Array ###
@@ -2688,16 +2745,25 @@ class IsopyArray(IsopyFlavour):
         except:
             return np.full(self.shape, default)
 
-    def copy(self, **key_filter):
+    def copy(self, **key_filters):
         """
         Returns a copy of the array. If *key_filters* are given then the returned array only
         contains the columns that satisfy the *key_filter* filters.
         """
-        if key_filter:
-            out_keys = self.keys.filter(**key_filter)
-            return self[out_keys].copy()
+        if key_filters:
+            return self.filter(**key_filters).copy()
         else:
             return super(IsopyArray, self).copy()
+
+
+    def filter(self, **key_filters):
+        """
+        Returns a view of the array containing the columns that satisfy the *key_filter* filters.
+        """
+        if key_filters:
+            return self[self.keys.filter(**key_filters)]
+        else:
+            return self
 
     def ratio(self, denominator=None, remove_denominator = True):
         """
@@ -2803,6 +2869,44 @@ class IsopyArray(IsopyFlavour):
         else:
             return self.size
 
+    def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+
+        sdict = {}
+        if include_row:
+            if self.ndim == 0:
+                sdict['(row)'] = ['None']
+            else:
+                sdict['(row)'] = [str(i) for i in range(self.size)]
+
+        for k in self.keys():
+            val = self[k]
+            if include_dtype:
+                title = f'{k} ({val.dtype.kind}{val.dtype.itemsize})'
+            else:
+                title = f'{k}'
+            if val.ndim == 0:
+                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k])]
+            else:
+                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k][i]) for i in
+                                range(self.size)]
+
+        if nrows is not None and nrows > 2 and nrows < self.size:
+            first = nrows // 2
+            last = self.size - (nrows // 2 + nrows % 2)
+            for title, value in sdict.items():
+                sdict[title] = value[:first] + ['...'] + value[last:]
+            nrows += 1
+        else:
+            nrows = self.size
+
+        flen = {}
+        for k in sdict.keys():
+            flen[k] = max([len(x) for x in sdict[k]]) + 1
+            if len(k) >= flen[k]: flen[k] = len(k) + 1
+
+        return flen, sdict, nrows
+
     def to_text(self, delimiter=', ', include_row = False, include_dtype=False,
                 nrows = None, **vformat):
         """
@@ -2826,41 +2930,82 @@ class IsopyArray(IsopyFlavour):
             Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
             is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
         """
-        sdict = {}
-        if include_row:
-            if self.ndim == 0:
-                sdict['(row)'] = ['None']
-            else:
-                sdict['(row)'] = [str(i) for i in range(self.size)]
 
-        for k in self.keys():
-            val = self[k]
-            if include_dtype:
-                title = f'{k} ({val.dtype.kind}{val.dtype.itemsize})'
-            else:
-                title = f'{k}'
-            if val.ndim == 0:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k])]
-            else:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k][i]) for i in range(self.size)]
-
-        if nrows is not None and nrows > 2 and nrows < self.size:
-            first = nrows // 2
-            last = self.size - (nrows // 2 + nrows % 2)
-            for title, value in sdict.items():
-                sdict[title] = value[:first] + ['...'] + value[last:]
-            nrows += 1
-        else:
-            nrows = self.size
-
-        flen = {}
-        for k in sdict.keys():
-            flen[k] = max([len(x) for x in sdict[k]]) + 1
-            if len(k) >= flen[k]: flen[k] = len(k) + 1
+        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
 
         return '{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
                                    '\n'.join('{}'.format(delimiter.join('{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
                                              for i in range(nrows)))
+
+    def to_table(self, include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+        """
+        Returns a text string of a markdown table containing the contents of the array.
+
+        Parameters
+        ----------
+        include_row : bool, Default = False
+            If ``True`` a column containing the row index is included. *None* Is given as the
+            row index for 0-dimensional arrays.
+        include_dtype : bool, Default = False
+            If ``True`` the column data type is included in the first row next to the column name.
+        nrows : int, Optional
+            The number of rows to show.
+        vformat : str, Optional
+            Format string for different kinds of data. The key denoted the data kind. Common data
+            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
+            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
+            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
+            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
+        """
+
+        delimiter = '| '
+
+        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
+
+        lines = []
+        for k in flen.keys():
+            if k == '(row)':
+                lines.append('-' * flen[k])
+            else:
+                lines.append('-' * (flen[k]-1) + ':')
+
+
+        return '{}\n{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
+                                   delimiter.join(lines),
+                               '\n'.join('{}'.format(delimiter.join(
+                                   '{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
+                                         for i in range(nrows)))
+
+    def display_table(self, include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+        """
+       Returns a Markdown display of a table containing the contents of the array. This will render
+       a table in an IPython console or a Jupyter cell.
+
+       an error is raised if IPython is not installed.
+
+       Parameters
+       ----------
+       include_row : bool, Default = False
+           If ``True`` a column containing the row index is included. *None* Is given as the
+           row index for 0-dimensional arrays.
+       include_dtype : bool, Default = False
+           If ``True`` the column data type is included in the first row next to the column name.
+       nrows : int, Optional
+           The number of rows to show.
+       vformat : str, Optional
+           Format string for different kinds of data. The key denoted the data kind. Common data
+           kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
+           Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
+           Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
+           is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
+       """
+        if IPython is not None:
+            return IPython.display.Markdown(self.to_table(include_row, include_dtype, nrows, **vformat))
+        else:
+            raise TypeError('IPython not installed')
+
 
     def to_list(self):
         """
@@ -2873,7 +3018,7 @@ class IsopyArray(IsopyFlavour):
 
     def to_dict(self):
         """
-        Return a dictionary containing the data in the array.
+        Return a dictionary containing a list of the data in each column of the array.
         """
         return {str(key): self[key].tolist() for key in self.keys()}
 
@@ -2920,7 +3065,7 @@ class IsopyArray(IsopyFlavour):
         Convert array to a pandas dataframe. An exception is raised if pandas is not installed.
         """
         if pandas is not None:
-            return pandas.DataFrame(self.to_dict())
+            return pandas.DataFrame(self)
         else:
             raise TypeError('Pandas is not installed')
 
@@ -3209,7 +3354,7 @@ class IsopyNdarray(IsopyArray, ndarray):
             keys = list(dtype.names)
 
         if pandas is not None and isinstance(values, pandas.DataFrame):
-            values = values.to_records()
+            values = values.to_records(index=False)
 
         if tables is not None and isinstance(values, tables.Table):
             values = values.read()
@@ -4118,8 +4263,10 @@ def concatenate(*arrays, axis=0, default_value=nan):
         arrays = arrays[0]
     arrays = [asanyarray(a) for a in arrays]
 
-    if False in [isinstance(a, IsopyArray) for a in arrays if a is not None]:
+    if True not in (tlist:=[isinstance(a, IsopyArray) for a in arrays if a is not None]):
         return np.concatenate(arrays)
+    if False in tlist:
+        raise ValueError('Cannot concatenate Isopy arrays with normal arrays.')
 
     if axis == 0 or axis is None: #extend rows
         keys = keylist(*(a.dtype.names for a in arrays if a is not None), ignore_duplicates=True)

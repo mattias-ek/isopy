@@ -417,13 +417,35 @@ class Test_MassIndependentCorrection:
 
     def run(self, data, correct, mb_ratio, factor = None, mass_ref = None, fraction_ref=None, norm_val = None):
         if type(factor) is str:
-            func = getattr(isopy.tb.mass_independent_correction, factor)
-            factor = None
+            func = getattr(isopy.tb.internal_normalisation, factor)
+            factor2 = None
         else:
+            factor2 = factor
+            func = isopy.tb.internal_normalisation
+
+        kwargs = {}
+        if factor2 is not None: kwargs['extnorm_factor'] = factor2
+        if mass_ref is not None: kwargs['isotope_masses'] = mass_ref
+        if fraction_ref is not None: kwargs['isotope_fractions'] = fraction_ref
+        if norm_val is not None: kwargs['extnorm_value'] = norm_val
+
+        corrected = func(data, mb_ratio, **kwargs)
+        assert corrected.keys == correct.keys - mb_ratio
+        assert corrected.size == correct.size
+        assert corrected.ndim == correct.ndim
+        for key in corrected.keys:
+            np.testing.assert_allclose(corrected[key], correct[key])
+
+        # mass independent correction
+        if type(factor) is str:
+            func = getattr(isopy.tb.mass_independent_correction, factor)
+            factor2 = None
+        else:
+            factor2 = factor
             func = isopy.tb.mass_independent_correction
 
         kwargs = {}
-        if factor is not None: kwargs['normalisation_factor'] = factor
+        if factor2 is not None: kwargs['normalisation_factor'] = factor2
         if mass_ref is not None: kwargs['isotope_masses'] = mass_ref
         if fraction_ref is not None: kwargs['isotope_fractions'] = fraction_ref
         if norm_val is not None: kwargs['normalisation_value'] = norm_val
@@ -738,7 +760,7 @@ class Test_rDelta():
 
     def test_rDelta1(self):
         # Data is a single value
-        data = isopy.refval.isotope.fraction.asarray(element_symbol='pd')
+        data = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
 
         # Dict
         reference =  isopy.refval.isotope.fraction
@@ -1253,39 +1275,39 @@ class Test_Make:
         correct = correct.ratio('105pd')
 
         result = isopy.tb.make_ms_array('pd', 'ru', 'cd')
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_beams('pd', 'ru', 'cd', integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_sample('pd', ru=1, cd=1, integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_array('pd', ru101=0.1, cd111 = 0.01)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_beams('pd', ru101=0.1, cd111 = 0.01, integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_sample('pd', ru101=0.1, cd111 = 0.01, integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_array('pd', ru101=0.1, cd111=0.01, ru99=0.1)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_beams('pd', ru101=0.1, cd111=0.01, ru99=0.1, cd112=0, integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_sample('pd', ru101=0.1, cd111=0.01, ru99=0.1, cd112=0, integrations=None)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd')
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd')
         self.compare(correct, corrected)
 
         # Different default values
@@ -1297,27 +1319,27 @@ class Test_Make:
         correct = correct.ratio('105pd')
 
         result = isopy.tb.make_ms_array('pd', 'ru', 'cd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_beams('pd', 'ru', 'cd', integrations=None, isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_sample('pd', ru=1, cd=1, integrations=None, isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_array('pd', ru101=0.1, cd111=0.01, isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_beams('pd', ru101=0.1, cd111=0.01, integrations=None, isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
         result = isopy.tb.make_ms_sample('pd', ru101=0.1, cd111=0.01, integrations=None, isotope_masses=mass_ref, isotope_fractions=fraction_ref)
-        corrected = isopy.tb.mass_independent_correction(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
+        corrected = isopy.tb.internal_normalisation(result, '108pd/105pd', isotope_masses=mass_ref, isotope_fractions=fraction_ref)
         self.compare(correct, corrected)
 
     def test_make_array3(self):
@@ -1399,7 +1421,7 @@ class Test_Make:
     def test_spike(self):
         spike = isopy.array(pd104 = 1, pd106=0, pd108=1, pd110=0)
         spike = spike.normalise(1)
-        sample = isopy.refval.isotope.fraction.asarray(element_symbol='pd')
+        sample = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
         sample = sample.normalise(1, spike.keys)
 
         correct = isopy.add(sample * 0.5, spike * 0.5, 0)
@@ -1417,7 +1439,7 @@ class Test_Make:
         self.compare_sd(correct, 100, result)
 
     def test_blank(self):
-        sample = isopy.refval.isotope.fraction.asarray(element_symbol='pd')
+        sample = isopy.refval.isotope.fraction.to_list(element_symbol='pd')
         blank = isopy.ones(None, sample.keys)
         blank = blank + isopy.refval.isotope.fraction
         blank = blank.normalise(1)
@@ -1506,7 +1528,7 @@ class Test_JohnsonNyquistNoise:
         self.run(10, 1E10)
         self.run(10, cpv=1E7)
 
-        voltages = isopy.refval.isotope.fraction.asarray(element_symbol='pd').normalise(10, isopy.keymax)
+        voltages = isopy.refval.isotope.fraction.to_list(element_symbol='pd').normalise(10, isopy.keymax)
         resistors = isopy.full(None, 1E11, voltages.keys)
         resistors['102pd'] = 1E13
         resistors['106pd'] = 1E10

@@ -9,6 +9,8 @@ __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
            'add', 'subtract', 'divide', 'multiply', 'power', 'arrayfunc',
            'keymax', 'keymin']
 
+# TODO homoscedastic_sd(*args)
+
 ##########################
 ### Dispatch functions ###
 ##########################
@@ -56,6 +58,14 @@ def sd(a, axis = None, level = 1): #, where = core.NotGiven):
         level = stats.t.ppf(0.5 + level/2, df)
 
     return np.std(a, ddof=1, axis=axis) * level
+
+#TODO
+def homoscedastic_sd(*a, axis=1):
+    raise NotImplementedError()
+    ddof = len(a)
+    a = np.concatenate(a) #wont work if a is not 1 dimensional
+    return np.std(a, ddof = ddof)
+
 
 @core.set_module('isopy')
 @array_function_dispatch(_sd_dispatcher)
