@@ -10,23 +10,25 @@ import numpy as np
 import functools
 import warnings
 from typing import Optional, Union, Literal
+import cycler
+import colorsys
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
            'plot_spider', 'plot_hcompare', 'plot_vcompare', 'plot_contours',
            'create_subplots', 'update_figure', 'update_axes', 'create_legend',
-           'Markers', 'Colors', 'ColorPairs']
+           'Markers', 'Colors']
 
 scatter_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
-regression_style = {'linestyle': '-', 'color': 'black', 'edgeline_linestyle': '--', 'fill_alpha': 0.1, 'zorder': 1}
+regression_style = {'linestyle': '-', 'color': 'black', 'edgeline_linestyle': '--', 'fill_alpha': 0.3, 'zorder': 1, 'marker': ''}
 equation_line_style = {'linestyle': '-', 'color': 'black', 'zorder': 1}
 stack_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'cline_linestyle': '-',
-               'pmline_linestyle': '--', 'box_alpha': 0.1, 'zorder': 2}
+               'pmline_linestyle': '--', 'box_alpha': 0.3, 'zorder': 2, 'cline_marker': ''}
 spider_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
-box_style = dict(color='black', zorder = 0.9, alpha=0.1)
-polygon_style = dict(color='black', zorder = 0.9, alpha=0.1)
+box_style = dict(color='black', zorder = 0.9, alpha=0.3)
+polygon_style = dict(color='black', zorder = 0.9, alpha=0.3)
 grid_style = dict(extend='both')
 
-#__class_getitem__ to return colors of soiginal list
+
 class RotatingList(list):
     """
     Rotates through a list of *items*
@@ -35,15 +37,32 @@ class RotatingList(list):
     the original implementation, are shown below.
     """
     _original = [None]
-    def __init__(self):
+    def __init__(self, style = None, key = None):
+        if style is None:
+            prop_cycler = mpl.rcParams['axes.prop_cycle'].by_key()
+            items = prop_cycler.get(key, self._original)
+        else:
+            style_l = mpl.style.library.get(style, {})
+            prop_cycler = style_l.get('axes.prop_cycle', None)
+            if prop_cycler is None:
+                raise ValueError(f'Style "{style}" does not have a prop_cycle defined')
+
+            items = prop_cycler.by_key().get(key, self._original)
+
+        self._original = items
         super(RotatingList, self).__init__()
         self.reset()
         
     def __getitem__(self, item):
-        return super(RotatingList, self).__getitem__(item % len(self))
+        if type(item) is int:
+            item = item % len(self)
+
+        return super(RotatingList, self).__getitem__(item)
 
     def __class_getitem__(cls, item):
-        return cls._original[item % len(cls._original)]
+        if type(item) is int:
+            item = item % len(cls._original)
+        return cls._original[item]
 
     def reset(self):
         """Reset to the initial condition"""
@@ -55,15 +74,24 @@ class RotatingList(list):
         self.append(self.pop(0))
         return self.current
 
-    def cnext(self):
+    def current_next(self):
         """Return the first item in the list then rotate the list to the right."""
         self.next()
         return self[-1]
+
+    @core.renamed_function(current_next)
+    def cnext(self):
+        pass
 
     def previous(self):
         """Rotate the list to the left and return the new first item."""
         self.insert(0, self.pop(-1))
         return self.current
+
+    def current_previous(self):
+        """Return the first item in the list then rotate the list to the left."""
+        self.previous()
+        return self[1]
 
     @property
     def current(self):
@@ -73,9 +101,12 @@ class RotatingList(list):
 
 class Markers(RotatingList):
     """
-    Rotate through a set of markers.
+    Rotate through the markers of the current matplotlib style.
 
-    The markers, in the inital order, are circle, square, triangle, diamond, plus, cross, pentagon.
+    Optionally the name of a different style can be passed when creating the object to return the colours of that style.
+
+    If a style does not have any markers defined a default list of markers is used. These are circle, square,
+    triangle, diamond, plus, cross, pentagon.
 
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
@@ -94,46 +125,22 @@ class Markers(RotatingList):
     """
     _original = ['o', 's', '^', 'D', 'P', 'X', 'p']
 
-
-class ColorPairs(RotatingList):
-    """
-    Rotate through a set of colour pairs consisting of a matching dark and pale colours.
-
-    The colours, in the inital order, are dark and pale shades of blue, red, green, orange, purple, brown
-
-    Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
-    the original implementation, are shown below.
-
-    Examples
-    --------
-    >>> colorpairs = isopy.tb.ColorPairs()
-    >>> for i in range(len(colorpairs)):
-    >>>     isopy.tb.plot_scatter(plt, [1, 1.5], [i, i], color=colorpairs.current[0], markersize=20, line=True)
-    >>>     isopy.tb.plot_scatter(plt, [2, 2.5], [i, i], color=colorpairs.current[1], markersize=20, line=True)
-    >>>     colorpairs.next()
-    >>> plt.show()
-
-    .. figure:: ColorPairs.png
-            :alt: output of the example above
-            :align: center
-    """
-    _original = [('#1f78b4', '#a6cee3'), ('#e31a1c', '#fb9a99'),('#33a02c', '#b2df8a'),
-                            ('#ff7f00', '#fdbf6f'), ('#6a3d9a', '#cab2d6'), ('#b15928', '#ffff99')]
+    def __init__(self, style=None):
+        super(Markers, self).__init__(style, 'marker')
 
 
 class Colors(RotatingList):
     """
-    Rotate through a set of colours.
+    Rotate through the colors of the current matplotlib style.
 
-    The colours pairs, in the inital order, are shades of blue, red, green, orange, purple,
-    brown, yellow, pink, grey.
+    Optionally the name of a different style can be passed when creating the object to return the colours of that style.
 
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
 
     Examples
     --------
-    >>> colors = isopy.tb.Colors()
+    >>> colors = isopy.tb.Colors() # Colours can vary depending on the default style
     >>> for i in range(len(colors)):
     >>>     isopy.tb.plot_scatter(plt, 1, i, color=colors.current, markersize=20)
     >>>     colors.next()
@@ -143,8 +150,33 @@ class Colors(RotatingList):
             :alt: output of the example above
             :align: center
     """
-    _original = ['#377eb8', '#e41a1c', '#4daf4a', '#ff7f00', '#984ea3',
-                                      '#a65628', '#ffff33', '#f781bf', '#999999']
+    _original = ['#377eb8', '#e41a1c', '#4daf4a', '#ff7f00', '#984ea3', '#a65628', '#ffff33', '#f781bf', '#999999']
+
+    def __init__(self, style=None):
+        super(Colors, self).__init__(style, 'color')
+
+    def lighten(self, color=None, lightness = 0.85):
+        """
+        Change the lightness of *color* to *lightness*.
+
+        If the inital colour is very light then the default *lightness* might actually make the colour darker.
+
+        """
+        if color is None:
+            color = self.current
+        return modify_color(color, lightness=lightness)
+
+
+def modify_color(color, *, scale=None, lightness=None):
+    color = mpl.colors.ColorConverter.to_rgb(color)
+    h, l, s = colorsys.rgb_to_hls(*color)
+
+    if lightness is not None:
+        l = lightness
+    if scale is not None:
+        l = min(1, l * scale)
+
+    return colorsys.hls_to_rgb(h, l, s)
 
 
 def update_figure(figure, *, size = None, width=None, height=None, dpi=None, facecolor=None, edgecolor=None,
@@ -307,6 +339,9 @@ def _update_figure_and_axes(func):
         return ret
     return wrapper
 
+@core.append_preset_docstring
+@core.add_preset('v', grid = (-1, 1))
+@core.add_preset('h', grid = (1, -1))
 @_update_figure_and_axes
 def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, **kwargs):
     """
@@ -320,8 +355,7 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
         pyplot instance.
     subplots : str, list
         A nested list of subplot names. A visual layout of how you want your subplots
-        to be arranged labeled as strings. *subplots* must be a 2-dimensional but items in the
-        list can contain futher 2-dimensional lists. Use ``None`` for empty spaces.
+        to be arranged labeled as strings. *subplots* can be a 1-demensional list of grid is specified.
     grid : tuple[int, int]
         If supplied then subplots will be arranged into grid with this shape. One dimension can
         be -1 and it wil be calculated based on the size of *subplots* and the other given
@@ -373,11 +407,14 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
             :alt: output of the example above
             :align: center
     """
+
     empty_sentinel = None
     figure = _check_figure('figure', figure)
     update_figure(figure, constrained_layout=constrained_layout)
     subplot_kw = core.extract_kwargs(kwargs, 'subplot')
     gridspec_kw = core.extract_kwargs(kwargs, 'gridspec')
+    if type(subplots) is int:
+        subplots = [f'ax{i}' for i in range(subplots)]
 
     if grid is not None:
         nrows = grid[0]
@@ -577,11 +614,12 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     style.update(scatter_style)
     style.update(kwargs)
 
-    if isinstance(color, tuple): style['color'] = color[0]
-    elif color: style['color'] = color
-    else: style.setdefault('color', next(axes._get_lines.prop_cycler).get('color', 'blue'))
+    prop_cycler = next(axes._get_lines.prop_cycler)
 
-    if marker is True: style.setdefault('marker', 'o')
+    if color: style['color'] = color
+    else: style.setdefault('color', prop_cycler.get('color', 'blue'))
+
+    if marker is True: style.setdefault('marker', prop_cycler.get('marker', 'o'))
     elif marker is False: style['marker'] = ''
     elif marker: style['marker'] = marker
 
@@ -734,12 +772,12 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     style.update(regression_style)
     style.update(kwargs)
 
-    if isinstance(color, tuple):
-        style['color'] = color[0]
-    elif color:
+    prop_cycler = next(axes._get_lines.prop_cycler)
+
+    if color:
         style['color'] = color
     else:
-        style.setdefault('color', 'black')
+        style.setdefault('color', prop_cycler.get('color', 'blue'))
 
     if line is True:
         style.setdefault('linestyle', 'solid')
@@ -860,7 +898,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
     Examples
     --------
-    >>> array = isopy.refval.isotope.fraction.asarray(element_symbol='pd')
+    >>> array = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
     >>> isopy.tb.plot_spider(plt, array) #Will plot the fraction of each Pd isotope
     >>> plt.show()
 
@@ -870,7 +908,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
 
 
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']])
-    >>> array = isopy.refval.isotope.fraction.asarray(element_symbol='pd').ratio('105pd')
+    >>> array = isopy.refval.isotope.fraction.to_array(element_symbol='pd').ratio('105pd')
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 1}) #Adds a one for the denominator
     >>> plt.show()
@@ -985,13 +1023,19 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     style.update(spider_style)
     style.update(kwargs)
 
-    if isinstance(color, tuple): style['color'] = color[0]
-    elif color: style['color'] = color
-    else: style.setdefault('color', next(axes._get_lines.prop_cycler).get('color', 'blue'))
+    prop_cycler = next(axes._get_lines.prop_cycler)
 
-    if marker is True: style.setdefault('marker', 'o')
-    elif marker is False: style['marker'] = ''
-    elif marker: style['marker'] = marker
+    if color:
+        style['color'] = color
+    else:
+        style.setdefault('color', prop_cycler.get('color', 'blue'))
+
+    if marker is True:
+        style.setdefault('marker', prop_cycler.get('marker', 'o'))
+    elif marker is False:
+        style['marker'] = ''
+    elif marker:
+        style['marker'] = marker
 
     if line is True: style.setdefault('linestyle', '-')
     elif line is False: style['linestyle'] = ''
@@ -1376,7 +1420,7 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     w = np.array([wstart + (i * spacing) for i in range(v.size)])
     wstop = w[-1]
 
-    if box_cval:
+    if box_cval is not None:
         if box_cval is True:
             box_cval = np.mean
         if callable(box_cval):
@@ -1387,7 +1431,7 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
             raise ValueError(f'unable to convert cval {box_cval} to float')
 
 
-    if box_pmval:
+    if box_pmval is not None:
         if box_pmval is True:
             box_pmval = isopy.sd2
         if callable(box_pmval):
@@ -1404,19 +1448,27 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     style.update(stack_style)
     style.update(kwargs)
 
+    prop_cycler = next(axes._get_lines.prop_cycler)
+
     if isinstance(color, tuple):
         style['color'] = color[0]
         style['outlier_color'] = color[1]
-    elif color: style['color'] = color
-    else: style.setdefault('color', next(axes._get_lines.prop_cycler).get('color', 'blue'))
+    else:
+        if color:
+            style['color'] = color
+        else:
+            style.setdefault('color', prop_cycler.get('color', 'blue'))
+        style['outlier_color'] = modify_color(style['color'], lightness=0.85)
 
-    style.setdefault('outlier_color', style['color'])
+    if marker is True:
+        style.setdefault('marker', prop_cycler.get('marker', 'o'))
+    elif marker is False:
+        style['marker'] = ''
+    elif marker:
+        style['marker'] = marker
+
     style.setdefault('markerfacecolor', style['color'])
     style.setdefault('outlier_markerfacecolor', style['outlier_color'])
-
-    if marker is True: style.setdefault('marker', 'o')
-    elif marker is False: style['marker'] = ''
-    elif marker: style['marker'] = marker
 
     if line is True: style.setdefault('linestyle', '-')
     elif line is False: style['linestyle'] = ''
@@ -1452,14 +1504,14 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
     if box_pad is None: box_pad = pad/4
     elif not isinstance(box_pad, (float, int)): raise TypeError(f'pad must be float or an integer')
 
-    if box_cval and cline is not False:
+    if box_cval is not None and cline is not False:
         cv = np.array([box_cval, box_cval])
         cw = np.array([min((wstart, wstop)) - box_pad, max((wstart, wstop)) + box_pad])
     else:
         cv = None
         cw = None
 
-    if box_pmval and box_cval and pmline is not False:
+    if box_pmval is not None and box_cval is not None and pmline is not False:
         pmv = (np.array([box_cval + box_pmval, box_cval + box_pmval]),
                np.array([box_cval - box_pmval, box_cval - box_pmval]))
         pmw = (np.array([max((wstart, wstop)) + box_pad, min((wstart, wstop)) - box_pad]),
@@ -1468,7 +1520,7 @@ def _plot_stack_step1(axes, v, verr, wstart, box_cval, box_pmval, color, marker,
         pmv = None
         pmw = None
 
-    if box_pmval and box_cval and box_shaded is not False:
+    if box_pmval is not None and box_cval is not None and box_shaded is not False:
         boxv = np.array([box_cval + box_pmval, box_cval - box_pmval])
         boxw = np.array([max((wstart, wstop)) + box_pad, min((wstart, wstop)) - box_pad])
     else:
@@ -2198,6 +2250,10 @@ def _check_axes(axes):
             raise TypeError(f'"axes" must be a matplotlib axes object or matplotlib.pyplot instance')
     return axes
 
+
+
+    return wrap_cla(axes)
+
 def _check_figure(var_name, figure):
     if isinstance(figure, mplAxes):
         return figure.get_figure()
@@ -2336,3 +2392,14 @@ def _axes_data_lim(axes, axis, ignore_outliers=False):
     except ValueError:
         max = np.nan
     return (min, max)
+
+def update_style():
+    prop_cycler = mpl.rcParams['axes.prop_cycle'].by_key()
+    colors = prop_cycler.get('color', Colors._original)
+    markers = prop_cycler.get('marker', Markers._original)
+
+    Colors._original = colors
+    Markers._original = markers
+    mpl.rcParams['axes.prop_cycle'] = cycler.cycler(color = colors * len(markers), marker = markers * len(colors))
+
+update_style()

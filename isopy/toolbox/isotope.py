@@ -3,7 +3,8 @@ import isopy as isopy
 from isopy import core
 
 __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
-           'calculate_mass_fractionation_factor', 'mass_independent_correction',
+           'calculate_mass_fractionation_factor', 'internal_normalisation',
+           'mass_independent_correction',
            'remove_isobaric_interferences', 'find_isobaric_interferences',
            'make_ms_array', 'make_ms_beams', 'make_ms_sample', 'johnson_nyquist_noise',
            'rDelta', 'inverse_rDelta',
@@ -461,32 +462,39 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
     return ms_array
 
 @core.append_preset_docstring
-@core.add_preset(('ppt', 'permil'), normalisation_factor=1000)
-@core.add_preset('epsilon', normalisation_factor=1E4)
-@core.add_preset(('mu', 'ppm'), normalisation_factor=1E6)
-def mass_independent_correction(data, mf_ratio, normalisation_value = None, normalisation_factor=None,
-                                isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
+@core.add_preset(('ppt', 'permil'), extnorm_factor=1000)
+@core.add_preset('epsilon', extnorm_factor=1E4)
+@core.add_preset(('mu', 'ppm'), extnorm_factor=1E6)
+def internal_normalisation(data, mf_ratio, interference_correction=True,
+                           extnorm_value = None, extnorm_factor=None,
+                           isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
     """
-    A quick function for mass-independent data correction.
+    A data reduction scheme for internaly normalised data.
 
-    The data is corrected for mass fractionation, isobaric interferences and finally, if *normalisation_factor* is given,
-    normalised to the *isotope_fractions*. If *normalisation_factor* is not given the unnormalised corrected data is
-    returned.
-
-    An interference correction will be applied for all isotopes that are different from the *mf_ratio* numerator
+    If *interference_correction* is True an interference correction will be applied for all isotopes that are different from the *mf_ratio* numerator
     element. This will be done together with the mass fractionation correction to account for isobaric interferences
-    on the *mf_ratio*.
+    on the *mf_ratio*. If more than one isotope exists for an
+    an element the largest isotope is used for the interference correction.
+
+    If *extnorm_value* and/or *extnorm_factor* is given then the returned data is
+    externally normalised to these values using the rDelta function. The default value for
+    *extnorm_value* is 1 and the default value for *extnorm_factor* is the same as
+    *isotope_fractions*, should only one of these values
+    be given.
 
     Parameters
     ----------
     data
-        The data to be corrected. Can be either an isotope array or a ratio array.
+        The data to be corrected. Isotope arrays will automatically be converted to ratio arrays.
+        Ratio arrays must have a common denominator that is the same as the that of *mf_ratio*.
     mf_ratio
-        The data will be internally normalised to this ratio. Must be present in data.
-    normalisation_value
-        If given the result in normalised to this value with *normalisation_factor*. If
-        *normalisation_factor* is not given a normalisation factor of 1 is used.
-    normalisation_factor
+        The data will be internally normalised to this ratio. Must be present in *data*.
+    interference_correction
+        If True then the data is corrected for isobaric interferences.
+    extnorm_value
+        If given the result in normalised to this value with *extnorm_factor*. If
+        *extnorm_value* is not given a normalisation factor of 1 is used.
+    extnorm_factor
         If given and *normalisation_value* is not the result is normalised against
         *isotope_fractions*.
     isotope_fractions
@@ -496,35 +504,37 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``
     mf_tol
-        Only when the difference between te mass_fractionation factor is below this value is
-        the interference correction assumed to have converged.
+        Only when the difference between the current and the previous mass_fractionation factor
+        is below this value is the interference correction assumed to have converged.
 
     Returns
     -------
-    IsotopeArray or RatioArray
-        The corrected data, will be the same flavour *data*. Interference isotope keys will be
-        removed from the returned array.
+    RatioArray
+        Only contains the isotopes of the element with the same element symbol as *mf_ratio*
 
     Examples
     --------
     >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1, mf_factor=0.1).normalise(10, isopy.keymax)
     >>> array
     (row) , 101Ru   , 102Pd  , 104Pd  , 105Pd  , 106Pd , 108Pd  , 110Pd  , 111Cd
-    None  , 0.62078 , 1.5193 , 4.7295 , 8.1258 , 10    , 9.6882 , 4.7391 , 0.46637
-    >>> isopy.tb.mass_independent_correction(array, '108Pd/105Pd')
+    None  , 0.62089 , 1.5195 , 4.7296 , 8.1258 , 10    , 9.6882 , 4.7396 , 0.46692
+    >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd')
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
     None  , 0.045678    , 0.49888     , 1.2239      , 0.52485
-    >>> isopy.tb.make_ms_array('pd').ratio('105pd')
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.045678    , 0.49888     , 1.2239      , 1.185       , 0.52485
+    >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd') / isopy.refval.isotope.fraction
+    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
+    None  , 1           , 1           , 1           , 1
+    >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd', interference_correction=False, extnorm_factor=1)
+    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
+    None  , 3.12        , 0.16916     , 0.0034253   , 0.10006
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsotopeArray, isopy.core.RatioArray, coerce=True)
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
-    normalisation_factor = isopy.checks.check_type('normalisation_factor', normalisation_factor, np.float64, str, coerce=True, allow_none=True)
+    extnorm_factor = isopy.checks.check_type('normalisation_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
     isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
-
+    # Convert the data into a ratio array
     if isinstance(data, isopy.RatioArray):
         if data.keys.common_denominator is None:
             raise ValueError('data must hav a common denominator')
@@ -534,28 +544,35 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
     else:
         rat = data.ratio(mf_ratio.denominator)
 
-    isobaric_interferences = find_isobaric_interferences(mf_ratio.numerator.element_symbol, data)
+    if interference_correction is True:
+        isobaric_interferences = find_isobaric_interferences(mf_ratio.numerator.element_symbol, data)
+    elif  isinstance(interference_correction, dict):
+        isobaric_interferences = interference_correction
+    else:
+        isobaric_interferences = {}
 
-    #Convert the data into a ratio array
+    #Find the initial mass fractionation
     beta = calculate_mass_fractionation_factor(rat, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
-    #Do a combined mass fractionation and isobaric interference correction.
-    #This can account for isobaric interferences on isotopes in *mf_ratio*
+    if isobaric_interferences:
+        #Do a combined mass fractionation and isobaric interference correction.
+        #This can account for isobaric interferences on isotopes in *mf_ratio*
+        for i in range(100):
+            rat2 = rat
+            prev_beta = beta
 
-    for i in range(100):
-        rat2 = rat
-        prev_beta = beta
+            rat2 = remove_isobaric_interferences(rat2, isobaric_interferences,
+                                                 beta, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
-        rat2 = remove_isobaric_interferences(rat2, isobaric_interferences,
-                                             beta, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
+            # Calculate the mass fractionation.
+            beta = calculate_mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
-        # Calculate the mass fractionation.
-        beta = calculate_mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
-
-        if np.all(np.abs(beta - prev_beta) < mf_tol):
-            break #Beta value has converged so no need for more iterations.
+            if np.all(np.abs(beta - prev_beta) < mf_tol):
+                break #Beta value has converged so no need for more iterations.
+        else:
+            raise ValueError('values did not converge after 100 iterations of the interference correction')
     else:
-        raise ValueError('values did not converge after 100 iterations of the interference correction')
+        rat2 = rat
 
     #Remove the isotopes on interfering elements and the mass bias ratio
     rat = rat2.copy(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol, key_neq=mf_ratio)
@@ -563,15 +580,25 @@ def mass_independent_correction(data, mf_ratio, normalisation_value = None, norm
     #Correct for mass fractionation
     rat = remove_mass_fractionation(rat, beta, isotope_masses=isotope_masses)
 
-    if normalisation_value is not None:
-        if normalisation_factor is None: normalisation_factor = 1
-        rat = rDelta(rat, normalisation_value, factor = normalisation_factor)
+    if extnorm_value is not None:
+        if extnorm_factor is None: extnorm_factor = 1
+        rat = rDelta(rat, extnorm_value, factor = extnorm_factor)
 
-    elif normalisation_factor is not None:
-        rat = rDelta(rat, isotope_fractions, factor = normalisation_factor)
+    elif extnorm_factor is not None:
+        rat = rDelta(rat, isotope_fractions, factor = extnorm_factor)
 
     # Return the corrected data
     return rat
+
+
+@core.add_preset(('ppt', 'permil'), normalisation_factor=1000)
+@core.add_preset('epsilon', normalisation_factor=1E4)
+@core.add_preset(('mu', 'ppm'), normalisation_factor=1E6)
+@core.renamed_function(internal_normalisation, normalisation_factor='extnorm_factor', normalisation_value='extnorm_value')
+def mass_independent_correction(data, mf_ratio,
+                           normalisation_value = None, normalisation_factor=None,
+                           isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
+    pass
 
 def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, isotope_masses=None):
     """
@@ -1005,7 +1032,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 @core.add_preset(('mu', 'ppm'), factor=1E6)
 def rDelta(data, reference_data, factor=1, deviations=1):
     """
-    Normalise data to the given reference values.
+    Externally normalise data to the given reference values.
 
     .. math::
         \Delta^{r} \\textrm{normalised} = (\\frac{\\textrm{data}} {\\textrm{reference data}} - \\textrm{deviations} ) * \\textrm{factor}

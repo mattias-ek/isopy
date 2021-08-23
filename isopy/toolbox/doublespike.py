@@ -10,7 +10,7 @@ from . import isotope
 import warnings
 from datetime import datetime as dt
 
-__all__ = ['ds_inversion', 'ds_correction', 'ds_Delta', 'ds_Delta_prime', 'ds_grid']
+__all__ = ['ds_correction', 'ds_Delta', 'ds_Delta_prime', 'ds_grid']
 
 import isopy.checks
 
@@ -404,14 +404,15 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
         raise ValueError(f'method "{method}" not recognized')
 
 
-def ds_correction(measured, spike, standard=None, isotope_masses=None, inversion_keys=None,
-                  isotope_fractions=None,
+def ds_correction(measured, spike, standard=None, inversion_keys=None,
+                  interference_correction = True,
+                  isotope_fractions=None, isotope_masses=None,
                   method='rudge', fins_tol = 0.000001, **method_kwargs):
     """
-    Do an iterative double spike inversion to correct for isobaric interferences.
+    A double spike data reduction.
 
-    An isobaric interference correction is applied for all isotopes in *measured* that have
-    a different element symbol from that in *spike*. If more than one isotope exists for an
+    If *interference_correction* is True a correction is applied for all isotopes in *measured* that
+    have a different element symbol from the keys in *spike*. If more than one isotope exists for an
     an element the largest isotope is used for the interference correction.
 
     Parameters
@@ -433,7 +434,8 @@ def ds_correction(measured, spike, standard=None, isotope_masses=None, inversion
         The interference correction is considered a success once the difference between the current and the
         previous *fins* value is below this value.
     method_kwargs
-        Keyword arguments for inversion method. See `inversion_rudge` and `inversion_siebert` for list of possible arguments.
+        Keyword arguments for inversion method. For advanced users only.
+        See `inversion_rudge` and `inversion_siebert` for list of possible arguments.
 
     Returns
     -------
@@ -494,7 +496,12 @@ def ds_correction(measured, spike, standard=None, isotope_masses=None, inversion
     # Find isotopes of potential isobaric interferences
     # If more than one isotope of an element exits the correction is made with the largest one
     # Thus only the largest isotope is returned from this function
-    isobaric_interferences = isotope.find_isobaric_interferences(denom.element_symbol, measured)
+    if interference_correction is True:
+        isobaric_interferences = isotope.find_isobaric_interferences(denom.element_symbol, measured)
+    elif isinstance(interference_correction, dict):
+        isobaric_interferences = interference_correction
+    else:
+        isobaric_interferences = []
 
     # Calculate the starting value
     inversion = ds_inversion(measured, spike, standard, isotope_masses, inversion_keys, method,
@@ -520,6 +527,7 @@ def ds_correction(measured, spike, standard=None, isotope_masses=None, inversion
         else:
             raise ValueError(
                 'inversion did not converge after 10 iterations of the interference correction')
+
 
     return inversion
 
