@@ -450,7 +450,7 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
     return out
 
 @_update_figure_and_axes
-def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
+def create_legend(axes, *include_axes, labels = None, hide_axis=None, newlines=None, **kwargs):
     """
     Create a legend encompassing multiple axes.
 
@@ -471,6 +471,10 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
     hide_axis
         If ``True`` then the x and y axis of axes will be hidden. If ``None`` then the axis is hidden
         only if *include_axes* are given and there are not items *axes* with a label.
+    newlines
+        A dictionary of new lines to be created and included in the legend. The key corresponds to the label
+        and the value is another dict of the kwargs for a
+        `line <https://matplotlib.org/stable/api/_as_gen/matplotlib.lines.Line2D.html>`_.
     kwargs
         Any additional kwargs to be passed when creating the legend. See
         `legend <https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure.legend>`_
@@ -492,7 +496,7 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
     >>> data = isopy.random(100, keys='ru pd cd'.split())
     >>> axes = isopy.tb.create_subplots(plt, [['left', 'right', 'legend']],
                                         figure_width=9, gridspec_width_ratios=[4, 4, 1])
-    >>> sopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
+    >>> isopy.tb.plot_scatter(axes['left'], data['pd'], data['ru'], label='ru/pd', color='red')
     >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
     >>> isopy.tb.create_legend(axes['legend'], axes, hide_axis=True)
     >>> plt.show()
@@ -522,6 +526,10 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, **kwargs):
     for ax in incaxes:
         ha, la = ax.get_legend_handles_labels()
         legend.update(dict(zip(la, ha)))
+
+    if newlines is not None:
+        for line_name, line_value in newlines.items():
+            legend[line_name] = mpl.lines.Line2D([np.nan], [np.nan], **line_value)
 
     if labels:
         legend = {la: ha for la, ha in legend.items() if la in labels}

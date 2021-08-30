@@ -2549,7 +2549,54 @@ class IsopyDict(dict):
 
         raise TypeError(f'key type {type(key)} not understood')
 
+    def __add__(self, other):
+        if isinstance(other, IsopyArray): return NotImplemented
+        return IsopyDict({key: np.add(value, other) for key, value in self.items()},
+                              default_value = self.default_value)
 
+    def __radd__(self, other):
+        return IsopyDict({key: np.add(other, value) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __sub__(self, other):
+        if isinstance(other, IsopyArray): return NotImplemented
+        return IsopyDict({key: np.subtract(value, other) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __rsub__(self, other):
+        return IsopyDict({key: np.subtract(other, value) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __mul__(self, other):
+        if isinstance(other, IsopyArray): return NotImplemented
+        return IsopyDict({key: np.multiply(value, other) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __rmul__(self, other):
+        return IsopyDict({key: np.multiply(other, value) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __div__(self, other):
+        if isinstance(other, IsopyArray): return NotImplemented
+        return IsopyDict({key: np.divide(value, other) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __rdiv__(self, other):
+        return IsopyDict({key: np.divide(other, value) for key, value in self.items()},
+                              default_value = self.default_value)
+
+    def __pow__(self, other, modulo=None):
+        if isinstance(other, IsopyArray): return NotImplemented
+        if modulo is not None:
+            raise ValueError('Changing modulo is not currently supported')
+        return IsopyDict({key: np.power(value, other) for key, value in self.items()},
+                         default_value=self.default_value)
+
+    def __rpow__(self, other):
+        return IsopyDict({key: np.power(other, value) for key, value in self.items()},
+                         default_value=self.default_value)
+
+#TODO allow elementwise functions on these
 class ScalarDict(IsopyDict):
     """
     Dictionary where each value is stored as a numpy float by a isopy keystring key.
@@ -2681,6 +2728,7 @@ class ScalarDict(IsopyDict):
     @renamed_function(to_array)
     def asarray(self, keys=None, default=NotGiven, **key_filters):
         pass
+
 
 #############
 ### Array ###
@@ -4390,6 +4438,8 @@ class _getter:
     def get(self, *_):
         return self.value
 
+# Simplify to that there is one where we know there is only one input and one where we know there is
+# More than two inputs and this one for unknown cases.
 # This is for functions that dont have a return value
 def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **kwargs):
     """
