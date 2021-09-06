@@ -60,10 +60,11 @@ class RefValGroup:
         defval = []
         refval = []
         for name, item in self.__class__.__dict__.items():
-            if getattr(item.fget, '_defval', False):
-                defval.append(name)
-            if getattr(item.fget, '_refval', False):
-                refval.append(name)
+            if type(item) is property:
+                if getattr(item.fget, '_defval', False):
+                    defval.append(name)
+                if getattr(item.fget, '_refval', False):
+                    refval.append(name)
             
         return defval + refval
 

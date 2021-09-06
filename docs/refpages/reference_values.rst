@@ -5,11 +5,11 @@ are useful for geochemists. All the reference values are readonly to avoid
 corrupting the values but dictionaries can be edited by creating a copy.
 
 Most of the reference values are
-:class:`IsopyDict` or :class:`ScalarDict` dictionaries that use
-isopy key string as *keys* and therefore will automatically format
+:class:`IsopyDict` or :class:`ScalarDict` dictionaries that use an
+isopy key string as *key* and therefore will automatically format
 *key* strings.
 
-Below is a list of the different reference values avaliable.
+Below is a list of the different reference values available.
 
 .. currentmodule:: isopy.reference_values
 

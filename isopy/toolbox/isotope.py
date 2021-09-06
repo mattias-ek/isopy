@@ -46,9 +46,9 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
 
     Parameters
     ----------
-    voltage : IsotopeArray, float, np.ndarray
+    voltage : isotope_rarray, float, np.ndarray
         The measured voltages. :math:`v` in the equations above.
-    resistor : IsotopeArray, float, np.ndarray, dict
+    resistor : isotope_rarray, float, np.ndarray, dict
         The resistor for the measurement. Default value is ``1E11``. :math:`r` in the equations above.
         If *resistor* is a dictionary *R* will be used for values not in the dictionary.
     integration_time : float, optional
@@ -66,7 +66,7 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
 
     Returns
     -------
-    noise: np.float or np.ndarray or IsotopeArray
+    noise: np.float or np.ndarray or isotope_rarray
         The noise in V for the given voltage/set of voltages.
 
     Examples
@@ -87,16 +87,16 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     None  , 0.02672 , 0.08932 , 0.12565 , 0.14528 , 0.13663 , 0.09156
     """
 
-    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsotopeArray, np.ndarray, np.float64, coerce=True,
-                                      coerce_into=[isopy.core.IsotopeArray, np.float64, np.array])
-    resistor = isopy.checks.check_type('resistor', resistor, isopy.core.IsotopeArray, np.ndarray, dict, coerce=True,
-                                       coerce_into=[isopy.core.IsotopeArray, np.float64, np.array])
+    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsopyArray, np.ndarray, np.float64, coerce=True,
+                                      coerce_into=[isopy.core.IsopyArray, np.float64, np.array])
+    resistor = isopy.checks.check_type('resistor', resistor, isopy.core.IsopyArray, np.ndarray, dict, coerce=True,
+                                       coerce_into=[isopy.core.IsopyArray, np.float64, np.array])
     integration_time = isopy.checks.check_type('integration_time', integration_time, np.float64, coerce=True)
     include_counting_statistics = isopy.checks.check_type('include_counting_statistics', include_counting_statistics,
                                                           bool)
     if isinstance(resistor, (core.IsopyArray, dict)):
         resistor = core.ScalarDict(resistor, default_value=R)
-        resistor = isopy.IsotopeArray({key: resistor.get(key) for key in voltage.keys})
+        resistor = isopy.array({key: resistor.get(key) for key in voltage.keys})
 
     T = isopy.checks.check_type('T', T, np.float64, coerce=True)
     R = isopy.checks.check_type('R', R, np.float64, coerce=True)
@@ -141,7 +141,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_mas
 
     Returns
     -------
-    result : IsotopeArray
+    result : IsopyArray
         The constructed isotope array.
 
     Examples
@@ -287,7 +287,7 @@ def make_ms_beams(*args, mf_factor=None, fixed_voltage = 10, fixed_key = isopy.k
 
     Returns
     -------
-    IsotopeArray
+    IsopyArray
         The simulated measurements.
 
     Examples
@@ -393,7 +393,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
 
     Returns
     -------
-    IsotopeArray
+    IsopyArray
         The simulated measurements.
 
     Examples
@@ -509,7 +509,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
 
     Returns
     -------
-    RatioArray
+    IsopyArray
         Only contains the isotopes of the element with the same element symbol as *mf_ratio*
 
     Examples
@@ -528,14 +528,14 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
     None  , 3.12        , 0.16916     , 0.0034253   , 0.10006
     """
-    data = isopy.checks.check_type('data', data, isopy.core.IsotopeArray, isopy.core.RatioArray, coerce=True)
+    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
     extnorm_factor = isopy.checks.check_type('normalisation_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
     isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
     # Convert the data into a ratio array
-    if isinstance(data, isopy.RatioArray):
+    if data.flavour == 'ratio':
         if data.keys.common_denominator is None:
             raise ValueError('data must hav a common denominator')
         elif data.keys.common_denominator != mf_ratio.denominator:
@@ -643,12 +643,12 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, 
     --------
     remove_mass_fractionation
     """
-    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
+    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
     isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
 
-    if isinstance(data, core.IsotopeArray):
+    if data.flavour == 'isotope':
         data = data.get(mf_ratio.numerator) / data.get(mf_ratio.denominator)
     else:
         data = data.get(mf_ratio)
@@ -669,7 +669,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
 
     Parameters
     ----------
-    data : RatioArray
+    data : IsopyArray
         Array containing data to be changed. :math:`r` in the equation above.
     fractionation_factor : float
         Fractionation factor to be applied. :math:`\\alpha` in the equation above
@@ -682,7 +682,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
 
     Returns
     -------
-    RatioArray
+    IsopyArray
         Will have the same flavour as *data*. :math:`R` in the equation above.
 
     Examples
@@ -702,7 +702,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     --------
     isopy.tb.add_mass_fractionation
     """
-    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
+    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array], allow_none=True)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
@@ -711,7 +711,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     if fractionation_factor is None:
         return data
     else:
-        if isinstance(data, core.IsotopeArray):
+        if data.flavour == 'isotope':
             if denom is None:
                 denom = isopy.keymax(data)
             mass_array = isopy.array(isotope_masses.get(data.keys / denom), data.keys)
@@ -747,7 +747,7 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
 
     Returns
     -------
-    RatioArray, IsotopeArray
+    IsopyArray
         Will have the same flavour as *data*. :math:`r` in the equation above.
 
     Examples
@@ -768,7 +768,8 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
     --------
     isopy.tb.add_mass_fractionation
     """
-    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.core.IsotopeArray, coerce=True)
+    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array],allow_none=True)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
@@ -776,7 +777,7 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
     if fractionation_factor is None:
         return data
     else:
-        if isinstance(data, core.IsotopeArray):
+        if data.flavour == 'isotope':
             if denom is None:
                 denom = isopy.keymax(data)
             mass_array = isopy.array(isotope_masses.get(data.keys / denom), keys=data.keys)
@@ -911,7 +912,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 
     Returns
     -------
-    IsotopeArray or RatioArray
+    IsopyArray
         The interference corrected array
 
     Examples
@@ -949,8 +950,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
     """
 
-    data = isopy.checks.check_type('data', data, isopy.core.RatioArray, isopy.IsotopeArray,
-                                   coerce=True)
+    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
 
     mf_factor = isopy.checks.check_type('mf_factor', mf_factor, np.float64, np.ndarray, coerce=True,
                                         coerce_into=[np.float64, np.array], allow_none=True)
@@ -962,17 +962,14 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 
     # Get the information we need to make the correction that works
     # for both isotope arrays and ratio arrays
-    if isinstance(data, isopy.core.RatioArray):
+    if data.flavour == 'ratio':
         keys = data.keys()
         numer = keys.numerators
         denom = keys.common_denominator
-    elif isinstance(data, isopy.core.IsotopeArray):
+    elif data.flavour == 'isotope':
         keys = data.keys()
         numer = keys
         denom = None
-    else:
-        raise TypeError('variable "data" must be a IsotopeArray or a RatioArray not {}'.format(
-            data.__class__.__name__))
 
     if isinstance(isobaric_interferences, dict) and not isinstance(isobaric_interferences, core.IsopyDict):
         isobaric_interferences = core.IsopyDict(isobaric_interferences)
@@ -991,7 +988,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 
         #If the key is an element key string use the isotope of that element in the array that has the largest signal.
         else:
-            if isinstance(data, isopy.core.RatioArray):
+            if data.flavour == 'ratio':
                 interference_isotope = isopy.keymax(data.copy(numerator_element_symbol_eq=interference_element))
                 interference_isotope = interference_isotope.numerator
             else:
@@ -1000,7 +997,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
         # Get the abundances of all isotopes of the interfering element
         inf_data = isotope_fractions.copy(element_symbol_eq=interference_isotope.element_symbol.basekey)
         inf_data  = {key.set_charge(interference_isotope.charge): value for key, value in inf_data.items()}
-        inf_data = isopy.IsotopeArray(inf_data)
+        inf_data = isopy.array(inf_data)
 
         # Turn into a ratio relative to interference isotope
         inf_data = inf_data.ratio(interference_isotope, remove_denominator=False)

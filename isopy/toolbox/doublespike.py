@@ -306,13 +306,13 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
 
     Parameters
     ----------
-    measured : RatioArray, IsotopeArray
+    measured : IsopyArray
         Measured isotope ratios
-    standard : RatioArray, IsotopeArray, dict
+    standard : IsopyArray, dict
         References isotope ratios or a dict or references values
-    spike : RatioArray, IsotopeArray, dict
+    spike : IsopyArray, dict
         Spike isotope ratios or a dict or references values
-    isotope_masses : RatioArray, IsotopeArray, dict, Optional
+    isotope_masses : IsopyArray, dict, Optional
         Mass isotope ratios or a dict or references values. If not given hte :attr:`isotope.mass` will be used.
     inversion_keys : RatioKeyList, Optional
         Keys used for the inversion. Can either be 3 ratio key strings or 4 isotope key strings.
@@ -354,44 +354,39 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
         Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
         function will be performed on each attribute and a new *DSResult* object returned.
     """
-    measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray,
-                                       isopy.IsotopeArray,
-                                       coerce=True)
+    measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
 
-    spike = isopy.checks.check_type('spike', spike, core.RatioArray, core.IsotopeArray, dict,
-                                    coerce=True)
+    spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict = True)
 
     inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
                                              isopy.RatioKeyList, coerce=True, allow_none=True)
     if standard is None:
         standard = isopy.refval.isotope.fraction
     else:
-        standard = isopy.checks.check_type('standard', standard, core.RatioArray, core.IsotopeArray,
-                                           dict,
-                                           coerce=True)
+        standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
 
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
                                                         isopy.refval.isotope.mass)
 
     numerators, denominator, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
 
-    if isinstance(measured, isopy.IsotopeArray):
+    if measured.flavour == 'isotope':
         m = np.array([measured.get(numer) / measured.get(denominator) for numer in numerators])
     else:
         m = np.array([measured.get(key) for key in inversion_keys])
 
 
-    if isinstance(spike, isopy.IsotopeArray):
+    if spike.flavour == 'isotope':
         T = np.array([spike.get(numer) / spike.get(denominator) for numer in numerators])
     else:
         T = np.array([spike.get(key) for key in inversion_keys])
 
-    if isinstance(standard, isopy.IsotopeArray):
+    if isinstance(standard, isopy.IsopyArray) and standard.flavour == 'isotope':
         n = np.array([standard.get(numer) / standard.get(denominator) for numer in numerators])
     else:
         n = np.array([standard.get(key) for key in inversion_keys])
 
-    if isinstance(isotope_masses, isopy.IsotopeArray):
+    if isinstance(isotope_masses, isopy.IsopyArray) and isotope_masses.flavour == 'isotope':
         P = np.array([isotope_masses.get(numer) / isotope_masses.get(denominator) for numer in numerators])
     else:
         P = np.array([isotope_masses.get(key) for key in inversion_keys])
@@ -417,13 +412,13 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
 
     Parameters
     ----------
-    measured : RatioArray, IsotopeArray
+    measured : IsopyArray
         Measured isotope ratios
-    standard : RatioArray, IsotopeArray, dict
+    standard : IsopyArray, dict
         References isotope ratios or a dict or references values
-    spike : RatioArray, IsotopeArray, dict
+    spike : IsopyArray, dict
         Spike isotope ratios or a dict or references values
-    isotope_masses : RatioArray, IsotopeArray, dict, Optional
+    isotope_masses : IsopyArray, dict, Optional
         Mass isotope ratios or a dict or references values. If not given hte :attr:`isotope.mass` will be used.
     inversion_keys : RatioKeyList, Optional
         Keys used for the inversion. Can either be 3 ratio key strings or 4 isotope key strings.
@@ -469,13 +464,9 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
         Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
         function will be performed on each attribute and a new *DSResult* object returned.
     """
-    measured = isopy.checks.check_type('measured', measured, isopy.core.RatioArray,
-                                       isopy.IsotopeArray,
-                                       coerce=True)
+    measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
 
-    spike = isopy.checks.check_type('spike', spike, isopy.core.RatioArray, isopy.core.IsotopeArray,
-                                    dict,
-                                    coerce=True, coerce_into=isopy.core.RatioArray)
+    spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict=True)
 
     inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
                                              isopy.RatioKeyList, coerce=True, allow_none=True)
@@ -487,8 +478,7 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
     if standard is None:
         standard = isotope_fractions
     else:
-        standard = isopy.checks.check_type('standard', standard, core.RatioArray, core.IsotopeArray,
-                                           dict, coerce=True, coerce_into=isopy.core.RatioArray)
+        standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
 
     # If inversion keys are not given they are inferred from the spike
     numer, denom, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
@@ -538,7 +528,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
         if not isinstance(spike, core.IsopyArray):
             raise ValueError(
                 f'Can not deduce inversion keys from spike since it is not an isopy array')
-        elif isinstance(spike, isopy.IsotopeArray):
+        elif spike.flavour == 'isotope':
             if len(spike.keys) != 4:
                 raise ValueError(f'inversion keys can not be deduced from *spike* as it'
                                  f'has {len(spike.keys)} isotope keys instead of the expected 4')
@@ -548,7 +538,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
                 inversion_keys = numer / denom
                 return numer, denom, inversion_keys
 
-        elif isinstance(spike, isopy.RatioArray):
+        elif spike.flavour == 'ratio':
             if len(spike.keys) != 3:
                 raise ValueError(f'inversion keys can not be deduced from *spike* as it'
                                  f'has {len(spike.keys)} ratio keys instead of the expected 3')
@@ -562,14 +552,14 @@ def _deduce_inversion_keys(spike, inversion_keys):
         if isinstance(inversion_keys, isopy.IsotopeKeyList):
             if len(inversion_keys) != 4:
                 raise ValueError(f'got {len(inversion_keys)} inversion isotope keys instead of 4')
-            elif isinstance(spike, isopy.IsotopeArray):
+            elif spike.flavour == 'isotope':
                 spike = spike.copy(key_eq=inversion_keys)
                 denom = isopy.keymax(spike)
                 numer = inversion_keys - denom
                 inversion_keys = numer / denom
                 return numer, denom, inversion_keys
 
-            elif isinstance(spike, isopy.RatioArray):
+            elif spike.flavour == 'ratio':
                 denom = spike.keys.common_denominator
                 numer = inversion_keys - denom
                 inversion_keys = numer / denom

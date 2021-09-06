@@ -28,6 +28,9 @@ from numpy import ndarray, nan, float64, void
 from typing import TypeVar, Union, Optional, Any, NoReturn, Generic
 
 class NotGivenType:
+    def __repr__(self):
+        return 'N/A'
+
     def __bool__(self):
         return False
 
@@ -37,7 +40,7 @@ ARRAY_REPR = dict(include_row=True, include_dtype=False, nrows=10, f='{:.5g}')
 
 __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyString', 'GeneralKeyString',
            'MassKeyList', 'ElementKeyList', 'IsotopeKeyList', 'RatioKeyList', 'GeneralKeyList', 'MixedKeyList',
-           'MassArray', 'ElementArray', 'IsotopeArray', 'RatioArray', 'GeneralArray', 'MixedArray',
+            'MoleculeKeyString', 'MoleculeKeyList', 'IsopyArray',
            'IsopyDict', 'ScalarDict',
            'keystring', 'askeystring', 'keylist', 'askeylist', 'array', 'asarray', 'asanyarray',
            'ones', 'zeros', 'empty', 'full', 'random',
@@ -242,9 +245,9 @@ def parse_keyfilters(**filters):
     for key in ['flavour_eq', 'flavour_neq']:
         if (f:=filters.get(key, None)) is not None:
             if not isinstance(f, (list, tuple)):
-                filters[key] = (flavour(f),)
+                filters[key] = (f,)
             else:
-                filters[key] = tuple(flavour(ff) for ff in f)
+                filters[key] = f
 
     #For isotope keys
     mass_number = _split_filter('mass_number', filters)
@@ -286,55 +289,6 @@ def _split_filter(prefix, filters):
             out[key] = filter
     return out
 
-def isflavour(obj1, obj2):
-    """returns True if the favour of the first object is the same as the favour of the second object."""
-    return flavour(obj1) is flavour(obj2)
-
-def flavour(obj):
-    """returns the flavour type of the object."""
-    if type(obj) is type:
-        if issubclass(obj, MassFlavour) or obj is MassArray:
-            return MassFlavour
-        elif issubclass(obj, ElementFlavour) or obj is ElementArray:
-            return ElementFlavour
-        elif issubclass(obj, IsotopeFlavour) or obj is IsotopeArray:
-            return IsotopeFlavour
-        elif issubclass(obj, RatioFlavour) or obj is RatioArray:
-            return RatioFlavour
-        elif issubclass(obj, GeneralFlavour) or obj is GeneralArray:
-            return GeneralFlavour
-        elif issubclass(obj, MixedFlavour) or obj is MixedArray:
-            return MixedFlavour
-        else:
-            raise TypeError(f'{obj} is not an isopy object')
-    else:
-        if isinstance(obj, MassFlavour):
-            return MassFlavour
-        elif isinstance(obj, ElementFlavour):
-            return ElementFlavour
-        elif isinstance(obj, IsotopeFlavour):
-            return IsotopeFlavour
-        elif isinstance(obj, RatioFlavour):
-            return RatioFlavour
-        elif isinstance(obj, GeneralFlavour):
-            return GeneralFlavour
-        elif isinstance(obj, MixedFlavour):
-            return MixedFlavour
-        elif isinstance(obj, str):
-            if obj.lower() == 'mass':
-                return MassFlavour
-            elif obj.lower() == 'element':
-                return ElementFlavour
-            elif obj.lower() == 'isotope':
-                return IsotopeFlavour
-            elif obj.lower() == 'ratio':
-                return RatioFlavour
-            elif obj.lower() == 'general':
-                return GeneralFlavour
-            elif obj.lower() == 'mixed':
-                return MixedFlavour
-
-        raise TypeError(f'{type(obj)} is not an isopy object')
 
 def iskeystring(item) -> bool:
     """
@@ -353,6 +307,19 @@ def isarray(item) -> bool:
     Return ``True`` if *item* is an isopy array otherwise ``False`` is returned.
     """
     return isinstance(item, IsopyArray)
+
+
+def isflavour(obj1, obj2):
+    """returns True if the favour of the first object is the same as the favour of the second object."""
+    try:
+        return obj1.__flavour__ == obj2.__flavour__
+    except:
+        return False
+
+#TODO delete this as all objects now have a flavour attribute
+def flavour(obj):
+    raise NotImplementedError
+
 
 ##################
 ### Exceptions ###
@@ -389,165 +356,184 @@ class KeyTypeError(KeyParseError, TypeError):
 ################
 ### Flavours ###
 ################
-
 class IsopyFlavour:
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def __eq__(self, other):
+        if type(other) is not str:
+            try:
+                other = other.__flavour_name__
+            except:
+                return False
+        return self.__flavour_name__ == other.lower()
+
     @classmethod
-    def _Flavour__view(cls, obj):
+    def __view_array__(cls, a):
+        a = a.view(IsopyNdarray)
+        a.__flavour__ = cls.flavour
+        return a
+
+    @classmethod
+    def __view__(cls, obj):
         if obj.dtype.names:
             if isinstance(obj, void):
-                return cls._Flavour__view_void(obj)
+                view = obj.view((IsopyVoid, obj.dtype))
             else:
-                return cls._Flavour__view_ndarray(obj)
+                view =  obj.view(IsopyNdarray)
+            view.__flavour__ = cls.flavour
+            return view
         else:
             return obj.view(ndarray)
 
 
-class MassFlavour:
-    _Flavour__id = 1
+class MassFlavour(IsopyFlavour):
+    __flavour_name__ = 'mass'
+    __flavour_id__ = 1
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return MassFlavour()
+
     @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return MassKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
+    def __keylist__(*args, **kwargs):
         return MassKeyList(*args, **kwargs)
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return MassArray(*args, **kwargs)
+
+class ElementFlavour(IsopyFlavour):
+    __flavour_name__ = 'element'
+    __flavour_id__ = 2
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return ElementFlavour()
 
     @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((MassVoid, obj.dtype))
-
-    @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(MassNdarray)
-
-
-class ElementFlavour:
-    _Flavour__id = 2
-    @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return ElementKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
+    def __keylist__(*args, **kwargs):
         return ElementKeyList(*args, **kwargs)
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return ElementArray(*args, **kwargs)
+
+class IsotopeFlavour(IsopyFlavour):
+    __flavour_name__ = 'isotope'
+    __flavour_id__ = 3
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return IsotopeFlavour()
 
     @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((ElementVoid, obj.dtype))
-
-    @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(ElementNdarray)
-
-
-class IsotopeFlavour:
-    _Flavour__id = 3
-    @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return IsotopeKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
+    def __keylist__(*args, **kwargs):
         return IsotopeKeyList(*args, **kwargs)
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return IsotopeArray(*args, **kwargs)
+
+class MoleculeFlavour(IsopyFlavour):
+    __flavour_name__ = 'molecule'
+    __flavour_id__ = 5
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return MoleculeFlavour()
 
     @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((IsotopeVoid, obj.dtype))
+    def __keystring__(string, **kwargs):
+        return MoleculeKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(IsotopeNdarray)
+    def __keylist__(*args, **kwargs):
+        return MoleculeKeyList(*args, **kwargs)
 
 
-class RatioFlavour:
-    _Flavour__id = 4
+class RatioFlavour(IsopyFlavour):
+    __flavour_name__ = 'ratio'
+    __flavour_id__ = 5
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return RatioFlavour()
+
     @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return RatioKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
+    def __keylist__(*args, **kwargs):
         return RatioKeyList(*args, **kwargs)
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return RatioArray(*args, **kwargs)
+
+class GeneralFlavour(IsopyFlavour):
+    __flavour_name__ = 'general'
+    __flavour_id__ = 6
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return GeneralFlavour()
 
     @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((RatioVoid, obj.dtype))
-
-    @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(RatioNdarray)
-
-
-class GeneralFlavour:
-    _Flavour__id = 5
-    @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return GeneralKeyString(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
+    def __keylist__(*args, **kwargs):
         return GeneralKeyList(*args, **kwargs)
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return GeneralArray(*args, **kwargs)
+
+class MixedFlavour(IsopyFlavour):
+    __flavour_name__ = 'mixed'
+    __flavour_id__ = 7
+
+    @classmethod
+    @property
+    def flavour(cls):
+        return MixedFlavour()
 
     @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((GeneralVoid, obj.dtype))
-
-    @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(GeneralNdarray)
-
-
-class MixedFlavour:
-    _Flavour__id = 6
-    @staticmethod
-    def _Flavour__keystring(string, **kwargs):
+    def __keystring__(string, **kwargs):
         return askeystring(string, **kwargs)
 
     @staticmethod
-    def _Flavour__keylist(*args, **kwargs):
-        keys = MixedKeyList(*args, **kwargs)
+    def __keylist__(*args, **kwargs):
+        return MixedKeyList(*args, **kwargs)
 
-        if len(flavours:={type(k) for k in keys}) == 1:
-            keys =  flavours.pop()._Flavour__keylist(keys)
 
-        return keys
+FLAVOURS = {f.__flavour_name__: f for f in [MassFlavour, ElementFlavour,
+                                            IsotopeFlavour, MoleculeFlavour,
+                                            RatioFlavour, MixedFlavour,
+                                            GeneralFlavour]}
 
-    @staticmethod
-    def _Flavour__array(*args, **kwargs):
-        return MixedArray(*args, **kwargs)
+DEFAULT_TRY_FLAVOURS = ('mass', 'element', 'isotope', 'ratio', 'mixed', 'molecule', 'general')
 
-    @staticmethod
-    def _Flavour__view_void(obj):
-        return obj.view((MixedVoid, obj.dtype))
+def default_key_flavours(flavours):
+    if flavours is None:
+        flavours = DEFAULT_TRY_FLAVOURS
+    elif not isinstance(flavours, (list, tuple)):
+        flavours = (flavours, )
+    else:
+        flavours = tuple(flavours)
 
-    @staticmethod
-    def _Flavour__view_ndarray(obj):
-        return obj.view(MixedNdArray)
+    return flavours
 
 ##############
 ### Key ###
 ##############
-class IsopyKeyString(IsopyFlavour, str):
+class IsopyKeyString(str):
     def __repr__(self):
         return f"{self.__class__.__name__}('{self}')"
 
@@ -570,7 +556,7 @@ class IsopyKeyString(IsopyFlavour, str):
     def __eq__(self, other):
         if not isinstance(other, IsopyKeyString):
             try:
-                other = self._Flavour__keystring(other)
+                other = self.__keystring__(other)
             except:
                 return False
 
@@ -583,7 +569,7 @@ class IsopyKeyString(IsopyFlavour, str):
         if isinstance(other, (list, tuple)):
             return askeylist(other).__rtruediv__(self)
         else:
-            return RatioFlavour._Flavour__keystring((self, other))
+            return RatioFlavour.__keystring__((self, other))
 
     def __rtruediv__(self, other):
         if isinstance(other, (list, tuple)):
@@ -601,7 +587,7 @@ class IsopyKeyString(IsopyFlavour, str):
             return format.format(**options)
 
 
-class MassKeyString(MassFlavour, IsopyKeyString):
+class MassKeyString(IsopyKeyString, MassFlavour):
     """
     String representation of a mass number.
 
@@ -715,9 +701,9 @@ class MassKeyString(MassFlavour, IsopyKeyString):
             return False
         if key_neq is not None and self in key_neq:
             return False
-        if flavour_eq is not None and flavour(self) not in flavour_eq:
+        if flavour_eq is not None and self.flavour not in flavour_eq:
             return False
-        if flavour_neq is not None and flavour(self) in flavour_neq:
+        if flavour_neq is not None and self.flavour in flavour_neq:
             return False
         if key_lt is not None and not self < key_lt:
             return False
@@ -761,7 +747,7 @@ class MassKeyString(MassFlavour, IsopyKeyString):
                     latex = fr'$\mathrm{{{self}}}$')
 
 
-class ElementKeyString(ElementFlavour, IsopyKeyString):
+class ElementKeyString(IsopyKeyString, ElementFlavour):
     """
     A string representation of an element symbol limited to two letters.
 
@@ -868,9 +854,9 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
             return False
         if key_neq is not None and self in key_neq:
             return False
-        if flavour_eq is not None and flavour(self) not in flavour_eq:
+        if flavour_eq is not None and self.flavour not in flavour_eq:
             return False
-        if flavour_neq is not None and flavour(self) in flavour_neq:
+        if flavour_neq is not None and self.flavour in flavour_neq:
             return False
         return True
 
@@ -906,7 +892,7 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
 
     def _str_options(self):
         name: str = isopy.refval.element.symbol_name.get(self.basekey, str(self.basekey))
-        if self.charge is not None: name = f'{name}{"+" * self.charge or "-" * abs(self.charge)}'
+        if self.charge is not None: name = f'{name}^{"+" * self.charge or "-" * abs(self.charge)}'
         return dict(key = str(self),
                     es=self.lower(), ES=self.upper(), Es=str(self),
                     name=name.lower(), NAME=name.upper(), Name=name,
@@ -914,10 +900,20 @@ class ElementKeyString(ElementFlavour, IsopyKeyString):
                     latex = fr'$\mathrm{{{self}}}$')
 
     def set_charge(self, charge):
+        """
+        Returns a copy of this key string with a new charge.
+
+        If *charge* is ``0`` charge will be set to ``None``.
+
+        Examples
+        --------
+        >>> isopy.IsotopeKeyString('pd').set_charge(2)
+        ElementKeyString('Pd++')
+        """
         return self.__class__(self, charge=charge)
 
 
-class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
+class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
     """
     A string representation of an isotope consisting of a mass number followed by an element symbol.
 
@@ -1045,9 +1041,9 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
             return False
         if key_neq is not None and self in key_neq:
             return False
-        if flavour_eq is not None and flavour(self) not in flavour_eq:
+        if flavour_eq is not None and self.flavour not in flavour_eq:
             return False
-        if flavour_neq is not None and flavour(self) in flavour_neq:
+        if flavour_neq is not None and self.flavour in flavour_neq:
             return False
         if mass_number and not self.mass_number._filter(**mass_number):
             return False
@@ -1120,7 +1116,7 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
         options.update(mass_options)
         options.update(element_options)
         options.update(dict(key = str(self),
-                       math = fr'^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}',
+                       math = fr'{{}}^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}',
                        latex = fr'$^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}$'))
 
         product = list(itertools.product(mass_options.items(), element_options.items()))
@@ -1132,9 +1128,44 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
         return options
 
     def set_charge(self, charge):
+        """
+        Returns a copy of this key string with a new charge.
+
+        If *charge* is ``0`` charge will be set to ``None``.
+
+        Examples
+        --------
+        >>> isopy.IsotopeKeyString('105pd').set_charge(2)
+        IsotopeKeyString('105Pd++')
+        """
         return self.__class__(f'{self.mass_number}{self.element_symbol.set_charge(charge)}')
 
     def mz(self, true_mass = False, isotope_masses = None):
+        """
+        Return the mass over charge ratio for this isotope.
+
+        If the isotope does not have a charge then the mass of the
+        isotope is returned. Negative charges will return a positive
+        number.
+
+        Parameters
+        ----------
+        true_mass
+            If ``False`` then the mass_number is returned. If ``True``
+            then real mass is returned.
+        isotope_masses
+            A dictionary containing the real masses of the isotopes.
+            Only used if *true_mass* is ``True``
+
+        Returns
+        -------
+        >>> isopy.IsotopeKeyString('105pd').mz()
+        105.0
+        >>> isopy.IsotopeKeyString('105pd').mz(True)
+        104.9050795
+        >>> isopy.IsotopeKeyString('105pd++').mz()
+        52.5
+        """
         charge = abs(self.charge or 1)
         if true_mass:
             if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
@@ -1142,8 +1173,485 @@ class IsotopeKeyString(IsotopeFlavour, IsopyKeyString):
         else:
             return float(self.mass_number) / charge
 
+    def fraction(self, default_value = np.nan, isotope_fractions = None):
+        """
+        Returns the fraction of this isotope from all isotopes of this element.
 
-class RatioKeyString(RatioFlavour, IsopyKeyString):
+        This assumes that the sum off all isotopes of an element in *isotope_fraction*
+        equals 1.
+
+        Parameters
+        ----------
+        default_value
+            The default value returned for isotopes not present in *isotope_fractions*. Default
+            value is ``np.nan``.
+        isotope_fractions
+            A dictionary containing the isotope fractions of each element. Default is
+            ``isopy.refval.isotope.fraction``.
+
+        Examples
+        --------
+        >>> isopy.IsotopeKeyString('105pd').fraction()
+        0.2233
+        """
+        if isotope_fractions is None:
+            isotope_fractions = isopy.refval.isotope.fraction
+        return isotope_fractions.get(self, default_value)
+
+
+class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
+    """
+    A string representation of an molecue consisting of a element and/or isotope key strings.
+
+    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
+    Unless specifically noted below these methods will return a :class:`str` rather than a
+    :class:`IsotopeKeyString`.
+
+
+    Parameters
+    ----------
+    string : str
+        Mass numbers must be before the element symbol. Any number after the element symbol is
+        assumed to be a multiple. Capital letters signify a new element symbol and must be used
+        when listing succesive element symbols. Parenthesis can be used to group elements or to
+        seperate mass numbers from multipliers.
+    allow_reformatting : bool, Default = True
+        If ``True`` the string will be reformatted to the correct format. If ``False`` an exception
+        will be raised it the string is not correctly formatted.
+
+    Raises
+    ------
+    KeyValueError
+        Is raised when the supplied string cannot be parsed into the correct format
+    KeyTypeError
+        Raised when the supplied item cannot be turned into a string
+
+
+    Examples
+    --------
+    >>> isopy.MoleculeKeyString('H2O')
+    'H2O'
+    >>> isopy.MoleculeKeyString('(1H)2(16O)')
+    '(1H)2(16O)'
+
+    >>> isopy.MoleculeKeyString('OH')
+    'OH'
+    >>> isopy.MoleculeKeyString('oh') # Becomes element symbol Oh
+    'Oh'
+    """
+    @lru_cache(CACHE_MAXSIZE)
+    def __new__(cls, string, *, allow_reformatting=True, ignore_charge=False):
+        original = string
+        # This adds the subcomponents
+        # And simplifies if possible
+        def make_molecule(mol, n , charge):
+            molstr = cls._makestr(mol, n, charge)
+            molecule = super(MoleculeKeyString, cls).__new__(cls, molstr,
+                                                             subcomponents=mol,
+                                                             n=n,
+                                                             charge=charge)
+            if charge is None:
+                return super(MoleculeKeyString, cls).__new__(cls, molstr,
+                                                                 subcomponents=mol,
+                                                                 n=n,
+                                                                 charge=charge)
+            else:
+                basestr = cls._makestr(mol, n, None)
+                base_molecule = super(MoleculeKeyString, cls).__new__(cls, basestr,
+                                                                 subcomponents=mol,
+                                                                 n=n,
+                                                                 charge=None)
+                return super(MoleculeKeyString, cls).__new__(cls, molstr, base_molecule,
+                                                                 subcomponents=mol,
+                                                                 n=n,
+                                                                 charge=charge)
+
+
+        def append(z, mol, n, charge, subcomponent):
+            if n == '':
+                n = 1
+            else:
+                n = int(n)
+            if charge == '':
+                charge = None
+            else:
+                charge = (charge.count('-') * -1) or charge.count('+')
+
+            if type(mol) is str:
+                if z == '':
+                    mol = isopy.ElementKeyString(mol, allow_reformatting=allow_reformatting)
+                else:
+                    mol = isopy.IsotopeKeyString(z + mol, allow_reformatting=allow_reformatting)
+                if n ==1 and charge is None:
+                    # Doesnt need to be its own molecule
+                    subcomponent.append(mol)
+                else:
+                    molecule = make_molecule((mol, ), n, charge)
+                    subcomponent.append(molecule)
+
+            elif (mol.n == 1 or n == 1) and (mol.charge is None or charge is None):
+                n = mol.n if n == 1 else n
+                charge = charge or mol.charge
+                if n == 1 and charge is None:
+                    subcomponent.extend(tuple(mol.subcomponents))
+                else:
+                    molecule = make_molecule(mol.subcomponents, n, charge)
+                    subcomponent.append(molecule)
+            else:
+                molecule = make_molecule((mol, ), n, charge)
+                subcomponent.append(molecule)
+
+            return '', '', '', ''
+
+        if isinstance(string, cls) and not ignore_charge:
+            return string
+
+        if not isinstance(string, str):
+            raise KeyTypeError(cls, string)
+
+        if not isinstance(string, str):
+            raise KeyTypeError(cls, string)
+
+        string = string.strip()
+        if len(string) == 0:
+            raise KeyValueError(cls, string, 'Cannot parse empty string')
+
+        # A molecule contains at least one subcomponent
+        subcomponents = []
+        base_subcomponents = []
+
+        # This is the variables we are extracting from the string
+        z, mol, n, charge = '', '', '', ''
+
+        i = 0
+        while i < len(string):
+            char = string[i]
+
+            if char.isalpha():
+                if type(mol) is str and (len(mol) == 0 or (char.islower() and n == '' and charge == '')):
+                    mol += char
+                else:
+                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
+                    mol = char
+
+
+            elif char.isdigit():
+                if type(mol) is str and len(mol) == 0:
+                    z += char
+
+                elif charge != '':
+                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
+                    z = char
+                else:
+                    n += char
+
+            elif char == '(':
+                if type(mol) is not str or len(mol) != 0:
+                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
+
+                elif len(z) != 0:
+                    raise KeyValueError(cls, string, f'Unattached digits "{z}"')
+
+                starts = 1
+                for j, jc in enumerate(string[i + 1:]):
+                    if jc == '(':
+                        starts += 1
+                    if jc == ')':
+                        starts -= 1
+                    if starts == 0:
+                        j = j + i + 1
+                        break
+                else:
+                    raise KeyValueError(cls, string, 'Unmatched "("')
+
+                mol = MoleculeKeyString(string[i + 1:j], ignore_charge=ignore_charge, allow_reformatting=allow_reformatting)
+                i = j
+            elif char == ')':
+                raise KeyValueError(cls, string, 'Unmatched ")"')
+            elif char == '+' or char == '-':
+                if mol == '':
+                    raise KeyValueError(cls, string, 'Unattached charge')
+                if ignore_charge is True:
+                    pass
+                elif charge != '' and char not in charge:
+                    raise KeyValueError(cls, string, 'Mixed signs in charge')
+                else:
+                    charge += char
+            else:
+                raise KeyValueError(cls, string, f'Unknown character "{char}"')
+
+            i += 1
+
+        if len(mol) != 0:
+            z, mol, n, charge = append(z, mol, n, charge, subcomponents)
+        elif z != '':
+            raise KeyValueError(cls, string, f'Unattached digits "{z}"')
+        elif n != '':
+            raise KeyValueError(cls, string, f'Unattached digits "{n}"')
+        elif charge != '':
+            raise KeyValueError(cls, string, f'Unattached charge "{charge}"')
+
+        if len(subcomponents) == 1 and type(sm1 := subcomponents[0]) is MoleculeKeyString:
+            if len(sm1) == 1 and type(sm2 := sm1.subcomponents[0]) is MoleculeKeyString and sm1.n == 1 and sm1.charge is None:
+                out = sm2
+            else:
+                out = sm1
+        else:
+            out = make_molecule(tuple(subcomponents), 1, None)
+
+
+        if allow_reformatting is False and str(out) != string:
+            raise KeyValueError(cls, string, 'Molecule string does not match the input string')
+        else:
+            return out
+
+    def _filter(self, key_eq=None, key_neq=None, **invalid):
+        if invalid:
+            return False
+        if key_eq is not None and self not in key_eq:
+            return False
+        if key_neq is not None and self in key_neq:
+            return False
+
+        return True
+
+    def _sortkey(self):
+        return str(self)
+
+    def str(self, format=None):
+        """
+        Return a ``str`` object of the key string.
+
+        the optional *format* can either be a string matching one of the format options or a
+        string which can be formatted using the format options as key words.
+
+        Format options are:
+        * ``"key"`` - Same as ``str(keystring)``.
+        * ``"math"`` -  Key string formatted for latex math mode.
+        * ""`latex`"" - Same as above but including $ $ math deliminators.
+        """
+        return super(MoleculeKeyString, self).str(format)
+
+    @classmethod
+    def _makestr(cls, thing, n = None, charge = None, format = None):
+        if format == 'latex':
+            # We want the maths option. The latex part is handled by _str_options
+            format = 'math'
+
+        if type(thing) is ElementKeyString:
+            return thing.str(format)
+        elif type(thing) is IsotopeKeyString:
+            if format == 'math':
+                return thing.str(format)
+            else:
+                return f'({thing.str(format)})'
+        elif type(thing) is MoleculeKeyString:
+            n = thing.n
+            charge = thing.charge
+            subcomponents = thing.subcomponents
+        else:
+            subcomponents = thing
+
+        if n == 1: n = ''
+        elif format == 'math': n = f'_{{{n}}}'
+        if charge is None: charge = ''
+        else:
+            charge = '+' * charge or '-' * abs(charge)
+            if format == 'math':
+                charge = fr'^{{{charge}}}'
+
+        subcomponents = [cls._makestr(s, format=format) for s in subcomponents]
+
+        if len(subcomponents) == 1:
+            subcomponents = subcomponents[0]
+        else:
+            subcomponents = "".join(subcomponents)
+            if charge != '' or n != '':
+                if format == 'math':
+                    subcomponents = fr'\left({subcomponents}\right)'
+                else:
+                    subcomponents = f'({subcomponents})'
+
+        return f'{subcomponents}{n}{charge}'
+
+    def _str_options(self):
+        options = dict(key = str(self))
+        options['math'] = self._makestr(self, format='math')
+        options['latex'] = fr'${options["math"]}$'
+        return options
+
+    def set_charge(self, charge):
+        """
+        Returns a copy of this key string with a new charge.
+
+        If *charge* is ``0`` charge will be set to ``None``.
+
+        Examples
+        --------
+        >>> isopy.MoleculeKeyString('H2O').set_charge(2)
+        MoleculeKeyString('(H2O)++')
+        """
+        if charge == 0:
+            charge = None
+        molstr = self._makestr(self.subcomponents, self.n, charge)
+        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
+                                                     subcomponents=self.subcomponents,
+                                                     n=self.n,
+                                                     charge=charge)
+
+    def set_n(self, n):
+        """
+        Returns a copy of this key string with a new n.
+
+        If *n* is ``None`` n will be set to ``1``.
+
+        Examples
+        --------
+        >>> isopy.MoleculeKeyString('H2O').set_n(2)
+        MoleculeKeyString('(H2O)2')
+        """
+        if n is None: n = 1
+        molstr = self._makestr(self.subcomponents, n, self.charge)
+        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
+                                                      subcomponents=self.subcomponents,
+                                                      n=n,
+                                                      charge=self.charge)
+
+    def mz(self, true_mass = False, isotope_masses = None):
+        """
+        Return the mass over charge ratio for this molecule.
+
+        If the molecule does not have a charge then the mass of the
+        molecule is returned. Negative charges will return a positive
+        number.
+
+        Parameters
+        ----------
+        true_mass
+            If ``False`` then the mass_number is used as the mass for each isotope. If ``True``
+            then real mass is used.
+        isotope_masses
+            A dictionary containing the real masses of the isotopes.
+            Only used if *true_mass* is ``True``
+
+        Returns
+        -------
+        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').mz()
+        18.0
+        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').mz(True)
+        18.010564684
+        >>> isopy.MoleculeKeyString('((1H)(1H)(16O))++').mz()
+        9
+        """
+        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
+
+        mz = 0
+        for sc in self.subcomponents:
+            if type(sc) is ElementKeyString:
+                raise TypeError(f'Molecule contains an element key string ("{sc}")')
+            else:
+                mz += sc.mz(true_mass, isotope_masses)
+
+        charge = abs(self.charge or 1)
+        return (mz * self.n) / charge
+
+    def isotopes(self, isotopes = None):
+
+        if isotopes is None:
+            isotopes = isopy.refval.element.isotopes
+
+        all = [[]]
+
+        for sc in self.subcomponents:
+            # Should save a bit of time
+            if type(sc) is MoleculeKeyString:
+                molecules = sc.isotopes()
+
+            for i in range(self.n):
+                if type(sc) is IsotopeKeyString:
+                    all = [a + [sc] for a in all]
+                elif type(sc) is ElementKeyString:
+                    element_isotopes = isotopes[sc]
+                    alliso = []
+                    for element_isotope in element_isotopes:
+                        alliso.extend([a + [element_isotope] for a in all])
+                    all = alliso
+                else:
+                    alliso = []
+                    for molecule in molecules:
+                        alliso.extend([a + [molecule] for a in all])
+                    all = alliso
+
+        allmol = []
+        for mol in all:
+            molstr = self._makestr(mol, 1, self.charge)
+            allmol.append(super(MoleculeKeyString, self).__new__(self.__class__, molstr,
+                                                          subcomponents=mol,
+                                                          n=1,
+                                                          charge=self.charge))
+        return allmol
+
+    def fraction(self, default_value = np.nan, isotope_fractions = None):
+        """
+        Returns the fraction of this molecule from all molecules with
+        the same elemental formula.
+
+        This assumes that the sum off all isotopes of an element in *isotope_fraction*
+        equals 1.
+
+        Parameters
+        ----------
+        default_value
+            The default value returned for isotopes not present in *isotope_fractions*. Default
+            value is ``np.nan``.
+        isotope_fractions
+            A dictionary containing the isotope fractions of each element. Default is
+            ``isopy.refval.isotope.fraction``.
+
+        Examples
+        --------
+        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').fraction()
+        0.9973098853327474
+        """
+        if isotope_fractions is None:
+            isotope_fractions = isopy.refval.isotope.fraction
+
+        fraction = 1
+        for sc in self.subcomponents:
+            for i in range(self.n):
+                if type(sc) is ElementKeyString:
+                    raise TypeError(f'Molecule contains an element key string ("{sc}")')
+                else:
+                    fraction *= sc.fraction(default_value, isotope_fractions)
+        return fraction
+
+    def element(self):
+        """
+        Returns the elemental composition of this molecule.
+
+        This function does not condense molecule formula thus
+        ``"(1H)(1H)(16O)"`` will come back as ``"HHO"`` rather than
+        ``"H2O"``.
+
+        Examples
+        --------
+        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').element()
+        MoleculeKeyString('HHO')
+        """
+        subcomponents = []
+        for sc in self.subcomponents:
+            if type(sc) is ElementKeyString: subcomponents.append(sc)
+            elif type(sc) is IsotopeKeyString: subcomponents.append(sc.element_symbol)
+            else: subcomponents.append(sc.element())
+
+        molstr = self._makestr(subcomponents, self.n, self.charge)
+        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
+                                                      subcomponents=subcomponents,
+                                                      n=self.n,
+                                                      charge=self.charge)
+
+
+class RatioKeyString(IsopyKeyString, RatioFlavour):
     """
     A string representation of a ratio of two keystrings.
 
@@ -1301,9 +1809,9 @@ class RatioKeyString(RatioFlavour, IsopyKeyString):
             return False
         if key_neq is not None and self in key_neq:
             return False
-        if flavour_eq is not None and flavour(self) not in flavour_eq:
+        if flavour_eq is not None and self.flavour not in flavour_eq:
             return False
-        if flavour_neq is not None and flavour(self) in flavour_neq:
+        if flavour_neq is not None and self.flavour in flavour_neq:
             return False
         if numerator and not self.numerator._filter(**numerator):
             return False
@@ -1384,7 +1892,7 @@ class RatioKeyString(RatioFlavour, IsopyKeyString):
         return options
 
 
-class GeneralKeyString(GeneralFlavour, IsopyKeyString):
+class GeneralKeyString(IsopyKeyString, GeneralFlavour):
     """
     A general key string that can hold any string value.
 
@@ -1455,9 +1963,9 @@ class GeneralKeyString(GeneralFlavour, IsopyKeyString):
             return False
         if key_neq is not None and self in key_neq:
             return False
-        if flavour_eq is not None and flavour(self) not in flavour_eq:
+        if flavour_eq is not None and self.flavour not in flavour_eq:
             return False
-        if flavour_neq is not None and flavour(self) in flavour_neq:
+        if flavour_neq is not None and self.flavour in flavour_neq:
             return False
 
         return True
@@ -1500,7 +2008,7 @@ class GeneralKeyString(GeneralFlavour, IsopyKeyString):
 
 #TODO document sorted with exampels in each key string
 
-class IsopyKeyList(IsopyFlavour, tuple):
+class IsopyKeyList(tuple):
     """
         When comparing the list against another list the order of items is not considered.
     The ``in`` operator can be used to test whether a string is in the list. To test whether all items in a list are
@@ -1518,19 +2026,19 @@ class IsopyKeyList(IsopyFlavour, tuple):
         new_keys = []
         for key in keys:
             if isinstance(key, str):
-                new_keys.append(cls._Flavour__keystring(key, allow_reformatting=allow_reformatting,
+                new_keys.append(cls.__keystring__(key, allow_reformatting=allow_reformatting,
                                                         ignore_charge=ignore_charge))
             elif isinstance(key, np.dtype) and key.names is not None:
-                new_keys.extend([cls._Flavour__keystring(name, allow_reformatting=allow_reformatting,
+                new_keys.extend([cls.__keystring__(name, allow_reformatting=allow_reformatting,
                                                         ignore_charge=ignore_charge) for name in key.names])
             elif isinstance(key, ndarray) and key.dtype.names is not None:
-                new_keys.extend([cls._Flavour__keystring(name, allow_reformatting=allow_reformatting,
+                new_keys.extend([cls.__keystring__(name, allow_reformatting=allow_reformatting,
                                                         ignore_charge=ignore_charge) for name in key.dtype.names])
             elif hasattr(key, '__iter__'):
-                new_keys.extend([cls._Flavour__keystring(k, allow_reformatting=allow_reformatting,
+                new_keys.extend([cls.__keystring__(k, allow_reformatting=allow_reformatting,
                                                         ignore_charge=ignore_charge) for k in key])
             else:
-                new_keys.append(cls._Flavour__keystring(key, allow_reformatting=allow_reformatting,
+                new_keys.append(cls.__keystring__(key, allow_reformatting=allow_reformatting,
                                                         ignore_charge=ignore_charge))
 
         if ignore_duplicates:
@@ -1552,7 +2060,7 @@ class IsopyKeyList(IsopyFlavour, tuple):
     def __eq__(self, other):
         if not isinstance(other, IsopyKeyList):
             try:
-                other = self._Flavour__keylist(other)
+                other = self.__keylist__(other)
             except:
                 return False
         return hash(self) == hash(other)
@@ -1569,7 +2077,7 @@ class IsopyKeyList(IsopyFlavour, tuple):
         for item in items:
             if not isinstance(item, IsopyKeyString):
                 try:
-                    item = self._Flavour__keystring(item)
+                    item = self.__keystring__(item)
                 except:
                     return False
             try:
@@ -1585,9 +2093,9 @@ class IsopyKeyList(IsopyFlavour, tuple):
         Return the item at `index`. `index` can be int, slice or sequence of int.
         """
         if isinstance(index, slice):
-            return self._Flavour__keylist(super(IsopyKeyList, self).__getitem__(index))
+            return self.__keylist__(super(IsopyKeyList, self).__getitem__(index))
         elif hasattr(index, '__iter__'):
-                return self._Flavour__keylist(tuple(super(IsopyKeyList, self).__getitem__(i) for i in index))
+                return self.__keylist__(tuple(super(IsopyKeyList, self).__getitem__(i) for i in index))
         else:
             return super(IsopyKeyList, self).__getitem__(index)
 
@@ -1595,17 +2103,17 @@ class IsopyKeyList(IsopyFlavour, tuple):
         if isinstance(denominator, (tuple, list)):
             if len(denominator) != len(self):
                 raise ValueError(f'size of values ({len(self)}) not compatible with size of key list ({len(self)}')
-            return RatioFlavour._Flavour__keylist(tuple(n / denominator[i] for i, n in enumerate(self)))
+            return RatioFlavour.__keylist__(tuple(n / denominator[i] for i, n in enumerate(self)))
         else:
-            return RatioFlavour._Flavour__keylist(tuple(n / denominator for i, n in enumerate(self)))
+            return RatioFlavour.__keylist__(tuple(n / denominator for i, n in enumerate(self)))
 
     def __rtruediv__(self, numerator):
         if isinstance(numerator, (tuple, list)):
             if len(numerator) != len(self):
                 raise ValueError(f'size of values ({len(self)}) not compatible with size of key list ({len(self)}')
-            return RatioFlavour._Flavour__keylist(tuple(numerator[i] / d for i, d in enumerate(self)))
+            return RatioFlavour.__keylist__(tuple(numerator[i] / d for i, d in enumerate(self)))
         else:
-            return RatioFlavour._Flavour__keylist(tuple(numerator / d for i, d in enumerate(self)))
+            return RatioFlavour.__keylist__(tuple(numerator / d for i, d in enumerate(self)))
 
     def __add__(self, other):
         other = askeylist(other)
@@ -1617,14 +2125,14 @@ class IsopyKeyList(IsopyFlavour, tuple):
 
     def __sub__(self, other):
         other = askeylist(other)
-        return self._Flavour__keylist((key for key in self if key not in other))
+        return self.__keylist__((key for key in self if key not in other))
 
     def __rsub__(self, other):
         return askeylist(other).__sub__(self)
 
     def count(self, item):
         try:
-            item = self._Flavour__keystring(item)
+            item = self.__keystring__(item)
         except:
             return 0
         else:
@@ -1632,7 +2140,7 @@ class IsopyKeyList(IsopyFlavour, tuple):
 
     def index(self, item, *args):
         try:
-            return super(IsopyKeyList, self).index(self._Flavour__keystring(item), *args)
+            return super(IsopyKeyList, self).index(self.__keystring__(item), *args)
         except (KeyValueError, ValueError):
             raise ValueError(f'{item} not in {self.__class__}')
 
@@ -1654,18 +2162,18 @@ class IsopyKeyList(IsopyFlavour, tuple):
         """
         Return a sorted key string list.
         """
-        return self._Flavour__keylist(sorted(self, key= lambda k: k._sortkey()))
+        return self.__keylist__(sorted(self, key= lambda k: k._sortkey()))
 
     def reversed(self):
         """
         Return a reversed key string list.
         """
-        return self._Flavour__keylist(reversed(self))
+        return self.__keylist__(reversed(self))
 
     def flatten(self, ignore_duplicates = False, allow_duplicates = True, allow_reformatting = False,
                 ignore_charge=False):
         """Has no effect on this key list flavour other than those imposed by the arguments"""
-        return self._Flavour__keylist(self, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
+        return self.__keylist__(self, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
                                       allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
 
     ##########################################
@@ -1680,7 +2188,8 @@ class IsopyKeyList(IsopyFlavour, tuple):
                 other = askeylist(other)
             other = [hash(o) for o in dict.fromkeys(other)]
             this = (t for t in this if hash(t) in other)
-        return askeylist(this)
+
+        return askeylist(tuple(this))
 
     @lru_cache(CACHE_MAXSIZE)
     def __or__(self, *others):
@@ -1718,7 +2227,7 @@ class IsopyKeyList(IsopyFlavour, tuple):
         return askeylist(other).__xor__(self)
 
 
-class MassKeyList(MassFlavour, IsopyKeyList):
+class MassKeyList(IsopyKeyList, MassFlavour):
     """
     A tuple consisting exclusively of :class:`MassKeyString` items.
 
@@ -1802,10 +2311,10 @@ class MassKeyList(MassFlavour, IsopyKeyList):
                                      flavour_eq=flavour_eq, flavour_neq=flavour_neq,
                                      key_lt=key_lt, key_gt=key_gt,
                                      key_le=key_le, key_ge=key_ge)
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
 
-class ElementKeyList(ElementFlavour, IsopyKeyList):
+class ElementKeyList(IsopyKeyList, ElementFlavour):
     """
     A tuple consisting exclusively of :class:`ElementKeyString` items.
 
@@ -1874,13 +2383,23 @@ class ElementKeyList(ElementFlavour, IsopyKeyList):
         """
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq)
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
     @cached_property
     def charges(self):
+        """
+        Returns a tuple containing the charges of key string in the list.
+        """
         return tuple(item.charge for item in self)
 
     def set_charges(self, charges):
+        """
+        Returns a new key list with new charges for keys in the list.
+
+        *charges* can either be a single valued applied to all
+        key strings in the list or a sequence of charges, one for each
+         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
+        """
         if type(charges) is tuple or type(charges) is list:
             if len(charges) != len(self):
                 raise ValueError(f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
@@ -1892,7 +2411,7 @@ class ElementKeyList(ElementFlavour, IsopyKeyList):
             raise TypeError('charges must be None or an integer or a list of integers')
 
 
-class IsotopeKeyList(IsotopeFlavour, IsopyKeyList):
+class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
     """
     A tuple consisting exclusively of :class:`IsotopeKeyString` items.
 
@@ -1938,7 +2457,7 @@ class IsotopeKeyList(IsotopeFlavour, IsopyKeyList):
         >>> IsotopeKeyList(['99ru', '105pd', '111cd']).mass_numbers()
         ('99', '105', '111')
         """
-        return MassFlavour._Flavour__keylist(tuple(x.mass_number for x in self))
+        return MassFlavour.__keylist__(tuple(x.mass_number for x in self))
 
     @cached_property
     def element_symbols(self) -> ElementKeyList:
@@ -1950,7 +2469,7 @@ class IsotopeKeyList(IsotopeFlavour, IsopyKeyList):
         >>> IsotopeKeyList(['99ru', '105pd', '111cd']).element_symbols()
         ('Ru', 'Pd', 'Cd')
         """
-        return ElementFlavour._Flavour__keylist(tuple(x.element_symbol for x in self))
+        return ElementFlavour.__keylist__(tuple(x.element_symbol for x in self))
 
     def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None,
                **mass_number_and_element_symbol_kwargs) -> 'IsotopeKeyList':
@@ -1995,13 +2514,23 @@ class IsotopeKeyList(IsotopeFlavour, IsopyKeyList):
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq,
                                    **mass_number_and_element_symbol_kwargs)
 
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
     @cached_property
     def charges(self):
+        """
+        Returns a tuple containing the charges of key string in the list.
+        """
         return tuple(item.charge for item in self)
 
     def set_charges(self, charges):
+        """
+        Returns a new key list with new charges for keys in the list.
+
+        *charges* can either be a single valued applied to all
+        key strings in the list or a sequence of charges, one for each
+         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
+        """
         if type(charges) is tuple or type(charges) is list:
             if len(charges) != len(self):
                 raise ValueError(f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
@@ -2013,10 +2542,189 @@ class IsotopeKeyList(IsotopeFlavour, IsopyKeyList):
             raise TypeError('charges must be None or an integer or a list of integers')
 
     def mz(self, true_mass = False, isotope_masses = None):
+        """
+        Returns a tuple containing the mass over charge ratio for each
+        key string in the list.
+
+        If the key string does not have a charge then the mass of the
+        isotope is returned. Negative charges will return a positive
+        number.
+
+        Parameters
+        ----------
+        true_mass
+            If ``False`` then the mass_number is returned. If ``True``
+            then real mass is returned.
+        isotope_masses
+            A dictionary containing the real masses of the isotopes.
+            Only used if *true_mass* is ``True``
+        """
         return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
 
+    def fractions(self, default_value = np.nan, isotope_fractions = None):
+        """
+        Returns the fraction of each isotope in the list from all isotopes of this element.
 
-class RatioKeyList(RatioFlavour, IsopyKeyList):
+        This assumes that the sum off all isotopes of an element in *isotope_fraction*
+        equals 1.
+
+        Parameters
+        ----------
+        default_value
+            The default value returned for isotopes not present in *isotope_fractions*. Default
+            value is ``np.nan``.
+        isotope_fractions
+            A dictionary containing the isotope fractions of each element. Default is
+            ``isopy.refval.isotope.fraction``.
+        """
+        if isotope_fractions is None:
+            isotope_fractions = isopy.refval.isotope.fraction
+        return tuple(item.fraction(default_value, isotope_fractions) for item in self)
+
+
+class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
+    """
+    A tuple consisting exclusively of :class:`MoleculeKeyString` items.
+
+    Behaves just like, and contains all the methods, that a normal tuple does unless otherwise noted.
+    Only methods that behave differently from a normal python tuples are documented below.
+
+    Parameters
+    ----------
+    keys : str, Sequence[str]
+        A string or sequence of strings that can be converted to the correct key string type.
+    ignore_duplicates : bool, Default = True
+        If ``True`` all duplicate items will be removed from the sequence.
+    allow_duplicates : bool, Default  = True
+        If ``False`` a ListDuplicateError will be raised if the sequence contains any duplicate items.
+    allow_reformatting : bool, Default = True
+        If ``True`` the string will be reformatted to the correct format. If ``False`` an exception
+        will be raised it the string is not correctly formatted.
+
+
+    Raises
+    ------
+    ListDuplicateError
+        Raised when a string already exist in the sequence and ``allow_duplicates = False``
+
+    Examples
+    --------
+    >>> MoleculeKeyString(['H2O', 'HNO3', 'HCl'])
+    ('H2O', 'HNO3', 'HCl')
+    >>> IsotopeKeyList('H2O', ['HNO3', 'HCl'])
+    ('H2O', 'HNO3', 'HCl')
+    """
+    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None,
+               **unused_kwargs):
+        """
+        Return a new key string list containing only the key strings that satisfies the specified
+        filters.
+
+        Parameters
+        ----------
+        key_eq : str, Sequence[str], Optional
+           Only key strings equal to/found in *key_eq* pass this filter.
+        key_neq : str, Sequence[str], Optional
+           Only key strings not equal to/found in *key_neq* pass this filter.
+        flavour_eq : str, Sequence[str]
+            Only key strings of this flavour(s) pass this filter.
+        flavour_neq : str, Sequence[str]
+            Only key strings not of this flavour(s) pass this filter.
+        **unused_kwargs
+            Any unused key filters will return an empty list.
+
+
+        Returns
+        -------
+        result : MoleculeKeyList
+            Key strings in the sequence that satisfy the specified filters
+
+        Examples
+        --------
+
+        """
+        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
+                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq,
+                                   **unused_kwargs)
+
+        return self.__keylist__(key for key in self if key._filter(**filters))
+
+    @cached_property
+    def charges(self):
+        """
+        Returns a tuple containing the charges of key string in the list.
+        """
+        return tuple(item.charge for item in self)
+
+    @cached_property
+    def ns(self):
+        """
+        Returns a tuple containing the n for each molecule in the list
+        """
+        return tuple(item.n for item in self)
+
+    def set_charges(self, charges):
+        """
+        Returns a new key list with new charges for keys in the list.
+
+        *charges* can either be a single valued applied to all
+        key strings in the list or a sequence of charges, one for each
+         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
+        """
+        if type(charges) is tuple or type(charges) is list:
+            if len(charges) != len(self):
+                raise ValueError(
+                    f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
+            else:
+                return self.__class__(self[i].set_charge(charges[i]) for i in range(len(self)))
+        elif type(charges) is int or charges is None:
+            return self.__class__(self[i].set_charge(charges) for i in range(len(self)))
+        else:
+            raise TypeError('charges must be None or an integer or a list of integers')
+
+    def mz(self, true_mass=False, isotope_masses=None):
+        """
+        Returns a tuple containing the mass over charge ratio for each
+        key string in the list.
+
+        If the key string does not have a charge then the mass of the
+        isotope is returned. Negative charges will return a positive
+        number.
+
+        Parameters
+        ----------
+        true_mass
+            If ``False`` then the mass_number is returned. If ``True``
+            then real mass is returned.
+        isotope_masses
+            A dictionary containing the real masses of the isotopes.
+            Only used if *true_mass* is ``True``
+        """
+        return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
+
+    def fractions(self, default_value = np.nan, isotope_fractions = None):
+        """
+        Returns the fraction of each molecule in the list from all molecules with
+        the same elemental formula.
+
+        This assumes that the sum off all isotopes of an element in *isotope_fraction*
+        equals 1.
+
+        Parameters
+        ----------
+        default_value
+            The default value returned for isotopes not present in *isotope_fractions*. Default
+            value is ``np.nan``.
+        isotope_fractions
+            A dictionary containing the isotope fractions of each element. Default is
+            ``isopy.refval.isotope.fraction``.
+        """
+        if isotope_fractions is None:
+            isotope_fractions = isopy.refval.isotope.fraction
+        return tuple(item.fraction(default_value, isotope_fractions) for item in self)
+
+
+class RatioKeyList(IsopyKeyList, RatioFlavour):
     """
     A tuple consisting exclusively of :class:`RatioKeyString` items.
 
@@ -2162,10 +2870,10 @@ class RatioKeyList(RatioFlavour, IsopyKeyList):
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq,
                                    **numerator_and_denominator_kwargs)
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
 
-class GeneralKeyList(GeneralFlavour, IsopyKeyList):
+class GeneralKeyList(IsopyKeyList, GeneralFlavour):
     """
     A tuple consisting exclusively of :class:`GeneralKeyString` items.
 
@@ -2231,10 +2939,10 @@ class GeneralKeyList(GeneralFlavour, IsopyKeyList):
 
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq)
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
 
-class MixedKeyList(MixedFlavour, IsopyKeyList):
+class MixedKeyList(IsopyKeyList, MixedFlavour):
     """
     A tuple consisting of mixed isopy key items.
 
@@ -2268,6 +2976,19 @@ class MixedKeyList(MixedFlavour, IsopyKeyList):
     >>> MixedKeyList(harry, ['ron' , 'hermione'])
     ('harry', 'ron', 'hermione')
     """
+
+    def __new__(cls, *keys, ignore_duplicates=False,
+                allow_duplicates=True, allow_reformatting=True, ignore_charge=False):
+        keys = super(MixedKeyList, cls).__new__(cls, *keys, ignore_duplicates=ignore_duplicates,
+                allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
+                                                ignore_charge=ignore_charge)
+
+        if len(flavours:={type(k) for k in keys}) == 1:
+            keys =  flavours.pop().__keylist__(keys)
+
+        return keys
+
+
     def filter(self, key_eq= None, key_neq = None, flavour_eq = None, flavour_neq= None):
         """
         Return a new key string list containing only the key strings that satisfies the specified
@@ -2301,13 +3022,13 @@ class MixedKeyList(MixedFlavour, IsopyKeyList):
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq)
 
-        return self._Flavour__keylist(key for key in self if key._filter(**filters))
+        return self.__keylist__(key for key in self if key._filter(**filters))
 
     def sorted(self):
         """
         Return a sorted key string list.
         """
-        return self._Flavour__keylist(sorted(self, key= lambda k: (k._Flavour__id, k._sortkey())))
+        return self.__keylist__(sorted(self, key= lambda k: (k.__flavour_id__, k._sortkey())))
 
     def flatten(self, ignore_duplicates = False,
                 allow_duplicates = True, allow_reformatting = False, ignore_charge=False):
@@ -2363,13 +3084,17 @@ class IsopyDict(dict):
     """
 
     def __repr__(self):
+        d = f'(default_value = {self.default_value}'
+        r = f'readonly = {self.readonly}'
+        k = f'key_flavours = {self.key_flavours}'
         items = '\n'.join([f'"{key}": {value}' for key, value in self.items()])
-        return f'{self.__class__.__name__}(default_value = {self.default_value}, readonly = {self.readonly},\n{{{items}}})'
+        return f'{self.__class__.__name__}({d}, {r},\n{k},\n{{{items}}})'
 
-    def __init__(self, *args, default_value = NotGiven, readonly =False, **kwargs):
+    def __init__(self, *args, default_value = NotGiven, readonly =False, key_flavours = None, **kwargs):
         super(IsopyDict, self).__init__()
         self._readonly = False
         self._default_value = default_value
+        self._key_flavours = default_key_flavours(key_flavours)
 
         for arg in args:
             if isinstance(arg, IsopyArray):
@@ -2378,6 +3103,7 @@ class IsopyDict(dict):
                 self.update(arg)
             else:
                 raise TypeError('arg must be dict')
+
         self.update(kwargs)
         self._readonly = readonly
 
@@ -2385,22 +3111,22 @@ class IsopyDict(dict):
         if self._readonly is True:
             raise TypeError('this dictionary is readonly. Make a copy to make changes')
 
-        key = askeystring(key)
+        key = askeystring(key, try_flavours=self._key_flavours)
         super(IsopyDict, self).__delitem__(key)
 
     def __setitem__(self, key, value):
         if self._readonly is True:
             raise TypeError('this dictionary is readonly. Make a copy to make changes')
 
-        key = askeystring(key)
+        key = askeystring(key, try_flavours=self._key_flavours)
         super(IsopyDict, self).__setitem__(key, value)
 
     def __contains__(self, key):
-        key = askeystring(key)
+        key = askeystring(key, try_flavours=self._key_flavours)
         return super(IsopyDict, self).__contains__(key)
 
     def __getitem__(self, key):
-        key = askeystring(key)
+        key = askeystring(key, try_flavours=self._key_flavours)
         return super(IsopyDict, self).__getitem__(key)
 
     @property
@@ -2420,6 +3146,10 @@ class IsopyDict(dict):
         This attribute in inherited by derivative dictionaries.
         """
         return self._default_value
+
+    @property
+    def key_flavours(self):
+        return self._key_flavours
 
     def update(self, other):
         """
@@ -2447,9 +3177,9 @@ class IsopyDict(dict):
             raise TypeError('this dictionary is readonly. Make a copy to make changes')
 
         if default is NotGiven:
-
             default = self._default_value
-        key = askeystring(key)
+
+        key = askeystring(key, try_flavours=self._key_flavours)
         if key in self:
             return super(IsopyDict, self).pop(key)
         elif default is not NotGiven:
@@ -2464,7 +3194,7 @@ class IsopyDict(dict):
 
         A TypeError is raised if the dictionary is readonly and *key* is not in the dictionary.
         """
-        key = askeystring(key)
+        key = askeystring(key, try_flavours=self._key_flavours)
         if default is NotGiven:
             default = self._default_value
 
@@ -2489,9 +3219,13 @@ class IsopyDict(dict):
         if key_filters:
             key_filters = parse_keyfilters(**key_filters)
             keys = [k for k in self if k._filter(**key_filters)]
-            return self.__class__({key: self[key] for key in keys}, default_value=self._default_value)
+            return self.__class__({key: self[key] for key in keys},
+                                  default_value=self._default_value,
+                                  key_flavours=self._key_flavours)
         else:
-            return self.__class__(self, default_value = self._default_value)
+            return self.__class__(self,
+                                  default_value = self._default_value,
+                                  key_flavours=self._key_flavours)
 
     def clear(self):
         """
@@ -2531,7 +3265,7 @@ class IsopyDict(dict):
             default = self._default_value
 
         if isinstance(key, (str, int)):
-            key = askeystring(key)
+            key = askeystring(key, try_flavours=self._key_flavours)
             try:
                 return super(IsopyDict, self).__getitem__(key)
             except KeyError:
@@ -2549,54 +3283,7 @@ class IsopyDict(dict):
 
         raise TypeError(f'key type {type(key)} not understood')
 
-    def __add__(self, other):
-        if isinstance(other, IsopyArray): return NotImplemented
-        return IsopyDict({key: np.add(value, other) for key, value in self.items()},
-                              default_value = self.default_value)
 
-    def __radd__(self, other):
-        return IsopyDict({key: np.add(other, value) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __sub__(self, other):
-        if isinstance(other, IsopyArray): return NotImplemented
-        return IsopyDict({key: np.subtract(value, other) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __rsub__(self, other):
-        return IsopyDict({key: np.subtract(other, value) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __mul__(self, other):
-        if isinstance(other, IsopyArray): return NotImplemented
-        return IsopyDict({key: np.multiply(value, other) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __rmul__(self, other):
-        return IsopyDict({key: np.multiply(other, value) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __div__(self, other):
-        if isinstance(other, IsopyArray): return NotImplemented
-        return IsopyDict({key: np.divide(value, other) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __rdiv__(self, other):
-        return IsopyDict({key: np.divide(other, value) for key, value in self.items()},
-                              default_value = self.default_value)
-
-    def __pow__(self, other, modulo=None):
-        if isinstance(other, IsopyArray): return NotImplemented
-        if modulo is not None:
-            raise ValueError('Changing modulo is not currently supported')
-        return IsopyDict({key: np.power(value, other) for key, value in self.items()},
-                         default_value=self.default_value)
-
-    def __rpow__(self, other):
-        return IsopyDict({key: np.power(other, value) for key, value in self.items()},
-                         default_value=self.default_value)
-
-#TODO allow elementwise functions on these
 class ScalarDict(IsopyDict):
     """
     Dictionary where each value is stored as a numpy float by a isopy keystring key.
@@ -2634,12 +3321,15 @@ class ScalarDict(IsopyDict):
     """
 
     def __init__(self, *args: dict, default_value=nan,
-                 readonly= False, **kwargs):
+                 readonly= False, key_flavours = None, **kwargs):
         try:
             default_value = np.float_(default_value)
         except Exception as err:
             raise ValueError(f'unable to convert default value to float') from err
-        super(ScalarDict, self).__init__(*args, default_value=default_value, readonly=readonly, **kwargs)
+        super(ScalarDict, self).__init__(*args, default_value=default_value,
+                                         readonly=readonly,
+                                         key_flavours = key_flavours,
+                                         **kwargs)
 
     def __setitem__(self, key, value):
         try:
@@ -2648,7 +3338,6 @@ class ScalarDict(IsopyDict):
             raise ValueError(f'key "{key}": unable to convert value {value} to float') from err
 
         super(ScalarDict, self).__setitem__(key, value)
-
 
     def get(self, key = None, default = NotGiven):
         """
@@ -2681,7 +3370,7 @@ class ScalarDict(IsopyDict):
                 raise ValueError(f'unable to convert default value to float') from err
 
         if isinstance(key, (str, int)):
-            key = askeystring(key)
+            key = askeystring(key, try_flavours=self._key_flavours)
 
             try:
                 return super(IsopyDict, self).__getitem__(key)
@@ -2703,7 +3392,6 @@ class ScalarDict(IsopyDict):
             return np.array(super(ScalarDict, self).get(key, default))
         else:
             return super(ScalarDict, self).get(key, default)
-
 
     def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
@@ -2733,7 +3421,48 @@ class ScalarDict(IsopyDict):
 #############
 ### Array ###
 #############
-class IsopyArray(IsopyFlavour):
+class IsopyArray:
+    """
+    An array where data is stored rows and columns of isopy key strings.
+
+    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
+    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
+    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
+    tutorial.
+
+    Parameters
+    ----------
+    values : dict, list, numpy_array, isopy_array
+        Values can be a dictionary containing values or a sequence of values. A sequence containing
+        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
+        dataframe).
+    keys : Sequence[str], Optional
+        Name of each column in the array. Does not need to be given if *values* is a dictionary
+        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
+    ndim : {-1, 0, 1}, Optional
+        Number of dimensions of the returned array. If ``-1`` then the final array will be
+        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
+    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
+        Any data type accepted by numpy. Can also be a sequence of data types in which case the
+        first data type in the sequence for which a conversion is possible is used. Data types
+        for individual columns can be specified by a dictionary mapping the column name to the
+        data type. If not given the data type is inferred from *values* if they already
+        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
+        conversion fails the default data type from ``np.array(values[column])`` is used.
+    """
+
+    def __new__(cls, values, keys=None, dtype=None, ndim=None):
+        return IsopyNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
+
+    def __keystring__(self, string, **kwargs):
+        return self.__flavour__.__keystring__(string, **kwargs)
+
+    def __keylist__(self, *args, **kwargs):
+        return self.__flavour__.__keylist__(*args, **kwargs)
+
+    def __view__(self, obj):
+        return self.__flavour__.__view__(obj)
+
     def __repr__(self):
         return self.to_text(**ARRAY_REPR)
 
@@ -2781,6 +3510,54 @@ class IsopyArray(IsopyFlavour):
 
         return call_array_function(func, *args, **kwargs)
 
+    @property
+    def flavour(self):
+        """
+        Returns the flavour of the column key list.
+        """
+        return self.__flavour__
+
+    @property
+    def ncols(self):
+        """Number of columns in the array"""
+        return len(self.dtype.names)
+
+    @property
+    def nrows(self):
+        """
+        Number of rows in the array. If the array is 0-dimensional ``-1`` is returned.
+        """
+        if self.ndim == 0:
+            return -1
+        else:
+            return self.size
+
+    @property
+    def keys(self):
+        """
+        A key string list containing the name of each column in the array.
+
+        ``array.keys()`` is also allowed as calling a key string list will just return a
+        pointer to itself.
+        """
+        return self.__keylist__(self.dtype.names, allow_reformatting=False)
+
+    def values(self):
+        """
+        Returns a tuple containing the column values for each key in the array
+
+        Equivalent to ``tuple(array[key] for key in array.keys)``
+        """
+        return tuple(self[key] for key in self.keys)
+
+    def items(self):
+        """
+        Returns a tuple containing a tuple with the key and the column values for each key in the array
+
+        Equivalent to ``tuple([)(key, array[key]) for key in array.keys)``
+        """
+        return tuple((key, self[key]) for key in self.keys)
+
     def get(self, key, default = nan):
         """
         Returns the values of column *key* if present in the array. Otherwise an numpy array
@@ -2788,7 +3565,7 @@ class IsopyArray(IsopyFlavour):
         exception will be raised if *default* cannot be broadcast to the correct shape.
         """
         try:
-            key = self._Flavour__keystring(key)
+            key = self.__keystring__(key)
             return self.__getitem__(key)
         except:
             return np.full(self.shape, default)
@@ -2799,10 +3576,11 @@ class IsopyArray(IsopyFlavour):
         contains the columns that satisfy the *key_filter* filters.
         """
         if key_filters:
-            return self.filter(**key_filters).copy()
+            copy =  self.filter(**key_filters)
+            return copy.keys.__view__(copy.copy())
         else:
-            return super(IsopyArray, self).copy()
-
+            copy =  super(IsopyArray, self).copy()
+            return self.keys.__view__(copy)
 
     def filter(self, **key_filters):
         """
@@ -2831,23 +3609,29 @@ class IsopyArray(IsopyFlavour):
         if remove_denominator:
             keys = keys - denominator
 
-        return RatioArray(self[keys] / self[denominator], keys=keys/denominator)
+        return IsopyNdarray(self[keys] / self[denominator], keys=keys/denominator, try_flavours='ratio')
 
-    def items(self):
+    def deratio(self, denominator_value=1):
         """
-        Returns a tuple containing a tuple with the key and the column values for each key in the array
+        Return a array with the numerators and the common denominator as columns. Values for the
+        numerators will be copied from the original array and the entire array will be multiplied by
+        *denominator_value*.
 
-        Equivalent to ``tuple([)(key, array[key]) for key in array.keys)``
+        An exception is raised if the array flavour is not 'ratio' or if the array does not
+        contain a common denominator.
         """
-        return tuple((key, self[key]) for key in self.keys)
+        if self.flavour != 'ratio':
+            raise TypeError('This method only works when all column keys are ratio key strings')
 
-    def values(self):
-        """
-        Returns a tuple containing the column values for each key in the array
+        denominator = self.keys().common_denominator
+        if denominator is None:
+            raise ValueError('Column keys do not have a common denominator')
+        numerators = self.keys().numerators
 
-        Equivalent to ``tuple(array[key] for key in array.keys)``
-        """
-        return tuple(self[key] for key in self.keys)
+        out = IsopyNdarray(self, numerators, try_flavours=numerators.flavour)
+        if denominator not in out.keys():
+            out = concatenate(out, ones(self.nrows, denominator), axis=1)
+        return out * denominator_value
 
     def normalise(self, value = 1, key = None):
         """
@@ -2892,30 +3676,8 @@ class IsopyArray(IsopyFlavour):
 
         return self * multiplier
 
-    @property
-    def keys(self):
-        """
-        A key string list containing the name of each column in the array.
-
-        ``array.keys()`` is also allowed as calling a key string list will just return a
-        pointer to itself.
-        """
-        return self._Flavour__keylist(self.dtype.names, allow_reformatting=False)
-
-    @property
-    def ncols(self):
-        """Number of columns in the array"""
-        return len(self.dtype.names)
-
-    @property
-    def nrows(self):
-        """
-        Number of rows in the array. If the array is 0-dimensional ``-1`` is returned.
-        """
-        if self.ndim == 0:
-            return -1
-        else:
-            return self.size
+    def reshape(self, shape):
+        return self.__view__(super(IsopyArray, self).reshape(shape))
 
     def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
                 nrows = None, **vformat):
@@ -3031,7 +3793,7 @@ class IsopyArray(IsopyFlavour):
        Returns a Markdown display of a table containing the contents of the array. This will render
        a table in an IPython console or a Jupyter cell.
 
-       an error is raised if IPython is not installed.
+       An exception is raised if IPython is not installed.
 
        Parameters
        ----------
@@ -3072,7 +3834,11 @@ class IsopyArray(IsopyFlavour):
 
     def to_ndarray(self):
         """Return a copy of the array as a normal numpy ndarray"""
-        return self.view(ndarray).copy()
+        if isinstance(self, void):
+            view = self.view((np.void, self.dtype))
+        else:
+            view = self.view(ndarray)
+        return view.copy()
 
     def to_clipboard(self, delimiter=', ', include_row= False,
                      include_dtype= False, **vformat):
@@ -3167,239 +3933,27 @@ class IsopyArray(IsopyFlavour):
         return np.var(self, *args, **kwargs)
 
 
-class MassArray(IsopyArray):
-    """
-    An array where data is stored in named columns with :class:`MassKeyString` keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return MassNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-
-class ElementArray(IsopyArray):
-    """
-    An array where data is stored in named columns with :class:`ElementKeyString` keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return ElementNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-
-class IsotopeArray(IsopyArray):
-    """
-    An array where data is stored in named columns with :class:`IsotopeKeyString` keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return IsotopeNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-
-class RatioArray(IsopyArray):
-    """
-    An array where data is stored in named columns with :class:`RatioKeyString` keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return RatioNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-    def deratio(self, denominator_value=1):
-        """
-        Return a array with the numerators and the common denominator as columns. Values for the
-        numerators will be copied from the original array and the entire array will be multiplied by
-        *denominator_value*.
-
-        An exception is raised if the array does not contain a common denominator.
-        """
-
-        denominator = self.keys().common_denominator
-        if denominator is None:
-            raise ValueError('Column keys do not have a common denominator')
-        numerators = self.keys().numerators
-
-        out = numerators._Flavour__array(self, numerators)
-        if denominator not in out.keys():
-            out = concatenate(out, ones(self.nrows, denominator), axis=1)
-        return out * denominator_value
-
-
-class GeneralArray(IsopyArray):
-    """
-    An array where data is stored in named columns with :class:`GeneralKeyString` keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return GeneralNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-
-class MixedArray(IsopyArray):
-    """
-    An array where data is stored in named columns with mixed isopy keys.
-
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
-
-    Parameters
-    ----------
-    values : dict, list, numpy_array, isopy_array
-        Values can be a dictionary containing values or a sequence of values. A sequence containing
-        values or sequences of values. A structured numpy array or a subclass thereof (e.g. pandas
-        dataframe).
-    keys : Sequence[str], Optional
-        Name of each column in the array. Does not need to be given if *values* is a dictionary
-        or structured numpy array or if *dtype* is a ``np.dtype`` containing named columns.
-    ndim : {-1, 0, 1}, Optional
-        Number of dimensions of the returned array. If ``-1`` then the final array will be
-        0-dimensional if it has a size of 1 otherwise it will be 1-dimensional.
-    dtype : numpy_dtype, Sequence[numpy_dtype], dict[str, numpy_dtype], Optional
-        Any data type accepted by numpy. Can also be a sequence of data types in which case the
-        first data type in the sequence for which a conversion is possible is used. Data types
-        for individual columns can be specified by a dictionary mapping the column name to the
-        data type. If not given the data type is inferred from *values* if they already
-        have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
-        conversion fails the default data type from ``np.array(values[column])`` is used.
-    """
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return MixedNdArray(values, keys=keys, ndim=ndim, dtype=dtype)
-
-###############
-### Ndarray ###
-###############
 class IsopyNdarray(IsopyArray, ndarray):
-    def __new__(cls, values, keys=None, *, dtype=None, ndim=None):
+    def __new__(cls, values, keys=None, *, dtype=None, ndim=None, try_flavours = None):
+        try_flavours = default_key_flavours(try_flavours)
+
         if type(values) is cls and keys is None and dtype is None and ndim is None:
             return values.copy()
 
         #Do this early so no time is wasted if it fails
         if keys is None and (isinstance(dtype, np.dtype) and dtype.names is not None):
-            keys = cls._Flavour__keylist(dtype.names, allow_duplicates=False)
+            keys = askeylist(dtype.names, allow_duplicates=False, try_flavours=try_flavours)
+
+        if isinstance(keys, np.dtype):
+            if not keys.names:
+                raise ValueError('dtype does not contain named fields')
+
+            if dtype is None: dtype = keys
+            keys = askeylist(keys.names, allow_duplicates=False, try_flavours=try_flavours)
+
 
         if ndim is not None and (not isinstance(ndim , int) or ndim < -1 or ndim > 1):
             raise ValueError('parameter "ndim" must be -1, 0 or 1')
-
-        if keys is None and type(dtype) is np.dtype and dtype.names is not None:
-            keys = list(dtype.names)
 
         if pandas is not None and isinstance(values, pandas.DataFrame):
             values = values.to_records(index=False)
@@ -3451,7 +4005,7 @@ class IsopyNdarray(IsopyArray, ndarray):
             #IF there are no keys at this stage raise an error
             raise ValueError('Keys argument not given and keys not found in values')
         else:
-            keys = cls._Flavour__keylist(keys, allow_duplicates=False)
+            keys = askeylist(keys, allow_duplicates=False, try_flavours=try_flavours)
 
         if isinstance(values, tuple):
             vlen = len(values)
@@ -3510,18 +4064,19 @@ class IsopyNdarray(IsopyArray, ndarray):
             else:
                 out = out.reshape(tuple())
 
-        return keys._Flavour__view_ndarray(out) # So that mixed arrays work if all keys have the same flavour
+        return keys.__view_array__(out)
+        #out #keys._Flavour__view_ndarray(out) # So that mixed arrays work if all keys have the same flavour
 
     def __setitem__(self, key, value):
         if isinstance(key, str):
             try:
-                key = str(self._Flavour__keystring(key))
+                key = str(self.__keystring__(key))
             except:
                 pass
         elif isinstance(key, (list,tuple)):
             if len(key) > 0 and isinstance(key[0], str):
                 try:
-                    key = self._Flavour__keylist(key)
+                    key = self.__keylist__(key)
                 except:
                     pass
             elif not isinstance(key, list):
@@ -3549,7 +4104,7 @@ class IsopyNdarray(IsopyArray, ndarray):
     def __getitem__(self, key):
         if isinstance(key, str):
             try:
-                key = str(self._Flavour__keystring(key))
+                key = str(self.__keystring__(key))
             except KeyParseError:
                 pass
             else:
@@ -3560,48 +4115,21 @@ class IsopyNdarray(IsopyArray, ndarray):
                 return np.array([])
             elif isinstance(key[0], str):
                 try:
-                    key = self._Flavour__keylist(key)
+                    key = self.__keylist__(key)
                 except:
                     pass
                 else:
-                    return key._Flavour__view(super(IsopyNdarray, self).__getitem__(key.strlist()))
+                    return key.__view__(super(IsopyNdarray, self).__getitem__(key.strlist()))
             else:
                 # sequence of row indexes
                 if not isinstance(key, list):
                     # Since we cannot index in other dimensions
                     key = list(key)
-                return self._Flavour__view(super(IsopyNdarray, self).__getitem__(key))
+                return self.__view__(super(IsopyNdarray, self).__getitem__(key))
 
 
-        return self._Flavour__view(super(IsopyNdarray, self).__getitem__(key))
+        return self.__view__(super(IsopyNdarray, self).__getitem__(key))
 
-
-class MassNdarray(MassFlavour, IsopyNdarray, MassArray):
-    pass
-
-
-class ElementNdarray(ElementFlavour, IsopyNdarray, ElementArray):
-    pass
-
-
-class IsotopeNdarray(IsotopeFlavour, IsopyNdarray, IsotopeArray):
-    pass
-
-
-class RatioNdarray(RatioFlavour, IsopyNdarray, RatioArray):
-    pass
-
-
-class GeneralNdarray(GeneralFlavour, IsopyNdarray, GeneralArray):
-    pass
-
-
-class MixedNdArray(MixedFlavour, IsopyNdarray, MixedArray):
-    pass
-
-############
-### Void ###
-############
 
 class IsopyVoid(IsopyArray, void):
     def __new__(cls, void):
@@ -3618,7 +4146,7 @@ class IsopyVoid(IsopyArray, void):
             key = self.keys
         else:
             try:
-                key = self._Flavour__keylist(key)
+                key = self.__keylist__(key)
             except:
                 pass
 
@@ -3651,7 +4179,7 @@ class IsopyVoid(IsopyArray, void):
     def __getitem__(self, key):
         if isinstance(key, str):
             try:
-                key = str(self._Flavour__keystring(key))
+                key = str(self.__keystring__(key))
             except:
                 pass
 
@@ -3660,161 +4188,88 @@ class IsopyVoid(IsopyArray, void):
                 return np.array([])
             elif isinstance(key[0], str):
                 try:
-                    key = self._Flavour__keylist(key)
+                    key = self.__keylist__(key)
                 except:
                     pass
                 else:
-                    return key._Flavour__view(super(IsopyVoid, self).__getitem__(key.strlist()))
+                    return key.__view__(super(IsopyVoid, self).__getitem__(key.strlist()))
             else:
                 key = list(key)
 
         if isinstance(key, (int, slice)):
             raise IndexError('0-dimensional arrays cannot be indexed by row')
 
-        return self._Flavour__view(super(IsopyVoid, self).__getitem__(key))
-
-    def reshape(self, shape):
-        return self._Flavour__view(super(IsopyVoid, self).reshape(shape))
-
-
-class MassVoid(MassFlavour, IsopyVoid, MassArray):
-    pass
-
-
-class ElementVoid(ElementFlavour, IsopyVoid, ElementArray):
-    pass
-
-
-class IsotopeVoid(IsotopeFlavour, IsopyVoid, IsotopeArray):
-    pass
-
-
-class RatioVoid(RatioFlavour, IsopyVoid, RatioArray):
-    pass
-
-
-class GeneralVoid(GeneralFlavour, IsopyVoid, GeneralArray):
-    pass
-
-
-class MixedVoid(MixedFlavour, IsopyVoid, MixedArray):
-    pass
+        return self.__view__(super(IsopyVoid, self).__getitem__(key))
 
 ###############################################
 ### functions for creating isopy data types ###
 ###############################################
 @lru_cache(CACHE_MAXSIZE)
-def keystring(string, *, allow_reformatting=True, ignore_charge = False):
+def keystring(string, *, allow_reformatting=True, ignore_charge = False, try_flavours=None):
     """
     Convert *string* into a key string and return it.
 
-    Will first attempt to convert *string* into a MassKeyString, ElementKeyString, IsotopeKeyString,
-    or RatioKeyString. If that fails a GeneralKeyString is returned.
+    Will attempt to convert *string* into the key string flavours listed in *try_flavours* in turn.
+    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
+    'ratio', 'molecule', 'general']``. Unknown flavours will simply be skipped.
     """
-    try:
-        return MassKeyString(string, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
+    try_flavours = default_key_flavours(try_flavours)
 
-    try:
-        return ElementKeyString(string, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
+    for flavour in try_flavours:
+        if flavour == 'mixed': continue
 
-    try:
-        return IsotopeKeyString(string, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
+        cls = FLAVOURS[flavour].__keystring__
+        try:
+            return cls(string, allow_reformatting=allow_reformatting,
+                       ignore_charge=ignore_charge)
+        except KeyParseError as err:
+            pass
 
-    try:
-        return RatioKeyString(string, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
-
-    try:
-        return GeneralKeyString(string, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
-
-    raise KeyParseError(string, IsopyKeyString, f'unable to parse {type(string)} "{string}" into a key string')
+    raise KeyParseError(string, IsopyKeyString,
+                        f'unable to parse {type(string)} "{string}" into a key string')
 
 
 @lru_cache(CACHE_MAXSIZE)
-def askeystring(key, *, allow_reformatting=True, ignore_charge = False):
+def askeystring(key, *, allow_reformatting=True, ignore_charge = False, try_flavours = None):
     """
     If *string* is a key string it is returned otherwise convert *string* to a key string and
     return it.
 
-    Will first attempt to convert *string* into a MassKeyString, ElementKeyString, IsotopeKeyString,
-    or RatioKeyString. If that fails a GeneralKeyString is returned.
+    Will attempt to convert *string* into the key string flavours listed in *try_flavours* in turn.
+    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
+    'ratio', 'molecule', 'general']``. Unknown flavours will simply be skipped.
     """
-    if isinstance(key, IsopyKeyString):
+    try_flavours = default_key_flavours(try_flavours)
+
+    if isinstance(key, IsopyKeyString) and key.flavour in try_flavours:
         if ignore_charge:
             return key.basekey
         else:
             return key
     else:
-        return keystring(key, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
+        return keystring(key, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge,
+                         try_flavours=try_flavours)
 
 
 @lru_cache(CACHE_MAXSIZE)
 def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
-            ignore_charge=False, mix_flavours = True):
+            ignore_charge=False, try_flavours = None):
     """
     Convert *keys* into a key string list and return it. *keys* can be a string or a sequence of
     string.
 
-    Will attempt to convert *keys* into a MassKeyList, ElementKeyList, IsotopeKeyList, or a
-    RatioKeyList. If that fails it will return a MixedKeyList unless *mix_flavours* is ``False`` in
-    which case a GeneralKeyList is returned.
+    Will attempt to convert *keys* into the key string list flavours listed in *try_flavours* in turn.
+    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
+    'ratio', 'mixed', 'molecule', 'general']``. Unknown flavours will simply be skipped.
     """
-    try:
-        return MassKeyList(*keys, ignore_duplicates=ignore_duplicates,
-                           allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                           ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
+    try_flavours = default_key_flavours(try_flavours)
 
-    try:
-        return ElementKeyList(*keys, ignore_duplicates=ignore_duplicates,
-                              allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                              ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
-
-    try:
-        return IsotopeKeyList(*keys, ignore_duplicates=ignore_duplicates,
-                              allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                              ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
-
-    try:
-        return RatioKeyList(*keys, ignore_duplicates=ignore_duplicates,
-                            allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                            ignore_charge=ignore_charge)
-    except KeyParseError:
-        pass
-
-    if mix_flavours:
+    for flavour in try_flavours:
+        cls = FLAVOURS[flavour].__keylist__
         try:
-            #Is the flavour version so that if all keys are general keys a general list is returned
-            return MixedFlavour._Flavour__keylist(*keys, ignore_duplicates=ignore_duplicates,
-                                  allow_duplicates=allow_duplicates,
-                                  allow_reformatting=allow_reformatting,
-                                  ignore_charge=ignore_charge)
-        except KeyParseError:
-            pass
-    else:
-        try:
-            return GeneralKeyList(*keys, ignore_duplicates=ignore_duplicates,
-                                  allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                                  ignore_charge=ignore_charge)
+            return cls(*keys, ignore_duplicates=ignore_duplicates,
+                       allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
+                       ignore_charge=ignore_charge)
         except KeyParseError:
             pass
 
@@ -3823,50 +4278,50 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
 
 @lru_cache(CACHE_MAXSIZE)
 def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
-              ignore_charge = False, mix_flavours = True):
+              ignore_charge = False, try_flavours = None):
     """
     If *keys* is a key string list return it otherwise convert *keys* to a key string list and
     return it.
 
-    Will attempt to convert *keys* into a MassKeyList, ElementKeyList, IsotopeKeyList, or a
-    RatioKeyList. If that fails it will return a MixedKeyList unless *mix_flavours* is ``False`` in
-    which case a GeneralKeyList is returned.
+    Will attempt to convert *keys* into the key string list flavours listed in *try_flavours* in turn.
+    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
+    'ratio', 'molecule', 'mixed', 'general']``. Unknown flavours will simply be skipped.
     """
+    try_flavours = default_key_flavours(try_flavours)
+
     if isinstance(keys, IsopyArray) or isinstance(keys, dict):
         keys = keys.keys()
 
-    if isinstance(keys, IsopyKeyList):
+    if isinstance(keys, IsopyKeyList) and keys.flavour in try_flavours:
         if ignore_duplicates or not allow_duplicates or ignore_charge:
-            return keys._Flavour__keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
-                                          ignore_charge=ignore_charge)
+            return keys.__keylist__(keys, ignore_duplicates=ignore_duplicates,
+                                    allow_duplicates=allow_duplicates,
+                                    ignore_charge=ignore_charge)
         else:
             return keys
 
     if isinstance(keys, str):
         keys = (keys,)
 
-    keys = tuple(askeystring(key, allow_reformatting=allow_reformatting,
-                             ignore_charge=ignore_charge) for key in keys) #Tuple so cache works
-    types = {flavour(key) for key in keys}
+    types = {type(k) for k in keys if isinstance(k, IsopyKeyString)}
 
-    if len(types) == 1:
-        return types.pop()._Flavour__keylist(keys, ignore_duplicates=ignore_duplicates,
-                                             allow_duplicates=allow_duplicates)
-    elif mix_flavours:
-        return MixedFlavour._Flavour__keylist(keys, ignore_duplicates=ignore_duplicates,
-                              allow_duplicates=allow_duplicates,
-                              allow_reformatting=allow_reformatting)
-    else:
-        return GeneralKeyList(keys, ignore_duplicates=ignore_duplicates,
-                              allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting)
+    if len(types) == 1 and issubclass((keytype:=types.pop()), IsopyKeyString):
+        return keytype.__keylist__(keys, ignore_duplicates=ignore_duplicates,
+                                             allow_duplicates=allow_duplicates,
+                                            ignore_charge=ignore_charge)
+
+    return keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
+                   ignore_charge=ignore_charge, allow_reformatting=allow_reformatting)
 
 
-def array(values=None, keys=None, *, dtype=None, ndim=None, mix_flavours=True, **columns):
+def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, **columns):
     """
     Convert the input arguments to a isopy array.
 
-    Will attempt to convert the input arguments into a MassArray, ElementArray, IsotopeArray, or a
-    RatioArray. If that fails it will return a MixedArray.
+    Will attempt to convert the input into an array with a column key string flavour
+    using those listed in listed in *try_flavours* in turn.
+    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope', 'molecule',
+    'ratio', 'general']``. Unknown flavours will simply be skipped.
     """
     if values is None and len(columns) == 0:
         raise ValueError('No values were given')
@@ -3875,38 +4330,21 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, mix_flavours=True, *
     elif values is None:
         values = columns
 
-    if isinstance(array, IsopyArray) and keys is None:
-        return array._Flavour__array(array, dtype=dtype, ndim=ndim)
-
-    try: return MassArray(values, keys=keys, dtype=dtype, ndim=ndim)
-    except KeyParseError: pass
-
-    try: return ElementArray(values, keys=keys, dtype=dtype, ndim=ndim)
-    except KeyParseError: pass
-
-    try: return IsotopeArray(values, keys=keys, dtype=dtype, ndim=ndim)
-    except KeyParseError: pass
-
-    try: return RatioArray(values, keys=keys, dtype=dtype, ndim=ndim)
-    except KeyParseError: pass
-
-    if mix_flavours:
-        try: return MixedArray(values, keys=keys, dtype=dtype, ndim=ndim)
-        except KeyParseError: pass
-    else:
-        try: return GeneralArray(values, keys=keys, dtype=dtype, ndim=ndim)
-        except KeyParseError: pass
-
-    raise KeyParseError('Unable to convert input to IsopyArray')
+    return IsopyNdarray(values, keys=keys, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
 
-def asarray(a, *, ndim = None, mix_flavours = True):
+def asarray(a, *, ndim = None, try_flavours = None):
     """
     If *a* is an isopy array return it otherwise convert *a* into an isopy array and return it. If
     *ndim* is given a view of the array with the specified dimensionality is returned.
     """
-    if not isinstance(a, IsopyArray):
-        a = array(a, mix_flavours=mix_flavours)
+    if try_flavours is None:
+        try_flavours = DEFAULT_TRY_FLAVOURS
+    elif not isinstance(try_flavours, (list, tuple)):
+        try_flavours = [try_flavours]
+
+    if not isinstance(a, IsopyArray) or a.flavour not in try_flavours:
+        a = array(a, try_flavours=try_flavours)
 
     if ndim is not None:
         if ndim < -1 or ndim > 1:
@@ -3922,7 +4360,7 @@ def asarray(a, *, ndim = None, mix_flavours = True):
     return a
 
 
-def asanyarray(a, *, dtype = None, ndim = None, mix_flavours = True):
+def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None):
     """
     Return ``isopy.asarray(a)`` if *a* possible otherwise return ``numpy.asanyarray(a)``.
 
@@ -3932,10 +4370,10 @@ def asanyarray(a, *, dtype = None, ndim = None, mix_flavours = True):
     if a is None: return None
 
     if isinstance(a, IsopyArray) and dtype is None:
-        return asarray(a, ndim=ndim)
+        return asarray(a, ndim=ndim, try_flavours=try_flavours)
 
     if isinstance(a, dict) or (isinstance(a, ndarray) and a.dtype.names is not None):
-        return array(a, dtype=dtype, mix_flavours = mix_flavours, ndim=ndim)
+        return array(a, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
     else:
         if type(dtype) is not tuple:
@@ -3971,26 +4409,26 @@ def asanyarray(a, *, dtype = None, ndim = None, mix_flavours = True):
         return a
 
 
-def array_from_csv(filename, *, dtype=None, ndim=None, mix_flavours=True, **read_csv_kwargs):
+def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
     """
     Returns an array of values from a csv file.
     """
     data = isopy.read_csv(filename, **read_csv_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim, mix_flavours=mix_flavours)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
-def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, mix_flavours=True, **read_xlsx_kwargs):
+def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_kwargs):
     """
     Returns an array of values from *sheet_name* in a xlsx file.
     """
     data = isopy.read_xlsx(filename, sheetname, **read_xlsx_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim, mix_flavours=mix_flavours)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
-def array_from_clipboard(*, dtype=None, ndim=None, mix_flavours=True, **read_clipboard_kwargs):
+def array_from_clipboard(*, dtype=None, ndim=None, **read_clipboard_kwargs):
     """
     Returns an array of values from the clipboard.
     """
     data = isopy.read_clipboard(**read_clipboard_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim, mix_flavours=mix_flavours)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
 ###########################
 ### Create empty arrays ###
@@ -4273,7 +4711,7 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
 
     if keys is not None:
         dtype = list(zip(keys.strlist(), dtype))
-        return keys._Flavour__view_ndarray(func(shape, dtype=dtype))
+        return keys.__view_array__(func(shape, dtype=dtype))
     else:
         return func(shape, dtype=dtype)
 
@@ -4328,7 +4766,7 @@ def concatenate(*arrays, axis=0, default_value=nan):
 
         result = [np.concatenate([a.get(key, default_value) for a in arrays]) for key in keys]
         dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
-        return keys._Flavour__view_ndarray(np.fromiter(zip(*result), dtype=dtype))
+        return keys.__view_array__(np.fromiter(zip(*result), dtype=dtype))
 
     elif axis == 1: #extend columns
         arrays = [a for a in arrays if a is not None] #Ignore None values
@@ -4573,9 +5011,10 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
         if out is None:
             dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(new_keys)]
             if getattr(result[0], 'ndim', 0) == 0:
-                return new_keys._Flavour__view_ndarray(np.array(tuple(result), dtype=dtype))
+                out = np.array(tuple(result), dtype=dtype)
             else:
-                return new_keys._Flavour__view_ndarray(np.fromiter(zip(*result), dtype=dtype))
+                out = np.fromiter(zip(*result), dtype=dtype)
+            return new_keys.__view_array__(out)
         else:
             return out
 
@@ -4592,3 +5031,4 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
             axis = 0
 
         return func(*new_inputs, axis = axis, **kwargs)
+
