@@ -488,6 +488,116 @@ class Test_IsopyKeyString:
         key = isopy.MoleculeKeyString('(H2O)+').set_charge(None)
         assert key.charge is None
 
+    def test_fraction(self):
+        fractions1 = isopy.refval.isotope.fraction
+        fractions2 = dict(h1 = 0.5, h2 = 0.5, o16=0.6, o17=0.2, o18=0.1, ba137 = 1, pd105=0.1)
+        fractions3 = isopy.ScalarDict(fractions2)
+
+        isotopes = isopy.IsotopeKeyList('105pd', '137Ba', '1H', '16O', '5H')
+        for key in isotopes:
+            np.testing.assert_almost_equal(key.fraction(), fractions1.get(key))
+            np.testing.assert_almost_equal(key.fraction(5), fractions1.get(key, 5))
+            np.testing.assert_almost_equal(key.fraction(isotope_fractions = fractions2), fractions3.get(key))
+
+        molecule = isopy.MoleculeKeyString('(1H)2(16O)')
+        molfrac1 = fractions1.get('1h') ** 2 * fractions1.get('16o')
+        molfrac2 = fractions3.get('1h') ** 2 * fractions3.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('(5H)2(16O)')
+        molfrac1 = fractions1.get('5h') ** 2 * fractions1.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        molfrac1 = fractions1.get('5h', 5) ** 2 * fractions1.get('16o', 5)
+        np.testing.assert_almost_equal(molecule.fraction(5), molfrac1)
+
+        molecule = isopy.MoleculeKeyString('(1H)(2H)(16O)')
+        molfrac1 = fractions1.get('1h') * fractions1.get('2h') * fractions1.get('16o')
+        molfrac2 = fractions3.get('1h') * fractions3.get('2h') * fractions3.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('((16O)(1H))2')
+        molfrac1 = (fractions1.get('16o') * fractions1.get('1h')) ** 2
+        molfrac2 = (fractions3.get('16o') * fractions3.get('1h')) ** 2
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('((2H)(18O))3((16O)(1H))2')
+        molfrac1 = ((fractions1.get('16o') * fractions1.get('1h')) ** 2) * ((fractions1.get('18o') * fractions1.get('2h')) ** 3)
+        molfrac2 = ((fractions3.get('16o') * fractions3.get('1h')) ** 2) * ((fractions3.get('18o') * fractions3.get('2h')) ** 3)
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+    # TODO
+    def test_element(self):
+        molecule = isopy.MoleculeKeyString('H2O')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)2O')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)2(16O)')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)(2H)(16O)')
+        assert molecule.element() == 'HHO'
+
+        molecule = isopy.MoleculeKeyString('(OH)2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)H)2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)(2H))2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)(2H))((18O)(1H))')
+        assert molecule.element() == 'OHOH'
+
+    def test_isotopes(self):
+        molecule = isopy.MoleculeKeyString('O')
+        n = len(isopy.refval.element.isotopes['o'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in isopy.refval.element.isotopes['o']]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('O2')
+        n = len(isopy.refval.element.isotopes['o']) ** 2
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(16O)(16O) (17O)(16O) (18O)(16O) ' \
+                            '(16O)(17O) (17O)(17O) (18O)(17O) ' \
+                            '(16O)(18O) (17O)(18O) (18O)(18O)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('OH')
+        n = len(isopy.refval.element.isotopes['o']) * len(isopy.refval.element.isotopes['H'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(16O)(1H) (17O)(1H) (18O)(1H) ' \
+                            '(16O)(2H) (17O)(2H) (18O)(2H)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('H2(16O)')
+        n =  len(isopy.refval.element.isotopes['H']) ** 2
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(1H)(1H)(16O) (2H)(1H)(16O) ' \
+                            '(1H)(2H)(16O) (2H)(2H)(16O)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), isopy.refval.isotope.fraction['16o'], decimal=5)
+
+        molecule = isopy.MoleculeKeyString('H2O')
+        n = len(isopy.refval.element.isotopes['H']) ** 2 * len(isopy.refval.element.isotopes['O'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+
 #TODO tests for Mixed
 # TODO specific tests for Molecule
 # Tests for fraction on molecule and isotope
@@ -1244,6 +1354,54 @@ class Test_IsopyList:
 
         ratio = isopy.keylist('ru//rh/pd cd/te//ag'.split())
         assert ratio.flatten() == 'ru cd te rh pd ag'.split()
+
+    def test_fractions(self):
+        fractions1 = isopy.refval.isotope.fraction
+        fractions2 = dict(h1=0.5, h2=0.5, o16=0.6, o17=0.2, o18=0.1, ba137=1, pd105=0.1)
+        fractions3 = isopy.ScalarDict(fractions2)
+
+        isotopes = isopy.IsotopeKeyList('105pd', '137Ba', '1H', '16O', '5H')
+        assert type(isotopes.fractions()) is tuple
+        assert len(isotopes.fractions()) == len(isotopes)
+        np.testing.assert_array_almost_equal(isotopes.fractions(),
+                                             [fractions1.get(key) for key in isotopes])
+        np.testing.assert_array_almost_equal(isotopes.fractions(5),
+                                             [fractions1.get(key, 5) for key in isotopes])
+        np.testing.assert_array_almost_equal(isotopes.fractions(isotope_fractions=fractions2),
+                                             [fractions3.get(key) for key in isotopes])
+
+        molecules = isopy.MoleculeKeyList(['(1H)2(16O)', '(5H)2(16O)', '(1H)(2H)(16O)',
+                                           '((16O)(1H))2', '((2H)(18O))3((16O)(1H))2'])
+        molfrac1 = []
+        molfrac2 = []
+        molfrac1.append(fractions1.get('1h') ** 2 * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('1h') ** 2 * fractions3.get('16o'))
+        molfrac1.append(fractions1.get('5h') ** 2 * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('5h') ** 2 * fractions3.get('16o'))
+        molfrac1.append(fractions1.get('1h') * fractions1.get('2h') * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('1h') * fractions3.get('2h') * fractions3.get('16o'))
+        molfrac1.append((fractions1.get('16o') * fractions1.get('1h')) ** 2)
+        molfrac2.append((fractions3.get('16o') * fractions3.get('1h')) ** 2)
+        molfrac1.append(((fractions1.get('16o') * fractions1.get('1h')) ** 2) * (
+                    (fractions1.get('18o') * fractions1.get('2h')) ** 3))
+        molfrac2.append(((fractions3.get('16o') * fractions3.get('1h')) ** 2) * (
+                    (fractions3.get('18o') * fractions3.get('2h')) ** 3))
+
+        np.testing.assert_array_almost_equal(molecules.fractions(), molfrac1)
+        np.testing.assert_array_almost_equal(molecules.fractions(isotope_fractions=fractions2), molfrac2)
+
+        molfrac1 = []
+        molfrac1.append(fractions1.get('1h', 5) ** 2 * fractions1.get('16o', 5))
+        molfrac1.append(fractions1.get('5h', 5) ** 2 * fractions1.get('16o', 5))
+        molfrac1.append(fractions1.get('1h', 5) * fractions1.get('2h', 5) * fractions1.get('16o', 5))
+        molfrac1.append((fractions1.get('16o', 5) * fractions1.get('1h', 5)) ** 2)
+        molfrac1.append(((fractions1.get('16o', 5) * fractions1.get('1h', 5)) ** 2) * (
+                (fractions1.get('18o', 5) * fractions1.get('2h', 5)) ** 3))
+
+        assert type(molecules.fractions()) is tuple
+        assert len(molecules.fractions()) == len(molecules)
+        np.testing.assert_array_almost_equal(molecules.fractions(5), molfrac1)
+
 
 # 100 % coverage
 class Test_Dict:

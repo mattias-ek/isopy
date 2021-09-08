@@ -1054,7 +1054,7 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
 
         return True
 
-    def _filter_mz(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq = None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
+    def _filter_mz(self, key_eq=None, key_neq=None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
                    true_mass=False, isotope_masses=None):
         mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
         if key_eq is not None and mz not in key_eq:
@@ -1196,6 +1196,9 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         """
         if isotope_fractions is None:
             isotope_fractions = isopy.refval.isotope.fraction
+        if not isinstance(isotope_fractions, ScalarDict):
+            isotope_fractions = ScalarDict(isotope_fractions)
+
         return isotope_fractions.get(self, default_value)
 
 
@@ -1405,12 +1408,36 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         else:
             return out
 
-    def _filter(self, key_eq=None, key_neq=None, **invalid):
+    def _filter(self, key_eq=None, key_neq=None, flavour_eq=None, flavour_neq=None, mz = {},  **invalid):
         if invalid:
             return False
         if key_eq is not None and self not in key_eq:
             return False
         if key_neq is not None and self in key_neq:
+            return False
+        if flavour_eq is not None and self.flavour not in flavour_eq:
+            return False
+        if flavour_neq is not None and self.flavour in flavour_neq:
+            return False
+        if mz and not self._filter_mz(**mz):
+            return False
+
+        return True
+
+    def _filter_mz(self, key_eq=None, key_neq=None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
+                   true_mass=False, isotope_masses=None):
+        mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
+        if key_eq is not None and mz not in key_eq:
+            return False
+        if key_neq is not None and mz in key_neq:
+            return False
+        if key_lt is not None and not mz < key_lt:
+            return False
+        if key_gt is not None and not mz > key_gt:
+            return False
+        if key_le is not None and not mz <= key_le:
+            return False
+        if key_ge is not None and not mz >= key_ge:
             return False
 
         return True
@@ -1555,8 +1582,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         charge = abs(self.charge or 1)
         return (mz * self.n) / charge
 
-    def isotopes(self, isotopes = None):
-
+    def __isotopes(self, isotopes):
         if isotopes is None:
             isotopes = isopy.refval.element.isotopes
 
@@ -1565,7 +1591,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         for sc in self.subcomponents:
             # Should save a bit of time
             if type(sc) is MoleculeKeyString:
-                molecules = sc.isotopes()
+                molecules = sc.__isotopes(isotopes)
 
             for i in range(self.n):
                 if type(sc) is IsotopeKeyString:
@@ -1591,6 +1617,9 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                                                           charge=self.charge))
         return allmol
 
+    def isotopes(self, isotopes = None):
+        return MoleculeKeyList(self.__isotopes(isotopes))
+
     def fraction(self, default_value = np.nan, isotope_fractions = None):
         """
         Returns the fraction of this molecule from all molecules with
@@ -1615,6 +1644,8 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         """
         if isotope_fractions is None:
             isotope_fractions = isopy.refval.isotope.fraction
+        if not isinstance(isotope_fractions, IsopyDict):
+            isotope_fractions = IsopyDict(isotope_fractions)
 
         fraction = 1
         for sc in self.subcomponents:
@@ -4014,6 +4045,8 @@ class IsopyNdarray(IsopyArray, ndarray):
                 vlen = {len(v) for v in values}
             except:
                 raise
+            if len(vlen) == 0:
+                raise ValueError('Cannot create an empty array')
             if len(vlen) != 1:
                 raise ValueError('All rows in values are not the same size')
             vlen = vlen.pop()
@@ -4329,7 +4362,7 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, *
         raise ValueError('values and column kwargs cannot be given together')
     elif values is None:
         values = columns
-
+    
     return IsopyNdarray(values, keys=keys, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
 

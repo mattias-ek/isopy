@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="isopy",
-    version='0.5.2',
+    version='0.6.0',
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy>=>1.20',
                       'pyperclip>=1.8',
@@ -19,7 +19,7 @@ setuptools.setup(
     include_package_data=True,
 
     author="Mattias Ek",
-    author_email="mattias.ek@bristol.ac.uk",
+    author_email="mattias.ek@erdw.ethz.ch",
     description="A Python 3 library for data processing in isotope geo/cosmochemistry.",
     long_description=long_description,
     keywords="array isotope geochemistry cosmochemisty geology icpms icp-ms",
