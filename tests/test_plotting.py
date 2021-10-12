@@ -114,7 +114,7 @@ def test_plot_scatter2():
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
     yerr = isopy.random(20, seed=48)
-    isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york1', color='red', marker='s')
+    isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york', color='red', marker='s')
     return plt
 
 @pytest.mark.mpl_image_compare(tolerance=5, style='default')
