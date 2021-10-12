@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="isopy",
-    version='0.6.0',
+    version='0.6.1',
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy>=>1.20',
                       'pyperclip>=1.8',
@@ -13,7 +13,7 @@ setuptools.setup(
                       'matplotlib>=3.3',
                       'scipy>=1.6',
                       'chardet>=4'],
-    python_requires = '>=3.8',
+    python_requires = '>=3.9',
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-mpl'],
     include_package_data=True,
