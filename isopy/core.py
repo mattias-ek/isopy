@@ -46,7 +46,7 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'ones', 'zeros', 'empty', 'full', 'random',
            'concatenate',
            'iskeystring', 'iskeylist', 'isarray',
-           'flavour', 'isflavour', 'allowed_numpy_functions']
+           'allowed_numpy_functions']
 
 CACHE_MAXSIZE = 128
 CACHES_ENABLED = False
@@ -316,16 +316,6 @@ def isarray(item) -> bool:
     return isinstance(item, IsopyArray)
 
 
-def isflavour(obj1, obj2):
-    """returns True if the favour of the first object is the same as the favour of the second object."""
-    try:
-        return obj1.__flavour__ == obj2.__flavour__
-    except:
-        return False
-
-#TODO delete this as all objects now have a flavour attribute
-def flavour(obj):
-    raise NotImplementedError
 
 
 ##################

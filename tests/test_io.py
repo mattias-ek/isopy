@@ -99,7 +99,8 @@ class Test_CSV:
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io3.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -115,7 +116,7 @@ class Test_CSV:
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io4.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -133,7 +134,7 @@ class Test_CSV:
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io5.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -301,7 +302,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io4.xlsx'), sheetname='test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -320,7 +321,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io5.xlsx'), 'test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -339,7 +340,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io6.xlsx'), sheetname='test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])

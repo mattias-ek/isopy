@@ -195,8 +195,8 @@ def yorkregress(x, y, xerr, yerr, r=0, tol=1e-10, err_ci = None, err_zscore=None
         msdw = 1
         p = 1
     p2 = (p-0.5)*2
-    return YorkregressResult(slope, intercept, slope_error, intercept_error, msdw, dof, p2,  np.sum(W),
-                             xbar)
+    return YorkregressResult(slope, intercept, slope_error, intercept_error, dof, msdw, p2,
+                             np.sum(W), xbar)
 
 yorkregress2 = core.partial_func(yorkregress, 'yorkregress2', err_zscore=2)
 yorkregress3 = core.partial_func(yorkregress, 'yorkregress3', err_zscore=3)
@@ -210,6 +210,10 @@ class LinregressResult:
         self.slope_se = slope_se
         self.intercept_se = intercept_se
         self.df = df
+
+    def __repr__(self):
+        return (f'{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, '
+                f'slope_se={self.slope_se}, intercept_se={self.intercept_se}, df={self.df})')
 
     def y(self, x):
         """
@@ -238,6 +242,11 @@ class YorkregressResult(LinregressResult):
         self.pvalue = pvalue
         self._sumW = sumW
         self._xbar = xbar
+
+    def __repr__(self):
+        return (f'{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, '
+                f'slope_se={self.slope_se}, intercept_se={self.intercept_se}, df={self.df}, '
+                f'msdw={self.msdw}, pvalue={self.pvalue})')
 
     def y_se(self, x):
         """

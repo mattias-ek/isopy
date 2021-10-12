@@ -26,6 +26,14 @@ def assert_array_equal_array(array1, array2, match_dtype=True):
     for name in array1.dtype.names:
         np.testing.assert_allclose(array1[name], array2[name])
 
+class Test_Flavour:
+    def  test_comparison(self):
+        for name, item in core.FLAVOURS.items():
+            assert name in core.DEFAULT_TRY_FLAVOURS
+            assert item() in core.DEFAULT_TRY_FLAVOURS
+            assert item() in core.FLAVOURS.values()
+
+
 class Test_Exceptions:
     def test_KeyValueError(self):
         try:

@@ -652,7 +652,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     _axes_add_data(axes, x, y, xerr, yerr)
 
     if regression is not None:
-        if regression == 'york1':
+        if regression == 'york':
             regression_result = isopy.tb.yorkregress(x, y, xerr, yerr)
         elif regression == 'york2':
             regression_result = isopy.tb.yorkregress2(x, y, xerr, yerr)
