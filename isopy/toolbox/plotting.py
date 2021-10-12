@@ -5,6 +5,7 @@ import scipy.stats as stats
 import matplotlib as mpl
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
+from matplotlib.container import ErrorbarContainer
 from matplotlib.axes import Axes as mplAxes
 import numpy as np
 import functools
@@ -19,7 +20,7 @@ __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
            'Markers', 'Colors']
 
 scatter_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
-regression_style = {'linestyle': '-', 'color': 'black', 'edgeline_linestyle': '--', 'fill_alpha': 0.3, 'zorder': 1, 'marker': ''}
+regression_style = {'linestyle': '-', 'color': 'black', 'edgeline_linestyle': '--', 'fill_alpha': 0.3, 'zorder': 1, 'marker': '', 'edgeline_marker': ''}
 equation_line_style = {'linestyle': '-', 'color': 'black', 'zorder': 1}
 stack_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'cline_linestyle': '-',
                'pmline_linestyle': '--', 'box_alpha': 0.3, 'zorder': 2, 'cline_marker': ''}
@@ -450,7 +451,7 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
     return out
 
 @_update_figure_and_axes
-def create_legend(axes, *include_axes, labels = None, hide_axis=None, newlines=None, **kwargs):
+def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars = True, newlines=None, **kwargs):
     """
     Create a legend encompassing multiple axes.
 
@@ -471,6 +472,8 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, newlines=N
     hide_axis
         If ``True`` then the x and y axis of axes will be hidden. If ``None`` then the axis is hidden
         only if *include_axes* are given and there are not items *axes* with a label.
+    errorbars
+        If ``False`` then the errobars wont appear on the markers in the legend.
     newlines
         A dictionary of new lines to be created and included in the legend. The key corresponds to the label
         and the value is another dict of the kwargs for a
@@ -533,6 +536,9 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, newlines=N
 
     if labels:
         legend = {la: ha for la, ha in legend.items() if la in labels}
+
+    if errorbars is False:
+        legend = {la: ha[0] if type(ha) is ErrorbarContainer else ha for la, ha in legend.items()}
 
     axes.legend(list(legend.values()), list(legend.keys()), **kwargs)
     if hide_axis:
@@ -622,12 +628,16 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     style.update(scatter_style)
     style.update(kwargs)
 
-    prop_cycler = next(axes._get_lines.prop_cycler)
+    prop_cycler = None
 
     if color: style['color'] = color
-    else: style.setdefault('color', prop_cycler.get('color', 'blue'))
+    else:
+        if prop_cycler is None: prop_cycler = next(axes._get_lines.prop_cycler)
+        style.setdefault('color', prop_cycler.get('color', 'blue'))
 
-    if marker is True: style.setdefault('marker', prop_cycler.get('marker', 'o'))
+    if marker is True:
+        if prop_cycler is None: prop_cycler = next(axes._get_lines.prop_cycler)
+        style.setdefault('marker', prop_cycler.get('marker', 'o'))
     elif marker is False: style['marker'] = ''
     elif marker: style['marker'] = marker
 
@@ -643,22 +653,24 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
 
     if regression is not None:
         if regression == 'york1':
-            regression_result = isopy.tb.regression_york1(x, y, xerr, yerr)
+            regression_result = isopy.tb.yorkregress(x, y, xerr, yerr)
         elif regression == 'york2':
-            regression_result = isopy.tb.regression_york2(x, y, xerr, yerr)
+            regression_result = isopy.tb.yorkregress2(x, y, xerr, yerr)
+        elif regression == 'york95':
+            regression_result = isopy.tb.yorkregress95(x, y, xerr, yerr)
         elif regression == 'linear':
-            regression_result = isopy.tb.regression_linear(x, y)
+            regression_result = isopy.tb.linregress(x, y)
         else:
             raise ValueError(f'"{regression}" not a valid regression')
         plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
 
 @_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
-                    fill = True, edgeline = True,  **kwargs):
+                    fill = True, edgeline = True, label_equation = True,  **kwargs):
     """
     Plot the result of a regression on matplotlib *axes*.
 
-    If *regression_result* has a ``.yerr(x) -> yerr`` method the error envelope of the regression
+    If *regression_result* has a ``y_se(x)`` method the error envelope of the regression
     will also be plotted.
 
     Parameters
@@ -700,9 +712,9 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         be a string describing a linestyle defined by matplotlib. See `here
         <https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html>`_ for a list
         of avaliable linestyles. ``True`` defaults to ``"dashed"``.
-    label : bool, str
-        If ``True`` a legend label in the form of *y=mc+c* used when creating the regression *line*.
-        If *label* is a string that string will be used as the legend label.
+    label_equation : bool
+        If ``True`` the equation of the regression line will be added to the label of the
+        regression line.
     kwargs
         Any keyword argument accepted by matplotlib axes methods. By default kwargs are
         attributed to the regression line. Prefix kwargs for the
@@ -766,25 +778,29 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     """
     axes = _check_axes(axes)
 
-    if callable(regression_result):
+    if isinstance(regression_result, toolbox.regress.LinregressResult):
+        y_eq = regression_result.y
+        y_se_eq = regression_result.y_se
+    elif callable(regression_result):
         y_eq = regression_result
+        y_se_eq = None
     elif hasattr(regression_result, 'slope') and hasattr(regression_result, 'intercept'):
         y_eq = lambda x: x * regression_result.slope + regression_result.intercept
+        y_se_eq = None
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
         y_eq = lambda x: x * regression_result[0] + regression_result[1]
-
-    yerr_eq = getattr(regression_result, 'yerr', None)
-    if not callable(yerr_eq): yerr_eq = None
+        y_se_eq = None
 
     style = {}
     style.update(regression_style)
     style.update(kwargs)
 
-    prop_cycler = next(axes._get_lines.prop_cycler)
+    prop_cycler = None
 
     if color:
         style['color'] = color
     else:
+        if prop_cycler is None: prop_cycler = next(axes._get_lines.prop_cycler)
         style.setdefault('color', prop_cycler.get('color', 'blue'))
 
     if line is True:
@@ -810,7 +826,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     if not xlim:
         xlim = axes.get_xlim()
 
-    if (label:=style.get('label', None)) is True:
+    if label_equation is True:
         sigfig = 2
         if isinstance(regression_result, toolbox.regress.YorkregressResult):
             style['label'] = regression_result.label(sigfig)
@@ -819,19 +835,22 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
             label_slope = y_eq(1) - label_intercept
             var = y_eq(xlim[1]) - y_eq(xlim[0])
 
-            style['label'] = f'y={_format_sigfig(label_slope, sigfig, var)}x + ' \
-                             f'{_format_sigfig(label_intercept, sigfig, var)}'
-    elif label is False:
-        style.pop('label')
+            style['label'] = f'{style.get("label", "")} y={_format_sigfig(label_slope, sigfig, var)}x + ' \
+                             f'{_format_sigfig(label_intercept, sigfig, var)}'.strip()
+
 
     x = np.linspace(xlim[0], xlim[1], 10000)
     y = np.array([y_eq(xval) for xval in x])
 
-    if yerr_eq is not None:
-        yerr = np.array([yerr_eq(xval) for xval in x])
-        yerr_upper = y + yerr
-        yerr_lower = y - yerr
-        yerr_coordinates = [*zip(x, yerr_upper)] + list(reversed([*zip(x, yerr_lower)]))
+
+    if y_se_eq is not None:
+        try:
+            yerr = np.array([y_se_eq(xval) for xval in x])
+            yerr_upper = y + yerr
+            yerr_lower = y - yerr
+            yerr_coordinates = [*zip(x, yerr_upper)] + list(reversed([*zip(x, yerr_lower)]))
+        except NotImplementedError:
+            y_se_eq = None
 
     ull_function = None
     if not autoscale and hasattr(axes, '_update_line_limits'):
@@ -842,14 +861,14 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         if line is not False:
             axes.plot(x, y, scalex=False, scaley=False, **style)
 
-        if yerr_eq is not None and edgeline:
+        if y_se_eq is not None and edgeline:
             axes.plot(x, yerr_upper, scalex=False, scaley=False, **edge_style)
             axes.plot(x, yerr_lower, scalex=False, scaley=False, **edge_style)
     finally:
         if ull_function:
             axes._update_line_limits = ull_function
 
-    if yerr_eq is not None and fill:
+    if y_se_eq is not None and fill:
         _plot_polygon(axes, yerr_coordinates, autoscale, **fill_style)
 
 @_update_figure_and_axes
@@ -2114,9 +2133,10 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
 
     _plot_polygon(axes, coordinates, autoscale, **style)
 
+@core.renamed_kwarg(cmap = 'colors')
 @_update_figure_and_axes
-def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
-                  colorbar=True, filled = True, nanmask = None, **kwargs):
+def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
+                  colorbar=None, label = False, label_levels = None, filled = True, **kwargs):
     """
     Create a contour plot on *axes* from a data grid.
 
@@ -2140,20 +2160,25 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
         The largest value in the colour map. Any z values larger than this value will
         have the same colour as the *zmax* value.
     levels
-        The number of intervals in the colour map.
-    cmap
-        The name of the colour map. Avaliable options can be found `here <https://matplotlib.org/stable/tutorials/colors/colormaps.html#>`.
+        The number of intervals in the colour map. Can also be a sequence of levels to be used.
+    colors
+        This can either be a list of colours or a single string of the colour map to be used.
+        Names of avaliable colour maps can be found `here <https://matplotlib.org/stable/tutorials/colors/colormaps.html#>`.
     colorbar : bool, axes
         If ``False`` no colour bar is drawn. If ``True`` a colour bar is drawn on the same axes as
-        contours. If *colorbar* is an axes the colourbar will be drawn on that axes.
+        contours. If *colorbar* is an axes the colourbar will be drawn on that axes. If ``None`` it
+        default to ``True`` if *filled* is ``True`` otherwise it is ``False``.
+    label
+        If ``True`` then a label will be added to each *label_level*.
+    label_levels
+        The number of intervals to be labeled. Can also be a sequence of levels to be labeled.
     filled : bool
         If ``False`` only contour lines are shown. If ```True`` filled contours are drawn.
-    nanmask
-        Can be used to mask out values by setting values that evaluate as ``True`` to ``np.nan``.
-        Must match the shape of *z*.
     kwargs
-        Additional arguments for the matplotlib functions ``contour`` and ``contourf``. See avaliable
-        options `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contour.html>`.
+        Kwargs prefixed with ``'label_`` will be sent to to the ``clabel`` function.
+        See avaliable options `here <https://matplotlib.org/stable/api/contour_api.html#matplotlib.contour.ContourLabeler.clabel>`.
+        All other kwargs will be send to the matplotlib functions ``contour`` or ``contourf``.
+        See avaliable options `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contour.html>`.
 
     Examples
     --------
@@ -2201,11 +2226,12 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
     elif z.shape[0] != y.size or z.shape[1] != x.size:
         raise ValueError(f'shape of z {z.shape} does not match shape of x and z ({y.size}, {x.size})')
 
-    if nanmask is not None:
-        z = z.copy()
-        z[nanmask] = np.nan
+    label_kwargs = core.extract_kwargs(kwargs, 'label')
 
-    style = dict(cmap=cmap)
+    if type(colors) is str:
+        style = dict(cmap=colors)
+    else:
+        style = dict(colors=colors)
     style.update(grid_style)
     style.update(kwargs)
 
@@ -2221,13 +2247,18 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
         zmax = zmax(z)
     style.setdefault('vmax', zmax)
 
-    if levels is not None:
-        levels = np.linspace(zmin, zmax, levels)
+    if hasattr(levels, '__iter__'):
         style['levels'] = levels
+    elif levels is not None:
+        style['levels'] = np.linspace(zmin, zmax, levels)
+
     if filled:
         contours = axes.contourf(x, y, z, **style)
     else:
         contours = axes.contour(x, y, z, **style)
+
+    if colorbar is None:
+        colorbar = filled
 
     if isinstance(colorbar, mplAxes):
         figure = axes.get_figure()
@@ -2235,6 +2266,15 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, cmap='jet',
     elif colorbar is True:
         figure = axes.get_figure()
         figure.colorbar(contours, ax=axes)
+
+    if label is True:
+        if type(label_levels) is int:
+            label_levels = np.linspace(zmin, zmax, levels)
+
+        if label_levels is None:
+            axes.clabel(contours, **label_kwargs)
+        else:
+            axes.clabel(contours, label_levels, **label_kwargs)
 
 def _plot_polygon(axes, coordinates, autoscale = True, **style):
     upl_func = None

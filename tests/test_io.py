@@ -1,8 +1,11 @@
 import isopy
 import numpy as np
 import os
+import time
 
 import isopy.core
+
+sleep_time = 1
 
 def filename(filename):
     return os.path.join(os.path.dirname(__file__), 'files', filename)
@@ -51,32 +54,47 @@ class Test_CSV:
         self.run(save_data, data, keys_in=None)
 
     def run(self, save_data, data, **kwargs):
+        # This fails occasionaly because it says the file is not avaliable
+        # A short sleep between writing and reading solves this?
+
         isopy.write_csv(filename('test_io1.csv'), save_data, **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io1.csv'), **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io1.csv'), float_preferred=True, **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         # With a comment
         isopy.write_csv(filename('test_io2.csv'), save_data, comments='This is a comment', **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io2.csv'), **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io2.csv'), float_preferred=True, **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         # Several comments and different comment symbol
         isopy.write_csv(filename('test_io3.csv'), save_data, comments=['This is a comment', 'so is this'],
                         comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io3.csv'), comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io3.csv'), float_preferred=True, comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         if isinstance(save_data, isopy.core.IsopyArray) and kwargs.get('keys_in', 'c') == 'c':
             # to functions
             save_data.to_csv(filename('test_io3.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io3.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io3.csv'), float_preferred=True, **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io3.csv'))
@@ -88,8 +106,11 @@ class Test_CSV:
 
             # With a comment
             save_data.to_csv(filename('test_io4.csv'), comments='This is a comment', **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io4.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io4.csv'), float_preferred=True, **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io4.csv'))
@@ -102,9 +123,12 @@ class Test_CSV:
             # Several comments. Cannot change comment symbol using to method
             save_data.to_csv(filename('test_io5.csv'),
                             comments=['This is a comment', 'so is this'], **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io5.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io5.csv'), float_preferred=True,
                                     **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io5.csv'))

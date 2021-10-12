@@ -46,8 +46,7 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'ones', 'zeros', 'empty', 'full', 'random',
            'concatenate',
            'iskeystring', 'iskeylist', 'isarray',
-           'flavour', 'isflavour', 'allowed_numpy_functions',
-           'array_from_csv', 'array_from_clipboard', 'array_from_xlsx']
+           'flavour', 'isflavour', 'allowed_numpy_functions']
 
 CACHE_MAXSIZE = 128
 CACHES_ENABLED = False
@@ -154,13 +153,21 @@ def add_preset(name, **kwargs):
             func._presets = []
 
         for n in name:
-            preset = functools.partial(func, **kwargs)
-            preset.__name__ = f'{func.__name__}.{n}'
-            preset.__module__ = func.__module__
+            preset = partial_func(func, f'{func.__name__}.{n}', **kwargs)
+            #preset = functools.partial(func, **kwargs)
+            #preset.__name__ = f'{func.__name__}.{n}'
+            #preset.__module__ = func.__module__
             setattr(func, n, preset)
             func._presets.insert(0, (preset, kwargs))
         return func
     return decorator
+
+def partial_func(func, name = None, module = None, doc = None, /, **func_kwargs):
+    new_func = functools.partial(func, **func_kwargs)
+    new_func.__name__ = name or func.__name__
+    new_func.__module__  = module or func.__module__
+    new_func.__doc__ = doc or func.__doc__
+    return new_func
 
 def set_module(module):
     def decorator(func):
@@ -860,9 +867,11 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
             return False
         return True
 
+    def _z(self):
+        return isopy.refval.element.atomic_number.get(self, 0)
+
     def _sortkey(self):
-        z = isopy.refval.element.atomic_number.get(self, self)
-        return f'{z:0>4}'
+        return f'{self._z():0>4}'
 
     def str(self, format=None):
         """
@@ -911,6 +920,15 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
         ElementKeyString('Pd++')
         """
         return self.__class__(self, charge=charge)
+
+    def element(self):
+        return self
+
+    def isotopes(self, isotopes = None):
+        if isotopes is None:
+            isotopes = isopy.refval.element.isotopes
+
+        return IsotopeKeyList(isotopes.get(self, [])).set_charges(self.charge)
 
 
 class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
@@ -1073,7 +1091,10 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         return True
 
     def _sortkey(self):
-        return f'{self.mz():0>8.3f}{self.element_symbol._sortkey()}'
+        return f'{self.mz():0>8.3f}{self._z():0>4}'
+
+    def _z(self):
+        return self.element_symbol._z()
 
     def str(self, format=None):
         """
@@ -1200,6 +1221,12 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
             isotope_fractions = ScalarDict(isotope_fractions)
 
         return isotope_fractions.get(self, default_value)
+
+    def element(self):
+        return self.element_symbol
+
+    def isotopes(self, isotopes=None):
+        return IsotopeKeyList(self)
 
 
 class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
@@ -1402,9 +1429,8 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         else:
             out = make_molecule(tuple(subcomponents), 1, None)
 
-
         if allow_reformatting is False and str(out) != string:
-            raise KeyValueError(cls, string, 'Molecule string does not match the input string')
+            raise KeyValueError(cls, string, f'Molecule string {out} does not match the input string {string}')
         else:
             return out
 
@@ -1442,8 +1468,18 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
         return True
 
+    def _z(self):
+        z = 0
+        for sc in self.subcomponents:
+            z += (sc._z() * self.n)
+
+        return z
+
     def _sortkey(self):
-        return str(self)
+        if self.has_element():
+            return f'{0:0>8.3f}{self._z():0>4}'
+        else:
+            return f'{self.mz():0>8.3f}{self._z():0>4}'
 
     def str(self, format=None):
         """
@@ -1680,6 +1716,18 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                                                       subcomponents=subcomponents,
                                                       n=self.n,
                                                       charge=self.charge)
+
+    def has_element(self):
+        for sc in self.subcomponents:
+            if sc.flavour == 'element': return True
+            elif sc.flavour == 'molecule' and sc.has_element(): return True
+        return False
+
+    def has_isotope(self):
+        for sc in self.subcomponents:
+            if sc.flavour == 'isotope': return True
+            elif sc.flavour == 'molecule' and sc.has_isotope(): return True
+        return False
 
 
 class RatioKeyString(IsopyKeyString, RatioFlavour):
@@ -2713,7 +2761,7 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         else:
             raise TypeError('charges must be None or an integer or a list of integers')
 
-    def mz(self, true_mass=False, isotope_masses=None):
+    def mz(self, true_mass=False, isotope_masses=None, first_occurence=False):
         """
         Returns a tuple containing the mass over charge ratio for each
         key string in the list.
@@ -2753,6 +2801,16 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         if isotope_fractions is None:
             isotope_fractions = isopy.refval.isotope.fraction
         return tuple(item.fraction(default_value, isotope_fractions) for item in self)
+
+    def has_elements(self):
+        for key in self:
+            if key.has_element(): return True
+        return False
+
+    def has_isotopes(self):
+        for key in self:
+            if key.has_isotope(): return True
+        return False
 
 
 class RatioKeyList(IsopyKeyList, RatioFlavour):
@@ -3059,7 +3117,7 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
         """
         Return a sorted key string list.
         """
-        return self.__keylist__(sorted(self, key= lambda k: (k.__flavour_id__, k._sortkey())))
+        return self.__keylist__(sorted(self, key= lambda k: k._sortkey()))
 
     def flatten(self, ignore_duplicates = False,
                 allow_duplicates = True, allow_reformatting = False, ignore_charge=False):
@@ -3181,6 +3239,12 @@ class IsopyDict(dict):
     @property
     def key_flavours(self):
         return self._key_flavours
+
+    def keylist(self):
+        """
+        Returns the dictionary keys as an isopy key list.
+        """
+        return askeylist(self.keys())
 
     def update(self, other):
         """
@@ -3896,7 +3960,7 @@ class IsopyArray:
 
         If *sheetname* is not given the array will be saved as
         "sheet1".  If *comments* are given they will be included before the array data. Existing
-        files will be overwritten.
+        files will be overwritten unless append is ``True``.
         """
         #If *filename* exists and *append* is ``True`` the sheet will be added to the existing workbook. Otherwise the existing file will be overwritten.
         if sheetname is None:
@@ -4440,28 +4504,6 @@ def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None):
                 a = a.reshape(-1, a.size)
 
         return a
-
-
-def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
-    """
-    Returns an array of values from a csv file.
-    """
-    data = isopy.read_csv(filename, **read_csv_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
-
-def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_kwargs):
-    """
-    Returns an array of values from *sheet_name* in a xlsx file.
-    """
-    data = isopy.read_xlsx(filename, sheetname, **read_xlsx_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
-
-def array_from_clipboard(*, dtype=None, ndim=None, **read_clipboard_kwargs):
-    """
-    Returns an array of values from the clipboard.
-    """
-    data = isopy.read_clipboard(**read_clipboard_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
 ###########################
 ### Create empty arrays ###

@@ -329,18 +329,18 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
 
         * ``method`` - Name of the method used to do the inversion.
 
-        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * m^\\alpha`).
+        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * mass^\\alpha`).
           **Note** this value has the opposite sign to *fnat*.
 
-        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * m^\\beta`).
+        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * mass^\\beta`).
           Same as *fins*.
 
         * ``lambda_`` - The lambda value defined by Rudge.
 
-        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * m^\\alpha`).
+        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * mass^{fnat}`).
           **Note** this value has the opposite sign to *alpha*.
 
-        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MT} = \\textrm{MS} * m^\\alpha`).
+        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MS} = \\textrm{MT} * mass^{fins}`).
           Same as *beta*.
 
         * ``spike_fraction`` - The fraction of spike in the sample-spike mixture. Calculated on the
@@ -402,7 +402,8 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
 def ds_correction(measured, spike, standard=None, inversion_keys=None,
                   interference_correction = True,
                   isotope_fractions=None, isotope_masses=None,
-                  method='rudge', fins_tol = 0.000001, **method_kwargs):
+                  method='rudge', fins_tol = 0.000001,
+                  fins_guess = None, **method_kwargs):
     """
     A double spike data reduction.
 
@@ -428,6 +429,9 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
     fins_tol : float
         The interference correction is considered a success once the difference between the current and the
         previous *fins* value is below this value.
+    fins_guess
+        The fins value used for the first iteration of the interference correction. If not given
+        the *fins* value of an inversion without an interference correction applied is used.
     method_kwargs
         Keyword arguments for inversion method. For advanced users only.
         See `inversion_rudge` and `inversion_siebert` for list of possible arguments.
@@ -439,18 +443,18 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
 
         * ``method`` - Name of the method used to do the inversion.
 
-        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * m^\\alpha`).
+        * ``alpha`` - The natural fractionation factor as defined by Rudge (:math:`n = N * mass^\\alpha`).
           **Note** this value has the opposite sign to *fnat*.
 
-        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * m^\\beta`).
+        * ``beta`` - The instrumental mass fractionation factor as defined by Rudge (:math:`m = M * mass^\\beta`).
           Same as *fins*.
 
         * ``lambda_`` - The lambda value defined by rudge.
 
-        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * m^\\alpha`).
+        * ``fnat`` - The natural fractionation factor as defined by Siebert (:math:`\\textrm{SA} = \\textrm{ST} * mass^{fnat}`).
           **Note** this value has the opposite sign to *alpha*.
 
-        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MT} = \\textrm{MS} * m^\\alpha`).
+        * ``fins`` - The instrumental fractionation factor as defined by Siebers (:math:`\\textrm{MS} = \\textrm{MT} * mass^{fins}`).
           Same as *beta*.
 
         * ``spike_fraction`` - The fraction of spike in the sample-spike mixture. Calculated on the
@@ -471,7 +475,7 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
     inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
                                              isopy.RatioKeyList, coerce=True, allow_none=True)
 
-    isotope_fractions = isopy.checks.check_reference_value('isotope_abundances', isotope_fractions,
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
                                                            isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
                                                         isopy.refval.isotope.mass)
@@ -496,11 +500,15 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
     # Calculate the starting value
     inversion = ds_inversion(measured, spike, standard, isotope_masses, inversion_keys, method,
                              **method_kwargs)
-    fins = inversion.fins
+
+    if fins_guess is not None:
+        fins = fins_guess
+    else:
+        fins = inversion.fins
 
     # Iteratively perform the interference correction
     # Stop once the result converges
-    if isobaric_interferences:
+    if isobaric_interferences and not np.all(np.isnan(fins)):
         for i in range(10):
             measured2 = measured.copy()
             fins2 = fins
@@ -511,6 +519,9 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
             inversion = ds_inversion(measured2, spike, standard, isotope_masses, inversion_keys, method,
                                      **method_kwargs)
             fins = inversion.fins
+            if np.all(np.isnan(fins)):
+                #No solution
+                break
 
             if np.all(np.abs(fins - fins2) < fins_tol):
                 break  # Beta value has converged so no need for more iterations.
@@ -581,9 +592,10 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
             fnat=0, fins=2, fixed_voltage=10, fixed_key = None,
             blank = None, blank_fixed_voltage = None, blank_fixed_key = None,
             integrations=100, integration_time=8.389, resistor=1E11,
-            random_seed=46, method='siebert',
-            isotope_masses=None, isotope_abundances=None,
+            random_seed=46, method='siebert', fins_guess = None,
+            isotope_masses=None, isotope_fractions=None,
             correction_method=ds_correction,
+            interferences = None,
             **kwargs):
     """
     Compute the inversion result for a simulated measurement with varied sample/spike
@@ -638,17 +650,22 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
         Method used for the doublespike inversion. Default is the  ``"siebert"`` method as it is
         faster however it occasionally fails to find solutions to extreme edge cases. If these
         are important use the ``"rudge"`` method instead.
+    fins_guess
+        The fins value used for the first iteration of the interference correction. If not given
+        the *fins* value of an inversion without an interference correction applied is used.
     correction_method
         The method used to perform the double spike inversion. Must have the same signature as
         ``ds_correction``. Defaults to ``ds_correction``.
-    isotope_abundances
+    isotope_fractions
         Reference value for the isotope fractions of different elements.
-        Defaults to ``isopy.refval.isotope.abundance``.
+        Defaults to ``isopy.refval.isotope.fractions``.
     isotope_masses
         Reference value for the isotope masses of different elements.
         Defaults to ``isopy.refval.isotope.mass``.
+    interferences
+        A dictionary containing the interferences and relative abundances to the main elements.
     kwargs
-        Prefix interferences with ``interference_`` and method kwargs with ``method_``.
+        Additional keyword arguments for the inversion method.
 
 
     Returns
@@ -702,18 +719,18 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
 
         * ``xz(yval=0.5, zeval=isopy.sd, zattr='solutions.fnat')`` - Returns ``input.doublespike_fraction`` and a 1-dimensional array of ``zeval(getattr(grid_result, zattr))`` at *yval*.
     """
-    isotope_abundances = isopy.checks.check_reference_value('isotope_abundances', isotope_abundances,
-                                                            isopy.refval.isotope.fraction)
+    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
+                                                           isopy.refval.isotope.fraction)
     isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
                                                         isopy.refval.isotope.mass)
 
     numer, denom, inversion_keys = _deduce_inversion_keys(spike1, inversion_keys)
 
-    standard = isotope.make_ms_array(standard, mf_factor=fnat, isotope_fractions=isotope_abundances,
+    standard = isotope.make_ms_array(standard, isotope_fractions=isotope_fractions,
                                      isotope_masses=isotope_masses)
 
-    interference_kw = core.extract_kwargs(kwargs, 'interference')
-    method_kw = core.extract_kwargs(kwargs, 'method')
+    if interferences is None:
+        interferences = {}
 
     if fixed_key is None:
         fixed_key = inversion_keys.flatten(ignore_duplicates=True)
@@ -739,7 +756,7 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
         for doublespike_fraction in doublespike_fractions:
             measured = isotope.make_ms_sample(standard, spike=spike_mixture,
                                               spike_fraction=doublespike_fraction,
-                                              fnat=None, fins=fins,
+                                              fnat=fnat, fins=fins,
                                               fixed_voltage=fixed_voltage, fixed_key=fixed_key,
                                               blank=blank, blank_fixed_voltage=blank_fixed_voltage,
                                               blank_fixed_key=blank_fixed_key,
@@ -747,14 +764,14 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
                                               integration_time=integration_time,
                                               resistors=resistor,
                                               random_seed=random_seed,
-                                              isotope_fractions=isotope_abundances,
-                                              isotope_masses=isotope_masses, **interference_kw)
+                                              isotope_fractions=isotope_fractions,
+                                              isotope_masses=isotope_masses, **interferences)
             all_measured[-1].append(measured)
             try:
                 solution = correction_method(measured, spike_mixture, standard, inversion_keys,
                                              isotope_masses=isotope_masses,
-                                             isotope_abundances=isotope_abundances,
-                                             method=method, **method_kw)
+                                             isotope_fractions=isotope_fractions,
+                                             method=method, fins_guess = fins_guess, **kwargs)
                 result_solutions[-1].append(solution)
             except:
                 nan = np.full(measured.size, np.nan)
@@ -908,7 +925,10 @@ class IsopyResultList(list):
 
     def __getattr__(self, attr):
         if attr[:1] == '_': raise AttributeError() #Avoid issues with numpy special attributes
-        return self.__class__(getattr(item, attr) for item in self)
+        return self.__class__(getattr(thing, attr) for thing in self)
+
+    def get(self, item):
+        return self.__class__(thing.get(item) if type(thing) is self.__class__ else thing[item] for thing in self)
 
 
 class DSResult(IsopyNamedResult):

@@ -11,9 +11,11 @@ import itertools
 import io
 
 
-__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard']
+__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard',
+           'array_from_csv', 'array_from_xlsx', 'array_from_clipboard']
 
 import isopy.checks
+
 
 ################
 ### read exp ###
@@ -136,6 +138,8 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
              dialect = None):
     """
     Load data from a csv file.
+
+
 
     Parameters
     ----------
@@ -778,3 +782,28 @@ def _write_xlsx_nokeys(worksheet, data, ri):
     for i, row in enumerate(data):
         for rj, value in enumerate(row):
             worksheet.cell(ri + i, 1 + rj).value = value
+
+################
+### to array ###
+################
+
+def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
+    """
+    Returns an array of values from a csv file.
+    """
+    data = read_csv(filename, **read_csv_kwargs)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
+
+def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_kwargs):
+    """
+    Returns an array of values from *sheet_name* in a xlsx file.
+    """
+    data = read_xlsx(filename, sheetname, **read_xlsx_kwargs)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
+
+def array_from_clipboard(*, dtype=None, ndim=None, **read_clipboard_kwargs):
+    """
+    Returns an array of values from the clipboard.
+    """
+    data = read_clipboard(**read_clipboard_kwargs)
+    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)

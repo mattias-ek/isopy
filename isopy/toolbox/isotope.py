@@ -189,43 +189,35 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_mas
         input.append(item)
 
 
-    isotope_keys = isopy.IsotopeKeyList()
+    out_keys = isopy.IsotopeKeyList()
     for key, val in input:
         if isinstance(key, core.IsopyArray):
             keys = key.keys()
         else:
             key = isopy.askeystring(key)
-            if isinstance(key, isopy.ElementKeyString):
-                keys = isopy.refval.element.isotopes.get(key)
-                if keys is None: raise ValueError(f'No isotopes found for {key}')
-                keys = keys.set_charges(key.charge)
-            elif isinstance(key, isopy.IsotopeKeyString):
-                keys = isopy.IsotopeKeyList(key)
+            if key.flavour in ['element', 'isotope',  'molecule']:
+                keys = key.isotopes()
             else:
-                raise ValueError(f'Unknown input: {key}. input must be an element or isotope key string')
+                raise ValueError(f'Unknown input: {key} input must be an element or isotope key string')
 
-        isotope_keys += keys.filter(mz_neq = isotope_keys.mz())
+        keys = keys.filter(mz_neq = out_keys.mz())
 
-    isotope_keys = isotope_keys.sorted()
-    mz_keys = isotope_keys.mz()
-    out = isopy.zeros(None, isotope_keys)
-    mzkey = dict(zip(mz_keys, isotope_keys))
+        out_keys += tuple(dict(zip(keys.mz(), keys)).values())
 
+    out_keys = out_keys.sorted()
+    mz_keys = [key.mz() for key in out_keys]
+    mzkey_map = dict(zip(mz_keys, out_keys))
+
+    out = isopy.zeros(None, out_keys)
     for key, val in input:
         if isinstance(key, core.IsopyArray):
             array = key
         else:
             key = isopy.askeystring(key)
-            if isinstance(key, isopy.ElementKeyString):
-                element = key
-            else:
-                element = key.element_symbol
+            keys = key.element().isotopes()
+            keys = keys.filter(mz_eq=mz_keys)
 
-            keys = isopy.refval.element.isotopes.get(element, None)
-            keys = keys.set_charges(key.charge)
-            keys = keys.filter(mz_eq = mz_keys)
-
-            array = isopy.ones(None, keys) * isotope_fractions
+            array = isopy.array(keys.fractions(isotope_fractions=isotope_fractions), keys)
 
         if mf_factor is not None:
             array = add_mass_fractionation(array, mf_factor, isotope_masses=isotope_masses)
@@ -234,7 +226,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_mas
         array = array * val
 
         for k, v in array.items():
-            out[mzkey[k.mz()]] += v
+            out[mzkey_map[k.mz()]] += v
 
     return out
 
