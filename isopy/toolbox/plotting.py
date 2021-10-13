@@ -790,6 +790,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
         y_eq = lambda x: x * regression_result[0] + regression_result[1]
         y_se_eq = None
+    else:
+        raise ValueError('regression result not recognized')
 
     style = {}
     style.update(regression_style)
@@ -828,8 +830,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 
     if label_equation is True:
         sigfig = 2
-        if isinstance(regression_result, toolbox.regress.YorkregressResult):
-            style['label'] = regression_result.label(sigfig)
+        if isinstance(regression_result, toolbox.regress.LinregressResult):
+            style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
         else:
             label_intercept = y_eq(0)
             label_slope = y_eq(1) - label_intercept
@@ -854,6 +856,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 
     ull_function = None
     if not autoscale and hasattr(axes, '_update_line_limits'):
+        # This turns of auto updating the limits
         ull_function = axes._update_line_limits
         axes._update_line_limits = lambda *args, **kwargs: None
 
