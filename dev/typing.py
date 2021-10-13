@@ -16,6 +16,9 @@ ISOPYTYPES = {}
 #So that you can have several different type checkers for a project
 #TODO register_generic(name, checker) name can also be a generic if you want to give args.
 
+#isotope_array etc for arrays of that flavour
+
+
 def create_type(name, check_function=None):
     """
     Create and register a ``TypeVar``. Optionally a function for evaluating the *value* of the

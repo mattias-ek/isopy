@@ -1,8 +1,11 @@
 import isopy
 import numpy as np
 import os
+import time
 
 import isopy.core
+
+sleep_time = 1
 
 def filename(filename):
     return os.path.join(os.path.dirname(__file__), 'files', filename)
@@ -51,50 +54,69 @@ class Test_CSV:
         self.run(save_data, data, keys_in=None)
 
     def run(self, save_data, data, **kwargs):
+        # This fails occasionaly because it says the file is not avaliable
+        # A short sleep between writing and reading solves this?
+
         isopy.write_csv(filename('test_io1.csv'), save_data, **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io1.csv'), **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io1.csv'), float_preferred=True, **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         # With a comment
         isopy.write_csv(filename('test_io2.csv'), save_data, comments='This is a comment', **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io2.csv'), **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io2.csv'), float_preferred=True, **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         # Several comments and different comment symbol
         isopy.write_csv(filename('test_io3.csv'), save_data, comments=['This is a comment', 'so is this'],
                         comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         read_s = isopy.read_csv(filename('test_io3.csv'), comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         read_f = isopy.read_csv(filename('test_io3.csv'), float_preferred=True, comment_symbol='%', **kwargs)
+        time.sleep(sleep_time)
         self.compare(data, read_s, str)
         self.compare(data, read_f, float)
 
         if isinstance(save_data, isopy.core.IsopyArray) and kwargs.get('keys_in', 'c') == 'c':
             # to functions
             save_data.to_csv(filename('test_io3.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io3.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io3.csv'), float_preferred=True, **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io3.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
 
             # With a comment
             save_data.to_csv(filename('test_io4.csv'), comments='This is a comment', **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io4.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io4.csv'), float_preferred=True, **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io4.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -102,14 +124,17 @@ class Test_CSV:
             # Several comments. Cannot change comment symbol using to method
             save_data.to_csv(filename('test_io5.csv'),
                             comments=['This is a comment', 'so is this'], **kwargs)
+            time.sleep(sleep_time)
             read_s = isopy.read_csv(filename('test_io5.csv'), **kwargs)
+            time.sleep(sleep_time)
             read_f = isopy.read_csv(filename('test_io5.csv'), float_preferred=True,
                                     **kwargs)
+            time.sleep(sleep_time)
             self.compare(data, read_s, str)
             self.compare(data, read_f, float)
             new_array1 = isopy.array_from_csv(filename('test_io5.csv'))
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -277,7 +302,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io4.xlsx'), sheetname='test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -296,7 +321,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io5.xlsx'), 'test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])
@@ -315,7 +340,7 @@ class Test_xlsx:
 
             new_array1 = isopy.array_from_xlsx(filename('test_io6.xlsx'), sheetname='test_sheet')
             assert isinstance(new_array1, isopy.core.IsopyArray)
-            assert isopy.isflavour(new_array1, save_data)
+            assert new_array1.flavour == save_data.flavour
             assert new_array1.keys == save_data.keys
             for key in new_array1.keys:
                 np.testing.assert_allclose(new_array1[key], save_data[key])

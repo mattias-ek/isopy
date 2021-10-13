@@ -40,9 +40,8 @@ Below are functions for calculating regressions
 .. autosummary::
     :toctree: tb_regress
 
-    regression_york1
-    regression_york2
-    regression_linear
+    linregress
+    yorkregress
 
 
 Plotting

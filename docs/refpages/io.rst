@@ -10,7 +10,10 @@ These are functions to read and write data.
 
     read_csv
     write_csv
+    array_from_csv
     read_xlsx
     write_xlsx
+    array_from_xlsx
     read_clipboard
+    array_from_clipboard
     read_exp

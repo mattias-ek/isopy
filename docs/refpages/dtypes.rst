@@ -51,6 +51,11 @@ classes/functions can be used to create isopy arrays:
 
 .. autosummary::
     :toctree: Arrays
+    :template: array_template.rst
+
+    IsopyArray
+
+    :template: autosummary/function.rst
 
     array
     asarray
@@ -58,18 +63,6 @@ classes/functions can be used to create isopy arrays:
     array_from_csv
     array_from_xlsx
     array_from_clipboard
-
-    :template: array_template.rst
-
-    MassArray
-    ElementArray
-    IsotopeArray
-    RatioArray
-    GeneralArray
-    MixedArray
-
-    :template: autosummary/function.rst
-
     empty
     zeros
     ones

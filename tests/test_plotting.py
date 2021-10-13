@@ -114,7 +114,7 @@ def test_plot_scatter2():
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
     yerr = isopy.random(20, seed=48)
-    isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york1', color='red', marker='s')
+    isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york', color='red', marker='s')
     return plt
 
 @pytest.mark.mpl_image_compare(tolerance=5, style='default')
@@ -122,7 +122,7 @@ def test_plot_regression1():
     plt.close(); plt.clf()
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
-    regression = isopy.tb.regression_linear(x, y)
+    regression = isopy.tb.linregress(x, y)
     isopy.tb.plot_scatter(plt, x, y)
     isopy.tb.plot_regression(plt, regression)
     return plt
@@ -144,7 +144,7 @@ def test_plot_regression3():
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
     yerr = isopy.random(20, seed=48)
-    regression = isopy.tb.regression_york1(x, y, xerr, yerr)
+    regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr)
     isopy.tb.plot_regression(plt, regression)
     return plt
@@ -156,7 +156,7 @@ def test_plot_regression4():
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
     yerr = isopy.random(20, seed=48)
-    regression = isopy.tb.regression_york1(x, y, xerr, yerr)
+    regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr, color='red')
     isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
     return plt

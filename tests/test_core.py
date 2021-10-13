@@ -9,7 +9,7 @@ import warnings
 
 def assert_array_equal_array(array1, array2, match_dtype=True):
     assert isinstance(array1, core.IsopyArray)
-    assert core.flavour(array1) is core.flavour(array1.keys())
+    assert array1.flavour == array1.keys.flavour
 
     assert array1.dtype.names is not None
     assert array2.dtype.names is not None
@@ -25,6 +25,14 @@ def assert_array_equal_array(array1, array2, match_dtype=True):
             assert array1.dtype[i] == array2.dtype[i]
     for name in array1.dtype.names:
         np.testing.assert_allclose(array1[name], array2[name])
+
+class Test_Flavour:
+    def  test_comparison(self):
+        for name, item in core.FLAVOURS.items():
+            assert name in core.DEFAULT_TRY_FLAVOURS
+            assert item() in core.DEFAULT_TRY_FLAVOURS
+            assert item() in core.FLAVOURS.values()
+
 
 class Test_Exceptions:
     def test_KeyValueError(self):
@@ -69,6 +77,12 @@ class Test_IsopyKeyString:
                              fails= ['', 'Pd', '105', 'Pd105a', 'P105D', '105Pd/108Pd', 'ISO__pd104',
                                      'GEN_105Pd'],
                              different=['104pd', 'Pd106', '104Ru', 'cd106', '1a', 'b2'])
+
+        # MoleculeKeyString
+        self.direct_creation(core.MoleculeKeyString, correct='H2O',
+                             same=['(H2O)', '(H)2(O)', 'h2o'],
+                             fails='1(H2O) ++H2O'.split(),
+                             different='HHO (2H)2O H2(16O) HNO3 HCl'.split())
 
         self.direct_creation(core.RatioKeyString, correct ='105Pd/Pd',
                              same = ['105PD/Pd', '105pd/Pd', '105pD/Pd', 'Pd105/Pd',
@@ -150,6 +164,8 @@ class Test_IsopyKeyString:
         self.general_creation(core.ElementKeyString, ['Pd', 'pd', 'pD', 'PD', 'palladium', 'PALLADIUM'])
         self.general_creation(core.IsotopeKeyString, ['105Pd', '105PD', '105pd', '105pD', 'Pd105',
                                                   'Pd105', 'pd105', 'pD105', 'palladium-105', '105-PALLADIUM'])
+        self.general_creation(core.MoleculeKeyString,
+                              ['H2O', '(h2o)', '(H2O)', '(H)2(O)'])
 
         self.general_creation(core.RatioKeyString, ['105PD/Pd', '105pd/Pd', '105pD/Pd', 'Pd105/Pd',
                             'PD105/Pd', 'pd105/Pd', '105Pd/pd', '105Pd/PD', '105-Palladium/PALLADIUM',
@@ -159,7 +175,7 @@ class Test_IsopyKeyString:
         self.general_creation(core.GeneralKeyString, ['test', '-1', '/Pd', '105Pdd', 'Pd/Pd/Pd'])
 
         # Check behaviour of general string is as expected for keystring and askeystring.
-        for key in ['105', 'Pd', '108Pd']:
+        for key in ['105', 'Pd', '108Pd', 'H2O']:
             gkey = isopy.GeneralKeyString(key)
             ikey = isopy.keystring(gkey)
             assert type(gkey) != type(ikey)
@@ -234,7 +250,7 @@ class Test_IsopyKeyString:
         assert '106' not in isotope
 
     def test_ratio_attributes(self):
-        keys = ['105', 'Pd', '105Pd', 'test', '104Ru/106Cd']
+        keys = ['105', 'Pd', '105Pd', 'test', '104Ru/106Cd', 'H2O']
         for numerator, denominator in itertools.permutations(keys, 2):
             ratio = isopy.RatioKeyString((numerator, denominator))
             assert hasattr(ratio, 'numerator')
@@ -319,7 +335,7 @@ class Test_IsopyKeyString:
         for other in [isopy.IsotopeKeyString('74Ge'), isopy.RatioKeyString('88Sr/87Sr')]:
             for string in [isopy.MassKeyString('105'), isopy.ElementKeyString('Pd'),
                       isopy.IsotopeKeyString('105Pd'), isopy.GeneralKeyString('test'),
-                    isopy.RatioKeyString('Cd/Ru')]:
+                    isopy.RatioKeyString('Cd/Ru'), isopy.MoleculeKeyString('H2O')]:
                 ratio = string / other
 
                 assert type(ratio) is isopy.RatioKeyString
@@ -361,6 +377,14 @@ class Test_IsopyKeyString:
                            name = 'palladium', Name = 'Palladium', NAME = 'PALLADIUM',
                            mEs = '101Pd', ESm = 'PD101', namem = 'palladium101', mNAME = '101PALLADIUM')
         str_options.update({'NAME-m': 'PALLADIUM-101', 'm-es': '101-pd'})
+        for k, v in str_options.items():
+            assert key.str(k) == v
+            assert key.str(f'key {{{k}}}') == f'key {v}'
+
+        key = isopy.MoleculeKeyString('H2O')
+        assert repr(key) == "MoleculeKeyString('H2O')"
+        assert key.str() == 'H2O'
+        str_options = dict(key='H2O')
         for k, v in str_options.items():
             assert key.str(k) == v
             assert key.str(f'key {{{k}}}') == f'key {v}'
@@ -441,7 +465,150 @@ class Test_IsopyKeyString:
         key = isopy.IsotopeKeyString('138Ba+').set_charge(None)
         assert key.charge == None
 
+        #molecule
+        # isotope
+        mass = isopy.refval.isotope.mass.get('1H') * 2
+        mass += isopy.refval.isotope.mass.get('16O')
+        assert isopy.MoleculeKeyString('((1H)2(16O))').charge is None
+        for charge, strings in {-2: ['((1H)2(16O))--'], -1: ['((1H)2(16O))-'],
+                                1: ['((1H)2(16O))+'], 2: ['((1H)2(16O))++']}.items():
+            for string in strings:
+                key = isopy.MoleculeKeyString(string)
+                assert key.charge == charge
+                assert str(key) == '((1H)2(16O))' + ('+' * charge or '-' * abs(charge))
+                assert key.mz() == 18 / abs(charge)
+                assert key.mz(True) == mass / abs(charge)
+                assert key.basekey == isopy.MoleculeKeyString(key, ignore_charge=True)
+                key = isopy.MoleculeKeyString(key, ignore_charge=True)
+                assert key.charge is None
+                assert str(key) == '(1H)2(16O)'
+                key = isopy.MoleculeKeyString(string, ignore_charge=True)
+                assert key.charge is None
+                assert str(key) ==  '(1H)2(16O)'
+        key = isopy.MoleculeKeyString('H2O')
+        for charge in [-2, -1, 1, 2]:
+            key2 = key.set_charge(charge)
+            assert key is not key2
+            assert key.charge is None
+            assert key2.charge is charge
+        key = isopy.MoleculeKeyString('(H2O)+').set_charge(0)
+        assert key.charge is None
+        key = isopy.MoleculeKeyString('(H2O)+').set_charge(None)
+        assert key.charge is None
+
+    def test_fraction(self):
+        fractions1 = isopy.refval.isotope.fraction
+        fractions2 = dict(h1 = 0.5, h2 = 0.5, o16=0.6, o17=0.2, o18=0.1, ba137 = 1, pd105=0.1)
+        fractions3 = isopy.ScalarDict(fractions2)
+
+        isotopes = isopy.IsotopeKeyList('105pd', '137Ba', '1H', '16O', '5H')
+        for key in isotopes:
+            np.testing.assert_almost_equal(key.fraction(), fractions1.get(key))
+            np.testing.assert_almost_equal(key.fraction(5), fractions1.get(key, 5))
+            np.testing.assert_almost_equal(key.fraction(isotope_fractions = fractions2), fractions3.get(key))
+
+        molecule = isopy.MoleculeKeyString('(1H)2(16O)')
+        molfrac1 = fractions1.get('1h') ** 2 * fractions1.get('16o')
+        molfrac2 = fractions3.get('1h') ** 2 * fractions3.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('(5H)2(16O)')
+        molfrac1 = fractions1.get('5h') ** 2 * fractions1.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        molfrac1 = fractions1.get('5h', 5) ** 2 * fractions1.get('16o', 5)
+        np.testing.assert_almost_equal(molecule.fraction(5), molfrac1)
+
+        molecule = isopy.MoleculeKeyString('(1H)(2H)(16O)')
+        molfrac1 = fractions1.get('1h') * fractions1.get('2h') * fractions1.get('16o')
+        molfrac2 = fractions3.get('1h') * fractions3.get('2h') * fractions3.get('16o')
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('((16O)(1H))2')
+        molfrac1 = (fractions1.get('16o') * fractions1.get('1h')) ** 2
+        molfrac2 = (fractions3.get('16o') * fractions3.get('1h')) ** 2
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+        molecule = isopy.MoleculeKeyString('((2H)(18O))3((16O)(1H))2')
+        molfrac1 = ((fractions1.get('16o') * fractions1.get('1h')) ** 2) * ((fractions1.get('18o') * fractions1.get('2h')) ** 3)
+        molfrac2 = ((fractions3.get('16o') * fractions3.get('1h')) ** 2) * ((fractions3.get('18o') * fractions3.get('2h')) ** 3)
+        np.testing.assert_almost_equal(molecule.fraction(), molfrac1)
+        np.testing.assert_almost_equal(molecule.fraction(isotope_fractions = fractions2), molfrac2)
+
+    # TODO
+    def test_element(self):
+        molecule = isopy.MoleculeKeyString('H2O')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)2O')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)2(16O)')
+        assert molecule.element() == 'H2O'
+
+        molecule = isopy.MoleculeKeyString('(1H)(2H)(16O)')
+        assert molecule.element() == 'HHO'
+
+        molecule = isopy.MoleculeKeyString('(OH)2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)H)2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)(2H))2')
+        assert molecule.element() == '(OH)2'
+
+        molecule = isopy.MoleculeKeyString('((16O)(2H))((18O)(1H))')
+        assert molecule.element() == 'OHOH'
+
+    def test_isotopes(self):
+        molecule = isopy.MoleculeKeyString('O')
+        n = len(isopy.refval.element.isotopes['o'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in isopy.refval.element.isotopes['o']]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('O2')
+        n = len(isopy.refval.element.isotopes['o']) ** 2
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(16O)(16O) (17O)(16O) (18O)(16O) ' \
+                            '(16O)(17O) (17O)(17O) (18O)(17O) ' \
+                            '(16O)(18O) (17O)(18O) (18O)(18O)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('OH')
+        n = len(isopy.refval.element.isotopes['o']) * len(isopy.refval.element.isotopes['H'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(16O)(1H) (17O)(1H) (18O)(1H) ' \
+                            '(16O)(2H) (17O)(2H) (18O)(2H)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+        molecule = isopy.MoleculeKeyString('H2(16O)')
+        n =  len(isopy.refval.element.isotopes['H']) ** 2
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        assert isotopes == [isopy.MoleculeKeyString(key) for key in
+                            '(1H)(1H)(16O) (2H)(1H)(16O) ' \
+                            '(1H)(2H)(16O) (2H)(2H)(16O)'.split()]
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), isopy.refval.isotope.fraction['16o'], decimal=5)
+
+        molecule = isopy.MoleculeKeyString('H2O')
+        n = len(isopy.refval.element.isotopes['H']) ** 2 * len(isopy.refval.element.isotopes['O'])
+        isotopes = molecule.isotopes()
+        assert len(isotopes) == n
+        np.testing.assert_almost_equal(np.sum(isotopes.fractions()), 1, decimal=5)
+
+
 #TODO tests for Mixed
+# TODO specific tests for Molecule
+# Tests for fraction on molecule and isotope
 class Test_IsopyList:
     def test_creation(self):
         mass = self.creation(isopy.MassKeyList,
@@ -458,6 +625,11 @@ class Test_IsopyList:
                       correct=['104Ru', '105Pd', '106Cd'],
                       same=[('pd105', '106CD', '104rU')],
                       fail=['p105d', '104ru', '106cd'])
+
+        molecule = self.creation(isopy.MoleculeKeyList,
+                                correct=['H2O', 'HNO3', 'HCl'],
+                                same=[('h20', '(hNO3))', '(h)(cl)')],
+                                fail=['2(H2O)', 'hno3', 'hcl'])
 
         assert type(isotope.mass_numbers) == isopy.MassKeyList
         for masskey in ('104', '105', '106'):
@@ -481,7 +653,7 @@ class Test_IsopyList:
         assert type(mixed[4:]) == isopy.RatioKeyList
 
 
-        for numerator, denominator in itertools.permutations((mass, element, isotope, general), 2):
+        for numerator, denominator in itertools.permutations((mass, element, isotope, molecule, general), 2):
             correct = [f'{n}/{d}' for n, d in zip(numerator, denominator)]
             same = [(correct[0], correct[2], correct[1])]
             fail = [correct[0], correct[2], f'{numerator[0]}']
@@ -523,9 +695,7 @@ class Test_IsopyList:
             assert ratio2.denominators == ratio
 
         assert type(isopy.keylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'])) is core.MixedKeyList
-        assert type(isopy.keylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'], mix_flavours=False)) is core.GeneralKeyList
         assert type(isopy.askeylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'])) is core.MixedKeyList
-        assert type(isopy.askeylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'], mix_flavours=False)) is core.GeneralKeyList
 
     def creation(self, listtype, correct, same, fail = None):
         dtype = np.dtype(dict(names=[isopy.keystring(k) for k in correct],  formats=[float for k in correct]))
@@ -586,17 +756,15 @@ class Test_IsopyList:
 
             mixed_list = isopy.keylist(fail)
             assert type(mixed_list) is not listtype
-            assert type(mixed_list) is isopy.MixedKeyList
             assert mixed_list != correct
 
             mixed_list = isopy.askeylist(fail)
             assert type(mixed_list) is not listtype
-            assert type(mixed_list) is isopy.MixedKeyList
             assert mixed_list != correct
 
         return correct_list
 
-    # TODO tests for Mixed
+    # TODO tests for Mixed, Molecule
     def test_compare(self):
         mass = self.compare(isopy.MassKeyList,
                              keys=['104', '105', '106'],
@@ -688,7 +856,7 @@ class Test_IsopyList:
 
         return keylist
 
-    # TODO tests for Mixed
+    # TODO tests for Mixed, Molecule
     def test_bitwise(self):
         #Last two of key1 should be the first two of key2
         #Otherwise the ratio test will fail
@@ -762,7 +930,7 @@ class Test_IsopyList:
 
         return keyband, keybor, keybxor
 
-    # TODO tests for Mixed
+    # TODO tests for Mixed, Molecule
     # TODO test flavour, mz
     def test_filter(self):
         mass = isopy.MassKeyList(['104', '105', '106', '108', '104', '108'])
@@ -982,7 +1150,27 @@ class Test_IsopyList:
         keylist = isopy.IsotopeKeyList('136Ba-- 137ba- 138ba'.split())
         assert keylist.charges == (-2, -1, None)
         assert keylist.mz() == (136 / 2, 137 / 1, 138 / 1)
-        assert keylist.mz(true_mass=True) == masses
+        np.testing.assert_allclose(keylist.mz(true_mass=True), masses)
+
+        keylist = keylist.set_charges([0, -1, -2])
+        assert keylist.charges == (None, -1, -2)
+        keylist = keylist.set_charges(None)
+        assert keylist.charges == (None, None, None)
+        keylist = keylist.set_charges(-2)
+        assert keylist.charges == (-2, -2, -2)
+
+        with pytest.raises(ValueError):
+            keylist.set_charges([1, 1])
+        with pytest.raises(TypeError):
+            keylist.set_charges('++')
+        with pytest.raises(TypeError):
+            keylist.set_charges(['++', '++', '++'])
+
+        keylist = isopy.MoleculeKeyList('((1H)2(16O))-- ((1H)2(16O))- ((1H)2(16O))'.split())
+        masses = [(isopy.refval.isotope.mass.get('1h') * 2 + isopy.refval.isotope.mass.get('16o')) / c for c in [2, 1, 1]]
+        assert keylist.charges == (-2, -1, None)
+        assert keylist.mz() == (18 / 2, 18 / 1, 18 / 1)
+        np.testing.assert_allclose(keylist.mz(true_mass=True), masses)
 
         keylist = keylist.set_charges([0, -1, -2])
         assert keylist.charges == (None, -1, -2)
@@ -1053,6 +1241,11 @@ class Test_IsopyList:
         assert isotope != isotope2
         assert isotope == isotope2.sorted()
 
+        molecule =  isopy.MoleculeKeyList('(OH)2', 'H2O', 'HCl', 'HNO3')
+        molecule2 = isopy.MoleculeKeyList('H2O HNO3 HCl (OH)2'.split())
+        assert isotope != isotope2
+        assert isotope == isotope2.sorted()
+
         general = isopy.GeneralKeyList('ginny harry hermione luna neville ron'.split())
         general2 = isopy.GeneralKeyList('hermione ginny luna ron neville harry'.split())
         assert general != general2
@@ -1080,6 +1273,10 @@ class Test_IsopyList:
         isotope = isopy.IsotopeKeyList('106cd 104ru 102ru 104pd 102pd 106pd'.split()).reversed()
         assert isotope != '106cd 104ru 102ru 104pd 102pd 106pd'.split()
         assert isotope == list(reversed('106cd 104ru 102ru 104pd 102pd 106pd'.split()))
+
+        molecule = isopy.MoleculeKeyList('H2O HNO3 HCl (OH)2'.split()).reversed()
+        assert molecule != 'H2O HNO3 HCl (OH)2'.split()
+        assert molecule == list(reversed('H2O HNO3 HCl (OH)2'.split()))
 
         general = isopy.GeneralKeyList('hermione ginny luna ron neville harry'.split()).reversed()
         assert general != 'hermione ginny luna ron neville harry'.split()
@@ -1124,6 +1321,14 @@ class Test_IsopyList:
             assert key.strlist(k) == [v]
             assert key.strlist(f'key {{{k}}}') == [f'key {v}']
 
+        key = isopy.MoleculeKeyList('H2O')
+        assert repr(key) == "MoleculeKeyList('H2O')"
+        assert key.strlist() == ['H2O']
+        str_options = dict(key='H2O')
+        for k, v in str_options.items():
+            assert key.strlist(k) == [v]
+            assert key.strlist(f'key {{{k}}}') == [f'key {v}']
+
         key = isopy.RatioKeyList('pd/101pd')
         assert repr(key) == "RatioKeyList('Pd/101Pd')"
         assert key.strlist() == ['Pd/101Pd']
@@ -1157,6 +1362,54 @@ class Test_IsopyList:
 
         ratio = isopy.keylist('ru//rh/pd cd/te//ag'.split())
         assert ratio.flatten() == 'ru cd te rh pd ag'.split()
+
+    def test_fractions(self):
+        fractions1 = isopy.refval.isotope.fraction
+        fractions2 = dict(h1=0.5, h2=0.5, o16=0.6, o17=0.2, o18=0.1, ba137=1, pd105=0.1)
+        fractions3 = isopy.ScalarDict(fractions2)
+
+        isotopes = isopy.IsotopeKeyList('105pd', '137Ba', '1H', '16O', '5H')
+        assert type(isotopes.fractions()) is tuple
+        assert len(isotopes.fractions()) == len(isotopes)
+        np.testing.assert_array_almost_equal(isotopes.fractions(),
+                                             [fractions1.get(key) for key in isotopes])
+        np.testing.assert_array_almost_equal(isotopes.fractions(5),
+                                             [fractions1.get(key, 5) for key in isotopes])
+        np.testing.assert_array_almost_equal(isotopes.fractions(isotope_fractions=fractions2),
+                                             [fractions3.get(key) for key in isotopes])
+
+        molecules = isopy.MoleculeKeyList(['(1H)2(16O)', '(5H)2(16O)', '(1H)(2H)(16O)',
+                                           '((16O)(1H))2', '((2H)(18O))3((16O)(1H))2'])
+        molfrac1 = []
+        molfrac2 = []
+        molfrac1.append(fractions1.get('1h') ** 2 * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('1h') ** 2 * fractions3.get('16o'))
+        molfrac1.append(fractions1.get('5h') ** 2 * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('5h') ** 2 * fractions3.get('16o'))
+        molfrac1.append(fractions1.get('1h') * fractions1.get('2h') * fractions1.get('16o'))
+        molfrac2.append(fractions3.get('1h') * fractions3.get('2h') * fractions3.get('16o'))
+        molfrac1.append((fractions1.get('16o') * fractions1.get('1h')) ** 2)
+        molfrac2.append((fractions3.get('16o') * fractions3.get('1h')) ** 2)
+        molfrac1.append(((fractions1.get('16o') * fractions1.get('1h')) ** 2) * (
+                    (fractions1.get('18o') * fractions1.get('2h')) ** 3))
+        molfrac2.append(((fractions3.get('16o') * fractions3.get('1h')) ** 2) * (
+                    (fractions3.get('18o') * fractions3.get('2h')) ** 3))
+
+        np.testing.assert_array_almost_equal(molecules.fractions(), molfrac1)
+        np.testing.assert_array_almost_equal(molecules.fractions(isotope_fractions=fractions2), molfrac2)
+
+        molfrac1 = []
+        molfrac1.append(fractions1.get('1h', 5) ** 2 * fractions1.get('16o', 5))
+        molfrac1.append(fractions1.get('5h', 5) ** 2 * fractions1.get('16o', 5))
+        molfrac1.append(fractions1.get('1h', 5) * fractions1.get('2h', 5) * fractions1.get('16o', 5))
+        molfrac1.append((fractions1.get('16o', 5) * fractions1.get('1h', 5)) ** 2)
+        molfrac1.append(((fractions1.get('16o', 5) * fractions1.get('1h', 5)) ** 2) * (
+                (fractions1.get('18o', 5) * fractions1.get('2h', 5)) ** 3))
+
+        assert type(molecules.fractions()) is tuple
+        assert len(molecules.fractions()) == len(molecules)
+        np.testing.assert_array_almost_equal(molecules.fractions(5), molfrac1)
+
 
 # 100 % coverage
 class Test_Dict:
@@ -1736,8 +1989,8 @@ class Test_Dict:
         array2 = isodict2.to_array(subkeys1)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
-        assert core.isflavour(array1, 'element')
-        assert core.isflavour(array2, 'element')
+        assert array1.flavour == 'element'
+        assert array2.flavour == 'element'
         assert array1.ndim == 0
         assert array2.ndim == 0
         assert array1.keys == subkeys1
@@ -1751,8 +2004,8 @@ class Test_Dict:
         array2 = isodict2.to_array(subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
-        assert core.isflavour(array1, 'mixed')
-        assert core.isflavour(array2, 'mixed')
+        assert array1.flavour == 'mixed'
+        assert array2.flavour == 'mixed'
         assert array1.ndim == 0
         assert array2.ndim == 0
         assert array1.keys == subkeys2
@@ -1766,8 +2019,8 @@ class Test_Dict:
         array2 = isodict2.to_array(flavour_eq ='isotope')
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
-        assert core.isflavour(array1, 'isotope')
-        assert core.isflavour(array2, 'isotope')
+        assert array1.flavour == 'isotope'
+        assert array2.flavour == 'isotope'
         assert array1.ndim == 0
         assert array2.ndim == 0
         assert array1.keys == subkeys3
@@ -1781,8 +2034,8 @@ class Test_Dict:
         array2 = isodict2.to_array(key_eq=subkeys2)
         assert isinstance(array1, core.IsopyArray)
         assert isinstance(array2, core.IsopyArray)
-        assert core.isflavour(array1, 'mixed')
-        assert core.isflavour(array2, 'mixed')
+        assert array1.flavour == 'mixed'
+        assert array2.flavour == 'mixed'
         assert array1.ndim == 0
         assert array2.ndim == 0
         assert array1.keys == subkeys4
@@ -1802,9 +2055,10 @@ class Test_Array:
         general_keys = ('harry', 'ron', 'hermione', 'neville')
         ratio_keys = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
         mixed_keys = ('104', 'mo', '104ru', 'neville/cd111')
-        general_keys = isopy.GeneralKeyList(('104', 'mo', '104ru', 'neville/cd111'))
+        molecule_keys = ('H2O', '(OH2)', 'HCl', 'HNO3')
 
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys, mixed_keys, general_keys)
+        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys, mixed_keys,
+                    general_keys, molecule_keys)
 
         # 0-dim input
         data_list = [1, 2, 3, 4]
@@ -1895,9 +2149,10 @@ class Test_Array:
         general_keys = ('harry', 'ron', 'hermione', 'neville')
         ratio_keys = ('harry/104ru', 'ron/105pd', 'hermione/106Pd', 'neville/cd111')
         mixed_keys = ('104', 'mo', '104ru', 'neville/cd111')
-        general_keys = isopy.GeneralKeyList(('104', 'mo', '104ru', 'neville/cd111'))
+        molecule_keys = ('H2O', '(OH2)', 'HCl', 'HNO3')
 
-        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys, mixed_keys, general_keys)
+        all_keys = (mass_keys, element_keys, isotope_keys, general_keys, ratio_keys, mixed_keys,
+                    general_keys, molecule_keys)
 
         # 0-dim input
         data_list = [1, 2, 3, 4]
@@ -2028,11 +2283,9 @@ class Test_Array:
         pass
 
     def create_array(self, correct, keys, ndim, /, *args, **kwargs):
-        if type(keys) is core.GeneralKeyList:
-            kwargs['mix_flavours'] = False
         result = isopy.array(*args, **kwargs)
         keylist = isopy.askeylist(keys)
-        assert core.isflavour(result, keylist)
+        assert result.flavour == keylist.flavour
         assert isinstance(result, core.IsopyNdarray)
         assert result.keys == keylist
         assert result.ncols == len(keylist)
@@ -2047,14 +2300,9 @@ class Test_Array:
 
         assert_array_equal_array(result, correct)
 
-        if not isinstance(result, core.GeneralArray):
-            result2 = isopy.array(result)
-            assert result2 is not result
-            assert_array_equal_array(result2, correct)
-        else:
-            result2 = isopy.array(result, mix_flavours=False)
-            assert result2 is not result
-            assert_array_equal_array(result2, correct)
+        result2 = isopy.array(result)
+        assert result2 is not result
+        assert_array_equal_array(result2, correct)
 
         result2 = isopy.asarray(result)
         assert result2 is result
@@ -2069,27 +2317,6 @@ class Test_Array:
         for i, value in enumerate(result.values()):
             key = keylist[i]
             np.testing.assert_allclose(value, result[key])
-
-
-        array_cls = {core.flavour(cls): cls for cls in [core.MassArray, core.ElementArray,
-                                                         core.IsotopeArray, core.RatioArray,
-                                                         core.RatioArray, core.GeneralArray,
-                                                         core.MixedArray]}
-        kwargs.pop('mix_flavours', None)
-        result = array_cls.get(core.flavour(result))(*args, **kwargs)
-        assert isinstance(result, core.IsopyNdarray)
-        assert result.keys == keylist
-        assert result.ncols == len(keylist)
-        assert result.ndim == ndim
-        if ndim == 0:
-            assert result.nrows == -1
-        else:
-            assert result.nrows == result.size
-            assert len(result) == result.size
-
-            assert isinstance(result[0], core.IsopyVoid)
-
-        assert_array_equal_array(result, correct)
 
     def test_normalise(self):
         data = np.array([[i for i in range(1, 7)], [i**2 for i in range(1, 7)]])
@@ -2155,66 +2382,75 @@ class Test_Array:
 
         # No denominator
         ratio = array.ratio()
-        assert isinstance(ratio, core.RatioArray)
+        assert ratio.flavour == 'ratio'
         assert ratio.keys == 'ru/pd cd/pd'.split()
         for key in ratio.keys:
             np.testing.assert_allclose(ratio[key], array[key.numerator] / array[key.denominator])
 
         array2 = ratio.deratio()
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
         array2 = ratio.deratio(100)
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'] * 100)
 
         array2 = ratio.deratio(array['pd'])
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key])
 
         # remove denominator
         ratio = array.ratio('pd')
-        assert isinstance(ratio, core.RatioArray)
+        assert ratio.flavour == 'ratio'
         assert ratio.keys == 'ru/pd cd/pd'.split()
         for key in ratio.keys:
             np.testing.assert_allclose(ratio[key], array[key.numerator] / array[key.denominator])
 
         array2 = ratio.deratio()
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
         array2 = ratio.deratio(100)
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'] * 100)
 
         array2 = ratio.deratio(array['pd'])
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key])
 
         # keep denominator
         ratio = array.ratio('pd', False)
-        assert isinstance(ratio, core.RatioArray)
+        assert ratio.flavour == 'ratio'
         assert ratio.keys == 'ru/pd pd/pd cd/pd'.split()
         for key in ratio.keys:
             np.testing.assert_allclose(ratio[key], array[key.numerator] / array[key.denominator])
 
         array2 = ratio.deratio()
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
         array2 = ratio.deratio(100)
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'] * 100)
 
         array2 = ratio.deratio(array['pd'])
+        assert array2.flavour == 'element'
         assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key])
@@ -2229,7 +2465,7 @@ class Test_Array:
         # Ndarray
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
-        assert core.isflavour(array, 'mixed')
+        assert array.flavour ==  'mixed'
 
         with pytest.raises(ValueError):
             array['ag']
@@ -2268,7 +2504,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         subarray[:] = 3
@@ -2288,7 +2524,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         subarray[:] = 3
@@ -2308,7 +2544,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
@@ -2336,7 +2572,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         subarray[:] = [3, 5]
@@ -2356,7 +2592,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         subarray[:] = [3, 5]
@@ -2376,7 +2612,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
@@ -2400,7 +2636,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         other = isopy.array(dict(ru = [3 ,5], ag107 = [3, 6], cd=[4, 6]))
@@ -2422,7 +2658,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         other = isopy.array(dict(ru=3, ag107=3, cd=4))
@@ -2444,7 +2680,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         other = dict(ru=[3], ag107=[3], cd=[4])
@@ -2465,7 +2701,7 @@ class Test_Array:
         # Void
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
-        assert core.isflavour(array, 'mixed')
+        assert array.flavour == 'mixed'
 
         with pytest.raises(ValueError):
             array['ag']
@@ -2489,7 +2725,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         subarray[:] = 3
@@ -2509,7 +2745,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         subarray[:] = 3
@@ -2529,7 +2765,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
@@ -2553,7 +2789,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         subarray[:] = [3]
@@ -2573,7 +2809,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         subarray[:] = [3]
@@ -2593,7 +2829,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
@@ -2617,7 +2853,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array['cd', '107ag']
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'mixed')
+        assert subarray.flavour == 'mixed'
         assert subarray.keys == ['cd', '107ag']
 
         other = isopy.array(dict(ru=[3], ag107=[5], cd=[4]))
@@ -2639,7 +2875,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[('cd', 'ru')]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'element')
+        assert subarray.flavour == 'element'
         assert subarray.keys == ['cd', 'ru']
 
         other = isopy.array(dict(ru=3, ag107=5, cd=4))
@@ -2661,7 +2897,7 @@ class Test_Array:
         array = isopy.ones(2, 'ru 105pd 107ag cd'.split())[0]
         subarray = array[['105pd', '107ag']]
         assert isinstance(subarray, core.IsopyArray)
-        assert core.isflavour(subarray, 'isotope')
+        assert subarray.flavour == 'isotope'
         assert subarray.keys == ['105pd', '107ag']
 
         other = dict(ru=[3], ag107=[3], cd=[4])
@@ -2937,7 +3173,7 @@ class Test_Array:
             assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
             new_array1 = isopy.array_from_clipboard()
             assert isinstance(new_array1, core.IsopyArray)
-            assert core.isflavour(new_array1, array)
+            assert new_array1.flavour == array.flavour
             assert_array_equal_array(new_array1, array)
 
         # Size 1, 1-dim
@@ -3765,6 +4001,7 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, array1)
 
         result = isopy.concatenate(array1, array2, array3)
+
         keys = array1.keys | array2.keys | array3.keys
         assert result.keys == keys
         for key in keys:
@@ -4291,42 +4528,31 @@ class Test_Misc:
         for i in range(6):
             for j in range(6):
                 if i == j:
-                    assert core.flavour(keys[i]) == flavours[j]
-                    assert core.flavour(flavours[i]) == flavours[j]
-                    assert core.flavour(names[i]) == flavours[j]
+                    assert keys[i].flavour == flavours[j]
+                    assert flavours[i].flavour == flavours[j]
 
-                    assert core.isflavour(keys[i], flavours[j])
-                    assert core.isflavour(keys[i], keys[j])
-                    assert core.isflavour(keys[i], names[j])
+                    assert keys[i].flavour == flavours[j]
+                    assert keys[i].flavour == keys[j].flavour
+                    assert keys[i].flavour == names[j]
 
-                    assert core.isflavour(flavours[i], flavours[j])
-                    assert core.isflavour(flavours[i], keys[j])
-                    assert core.isflavour(flavours[i], names[j])
+                    assert flavours[i].flavour == flavours[j]
+                    assert flavours[i].flavour == keys[j].flavour
+                    assert flavours[i].flavour == names[j]
 
-                    assert core.isflavour(names[i], flavours[j])
-                    assert core.isflavour(names[i], keys[j])
-                    assert core.isflavour(names[i], names[j])
+                    assert names[i] == keys[j].flavour
                 else:
-                    assert core.flavour(keys[i]) != flavours[j]
-                    assert core.flavour(flavours[i]) != flavours[j]
-                    assert core.flavour(names[i]) != flavours[j]
+                    assert keys[i].flavour != flavours[j]
+                    assert flavours[i].flavour != flavours[j]
 
-                    assert not core.isflavour(keys[i], flavours[j])
-                    assert not core.isflavour(keys[i], keys[j])
-                    assert not core.isflavour(keys[i], names[j])
+                    assert keys[i].flavour != flavours[j]
+                    assert keys[i].flavour != keys[j].flavour
+                    assert keys[i].flavour != names[j]
 
-                    assert not core.isflavour(flavours[i], flavours[j])
-                    assert not core.isflavour(flavours[i], keys[j])
-                    assert not core.isflavour(flavours[i], names[j])
+                    assert flavours[i].flavour != flavours[j]
+                    assert flavours[i].flavour != keys[j].flavour
+                    assert flavours[i].flavour != names[j]
 
-                    assert not core.isflavour(names[i], flavours[j])
-                    assert not core.isflavour(names[i], keys[j])
-                    assert not core.isflavour(names[i], names[j])
-
-        with pytest.raises(TypeError):
-            core.flavour(str)
-        with pytest.raises(TypeError):
-            core.flavour('a')
+                    assert names[i] != keys[j].flavour
 
     def test_allowed_numpy_functions(self):
         # These are non-vital so just make sure they return a string
