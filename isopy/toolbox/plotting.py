@@ -1997,7 +1997,7 @@ def _compare_step1(axes, axis, cval, pmval, sigfig, pmunit, ignore_outliers, ove
 
 def _format_sigfig(value, sigfig, variation = None, pm=False):
     if variation is None: variation = value
-    if sigfig is not None:
+    if sigfig is not None and variation != 0:
         precision = sigfig - int(np.log10(np.abs(variation)))
         if precision < 0: precision = 0
     if pm:
