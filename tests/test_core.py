@@ -1075,6 +1075,7 @@ class Test_IsopyList:
 
         return keylist
 
+    # TODO tests for Mixed, Molecule
     def test_filter_mz(self):
         keylist = isopy.keylist('64zn  132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split())
 
@@ -1096,6 +1097,7 @@ class Test_IsopyList:
         assert keylist.filter(mz_ge=66) == '132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split()
         assert keylist.filter(mz_ge=66, mz_true_mass=True) == '67zn 68zn 137ba++ 70zn 136ba'.split()
 
+    # TODO tests for Mixed, Molecule
     def test_filter_flavour(self):
         keylist = isopy.keylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'])
 
@@ -1186,6 +1188,7 @@ class Test_IsopyList:
         with pytest.raises(TypeError):
             keylist.set_charges(['++', '++', '++'])
 
+    # TODO tests for Mixed, Molecule
     def test_add_subtract(self):
         # Add
         keylist = isopy.keylist('pd', 'cd')
@@ -1243,8 +1246,8 @@ class Test_IsopyList:
 
         molecule =  isopy.MoleculeKeyList('(OH)2', 'H2O', 'HCl', 'HNO3')
         molecule2 = isopy.MoleculeKeyList('H2O HNO3 HCl (OH)2'.split())
-        assert isotope != isotope2
-        assert isotope == isotope2.sorted()
+        assert molecule != molecule2
+        assert molecule == molecule2.sorted()
 
         general = isopy.GeneralKeyList('ginny harry hermione luna neville ron'.split())
         general2 = isopy.GeneralKeyList('hermione ginny luna ron neville harry'.split())

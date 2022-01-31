@@ -644,10 +644,11 @@ def _read_xlsx_sheet_nokeys(worksheet, row_index, default_value):
 
         for ci in range(1, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
-            value = cell.value.strip()
+            value = cell.value
             if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[-1].append(ERROR)
             elif cell.data_type == 's':
+                value = value.strip()
                 if value == '':
                     data[-1].append(None)
                 else:
