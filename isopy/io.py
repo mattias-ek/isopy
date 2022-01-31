@@ -570,10 +570,11 @@ def _read_xlsx_sheet_ckeys(worksheet, row_index, default_value):
 
         for ri in range(row_index + 1, worksheet.max_row + 1):
             cell = worksheet.cell(ri, ci)
-            value = cell.value.strip()
+            value = cell.value
             if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
+                value = value.strip()
                 if value == '':
                     data[key].append(None)
                 else:
@@ -609,11 +610,11 @@ def _read_xlsx_sheet_rkeys(worksheet, row_index, default_value):
 
         for ci in range(2, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
-            value = cell.value.strip()
+            value = cell.value
             if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
-
+                value = value.strip()
                 if value == '':
                     data[key].append(None)
                 else:
