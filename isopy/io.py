@@ -9,6 +9,7 @@ import pyperclip
 from openpyxl import load_workbook
 import itertools
 import io
+import numpy as np
 
 
 __all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard',
@@ -569,10 +570,10 @@ def _read_xlsx_sheet_ckeys(worksheet, row_index, default_value):
 
         for ri in range(row_index + 1, worksheet.max_row + 1):
             cell = worksheet.cell(ri, ci)
-            if cell.data_type == 'e':
+            value = cell.value.strip()
+            if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
-                value = cell.value.strip()
                 if value == '':
                     data[key].append(None)
                 else:
@@ -608,10 +609,11 @@ def _read_xlsx_sheet_rkeys(worksheet, row_index, default_value):
 
         for ci in range(2, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
-            if cell.data_type == 'e':
+            value = cell.value.strip()
+            if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
-                value = cell.value.strip()
+
                 if value == '':
                     data[key].append(None)
                 else:
@@ -642,10 +644,10 @@ def _read_xlsx_sheet_nokeys(worksheet, row_index, default_value):
 
         for ci in range(1, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
-            if cell.data_type == 'e':
+            value = cell.value.strip()
+            if cell.data_type == 'e' or value.upper() == '=NA()':
                 data[-1].append(ERROR)
             elif cell.data_type == 's':
-                value = cell.value.strip()
                 if value == '':
                     data[-1].append(None)
                 else:
@@ -663,7 +665,7 @@ def _read_xlsx_sheet_nokeys(worksheet, row_index, default_value):
 
 #TODO change np.nan values to '=NA()'
 def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
-               keys_in= 'c', append = False, **sheetnames):
+               keys_in= 'c', append = False, clear = True, first_cell ="A1", **sheetnames):
     """
     Save data to an excel file.
 
@@ -684,10 +686,13 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
     append : bool, Default = False
         If ``True`` and *filename* exists it will append the data to this workbook. An exception
         is raised if *filename* is not a valid excel workbook.
-    sheets : isopy_array, numpy_array
+    clear : bool, Default = True
+        If ``True`` any preexisting sheets are cleared before any new data is written to it.
+    first_cell: str
+        The first cell where the data is written. Defaults value is ``"A1"``.
+    sheetnames : isopy_array, numpy_array
         Data array given here will be saved in the workbook with the keyword as the sheet name
     """
-
     save = True
     if type(filename) is openpyxl.Workbook:
         workbook = filename
@@ -715,11 +720,15 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
     try:
         for sheetname, data in sheetname_data.items():
             #If appending then delete any preexisting workbooks
-            if sheetname in workbook.sheetnames:
+            if sheetname not in workbook.sheetnames:
+                worksheet = workbook.create_sheet(sheetname)
+            elif clear:
                 workbook.remove(workbook[sheetname])
+                worksheet = workbook.create_sheet(sheetname)
+            else:
+               worksheet = workbook[sheetname]
 
-            worksheet = workbook.create_sheet(sheetname)
-            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in)
+            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in, first_cell)
 
         #Workbooks must have at least one sheet
         if len(workbook.sheetnames) == 0:
@@ -729,15 +738,19 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
     finally:
         if save: workbook.close()
 
-def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in):
+def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in, cell):
     data = isopy.asanyarray(data)
 
-    ri = 1
+    if type(cell) is tuple:
+        ri, ci = cell
+    else:
+        ri, ci = openpyxl.utils.cell.coordinate_to_tuple(cell)
+
     if comments is not None:
         if type(comments) is not list:
             comments = [comments]
         for comment in comments:
-            worksheet.cell(ri, 1).value = f'{comment_symbol}{comment}'
+            worksheet.cell(ri, ci).value = f'{comment_symbol}{comment}'
             ri += 1
 
     if isinstance(data, isopy.core.IsopyArray):
@@ -745,13 +758,13 @@ def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in):
             data = data.reshape(-1)
         if keys_in == 'c':
             data = data.to_dict()
-            _write_xlsx_ckeys(worksheet, data, ri)
+            _write_xlsx_ckeys(worksheet, data, ri, ci)
         elif keys_in == 'r':
             data = data.to_dict()
-            _write_xlsx_rkeys(worksheet, data, ri)
+            _write_xlsx_rkeys(worksheet, data, ri, ci)
         elif keys_in is None:
             data = np.array(data.to_list())
-            _write_xlsx_nokeys(worksheet, data, ri)
+            _write_xlsx_nokeys(worksheet, data, ri, ci)
     else:
         ndim = data.ndim
         if ndim == 0:
@@ -760,28 +773,33 @@ def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in):
             data = data.reshape((1, -1))
         elif ndim > 2:
             raise ValueError('Cannot save data with more than two dimensions')
-        _write_xlsx_nokeys(worksheet, data, ri)
+        _write_xlsx_nokeys(worksheet, data, ri, ci)
 
 
-def _write_xlsx_ckeys(worksheet, data, ri):
-    for ci, key in enumerate(data.keys()):
-        worksheet.cell(ri, ci + 1).value = f'{key}'
-
-        for rj, value in enumerate(data[key]):
-            worksheet.cell(ri + rj + 1, ci + 1).value = value
-
-def _write_xlsx_rkeys(worksheet, data, ri):
-    for ci, key in enumerate(data.keys()):
-        worksheet.cell(ri, 1).value = f'{key}'
+def _write_xlsx_ckeys(worksheet, data, ri, ci):
+    for cj, key in enumerate(data.keys()):
+        worksheet.cell(ri, ci + cj).value = f'{key}'
 
         for rj, value in enumerate(data[key]):
-            worksheet.cell(ri, 2 + rj).value = value
-        ri += 1
+            if np.isnan(value):
+                value = '#N/A'
+            worksheet.cell(ri + rj + 1, ci + cj).value = value
 
-def _write_xlsx_nokeys(worksheet, data, ri):
-    for i, row in enumerate(data):
+def _write_xlsx_rkeys(worksheet, data, ri, ci):
+    for rj, key in enumerate(data.keys()):
+        worksheet.cell(ri + rj, ci).value = f'{key}'
+
+        for cj, value in enumerate(data[key]):
+            if np.isnan(value):
+                value = '#N/A'
+            worksheet.cell(ri + rj, ci + cj + 1).value = value
+
+def _write_xlsx_nokeys(worksheet, data, ri, ci):
+    for cj, row in enumerate(data):
         for rj, value in enumerate(row):
-            worksheet.cell(ri + i, 1 + rj).value = value
+            if np.isnan(value):
+                value = '#N/A'
+            worksheet.cell(ri + rj, ci+ cj).value = value
 
 ################
 ### to array ###
