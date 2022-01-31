@@ -800,8 +800,8 @@ def _write_xlsx_rkeys(worksheet, data, ri, ci):
             worksheet.cell(ri + rj, ci + cj + 1).value = value
 
 def _write_xlsx_nokeys(worksheet, data, ri, ci):
-    for cj, row in enumerate(data):
-        for rj, value in enumerate(row):
+    for rj, row in enumerate(data):
+        for cj, value in enumerate(row):
             if np.isnan(value):
                 value = '#N/A'
             worksheet.cell(ri + rj, ci+ cj).value = value
