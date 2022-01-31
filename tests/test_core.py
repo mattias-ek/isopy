@@ -1244,7 +1244,7 @@ class Test_IsopyList:
         assert isotope != isotope2
         assert isotope == isotope2.sorted()
 
-        molecule =  isopy.MoleculeKeyList('(OH)2', 'H2O', 'HCl', 'HNO3')
+        molecule =  isopy.MoleculeKeyList('H2O', 'HCl', '(OH)2', 'HNO3')
         molecule2 = isopy.MoleculeKeyList('H2O HNO3 HCl (OH)2'.split())
         assert molecule != molecule2
         assert molecule == molecule2.sorted()

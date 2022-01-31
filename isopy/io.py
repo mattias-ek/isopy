@@ -571,10 +571,11 @@ def _read_xlsx_sheet_ckeys(worksheet, row_index, default_value):
         for ri in range(row_index + 1, worksheet.max_row + 1):
             cell = worksheet.cell(ri, ci)
             value = cell.value
-            if cell.data_type == 'e' or value.upper() == '=NA()':
+            if type(value) is str:
+                value = value.strip()
+            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
-                value = value.strip()
                 if value == '':
                     data[key].append(None)
                 else:
@@ -611,10 +612,11 @@ def _read_xlsx_sheet_rkeys(worksheet, row_index, default_value):
         for ci in range(2, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
             value = cell.value
-            if cell.data_type == 'e' or value.upper() == '=NA()':
+            if type(value) is str:
+                value = value.strip()
+            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
                 data[key].append(ERROR)
             elif cell.data_type == 's':
-                value = value.strip()
                 if value == '':
                     data[key].append(None)
                 else:
@@ -646,10 +648,11 @@ def _read_xlsx_sheet_nokeys(worksheet, row_index, default_value):
         for ci in range(1, worksheet.max_column + 1):
             cell = worksheet.cell(ri, ci)
             value = cell.value
-            if cell.data_type == 'e' or value.upper() == '=NA()':
+            if type(value) is str:
+                value = value.strip()
+            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
                 data[-1].append(ERROR)
             elif cell.data_type == 's':
-                value = value.strip()
                 if value == '':
                     data[-1].append(None)
                 else:
