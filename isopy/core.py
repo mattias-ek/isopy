@@ -52,7 +52,8 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'allowed_numpy_functions']
 
 CACHE_MAXSIZE = 128
-CACHES_ENABLED = False
+CACHES_ENABLED = True
+
 #TODO stackoverflow error that i cannot figure out
 def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
     """
@@ -93,6 +94,46 @@ def cached_property(func):
         return obj_cache
     cache.__doc__ = func.__doc__
     return property(cache, doc=func.__doc__)
+
+def combine_keys_method(func):
+    @functools.wraps(func)
+    def combine(cls, *args, **kwargs):
+        keys = tuple()
+
+        for arg in args:
+            if isinstance(arg, str):
+                keys += (arg,)
+            elif isinstance(arg, np.dtype) and arg.names is not None:
+                keys += tuple(name for name in arg.names)
+            elif isinstance(arg, ndarray) and arg.dtype.names is not None:
+                keys += tuple(name for name in arg.dtype.names)
+            elif isinstance(arg, abc.Iterable):
+                keys += tuple(a for a in arg)
+            else:
+                keys += (arg,)
+        return func(cls, keys, **kwargs)
+
+    return combine
+
+def combine_keys_func(func):
+    @functools.wraps(func)
+    def combine(*args, **kwargs):
+        keys = tuple()
+
+        for arg in args:
+            if isinstance(arg, str):
+                keys += (arg,)
+            elif isinstance(arg, np.dtype) and arg.names is not None:
+                keys += tuple(name for name in arg.names)
+            elif isinstance(arg, ndarray) and arg.dtype.names is not None:
+                keys += tuple(name for name in arg.dtype.names)
+            elif isinstance(arg, abc.Iterable):
+                keys += tuple(a for a in arg)
+            else:
+                keys += (arg,)
+        return func(keys, **kwargs)
+
+    return combine
 
 def remove_prefix(string, prefix):
     if string[:len(prefix)] == prefix:
@@ -2095,27 +2136,14 @@ class IsopyKeyList(tuple):
     will return all items that appear in at least one of the lists. The xor (``^``) operator will return the items
     that do not appear in both lists. All duplicate items will be removed from the returned lists.
     """
-
+    @combine_keys_method
     @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, *keys, ignore_duplicates = False,
                 allow_duplicates = True, allow_reformatting = True, ignore_charge=False):
-        new_keys = []
-        for key in keys:
-            if isinstance(key, str):
-                new_keys.append(cls.__keystring__(key, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge))
-            elif isinstance(key, np.dtype) and key.names is not None:
-                new_keys.extend([cls.__keystring__(name, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge) for name in key.names])
-            elif isinstance(key, ndarray) and key.dtype.names is not None:
-                new_keys.extend([cls.__keystring__(name, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge) for name in key.dtype.names])
-            elif hasattr(key, '__iter__'):
-                new_keys.extend([cls.__keystring__(k, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge) for k in key])
-            else:
-                new_keys.append(cls.__keystring__(key, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge))
+
+        #keys is precombined so ther is ever only 1 argument
+        new_keys = [cls.__keystring__(k, allow_reformatting=allow_reformatting,
+                                                        ignore_charge=ignore_charge) for k in keys[0]]
 
         if ignore_duplicates:
             new_keys = list(dict.fromkeys(new_keys).keys())
@@ -2128,7 +2156,7 @@ class IsopyKeyList(tuple):
         return self
 
     def __hash__(self):
-        return super(IsopyKeyList, self).__hash__()
+        return hash( (self.__class__, super(IsopyKeyList, self).__hash__()) )
 
     def __repr__(self):
         return f'''{self.__class__.__name__}({", ".join([f"'{k}'" for k in self])})'''
@@ -2868,7 +2896,7 @@ class RatioKeyList(IsopyKeyList, RatioFlavour):
         if len(self) == 0:
             return tuple()
         else:
-            return keylist(tuple(rat.denominator for rat in self))
+            return askeylist(tuple(rat.denominator for rat in self))
 
     @cached_property
     def common_denominator(self) -> IsopyKeyString:
@@ -3036,6 +3064,8 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
     ('harry', 'ron', 'hermione')
     """
 
+    @combine_keys_method
+    @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, *keys, ignore_duplicates=False,
                 allow_duplicates=True, allow_reformatting=True, ignore_charge=False):
         keys = super(MixedKeyList, cls).__new__(cls, *keys, ignore_duplicates=ignore_duplicates,
@@ -4289,6 +4319,7 @@ class IsopyVoid(IsopyArray, void):
 ###############################################
 ### functions for creating isopy data types ###
 ###############################################
+
 @lru_cache(CACHE_MAXSIZE)
 def keystring(string, *, allow_reformatting=True, ignore_charge = False, try_flavours=None):
     """
@@ -4335,7 +4366,7 @@ def askeystring(key, *, allow_reformatting=True, ignore_charge = False, try_flav
         return keystring(key, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge,
                          try_flavours=try_flavours)
 
-
+@combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
 def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
             ignore_charge=False, try_flavours = None):
@@ -4360,6 +4391,7 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
 
     raise KeyParseError('unable to parse keys into a key string list')
 
+@combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
 def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
               ignore_charge = False, try_flavours = None):

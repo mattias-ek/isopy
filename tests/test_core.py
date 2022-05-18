@@ -231,7 +231,8 @@ class Test_IsopyKeyString:
             assert key1 == string
 
             key2 = isopy.askeystring(key1)
-            assert key2 is key1
+            assert key2 == key1
+            assert type(key2) == type(key1)
 
             key1 = isopy.askeystring(string)
             assert type(key1) == keytype
@@ -779,6 +780,7 @@ class Test_IsopyList:
         assert type(ratio.denominators) is tuple
         assert len(ratio.numerators) == 0
         assert len(ratio.denominators) == 0
+
         for numerator, denominator in itertools.permutations((mass, element, isotope, molecule, general), 2):
             correct = [f'{n}/{d}' for n, d in zip(numerator, denominator)]
             same = [(correct[0], correct[2], correct[1])]
@@ -866,7 +868,7 @@ class Test_IsopyList:
 
         same_list = isopy.askeylist(correct_list)
         assert same_list == correct_list
-        assert same_list is correct_list
+        assert type(same_list) is type(correct_list)
 
         dictionary = {k: i for i, k in enumerate(correct)}
         assert isopy.keylist(dictionary) == correct_list
@@ -1161,7 +1163,6 @@ class Test_IsopyList:
         result = keylist.filter()
         assert type(result) == listtype
         assert result == keylist
-        assert result is not keylist
 
         result = keylist.filter(**{f'{prefix}_eq': eq[0]})
         assert type(result) is listtype
