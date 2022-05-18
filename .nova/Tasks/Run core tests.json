@@ -1,9 +1,0 @@
-{
-  "actions" : {
-    "run" : {
-      "enabled" : true,
-      "path" : "tests\/test_core.py"
-    }
-  },
-  "identifier" : "0D8D9383-1B08-4EF8-8E72-7A043510C9A5"
-}
