@@ -2018,9 +2018,8 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
             else:
                 return string
 
-        elif isinstance(string, str):
+        elif isinstance(string, (str, int, float)):
             string = str(string).strip()
-
         else:
             raise KeyTypeError(cls, string)
 
