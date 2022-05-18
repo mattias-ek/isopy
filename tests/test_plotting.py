@@ -183,7 +183,7 @@ def test_plot_spider3():
     plt.close(); plt.clf()
     subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     values = {100: [1, 1, -1], 101.5: [0, 0, 0], 103: [-1, 1, -1]}  # keys can be floats
-    isopy.array(values)
+
     isopy.tb.plot_spider(subplots['left'], values)  # Impossible to tell the rows apart
     isopy.tb.plot_spider(subplots['right'], values, xscatter=0.15)  # Much clearer
     return plt

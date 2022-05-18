@@ -1,3 +1,5 @@
+import typing
+
 import isopy
 import numpy as np
 import pyperclip as pyperclip
@@ -7,6 +9,7 @@ import itertools
 import warnings
 import hashlib
 import warnings
+import collections.abc as abc
 
 #optional imports
 try:
@@ -97,22 +100,6 @@ def remove_prefix(string, prefix):
     else:
         return string
 
-def updatedoc(ofunc=None, /, **fdict):
-    """
-    Format the docstring of a function using the keyword arguments. If another
-    function is passed as the first argument then the docstring from that function is used.
-    """
-    def wrap(func):
-        if ofunc is None:
-            f = func
-        else:
-            f = ofunc
-        func.__doc__original = func.__doc__
-        fdoc = getattr(f, '__doc__original', f.__doc__)
-        func.__doc__ = fdoc.format(**fdict)
-        return func
-    return wrap
-
 def get_module_name(item):
     name = getattr(item, '__name__', None)
     if name is None: return str(item)
@@ -187,6 +174,7 @@ def extract_kwargs(kwargs, prefix, keep_prefix=False):
 
     return new_kwargs
 
+#TODO better error messages if unknown arguments or keywords are given
 def renamed_function(new_func, **renamed_args):
     #decorate the old function which will forward the args and kwargs to the new function
     #The old code will not be executed and can be deleted.
@@ -266,10 +254,10 @@ def parse_keyfilters(**filters):
         filters['element_symbol'] = parse_keyfilters(**element_symbol)
 
     mz = _split_filter('mz', filters)
-    if mz:
+    if mz and not (len(mz) == 1 and 'true_mass' in mz):
         filters['mz'] = parse_keyfilters(**mz)
 
-    #For ratiokeys
+    #For ratio keys
     numerator = _split_filter('numerator', filters)
     if numerator:
         filters['numerator'] = parse_keyfilters(**numerator)
@@ -277,6 +265,9 @@ def parse_keyfilters(**filters):
     denominator = _split_filter('denominator', filters)
     if denominator:
         filters['denominator'] = parse_keyfilters(**denominator)
+
+    for k, v in list(filters.items()):
+        if v is None: filters.pop(k)
 
     return filters
 
@@ -294,8 +285,9 @@ def _split_filter(prefix, filters):
             if key in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
                 key = f'key_{key}'
             out[key] = filter
+    for k, v in list(out.items()):
+        if v is None: out.pop(k)
     return out
-
 
 def iskeystring(item) -> bool:
     """
@@ -316,8 +308,6 @@ def isarray(item) -> bool:
     return isinstance(item, IsopyArray)
 
 
-
-
 ##################
 ### Exceptions ###
 ##################
@@ -335,7 +325,7 @@ class KeyValueError(KeyParseError, ValueError):
     def __str__(self):
         message = f'{get_classname(self.cls)}: unable to parse "{self.string}"'
         if self.additional_information:
-            return f'{message}. {self.additional_information}.'
+            return f'{message}. {self.additional_information}'
         else:
             return message
 
@@ -347,7 +337,6 @@ class KeyTypeError(KeyParseError, TypeError):
 
     def __str__(self):
         return f'{get_classname(self.cls)}: cannot convert {type(self.obj)} into \'str\''
-
 
 
 ################
@@ -440,7 +429,7 @@ class IsotopeFlavour(IsopyFlavour):
 
 class MoleculeFlavour(IsopyFlavour):
     __flavour_name__ = 'molecule'
-    __flavour_id__ = 5
+    __flavour_id__ = 4
 
     @classmethod
     @property
@@ -583,6 +572,9 @@ class IsopyKeyString(str):
         else:
             return format.format(**options)
 
+    def _flatten(self):
+        return (self,)
+
 
 class MassKeyString(IsopyKeyString, MassFlavour):
     """
@@ -647,10 +639,10 @@ class MassKeyString(IsopyKeyString, MassFlavour):
             raise KeyValueError(cls, string, 'cannot parse empty string')
 
         if not string.isdigit():
-            raise KeyValueError(cls, string, 'Can only contain numerical characters')
-
-        if int(string) < 0:
-            raise KeyValueError(cls, string, 'Must be a positive integer')
+            if string[0] == '-' and string[1:].isdigit():
+                raise KeyValueError(cls, string, 'Must be a positive integer')
+            else:
+                raise KeyValueError(cls, string, 'Can only contain numerical characters')
 
         return super(MassKeyString, cls).__new__(cls, string)
 
@@ -714,7 +706,7 @@ class MassKeyString(IsopyKeyString, MassFlavour):
         return True
 
     def _sortkey(self):
-        return f'{self:0>4}'
+        return f'A{self:0>4}'
 
     def str(self, format=None):
         """
@@ -861,7 +853,7 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
         return isopy.refval.element.atomic_number.get(self, 0)
 
     def _sortkey(self):
-        return f'{self._z():0>4}'
+        return f'B{self._z():0>4}'
 
     def str(self, format=None):
         """
@@ -1081,7 +1073,7 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         return True
 
     def _sortkey(self):
-        return f'{self.mz():0>8.3f}{self._z():0>4}'
+        return f'C{self.mz():0>8.3f}{self._z():0>4}'
 
     def _z(self):
         return self.element_symbol._z()
@@ -1184,7 +1176,7 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         else:
             return float(self.mass_number) / charge
 
-    def fraction(self, default_value = np.nan, isotope_fractions = None):
+    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
         """
         Returns the fraction of this isotope from all isotopes of this element.
 
@@ -1212,10 +1204,22 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
 
         return isotope_fractions.get(self, default_value)
 
+    @renamed_function(isotope_fraction)
+    def fraction(self, default_value = np.nan, isotope_fractions = None): pass
+
     def element(self):
+        """
+        Returns the element symbol.
+        """
         return self.element_symbol
 
     def isotopes(self, isotopes=None):
+        """
+        Return the key as a single item key list.
+
+        The *isotopes* argument is ignored.
+
+        """
         return IsotopeKeyList(self)
 
 
@@ -1261,38 +1265,23 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
     """
     @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, string, *, allow_reformatting=True, ignore_charge=False):
-        original = string
         # This adds the subcomponents
         # And simplifies if possible
-        def make_molecule(mol, n , charge):
+        def make_molecule(mol, n, charge):
             molstr = cls._makestr(mol, n, charge)
-            molecule = super(MoleculeKeyString, cls).__new__(cls, molstr,
+
+            return super(MoleculeKeyString, cls).__new__(cls, molstr,
                                                              subcomponents=mol,
                                                              n=n,
                                                              charge=charge)
-            if charge is None:
-                return super(MoleculeKeyString, cls).__new__(cls, molstr,
-                                                                 subcomponents=mol,
-                                                                 n=n,
-                                                                 charge=charge)
-            else:
-                basestr = cls._makestr(mol, n, None)
-                base_molecule = super(MoleculeKeyString, cls).__new__(cls, basestr,
-                                                                 subcomponents=mol,
-                                                                 n=n,
-                                                                 charge=None)
-                return super(MoleculeKeyString, cls).__new__(cls, molstr, base_molecule,
-                                                                 subcomponents=mol,
-                                                                 n=n,
-                                                                 charge=charge)
-
 
         def append(z, mol, n, charge, subcomponent):
             if n == '':
                 n = 1
             else:
                 n = int(n)
-            if charge == '':
+
+            if charge == '' or ignore_charge is True:
                 charge = None
             else:
                 charge = (charge.count('-') * -1) or charge.count('+')
@@ -1329,16 +1318,12 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         if not isinstance(string, str):
             raise KeyTypeError(cls, string)
 
-        if not isinstance(string, str):
-            raise KeyTypeError(cls, string)
-
         string = string.strip()
         if len(string) == 0:
             raise KeyValueError(cls, string, 'Cannot parse empty string')
 
         # A molecule contains at least one subcomponent
         subcomponents = []
-        base_subcomponents = []
 
         # This is the variables we are extracting from the string
         z, mol, n, charge = '', '', '', ''
@@ -1354,9 +1339,9 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                     z, mol, n, charge = append(z, mol, n, charge, subcomponents)
                     mol = char
 
-
             elif char.isdigit():
-                if type(mol) is str and len(mol) == 0:
+                #if type(mol) is str and len(mol) == 0:
+                if mol == '':
                     z += char
 
                 elif charge != '':
@@ -1391,8 +1376,6 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
             elif char == '+' or char == '-':
                 if mol == '':
                     raise KeyValueError(cls, string, 'Unattached charge')
-                if ignore_charge is True:
-                    pass
                 elif charge != '' and char not in charge:
                     raise KeyValueError(cls, string, 'Mixed signs in charge')
                 else:
@@ -1406,23 +1389,24 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
             z, mol, n, charge = append(z, mol, n, charge, subcomponents)
         elif z != '':
             raise KeyValueError(cls, string, f'Unattached digits "{z}"')
-        elif n != '':
-            raise KeyValueError(cls, string, f'Unattached digits "{n}"')
-        elif charge != '':
-            raise KeyValueError(cls, string, f'Unattached charge "{charge}"')
 
         if len(subcomponents) == 1 and type(sm1 := subcomponents[0]) is MoleculeKeyString:
-            if len(sm1) == 1 and type(sm2 := sm1.subcomponents[0]) is MoleculeKeyString and sm1.n == 1 and sm1.charge is None:
-                out = sm2
-            else:
-                out = sm1
+            out = sm1
         else:
             out = make_molecule(tuple(subcomponents), 1, None)
 
         if allow_reformatting is False and str(out) != string:
             raise KeyValueError(cls, string, f'Molecule string {out} does not match the input string {string}')
         else:
-            return out
+            if ignore_charge is False and ('+' in out or '-' in out):
+                # Reprocess the string to remove charges
+                base_molecule = MoleculeKeyString(out, ignore_charge=True)
+                return super(MoleculeKeyString, cls).__new__(cls, out, base_molecule,
+                                                                 subcomponents=out.subcomponents,
+                                                                 n=out.n,
+                                                                 charge=out.charge)
+            else:
+                return out
 
     def _filter(self, key_eq=None, key_neq=None, flavour_eq=None, flavour_neq=None, mz = {},  **invalid):
         if invalid:
@@ -1442,7 +1426,10 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
     def _filter_mz(self, key_eq=None, key_neq=None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
                    true_mass=False, isotope_masses=None):
-        mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
+        try:
+            mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
+        except:
+            return None
         if key_eq is not None and mz not in key_eq:
             return False
         if key_neq is not None and mz in key_neq:
@@ -1467,9 +1454,9 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
     def _sortkey(self):
         if self.has_element():
-            return f'{0:0>8.3f}{self._z():0>4}'
+            return f'D{0:0>8.3f}{self._z():0>4}'
         else:
-            return f'{self.mz():0>8.3f}{self._z():0>4}'
+            return f'D{self.mz():0>8.3f}{self._z():0>4}'
 
     def str(self, format=None):
         """
@@ -1494,10 +1481,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         if type(thing) is ElementKeyString:
             return thing.str(format)
         elif type(thing) is IsotopeKeyString:
-            if format == 'math':
-                return thing.str(format)
-            else:
-                return f'({thing.str(format)})'
+            return thing.str(format)
         elif type(thing) is MoleculeKeyString:
             n = thing.n
             charge = thing.charge
@@ -1507,6 +1491,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
         if n == 1: n = ''
         elif format == 'math': n = f'_{{{n}}}'
+
         if charge is None: charge = ''
         else:
             charge = '+' * charge or '-' * abs(charge)
@@ -1514,10 +1499,15 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                 charge = fr'^{{{charge}}}'
 
         subcomponents = [cls._makestr(s, format=format) for s in subcomponents]
-
         if len(subcomponents) == 1:
-            subcomponents = subcomponents[0]
+            if subcomponents[0][0].isdigit() and (charge != '' or n != ''):
+                #Isotope not in math mode
+                return f'({subcomponents[0]}){n}{charge}'
+            else:
+                return f'{subcomponents[0]}{n}{charge}'
         else:
+            #Isotopes not in math mode
+            subcomponents = [f'({s})' if s[0].isdigit() else s for s in subcomponents]
             subcomponents = "".join(subcomponents)
             if charge != '' or n != '':
                 if format == 'math':
@@ -1525,12 +1515,12 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                 else:
                     subcomponents = f'({subcomponents})'
 
-        return f'{subcomponents}{n}{charge}'
+            return f'{subcomponents}{n}{charge}'
 
     def _str_options(self):
         options = dict(key = str(self))
         options['math'] = self._makestr(self, format='math')
-        options['latex'] = fr'${options["math"]}$'
+        options['latex'] = fr'${self._makestr(self, format="latex")}$'
         return options
 
     def set_charge(self, charge):
@@ -1547,28 +1537,10 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         if charge == 0:
             charge = None
         molstr = self._makestr(self.subcomponents, self.n, charge)
-        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
+        return super(MoleculeKeyString, self).__new__(self.__class__, molstr, self.basekey,
                                                      subcomponents=self.subcomponents,
                                                      n=self.n,
                                                      charge=charge)
-
-    def set_n(self, n):
-        """
-        Returns a copy of this key string with a new n.
-
-        If *n* is ``None`` n will be set to ``1``.
-
-        Examples
-        --------
-        >>> isopy.MoleculeKeyString('H2O').set_n(2)
-        MoleculeKeyString('(H2O)2')
-        """
-        if n is None: n = 1
-        molstr = self._makestr(self.subcomponents, n, self.charge)
-        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
-                                                      subcomponents=self.subcomponents,
-                                                      n=n,
-                                                      charge=self.charge)
 
     def mz(self, true_mass = False, isotope_masses = None):
         """
@@ -1646,13 +1618,13 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
     def isotopes(self, isotopes = None):
         return MoleculeKeyList(self.__isotopes(isotopes))
 
-    def fraction(self, default_value = np.nan, isotope_fractions = None):
+    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
         """
         Returns the fraction of this molecule from all molecules with
         the same elemental formula.
 
         This assumes that the sum off all isotopes of an element in *isotope_fraction*
-        equals 1.
+        equals 1. Element keys are always equal to 1.
 
         Parameters
         ----------
@@ -1677,16 +1649,19 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         for sc in self.subcomponents:
             for i in range(self.n):
                 if type(sc) is ElementKeyString:
-                    raise TypeError(f'Molecule contains an element key string ("{sc}")')
+                    fraction *= 1
                 else:
                     fraction *= sc.fraction(default_value, isotope_fractions)
         return fraction
+
+    @renamed_function(isotope_fraction)
+    def fraction(self, default_value = np.nan, isotope_fractions = None): pass
 
     def element(self):
         """
         Returns the elemental composition of this molecule.
 
-        This function does not condense molecule formula thus
+        This function does not condense the molecule formula thus
         ``"(1H)(1H)(16O)"`` will come back as ``"HHO"`` rather than
         ``"H2O"``.
 
@@ -1707,17 +1682,23 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                                                       n=self.n,
                                                       charge=self.charge)
 
-    def has_element(self):
+    def contains_element_key(self):
         for sc in self.subcomponents:
             if sc.flavour == 'element': return True
-            elif sc.flavour == 'molecule' and sc.has_element(): return True
+            elif sc.flavour == 'molecule' and sc.contains_element_key(): return True
         return False
 
-    def has_isotope(self):
+    def contains_isotope_key(self):
         for sc in self.subcomponents:
             if sc.flavour == 'isotope': return True
-            elif sc.flavour == 'molecule' and sc.has_isotope(): return True
+            elif sc.flavour == 'molecule' and sc.contains_isotope_key(): return True
         return False
+
+    @renamed_function(contains_element_key)
+    def has_element(self): pass
+
+    @renamed_function(contains_isotope_key)
+    def has_isotope(self): pass
 
 
 class RatioKeyString(IsopyKeyString, RatioFlavour):
@@ -1806,9 +1787,7 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
 
         elif not isinstance(string, str):
             raise KeyTypeError(cls, string)
-
         else:
-
             string = string.strip()
 
             # For backwards compatibility
@@ -1856,8 +1835,6 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
                                                   numerator = numer.basekey, denominator = denom.basekey)
         string = f'{numer}{divider}{denom}'
 
-        #colname = f'RAT{n}_{numer.colname}_OVER{n}_{denom.colname}'
-
         return super(RatioKeyString, cls).__new__(cls, string, basekey,
                                                   numerator = numer, denominator = denom)
 
@@ -1890,7 +1867,7 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
         return True
 
     def _sortkey(self):
-        return f'{self.denominator._sortkey()}/{self.numerator._sortkey()}'
+        return f'E{self.denominator._sortkey()}/{self.numerator._sortkey()}'
 
     def str(self, format = None, nformat=None, dformat = None):
         """
@@ -1960,6 +1937,42 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
         options['latex'] = fr'${options["math"]}$'
         return options
 
+    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
+        """
+        Returns the ratio of the isotope fraction of the numerator and denominator.
+
+        This assumes that the sum off all isotopes of an element in *isotope_fractions*
+        equals 1.
+
+        Parameters
+        ----------
+        default_value
+            The default value returned for isotopes not present in *isotope_fractions*. Default
+            value is ``np.nan``.
+        isotope_fractions
+            A dictionary containing the isotope fractions of each element. Default is
+            ``isopy.refval.isotope.fraction``.
+        """
+        if isotope_fractions is None:
+            isotope_fractions = isopy.refval.isotope.fraction
+        if not isinstance(isotope_fractions, ScalarDict):
+            isotope_fractions = ScalarDict(isotope_fractions)
+
+        if self.numerator.flavour in ['isotope', 'molecule', 'ratio']:
+            n = self.numerator.isotope_fraction(default_value, isotope_fractions)
+        else:
+            raise AttributeError(f'{type(self.numerator)} does not have an isotope_fraction method')
+
+        if self.denominator.flavour in ['isotope', 'molecule', 'ratio']:
+            d = self.denominator.isotope_fraction(default_value, isotope_fractions)
+        else:
+            raise AttributeError(f'{type(self.denominator)} does not have an isotope_fraction method')
+
+        return n / d
+
+    def _flatten(self):
+        return self.numerator._flatten() + self.denominator._flatten()
+
 
 class GeneralKeyString(IsopyKeyString, GeneralFlavour):
     """
@@ -2008,11 +2021,6 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
         elif isinstance(string, str):
             string = str(string).strip()
 
-        elif allow_reformatting:
-            try:
-                string = str(string).strip()
-            except:
-                raise KeyTypeError(cls, string)
         else:
             raise KeyTypeError(cls, string)
 
@@ -2040,7 +2048,7 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
         return True
 
     def _sortkey(self):
-        return str(self)
+        return f'F{self}'
 
     def str(self, format=None):
         """
@@ -2149,10 +2157,8 @@ class IsopyKeyList(tuple):
                     item = self.__keystring__(item)
                 except:
                     return False
-            try:
-                if super(IsopyKeyList, self).__contains__(item) is False:
-                    return False
-            except:
+
+            if super(IsopyKeyList, self).__contains__(item) is False:
                 return False
 
         return True
@@ -2163,7 +2169,7 @@ class IsopyKeyList(tuple):
         """
         if isinstance(index, slice):
             return self.__keylist__(super(IsopyKeyList, self).__getitem__(index))
-        elif hasattr(index, '__iter__'):
+        elif isinstance(index, abc.Iterable):
                 return self.__keylist__(tuple(super(IsopyKeyList, self).__getitem__(i) for i in index))
         else:
             return super(IsopyKeyList, self).__getitem__(index)
@@ -2241,8 +2247,10 @@ class IsopyKeyList(tuple):
 
     def flatten(self, ignore_duplicates = False, allow_duplicates = True, allow_reformatting = False,
                 ignore_charge=False):
-        """Has no effect on this key list flavour other than those imposed by the arguments"""
-        return self.__keylist__(self, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
+        keys = tuple()
+        for k in self:
+            keys += k._flatten()
+        return keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
                                       allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
 
     ##########################################
@@ -2540,7 +2548,9 @@ class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
         """
         return ElementFlavour.__keylist__(tuple(x.element_symbol for x in self))
 
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None,
+    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, *,
+               mz_eq = None, mz_neq = None, mz_lt = None, mz_gt = None, mz_le = None, mz_ge = None,
+               mz_true_mass=False, mz_isotope_masses=None,
                **mass_number_and_element_symbol_kwargs) -> 'IsotopeKeyList':
         """
         Return a new key string list containing only the key strings that satisfies the specified
@@ -2581,6 +2591,9 @@ class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
         """
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq,
+                                   mz_eq = mz_eq, mz_neq = mz_neq,
+                                   mz_lt = mz_lt, mz_gt = mz_gt, mz_le = mz_le, mz_ge = mz_ge,
+                                   mz_true_mass = mz_true_mass, mz_isotope_masses = mz_isotope_masses,
                                    **mass_number_and_element_symbol_kwargs)
 
         return self.__keylist__(key for key in self if key._filter(**filters))
@@ -2630,11 +2643,11 @@ class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
         """
         return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
 
-    def fractions(self, default_value = np.nan, isotope_fractions = None):
+    def isotope_fractions(self, default_value = np.nan, isotope_fractions = None):
         """
         Returns the fraction of each isotope in the list from all isotopes of this element.
 
-        This assumes that the sum off all isotopes of an element in *isotope_fraction*
+        This assumes that the sum of all isotopes of an element in *isotope_fraction*
         equals 1.
 
         Parameters
@@ -2649,6 +2662,9 @@ class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
         if isotope_fractions is None:
             isotope_fractions = isopy.refval.isotope.fraction
         return tuple(item.fraction(default_value, isotope_fractions) for item in self)
+
+    @renamed_function(isotope_fractions)
+    def fractions(self, default_value = np.nan, isotope_fractions = None): pass
 
 
 class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
@@ -2683,8 +2699,9 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
     >>> IsotopeKeyList('H2O', ['HNO3', 'HCl'])
     ('H2O', 'HNO3', 'HCl')
     """
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None,
-               **unused_kwargs):
+    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, *,
+               mz_eq = None, mz_neq = None, mz_lt = None, mz_gt = None, mz_le = None, mz_ge = None,
+               mz_true_mass = False, mz_isotope_masses = None):
         """
         Return a new key string list containing only the key strings that satisfies the specified
         filters.
@@ -2699,8 +2716,6 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
             Only key strings of this flavour(s) pass this filter.
         flavour_neq : str, Sequence[str]
             Only key strings not of this flavour(s) pass this filter.
-        **unused_kwargs
-            Any unused key filters will return an empty list.
 
 
         Returns
@@ -2714,7 +2729,9 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         """
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq,
-                                   **unused_kwargs)
+                                   mz_eq = mz_eq, mz_neq = mz_neq,
+                                   mz_lt = mz_lt, mz_gt = mz_gt, mz_le = mz_le, mz_ge = mz_ge,
+                                   mz_true_mass = mz_true_mass, mz_isotope_masses = mz_isotope_masses)
 
         return self.__keylist__(key for key in self if key._filter(**filters))
 
@@ -2724,13 +2741,6 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         Returns a tuple containing the charges of key string in the list.
         """
         return tuple(item.charge for item in self)
-
-    @cached_property
-    def ns(self):
-        """
-        Returns a tuple containing the n for each molecule in the list
-        """
-        return tuple(item.n for item in self)
 
     def set_charges(self, charges):
         """
@@ -2771,9 +2781,9 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         """
         return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
 
-    def fractions(self, default_value = np.nan, isotope_fractions = None):
+    def isotope_fractions(self, default_value = np.nan, isotope_fractions = None):
         """
-        Returns the fraction of each molecule in the list from all molecules with
+        Returns the isotope fraction of each molecule in the list from all molecules with
         the same elemental formula.
 
         This assumes that the sum off all isotopes of an element in *isotope_fraction*
@@ -2792,15 +2802,8 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
             isotope_fractions = isopy.refval.isotope.fraction
         return tuple(item.fraction(default_value, isotope_fractions) for item in self)
 
-    def has_elements(self):
-        for key in self:
-            if key.has_element(): return True
-        return False
-
-    def has_isotopes(self):
-        for key in self:
-            if key.has_isotope(): return True
-        return False
+    @renamed_function(isotope_fractions)
+    def fractions(self, default_value = np.nan, isotope_fractions = None): pass
 
 
 class RatioKeyList(IsopyKeyList, RatioFlavour):
@@ -2838,14 +2841,6 @@ class RatioKeyList(IsopyKeyList, RatioFlavour):
     ('99Ru/108Pd', '105Pd/108Pd', '111Cd/108Pd')
     """
 
-    def flatten(self, ignore_duplicates = False,
-                allow_duplicates = True, allow_reformatting = False, ignore_charge=False):
-        """
-        Return a key list with the numerator and denominators key strings joined into a single list.
-        """
-        return askeylist((*self.numerators.flatten(), *self.denominators.flatten()),
-                         ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
-                         allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
     @cached_property
     def numerators(self) -> IsopyKeyList:
         """
@@ -2893,20 +2888,6 @@ class RatioKeyList(IsopyKeyList, RatioFlavour):
             return self.denominators[0]
         else:
             return None
-
-    @cached_property
-    def _has_common_denominator(self) -> bool:
-        """
-        ``True`` if all the ratios in the sequence as a common denominator otherwise ``False``.
-
-        Examples
-        --------
-        >>> RatioKeyList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).has_common_denominator
-        True
-        >>> RatioKeyList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd']).has_common_denominator
-        False
-        """
-        return len(set(self.denominators)) == 1
 
     def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, **numerator_and_denominator_kwargs):
         """
@@ -3086,7 +3067,7 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
 
         Returns
         -------
-        result : GeneralKeyList
+        result : key_list
             Key strings in the sequence that satisfy the specified filters
 
         Examples
@@ -3102,25 +3083,6 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq)
 
         return self.__keylist__(key for key in self if key._filter(**filters))
-
-    def sorted(self):
-        """
-        Return a sorted key string list.
-        """
-        return self.__keylist__(sorted(self, key= lambda k: k._sortkey()))
-
-    def flatten(self, ignore_duplicates = False,
-                allow_duplicates = True, allow_reformatting = False, ignore_charge=False):
-        """
-        Return a key list with the numerator and denominators key strings joined into a single list.
-        """
-        keys = ()
-        for key in self:
-            if type(key) is RatioKeyString: keys += (key.numerator, key.denominator)
-            else: keys += (key,)
-        return askeylist(keys,
-                         ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
-                         allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
 
 ############
 ### Dict ###
@@ -3180,6 +3142,9 @@ class IsopyDict(dict):
                 self.update(arg.to_dict())
             elif isinstance(arg, dict):
                 self.update(arg)
+            elif isinstance(arg, abc.Iterable):
+                arg = dict(arg)
+                self.update(arg)
             else:
                 raise TypeError('arg must be dict')
 
@@ -3230,6 +3195,7 @@ class IsopyDict(dict):
     def key_flavours(self):
         return self._key_flavours
 
+    @property
     def keylist(self):
         """
         Returns the dictionary keys as an isopy key list.
@@ -3246,7 +3212,7 @@ class IsopyDict(dict):
             raise TypeError('this dictionary is readonly. Make a copy to make changes')
 
         if not isinstance(other, dict):
-            raise ValueError('other must be a dict')
+            raise TypeError('other must be a dict')
 
         for k in other.keys():
             self.__setitem__(k, other[k])
@@ -3363,7 +3329,7 @@ class IsopyDict(dict):
                 else:
                     return default
 
-        if hasattr(key, '__iter__'):
+        if isinstance(key, abc.Sequence):
             return tuple(self.get(k, default) for k in key)
 
         raise TypeError(f'key type {type(key)} not understood')
@@ -3371,7 +3337,9 @@ class IsopyDict(dict):
 
 class ScalarDict(IsopyDict):
     """
-    Dictionary where each value is stored as a numpy float by a isopy keystring key.
+    Dictionary where each value is stored as an array of floats by a isopy keystring key.
+
+    Each value in the dictionary has the same shape.
 
     Behaves just like, and contains all the methods, that a normal dictionary does unless otherwise
     noted. Only methods that behave differently from a normal dictionary are documented below.
@@ -3381,8 +3349,7 @@ class ScalarDict(IsopyDict):
     *args : dict[str, scalar], Optional
         Dictionary(ies) where each key can be converted to a keystring.
     default_value : scalar, Default = np.nan
-        The default value for a key not present in the dictionary. Should ideally be the same type as
-        the value stored in the dictionary
+        The default value for a key not present in the dictionary.
     readonly : bool, Default = True
         If ``True`` the dictionary cannot be edited. This attribute is not inherited by child
         dictionaries.
@@ -3407,22 +3374,57 @@ class ScalarDict(IsopyDict):
 
     def __init__(self, *args: dict, default_value=nan,
                  readonly= False, key_flavours = None, **kwargs):
-        try:
-            default_value = np.float_(default_value)
-        except Exception as err:
-            raise ValueError(f'unable to convert default value to float') from err
+        self._size = 1
+        self._ndim = 0
+        default_value = self.__make_value(default_value, 'default_value', default_value=True)
+        self._size = default_value.size
+        self._ndim = default_value.ndim
+
         super(ScalarDict, self).__init__(*args, default_value=default_value,
                                          readonly=readonly,
                                          key_flavours = key_flavours,
                                          **kwargs)
 
-    def __setitem__(self, key, value):
-        try:
-            value = np.float_(value)
-        except Exception as err:
-            raise ValueError(f'key "{key}": unable to convert value {value} to float') from err
+    def __getitem__(self, key):
+        key = askeystring(key, try_flavours=self._key_flavours)
+        return super(IsopyDict, self).__getitem__(key).copy()
 
+    def __setitem__(self, key, value):
+        value = self.__make_value(value, key)
         super(ScalarDict, self).__setitem__(key, value)
+
+    def __make_value(self, value, key, resize = True, default_value = False):
+        try:
+            value = np.array(value, dtype=np.float64)
+        except Exception as err:
+            raise ValueError(f'Key "{key}": Unable to convert value(s) to float') from err
+
+        if value.size == 0:
+            raise ValueError(f'Key "{key}": Value has size 0')
+        if value.ndim > 1:
+            raise ValueError(f'Key "{key}": Value has to many dimensions')
+
+        if self._ndim == 0:
+            if value.size > 1:
+                if resize:
+                    self._ndim = 1
+                    self._size = value.size
+                    for k, v in tuple(self.items()):
+                        super(ScalarDict, self).__setitem__(k, np.full(self._size, v))
+
+                    if not default_value:
+                        self._default_value = np.full(self._size, self._default_value)
+                else:
+                    raise ValueError(f'Key "{key}": Size of value does not match other values in dictionary')
+            else:
+                value = value.reshape(tuple())
+        else:
+            if value.size != 1 and value.size != self._size:
+                raise ValueError(f'Key "{key}": Size of value does not match other values in dictionary')
+            else:
+                value = np.full(self._size, value)
+
+        return value
 
     def get(self, key = None, default = NotGiven):
         """
@@ -3449,32 +3451,30 @@ class ScalarDict(IsopyDict):
         if default is NotGiven:
             default = self._default_value
         else:
-            try:
-                default = np.float64(default)
-            except Exception as err:
-                raise ValueError(f'unable to convert default value to float') from err
+            default = self.__make_value(default, 'default', False)
 
         if isinstance(key, (str, int)):
             key = askeystring(key, try_flavours=self._key_flavours)
 
             try:
-                return super(IsopyDict, self).__getitem__(key)
+                return super(IsopyDict, self).__getitem__(key).copy()
             except KeyError:
                 if key != key.basekey:
-                    try: return super(IsopyDict, self).__getitem__(key.basekey)
+                    try: return super(IsopyDict, self).__getitem__(key.basekey).copy()
                     except KeyError: pass
                 if type(key) is RatioKeyString:
                     try:
-                        result = super(IsopyDict, self).__getitem__(key.numerator)
-                        result /= super(IsopyDict, self).__getitem__(key.denominator)
-                        return result
+                        n = super(IsopyDict, self).__getitem__(key.numerator)
+                        d = super(IsopyDict, self).__getitem__(key.denominator)
+                        return n / d
                     except KeyError:
                         pass
 
-                return default
+                return default.copy()
 
-        elif hasattr(key, '__iter__'):
-            return np.array(super(ScalarDict, self).get(key, default))
+        elif isinstance(key, abc.Sequence):
+            keys = askeylist(key, try_flavours=self._key_flavours)
+            return isopy.array([self.get(k, default) for k in keys], keys)
         else:
             return super(ScalarDict, self).get(key, default)
 
@@ -3499,9 +3499,15 @@ class ScalarDict(IsopyDict):
         return array(d)
 
     @renamed_function(to_array)
-    def asarray(self, keys=None, default=NotGiven, **key_filters):
-        pass
+    def asarray(self, keys=None, default=NotGiven, **key_filters): pass
 
+    @property
+    def ndim(self):
+        return self._ndim
+
+    @property
+    def size(self):
+        return self._size
 
 #############
 ### Array ###
@@ -3536,8 +3542,141 @@ class IsopyArray:
         conversion fails the default data type from ``np.array(values[column])`` is used.
     """
 
-    def __new__(cls, values, keys=None, dtype=None, ndim=None):
-        return IsopyNdarray(values, keys=keys, ndim=ndim, dtype=dtype)
+    def __new__(cls, values, keys=None, *, dtype=None, ndim=None, try_flavours = None):
+        try_flavours = default_key_flavours(try_flavours)
+
+        if type(values) is IsopyNdarray and keys is None and dtype is None and ndim is None:
+            return values.copy()
+
+        # Do this early so no time is wasted if it fails
+        if keys is None and (isinstance(dtype, np.dtype) and dtype.names is not None):
+            keys = askeylist(dtype.names, allow_duplicates=False, try_flavours=try_flavours)
+
+        if isinstance(keys, np.dtype):
+            if not keys.names:
+                raise ValueError('dtype does not contain named fields')
+
+            if dtype is None: dtype = keys
+            keys = askeylist(keys.names, allow_duplicates=False, try_flavours=try_flavours)
+
+        if ndim is not None and (not isinstance(ndim, int) or ndim < -1 or ndim > 1):
+            raise ValueError('parameter "ndim" must be -1, 0 or 1')
+
+        if pandas is not None and isinstance(values, pandas.DataFrame):
+            values = values.to_records(index=False)
+
+        if tables is not None and isinstance(values, tables.Table):
+            values = values.read()
+
+        if isinstance(values, (ndarray, void)):
+            if values.dtype.names is not None:
+                if keys is None:
+                    keys = list(values.dtype.names)
+
+                if dtype is None:
+                    dtype = [(values.dtype[i],) for i in range(len(values.dtype))]
+
+            else:
+                if dtype is None:
+                    dtype = [(values.dtype,) for i in range(values.shape[-1])]
+
+            values = values.tolist()
+
+        if isinstance(values, (list, tuple)):
+            if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
+                for v in values].count(True) == len(values):
+                values = [tuple(v) for v in values]
+            else:
+                values = tuple(values)
+
+        elif isinstance(values, dict):
+            if keys is None:
+                keys = list(values.keys())
+
+            if dtype is None:
+                dtype = [(v.dtype,) if isinstance(v, np.ndarray) else (float64, None)
+                         for v in values.values()]
+
+            values = tuple(values.values())
+            if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
+                for v in values].count(True) == len(values):
+                values = list(zip(*values))
+
+        elif isinstance(values, tuple):
+            pass
+
+        else:
+            raise ValueError(f'unable to convert values with type "{type(values)}" to IsopyArray')
+
+        if keys is None:
+            # IF there are no keys at this stage raise an error
+            raise ValueError('Keys argument not given and keys not found in values')
+        else:
+            keys = askeylist(keys, allow_duplicates=False, try_flavours=try_flavours)
+
+        if isinstance(values, tuple):
+            vlen = len(values)
+        else:
+            try:
+                vlen = {len(v) for v in values}
+            except:
+                raise
+            if len(vlen) == 0:
+                raise ValueError('Cannot create an empty array')
+            if len(vlen) != 1:
+                raise ValueError('All rows in values are not the same size')
+            vlen = vlen.pop()
+
+        if vlen != len(keys):
+            raise ValueError('size of keys does not match size of values')
+
+        if dtype is None:
+            new_dtype = [(float64, None) for k in keys]
+
+        elif isinstance(dtype, list) or (isinstance(dtype, np.dtype) and dtype.names is not None):
+            if len(dtype) != vlen:
+                raise ValueError('number of dtypes given does not match number of keys')
+            else:
+                new_dtype = [(dtype[i],) if not isinstance(dtype[i], tuple) else dtype[i] for i in range(vlen)]
+
+        elif isinstance(dtype, tuple):
+            new_dtype = [dtype for i in range(vlen)]
+        else:
+            new_dtype = [(dtype,) for i in range(vlen)]
+
+        if type(values) is tuple:
+            colvalues = list(values)
+        else:
+            colvalues = list(zip(*values))
+
+        dtype = []
+        for i, v in enumerate(colvalues):
+            for dt in new_dtype[i]:
+                try:
+                    dtype.append(np.asarray(v, dtype=dt).dtype)
+                except:
+                    pass
+                else:
+                    break
+            else:
+                raise ValueError(f'Unable to convert values for {keys[i]} to one of the specified dtypes')
+
+        out = np.array(values, dtype=list(zip(keys.strlist(), dtype)))
+        if ndim == -1:
+            if out.size == 1:
+                ndim = 0
+            else:
+                ndim = 1
+
+        if ndim is not None and ndim != out.ndim:
+            if ndim == 1:
+                out = out.reshape(-1)
+            elif ndim == 0 and out.size != 1:
+                raise ValueError(f'Cannot convert array with {out.size} rows to 0-dimensions')
+            else:
+                out = out.reshape(tuple())
+
+        return keys.__view_array__(out)
 
     def __keystring__(self, string, **kwargs):
         return self.__flavour__.__keystring__(string, **kwargs)
@@ -3555,14 +3694,12 @@ class IsopyArray:
         return self.to_text(', ', False, False)
 
     def __eq__(self, other):
-        try:
-            other = np.asanyarray(other)
-        except:
-            return False
-        if other.shape != self.shape:
-            return False
+        other = np.asanyarray(other)
+
+        if self.shape == other.shape:
+            return np.all(np.array_equal(self, other, equal_nan=True), axis=None)
         else:
-            return np.all(np.equal(self, other), axis=None)
+            return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -3622,8 +3759,7 @@ class IsopyArray:
         """
         A key string list containing the name of each column in the array.
 
-        ``array.keys()`` is also allowed as calling a key string list will just return a
-        pointer to itself.
+        ``array.keys()`` is also allowed as calling a key string list will just return itself.
         """
         return self.__keylist__(self.dtype.names, allow_reformatting=False)
 
@@ -3694,7 +3830,7 @@ class IsopyArray:
         if remove_denominator:
             keys = keys - denominator
 
-        return IsopyNdarray(self[keys] / self[denominator], keys=keys/denominator, try_flavours='ratio')
+        return IsopyArray(self[keys] / self[denominator], keys=keys/denominator, try_flavours='ratio')
 
     def deratio(self, denominator_value=1):
         """
@@ -3713,7 +3849,7 @@ class IsopyArray:
             raise ValueError('Column keys do not have a common denominator')
         numerators = self.keys().numerators
 
-        out = IsopyNdarray(self, numerators, try_flavours=numerators.flavour)
+        out = IsopyArray(self, numerators, try_flavours=numerators.flavour)
         if denominator not in out.keys():
             out = concatenate(out, ones(self.nrows, denominator), axis=1)
         return out * denominator_value
@@ -3857,6 +3993,7 @@ class IsopyArray:
         delimiter = '| '
 
         flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
+        flen = {k: f if f > 4 else 4 for k, f in flen.items()}
 
         lines = []
         for k in flen.keys():
@@ -4019,153 +4156,25 @@ class IsopyArray:
 
 
 class IsopyNdarray(IsopyArray, ndarray):
-    def __new__(cls, values, keys=None, *, dtype=None, ndim=None, try_flavours = None):
-        try_flavours = default_key_flavours(try_flavours)
-
-        if type(values) is cls and keys is None and dtype is None and ndim is None:
-            return values.copy()
-
-        #Do this early so no time is wasted if it fails
-        if keys is None and (isinstance(dtype, np.dtype) and dtype.names is not None):
-            keys = askeylist(dtype.names, allow_duplicates=False, try_flavours=try_flavours)
-
-        if isinstance(keys, np.dtype):
-            if not keys.names:
-                raise ValueError('dtype does not contain named fields')
-
-            if dtype is None: dtype = keys
-            keys = askeylist(keys.names, allow_duplicates=False, try_flavours=try_flavours)
-
-
-        if ndim is not None and (not isinstance(ndim , int) or ndim < -1 or ndim > 1):
-            raise ValueError('parameter "ndim" must be -1, 0 or 1')
-
-        if pandas is not None and isinstance(values, pandas.DataFrame):
-            values = values.to_records(index=False)
-
-        if tables is not None and isinstance(values, tables.Table):
-            values = values.read()
-
-        if isinstance(values, (ndarray, void)):
-            if values.dtype.names is not None:
-                if keys is None:
-                    keys = list(values.dtype.names)
-
-                if dtype is None:
-                    dtype = [(values.dtype[i],) for i in range(len(values.dtype))]
-
-            else:
-                if dtype is None:
-                    dtype = [(values.dtype,) for i in range(values.shape[-1])]
-
-            values = values.tolist()
-
-        if isinstance(values, (list, tuple)):
-            if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
-                                                    for v in values].count(True) == len(values):
-                values = [tuple(v) for v in values]
-            else:
-                values = tuple(values)
-
-        elif isinstance(values, dict):
-            if keys is None:
-                keys = list(values.keys())
-
-            if dtype is None:
-                dtype = [(v.dtype,) if isinstance(v, np.ndarray) else (float64, None)
-                                                                    for v in values.values()]
-
-            values = tuple(values.values())
-            if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
-                                                        for v in values].count(True) == len(values):
-                values = list(zip(*values))
-
-        elif isinstance(values, tuple):
-            pass
-
-        else:
-            raise ValueError(f'unable to convert values with type "{type(values)}" to IsopyArray')
-
-        if keys is None:
-            #IF there are no keys at this stage raise an error
-            raise ValueError('Keys argument not given and keys not found in values')
-        else:
-            keys = askeylist(keys, allow_duplicates=False, try_flavours=try_flavours)
-
-        if isinstance(values, tuple):
-            vlen = len(values)
-        else:
-            try:
-                vlen = {len(v) for v in values}
-            except:
-                raise
-            if len(vlen) == 0:
-                raise ValueError('Cannot create an empty array')
-            if len(vlen) != 1:
-                raise ValueError('All rows in values are not the same size')
-            vlen = vlen.pop()
-
-        if vlen != len(keys):
-            raise ValueError('size of keys does not match size of values')
-
-        if dtype is None:
-            new_dtype = [(float64, None) for k in keys]
-
-        elif isinstance(dtype, list) or (isinstance(dtype, np.dtype) and dtype.names is not None):
-            if len(dtype) != vlen:
-                raise ValueError(
-                    'number of dtypes given does not match number of keys')
-            else:
-                new_dtype = [(dtype[i], ) if not isinstance(dtype[i], tuple) else dtype[i] for i in range(vlen)]
-
-        elif isinstance(dtype, tuple):
-            new_dtype = [dtype for i in range(vlen)]
-
-        else:
-            new_dtype = [(dtype,) for i in range(vlen)]
-
-        if type(values) is tuple:
-            colvalues = list(values)
-        else:
-            colvalues = list(zip(*values))
-
-        dtype = []
-        for i, v in enumerate(colvalues):
-            for dt in new_dtype[i]:
-                try: dtype.append(np.asarray(v, dtype=dt).dtype)
-                except: pass
-                else: break
-            else:
-                raise ValueError(f'Unable to convert values for {keys[i]} to one of the specified dtypes')
-
-        out = np.array(values, dtype = list(zip(keys.strlist(), dtype)))
-        if ndim == -1:
-            if out.size == 1: ndim = 0
-            else: ndim = 1
-
-        if ndim is not None and ndim != out.ndim:
-            if ndim == 1:
-                out = out.reshape(-1)
-            elif ndim == 0 and out.size != 1:
-                raise ValueError(f'Cannot convert array with {out.size} rows to 0-dimensions')
-            else:
-                out = out.reshape(tuple())
-
-        return keys.__view_array__(out)
-        #out #keys._Flavour__view_ndarray(out) # So that mixed arrays work if all keys have the same flavour
-
     def __setitem__(self, key, value):
         if isinstance(key, str):
             try:
                 key = str(self.__keystring__(key))
             except:
                 pass
+
+            if key not in self.keys:
+                raise ValueError(f'key {key} not found in array')
         elif isinstance(key, (list,tuple)):
             if len(key) > 0 and isinstance(key[0], str):
                 try:
                     key = self.__keylist__(key)
                 except:
                     pass
+
+                for k in key:
+                    if k not in self.keys:
+                        raise ValueError(f'key {k} not found in array')
             elif not isinstance(key, list):
                 key = list(key)
 
@@ -4179,13 +4188,9 @@ class IsopyNdarray(IsopyArray, ndarray):
             for k in self.keys:
                 self[k][key] = value.get(k)
         else:
-            try:
-                value = np.asarray(value)
-            except:
-                pass
-            else:
-                if value.size == 1 and value.ndim == 1:
-                    value = value.reshape(tuple())
+            value = np.asarray(value)
+            if value.size == 1 and value.ndim == 1:
+                value = value.reshape(tuple())
             super(IsopyNdarray, self).__setitem__(key, value)
 
     def __getitem__(self, key):
@@ -4193,7 +4198,7 @@ class IsopyNdarray(IsopyArray, ndarray):
             try:
                 key = str(self.__keystring__(key))
             except KeyParseError:
-                pass
+                raise ValueError(f'key {key} not found in array')
             else:
                 return super(IsopyNdarray, self).__getitem__(key).view(ndarray)
 
@@ -4204,7 +4209,7 @@ class IsopyNdarray(IsopyArray, ndarray):
                 try:
                     key = self.__keylist__(key)
                 except:
-                    pass
+                    raise ValueError(f'key {key[0]} not found in array')
                 else:
                     return key.__view__(super(IsopyNdarray, self).__getitem__(key.strlist()))
             else:
@@ -4219,9 +4224,6 @@ class IsopyNdarray(IsopyArray, ndarray):
 
 
 class IsopyVoid(IsopyArray, void):
-    def __new__(cls, void):
-        return void.view((cls, void.dtype))
-
     def __len__(self):
         raise TypeError('len() of unsized object')
 
@@ -4231,19 +4233,20 @@ class IsopyVoid(IsopyArray, void):
 
         if type(key) is slice and key.start is None and key.stop is None and key.step is None:
             key = self.keys
-        else:
+        elif isinstance(key, (str, abc.Sequence)) and isinstance(key[0], str):
             try:
                 key = self.__keylist__(key)
             except:
-                pass
+                raise ValueError(f'key {key[0]} not found in array')
+            else:
+                for k in key:
+                    if k not in self.keys:
+                        raise ValueError(f'key {k} not found in array')
 
         if isinstance(value, dict) and not isinstance(value, IsopyDict):
             value = isopy.IsopyDict(value, default_value=np.nan)
 
         if isinstance(key, IsopyKeyList):
-            for k in key:
-                if k not in self.keys:
-                    raise KeyError(f'key {k} not found in array')
             if isinstance(value, (IsopyArray, IsopyDict)):
                 for k in self.keys:
                     v = np.asarray(value.get(k))
@@ -4251,13 +4254,9 @@ class IsopyVoid(IsopyArray, void):
                         v = v.reshape(tuple())
                     super(IsopyVoid, self).__setitem__(str(k), v)
             else:
-                try:
-                    value = np.asarray(value)
-                except:
-                    pass
-                else:
-                    if value.size == 1 and value.ndim == 1:
-                        value = value.reshape(tuple())
+                value = np.asarray(value)
+                if value.size == 1 and value.ndim == 1:
+                    value = value.reshape(tuple())
                 for k in key:
                     super(IsopyVoid, self).__setitem__(str(k), value)
         else:
@@ -4268,16 +4267,16 @@ class IsopyVoid(IsopyArray, void):
             try:
                 key = str(self.__keystring__(key))
             except:
-                pass
+                raise ValueError(f'key {key} not found in array')
 
-        elif isinstance(key, (list,tuple)):
+        elif isinstance(key, abc.Sequence):
             if len(key) == 0:
                 return np.array([])
             elif isinstance(key[0], str):
                 try:
                     key = self.__keylist__(key)
                 except:
-                    pass
+                    raise ValueError(f'key {key[0]} not found in array')
                 else:
                     return key.__view__(super(IsopyVoid, self).__getitem__(key.strlist()))
             else:
@@ -4362,7 +4361,6 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
 
     raise KeyParseError('unable to parse keys into a key string list')
 
-
 @lru_cache(CACHE_MAXSIZE)
 def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
               ignore_charge = False, try_flavours = None):
@@ -4417,7 +4415,7 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, *
     elif values is None:
         values = columns
     
-    return IsopyNdarray(values, keys=keys, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
+    return IsopyArray(values, keys=keys, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
 
 def asarray(a, *, ndim = None, try_flavours = None):
@@ -4425,10 +4423,7 @@ def asarray(a, *, ndim = None, try_flavours = None):
     If *a* is an isopy array return it otherwise convert *a* into an isopy array and return it. If
     *ndim* is given a view of the array with the specified dimensionality is returned.
     """
-    if try_flavours is None:
-        try_flavours = DEFAULT_TRY_FLAVOURS
-    elif not isinstance(try_flavours, (list, tuple)):
-        try_flavours = [try_flavours]
+    try_flavours = default_key_flavours(try_flavours)
 
     if not isinstance(a, IsopyArray) or a.flavour not in try_flavours:
         a = array(a, try_flavours=try_flavours)
@@ -4717,12 +4712,15 @@ def random(rows, random_args = None, keys=None, *, distribution='normal', seed=N
 
 def _new_empty_array(rows, keys, ndim, dtype, func):
     if isinstance(rows, IsopyArray):
-        if keys is None: keys = rows.keys
-        if dtype is None: dtype = rows.dtype
+        if keys is None:
+            keys = rows.keys
+        if dtype is None:
+            dtype = rows.dtype
         rows = rows.nrows
 
     if isinstance(keys, IsopyArray):
-        if dtype is None: dtype = keys.dtype
+        if dtype is None:
+            dtype = keys.dtype
         keys = keys.keys
 
     if isinstance(dtype, IsopyArray):
@@ -4731,9 +4729,12 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
     if dtype is None:
         dtype = float64
 
-    if rows is None: rows = -1
-    elif rows == tuple(): rows = -1
-    elif rows == -1: pass
+    if rows is None:
+        rows = -1
+    elif rows == tuple():
+        rows = -1
+    elif rows == -1:
+        pass
     elif rows < 1:
         raise ValueError('parameter "rows" must be -1 or a positive integer')
 
@@ -4741,11 +4742,15 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
         keys = askeylist(keys, allow_duplicates=False)
 
     if ndim is None:
-        if rows == -1: shape = None
-        else: shape = rows
+        if rows == -1:
+            shape = None
+        else:
+            shape = rows
     elif ndim == -1:
-        if abs(rows) == 1: shape = None
-        else: shape = rows
+        if abs(rows) == 1:
+            shape = None
+        else:
+            shape = rows
     elif ndim == 1:
         shape = abs(rows)
     elif ndim == 0:
@@ -4756,7 +4761,8 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
     elif ndim < -1 or ndim > 1:
         raise ValueError('accepted values for "ndim" is -1, 0,  or 1')
 
-    if shape is None: shape = ()
+    if shape is None:
+        shape = ()
 
     if isinstance(dtype, np.dtype) and dtype.names is not None:
         if keys is None:
@@ -4765,7 +4771,7 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
             raise ValueError('size of dtype does not match size of keys')
         dtype = [dtype[i] for i in range(len(dtype))]
 
-    elif hasattr(dtype, '__iter__'):
+    elif isinstance(dtype, abc.Iterable):
         if keys is None:
             raise ValueError('dtype is an iterable but no keys were given')
         elif (len(keys) != len(dtype)):
@@ -4779,7 +4785,6 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
         return keys.__view_array__(func(shape, dtype=dtype))
     else:
         return func(shape, dtype=dtype)
-
 
 ######################################################
 ### reimplementationz of exisiting numpy functions ###
@@ -4851,7 +4856,6 @@ def concatenate(*arrays, axis=0, default_value=nan):
         for a in arrays:
             for key in a.keys():
                 result[key] = a.get(key, default_value)
-
 
         return isopy.full(max(size) * max(ndim) or -1, result, keys, dtype=[v.dtype for v in result.values()])
 
@@ -5019,8 +5023,11 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
             raise ValueError(
                 f'"{func.__name__}" expects {nin} input arguments but only got {len(inputs)}')
 
-    if fargs and 'axis' in fargs and axis == 0:
-        kwargs['axis'] = None
+    if fargs and 'axis' in fargs:
+        if 'axis' in kwargs:
+            axis = kwargs.pop('axis')
+        if axis == 0:
+            kwargs['axis'] = None
 
     if type(default_value) is not tuple:
         default_value = tuple(default_value for i in range(len(inputs)))
@@ -5029,42 +5036,44 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
 
     new_inputs = []
     new_default_values = []
-    new_keys = []
+    new_keys_a = []
+    new_keys_d = []
     for i, arg in enumerate(inputs):
         if isinstance(arg, IsopyArray):
             new_inputs.append(arg)
             new_default_values.append(default_value[i])
-            new_keys.append(arg.keys())
+            new_keys_a.append(arg.keys())
         elif isinstance(arg, ndarray) and len(arg.dtype) > 1:
-            try:
-                new_inputs.append(asarray(arg))
-            except:
-                new_inputs.append(arg)
-            else:
-                new_keys.append(new_inputs[-1].keys())
+            new_inputs.append(asarray(arg))
+            new_keys_a.append(new_inputs[-1].keys())
             new_default_values.append(default_value[i])
-        elif isinstance(arg, IsopyDict):
+        elif isinstance(arg, ScalarDict):
             new_inputs.append(arg)
             new_default_values.append(arg.default_value)
+            new_keys_d.append(arg.keys())
         elif isinstance(arg, dict):
-            new_inputs.append(IsopyDict(arg))
-            new_default_values.append(default_value[i])
+            new_inputs.append(ScalarDict(arg, default_value=default_value[i]))
+            new_default_values.append(new_inputs[-1].default_value)
+            new_keys_d.append(new_inputs[-1].keys())
         else:
             new_inputs.append(_getter(arg))
             new_default_values.append(default_value[i])
 
     if keys is None:
-        if len(new_keys) == 0:
-            return func(*inputs, **kwargs)
+        if len(new_keys_a) != 0:
+            new_keys = new_keys_a[0].__or__(*new_keys_a[1:])
+        elif len(new_keys_d) != 0:
+            new_keys_d = [askeylist(k) for k in new_keys_d]
+            new_keys = new_keys_d[0].__or__(*new_keys_d[1:])
         else:
-            new_keys = new_keys[0].__or__(*new_keys[1:])
+            return func(*inputs, **kwargs)
     else:
         new_keys = isopy.askeylist(keys)
 
     if axis == 0:
         out = kwargs.get('out', None)
         keykwargs = {kwk: kwargs.pop(kwk) for kwk, kwv in tuple(kwargs.items())
-                                if isinstance(kwv, IsopyArray)}
+                                if isinstance(kwv, (IsopyArray, IsopyDict))}
 
         result = [func(*(input.get(key, default_value) for input, default_value in zip(new_inputs, new_default_values)), **kwargs,
                        **{k: v.get(key) for k, v in keykwargs.items()}) for key in new_keys]
@@ -5074,19 +5083,23 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
             return None
 
         if out is None:
-            dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(new_keys)]
-            if getattr(result[0], 'ndim', 0) == 0:
-                out = np.array(tuple(result), dtype=dtype)
+            if len(new_keys_a) != 0:
+                dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(new_keys)]
+                if getattr(result[0], 'ndim', 0) == 0:
+                    out = np.array(tuple(result), dtype=dtype)
+                else:
+                    out = np.fromiter(zip(*result), dtype=dtype)
             else:
-                out = np.fromiter(zip(*result), dtype=dtype)
+                # Return dict
+                pass
             return new_keys.__view_array__(out)
         else:
             return out
 
     else:
-        for kwk, kwv in kwargs.items():
-            if isinstance(kwv, (IsopyArray, dict)):
-                kwargs['kwk'] = np.transpose([kwv.get(key, default_value) for key in new_keys])
+        for kwk, kwv in list(kwargs.items()):
+            if isinstance(kwv, (IsopyArray, IsopyDict)):
+                kwargs[kwk] = np.transpose([kwv.get(key, default_value) for key in new_keys])
 
         new_inputs = [np.transpose([input.get(key, default_value) for key in new_keys]) if
                       not isinstance(input, _getter) else input.get() for input, default_value in zip(new_inputs, new_default_values)]
