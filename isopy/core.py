@@ -3281,6 +3281,33 @@ class ToTextMixin:
         pyperclip.copy(string)
         return string
 
+class ToFileMixin:
+    def to_csv(self, filename, comments = None):
+        """
+        Save array to a cv file.
+
+        If *filename* already exits it will be overwritten. If *comments*
+        are given they will be included before the array data.
+        """
+        isopy.write_csv(filename, self, comments=comments)
+
+    def to_xlsx(self, filename, sheetname = 'sheet1',
+                comments = None, append = False):
+        """
+        Save array to a excel workbook.
+
+        If *sheetname* is not given the array will be saved as
+        "sheet1".  If *comments* are given they will be included before the array data. Existing
+        files will be overwritten unless append is ``True``.
+        """
+        #If *filename* exists and *append* is ``True`` the sheet will be added to the existing workbook. Otherwise the existing file will be overwritten.
+        if sheetname is None:
+            sheetname = 'sheet1'
+
+        # TODO if sheetname is given and file exits open it and add the sheet, overwrite if nessecary
+        isopy.write_xlsx(filename, comments=comments, append=append, **{sheetname: self})
+
+
 ############
 ### Dict ###
 ############
@@ -3535,8 +3562,11 @@ class IsopyDict(dict):
 
         raise TypeError(f'key type {type(key)} not understood')
 
+    def to_dict(self):
+        return dict(*self.items())
 
-class ScalarDict(IsopyDict, ArrayFuncMixin):
+
+class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
@@ -3596,7 +3626,7 @@ class ScalarDict(IsopyDict, ArrayFuncMixin):
 
     def __make_value(self, value, key, resize = True, default_value = False):
         try:
-            value = np.array(value, dtype=np.float64)
+            value = np.array(value, dtype=np.float64, ndmin=1)
         except Exception as err:
             raise ValueError(f'Key "{key}": Unable to convert value(s) to float') from err
 
@@ -3618,7 +3648,7 @@ class ScalarDict(IsopyDict, ArrayFuncMixin):
                 else:
                     raise ValueError(f'Key "{key}": Size of value does not match other values in dictionary')
             else:
-                value = value.reshape(tuple())
+                value = value[0]
         else:
             if value.size != 1 and value.size != self._size:
                 raise ValueError(f'Key "{key}": Size of value does not match other values in dictionary')
@@ -3679,6 +3709,23 @@ class ScalarDict(IsopyDict, ArrayFuncMixin):
         else:
             return super(ScalarDict, self).get(key, default)
 
+    @property
+    def ndim(self):
+        return self._ndim
+
+    @property
+    def size(self):
+        return self._size
+
+    def to_list(self):
+        """
+        Return a list containing the data in the dictionary.
+        """
+        if self.ndim == 0:
+            return list(self.values())
+        else:
+            return [list(r) for r in zip(*self.values())]
+
     def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
         Returns an isopy array based on values in the dictionary.
@@ -3699,21 +3746,28 @@ class ScalarDict(IsopyDict, ArrayFuncMixin):
 
         return array(d)
 
+    def to_ndarray(self):
+        """Return a copy of the dictionary as a normal numpy ndarray"""
+        array = self.to_array()
+        return array.view(ndarray)
+
+    def to_dataframe(self):
+        """
+        Convert dictionary to a pandas dataframe. An exception is raised if pandas is not installed.
+        """
+        if pandas is not None:
+            return pandas.DataFrame(self)
+        else:
+            raise TypeError('Pandas is not installed')
+
     @renamed_function(to_array)
     def asarray(self, keys=None, default=NotGiven, **key_filters): pass
 
-    @property
-    def ndim(self):
-        return self._ndim
-
-    @property
-    def size(self):
-        return self._size
 
 #############
 ### Array ###
 #############
-class IsopyArray(ArrayFuncMixin, ToTextMixin):
+class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFileMixin):
     """
     An array where data is stored rows and columns of isopy key strings.
 
@@ -4106,6 +4160,9 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin):
         """
         return {str(key): self[key].tolist() for key in self.keys()}
 
+    def to_scalardict(self, default_value=np.nan):
+        return ScalarDict(self, default_value=default_value)
+
     def to_ndarray(self):
         """Return a copy of the array as a normal numpy ndarray"""
         if isinstance(self, void):
@@ -4113,31 +4170,6 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin):
         else:
             view = self.view(ndarray)
         return view.copy()
-
-    def to_csv(self, filename, comments = None):
-        """
-        Save array to a cv file.
-
-        If *filename* already exits it will be overwritten. If *comments*
-        are given they will be included before the array data.
-        """
-        isopy.write_csv(filename, self, comments=comments)
-
-    def to_xlsx(self, filename, sheetname = 'sheet1',
-                comments = None, append = False):
-        """
-        Save array to a excel workbook.
-
-        If *sheetname* is not given the array will be saved as
-        "sheet1".  If *comments* are given they will be included before the array data. Existing
-        files will be overwritten unless append is ``True``.
-        """
-        #If *filename* exists and *append* is ``True`` the sheet will be added to the existing workbook. Otherwise the existing file will be overwritten.
-        if sheetname is None:
-            sheetname = 'sheet1'
-
-        # TODO if sheetname is given and file exits open it and add the sheet, overwrite if nessecary
-        isopy.write_xlsx(filename, comments=comments, append=append, **{sheetname: self})
 
     def to_dataframe(self):
         """

@@ -31,11 +31,27 @@ class Test_ArrayFunctions:
         array3 = array2.copy()
         array3['pd'][5] = np.nan
 
+        dict1 = array1.to_scalardict()
+        dict2 = array2.to_scalardict()
+        dict3 = array3.to_scalardict()
+
         # Elementwise functions
         for func in array_functions.np_elementwise:
             self.singleinput_a(func, array1)
             self.singleinput_a(func, array2)
             self.singleinput_a(func, array3)
+
+            self.singleinput_ds(func, dict1)
+            self.singleinput_ds(func, dict2)
+            self.singleinput_ds(func, dict3)
+
+            # There isnt enough arguments to an error should be thrown
+            with pytest.raises((ValueError, TypeError)):
+                func()
+
+            # In case its not caught by the array dispatcher.
+            with pytest.raises((ValueError, TypeError)):
+                isopy.arrayfunc(func)
 
         # Cumulative functions
         for func in array_functions.np_cumulative:
@@ -54,6 +70,29 @@ class Test_ArrayFunctions:
             self.singleinput_a(func, array2, axis=1)
             self.singleinput_a(func, array3, axis=1)
 
+            self.singleinput_ds(func, dict1)
+            self.singleinput_ds(func, dict2)
+            self.singleinput_ds(func, dict3)
+
+            self.singleinput_ds(func, dict1, axis=None)
+            self.singleinput_ds(func, dict2, axis=None)
+            self.singleinput_ds(func, dict3, axis=None)
+
+            self.singleinput_ds(func, dict1, axis=0)
+            self.singleinput_ds(func, dict2, axis=0)
+            self.singleinput_ds(func, dict3, axis=0)
+
+            self.singleinput_ds(func, dict2, axis=1)
+            self.singleinput_ds(func, dict3, axis=1)
+
+            # There isnt enough arguments to an error should be thrown
+            with pytest.raises((ValueError, TypeError)):
+                func()
+
+            # In case its not caught by the array dispatcher.
+            with pytest.raises((ValueError, TypeError)):
+                isopy.arrayfunc(func)
+
         # reducing numpy functions
         for func in array_functions.np_reducing:
             self.singleinput_a(func, array1)
@@ -70,6 +109,29 @@ class Test_ArrayFunctions:
 
             self.singleinput_a(func, array2, axis=1)
             self.singleinput_a(func, array3, axis=1)
+
+            self.singleinput_ds(func, dict1)
+            self.singleinput_ds(func, dict2)
+            self.singleinput_ds(func, dict3)
+
+            self.singleinput_ds(func, dict1, axis=None)
+            self.singleinput_ds(func, dict2, axis=None)
+            self.singleinput_ds(func, dict3, axis=None)
+
+            self.singleinput_ds(func, dict1, axis=0)
+            self.singleinput_ds(func, dict2, axis=0)
+            self.singleinput_ds(func, dict3, axis=0)
+
+            self.singleinput_ds(func, dict2, axis=1)
+            self.singleinput_ds(func, dict3, axis=1)
+
+            # There isnt enough arguments to an error should be thrown
+            with pytest.raises((ValueError, TypeError)):
+                func()
+
+            # In case its not caught by the array dispatcher.
+            with pytest.raises((ValueError, TypeError)):
+                isopy.arrayfunc(func)
 
         # reducing isopy functions
         for func in [isopy.mad, isopy.nanmad, isopy.se, isopy.nanse, isopy.sd, isopy.nansd,
@@ -90,6 +152,30 @@ class Test_ArrayFunctions:
             self.singleinput_a(func, array2, axis=1)
             self.singleinput_a(func, array3, axis=1)
 
+            self.singleinput_ds(func, dict1)
+            self.singleinput_ds(func, dict2)
+            self.singleinput_ds(func, dict3)
+
+            self.singleinput_ds(func, dict1, axis=None)
+            self.singleinput_ds(func, dict2, axis=None)
+            self.singleinput_ds(func, dict3, axis=None)
+
+            self.singleinput_ds(func, dict1, axis=0)
+            self.singleinput_ds(func, dict2, axis=0)
+            self.singleinput_ds(func, dict3, axis=0)
+
+            self.singleinput_ds(func, dict2, axis=1)
+            self.singleinput_ds(func, dict3, axis=1)
+            self.singleinput_a(func, array3, axis=1)
+
+            # There isnt enough arguments to an error should be thrown
+            with pytest.raises((ValueError, TypeError)):
+                func()
+
+            # In case its not caught by the array dispatcher.
+            with pytest.raises((ValueError, TypeError)):
+                isopy.arrayfunc(func)
+
         # Test the reduce method
         self.singleinput_a(np.add.reduce, array1)
         self.singleinput_a(np.add.reduce, array2)
@@ -106,6 +192,21 @@ class Test_ArrayFunctions:
         self.singleinput_a(np.add.reduce, array2, axis=1)
         self.singleinput_a(np.add.reduce, array3, axis=1)
 
+        self.singleinput_ds(np.add.reduce, dict1)
+        self.singleinput_ds(np.add.reduce, dict2)
+        self.singleinput_ds(np.add.reduce, dict3)
+
+        self.singleinput_ds(np.add.reduce, dict1, axis=None)
+        self.singleinput_ds(np.add.reduce, dict2, axis=None)
+        self.singleinput_ds(np.add.reduce, dict3, axis=None)
+
+        self.singleinput_ds(np.add.reduce, dict1, axis=0)
+        self.singleinput_ds(np.add.reduce, dict2, axis=0)
+        self.singleinput_ds(np.add.reduce, dict3, axis=0)
+
+        self.singleinput_ds(np.add.reduce, dict2, axis=1)
+        self.singleinput_ds(np.add.reduce, dict3, axis=1)
+
         # Test the accumulate method
         # self.singleinput(np.add.accumulate, array1) # Dosnt work for 0-dim
         self.singleinput_a(np.add.accumulate, array2)
@@ -121,6 +222,21 @@ class Test_ArrayFunctions:
 
         self.singleinput_a(np.add.accumulate, array2, axis=1)
         self.singleinput_a(np.add.accumulate, array3, axis=1)
+
+        # self.singleinpud(np.add.accumulate, dict1) # Dosnt work for 0-dim
+        self.singleinput_ds(np.add.accumulate, dict2)
+        self.singleinput_ds(np.add.accumulate, dict3)
+
+        self.singleinput_ds(np.add.accumulate, dict1, axis=None)
+        # self.singleinpud(np.add.accumulate, dict2, axis=None) # Doesnt work for > 1-dim
+        # self.singleinpud(np.add.accumulate, dict3, axis=None) # Doesnt work for > 1-dim
+
+        # self.singleinpud(np.add.accumulate, dict1, axis=0) # Dosnt work for 0-dim
+        self.singleinput_ds(np.add.accumulate, dict2, axis=0)
+        self.singleinput_ds(np.add.accumulate, dict3, axis=0)
+
+        self.singleinput_ds(np.add.accumulate, dict2, axis=1)
+        self.singleinput_ds(np.add.accumulate, dict3, axis=1)
 
     def singleinput_a(self, func, a, axis=core.NotGiven, out=core.NotGiven, where=core.NotGiven):
         kwargs = {}
@@ -184,91 +300,64 @@ class Test_ArrayFunctions:
                 assert result.ndim == true.ndim
                 np.testing.assert_allclose(result, true)
 
-        # There isnt enough arguments to an error should be thrown
-        with pytest.raises((ValueError, TypeError)):
-            func()
-
-        # In case its not caught by the array dispatcher.
-        with pytest.raises((ValueError, TypeError)):
-            isopy.arrayfunc(func)
-
-    def singleinput_d(self, func, d, axis=core.NotGiven, out=core.NotGiven, where=core.NotGiven):
+    def singleinput_ds(self, func, ds, axis=core.NotGiven, out=core.NotGiven, where=core.NotGiven):
         kwargs = {}
+
         if axis is not core.NotGiven: kwargs['axis'] = axis
         if out is not core.NotGiven: kwargs['out'] = out
         if where is not core.NotGiven: kwargs['where'] = where
 
         if axis is core.NotGiven or axis == 0:
-
-            result = func(d, **kwargs)
+            result = func(ds, **kwargs)
             assert isinstance(result, core.ScalarDict)
-            assert result.keys == d.keys
+            assert result.keys == ds.keys
             for key in result.keys:
-                true = func(d[key])
+                true = func(ds[key])
                 assert result[key].size == true.size
-                assert result[key].ndim == true.ndim
+                if true.size == 1:
+                    assert result[key].ndim == 0
+                else:
+                    assert result[key].ndim == 1
                 np.testing.assert_allclose(result[key], true)
 
-            result = isopy.arrayfunc(func, d, **kwargs)
+            result = isopy.arrayfunc(func, ds, **kwargs)
             assert isinstance(result, core.ScalarDict)
-            assert result.keys == d.keys
+            assert result.keys == ds.keys
             for key in result.keys:
-                true = func(d[key])
+                true = func(ds[key])
                 assert result[key].size == true.size
-                assert result[key].ndim == true.ndim
+                if true.size == 1:
+                    assert result[key].ndim == 0
+                else:
+                    assert result[key].ndim == 1
                 np.testing.assert_allclose(result[key], true)
 
-            # For builtin functions
-            funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
-            if hasattr(d, funcname):
-                result = getattr(d, funcname)(**kwargs)
-                assert isinstance(result, core.ScalarDict)
-                assert result.keys == d.keys
-                for key in result.keys:
-                    true = func(d[key])
-                    assert result[key].size == true.size
-                    assert result[key].ndim == true.ndim
-                    np.testing.assert_allclose(result[key], true)
+            result = isopy.arrayfunc(func, ds.to_dict(), **kwargs)
+            assert isinstance(result, core.ScalarDict)
+            assert result.keys == ds.keys
+            for key in result.keys:
+                true = func(ds[key])
+                assert result[key].size == true.size
+                if true.size == 1:
+                    assert result[key].ndim == 0
+                else:
+                    assert result[key].ndim == 1
+                np.testing.assert_allclose(result[key], true)
 
         else:
-            true = func(d.to_list(), **kwargs)
+            true = func(ds.to_list(), **kwargs)
 
-            result = func(d, **kwargs)
+            result = func(ds, **kwargs)
             assert not isinstance(result, core.ScalarDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
 
-            result = isopy.arrayfunc(func, d, **kwargs)
+            result = isopy.arrayfunc(func, ds, **kwargs)
             assert not isinstance(result, core.ScalarDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
-
-            # For builtin functions
-            funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
-            if hasattr(d, funcname):
-                result = getattr(d, funcname)(**kwargs)
-                assert not isinstance(result, core.ScalarDict)
-                assert result.size == true.size
-                assert result.ndim == true.ndim
-                np.testing.assert_allclose(result, true)
-
-        # There isnt enough arguments to an error should be thrown
-        with pytest.raises((ValueError, TypeError)):
-            func()
-
-        # In case its not caught by the array dispatcher.
-        with pytest.raises((ValueError, TypeError)):
-            isopy.arrayfunc(func)
-
-        # There isnt enough arguments to an error should be thrown
-        with pytest.raises((ValueError, TypeError)):
-            func()
-
-        # In case its not caught by the array dispatcher.
-        with pytest.raises((ValueError, TypeError)):
-            isopy.arrayfunc(func)
 
     def test_dualinput(self):
         keys1 = 'ru pd cd'.split()
