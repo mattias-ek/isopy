@@ -17,7 +17,7 @@ __all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read
 
 import isopy.checks
 
-
+# TODO replace with pandas functions. That way it will be more robust.
 ################
 ### read exp ###
 ################
