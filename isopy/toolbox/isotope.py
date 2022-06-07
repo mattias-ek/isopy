@@ -422,7 +422,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
         spike = spike * spike_fraction
         ms_array = ms_array * (1 - spike_fraction)
 
-        ms_array = isopy.add(ms_array, spike, 0)
+        ms_array = ms_array + spike.default(0)
 
     ms_array = make_ms_array(ms_array, mf_factor = fins,
                              isotope_fractions=isotope_fractions, isotope_masses=isotope_masses,
@@ -436,16 +436,16 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
 
         blank = blank.normalise(blank_fixed_voltage, blank_fixed_key)
         if fixed_key is None:
-            sum = isopy.subtract(ms_array, blank, 0, ms_array.keys).sum(axis=None)
+            sum = isopy.arrayfunc(isopy.subtract, ms_array, blank.default(0), keys=ms_array.keys).sum(axis=None)
             ms_array = ms_array.normalise(sum, None)
         elif isinstance(fixed_key, (str, list, tuple)):
-            sum = isopy.subtract(ms_array, blank, 0, fixed_key).sum(axis=None)
+            sum = isopy.arrayfunc(isopy.subtract, ms_array.default(0), blank, keys=fixed_key).sum(axis=None)
             ms_array = ms_array.normalise(sum, fixed_key)
         else:
-            sum = isopy.subtract(ms_array, blank, 0, fixed_key(ms_array)).sum(axis=None)
+            sum = isopy.arrayfunc(isopy.subtract, ms_array, blank.default(0), keys=fixed_key(ms_array)).sum(axis=None)
             ms_array = ms_array.normalise(sum, fixed_key(ms_array))
 
-        ms_array = isopy.add(ms_array, blank, 0, ms_array.keys)
+        ms_array = isopy.arrayfunc(isopy.add, ms_array, blank.default(0), keys=ms_array.keys)
 
     ms_array = make_ms_beams(ms_array, fixed_voltage=None, integrations=integrations,
                              integration_time=integration_time, random_seed=random_seed,
@@ -1169,7 +1169,7 @@ def _combine_reference_values(values):
     if len(out) == 1:
         return isopy.ScalarDict(out[0])
     else:
-        return isopy.ScalarDict(np.mean(isopy.concatenate(out)))
+        return isopy.ScalarDict(np.mean(isopy.concatenate(*out)))
 
 @core.append_preset_docstring
 @core.add_preset('sd', cval=np.mean, pmval=isopy.sd)

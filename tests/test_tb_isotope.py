@@ -1424,14 +1424,14 @@ class Test_Make:
         sample = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
         sample = sample.normalise(1, spike.keys)
 
-        correct = isopy.add(sample * 0.5, spike * 0.5, 0)
+        correct = sample * 0.5 + (spike * 0.5).default(0)
         correct = correct.normalise(10, isopy.keymax)
         result = isopy.tb.make_ms_sample('pd', spike=spike, integrations=None)
         self.compare(correct, result)
         result = isopy.tb.make_ms_sample('pd', spike=spike)
         self.compare_sd(correct, 100, result)
 
-        correct = isopy.add(sample * 0.1, spike * 0.9, 0)
+        correct = sample * 0.1 + (spike * 0.9).default(0)
         correct = correct.normalise(10, isopy.keymax)
         result = isopy.tb.make_ms_sample('pd', spike=spike, integrations=None, spike_fraction=0.9)
         self.compare(correct, result)

@@ -1,12 +1,9 @@
-import typing
-
 import isopy
 import numpy as np
 import pyperclip as pyperclip
 import inspect as inspect
 import functools
 import itertools
-import warnings
 import hashlib
 import warnings
 import collections.abc as abc
@@ -28,7 +25,7 @@ except:
     IPython = None
 
 from numpy import ndarray, nan, float64, void
-from typing import TypeVar, Union, Optional, Any, NoReturn, Generic
+
 
 class NotGivenType:
     def __repr__(self):
@@ -47,9 +44,7 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
            'IsopyDict', 'ScalarDict',
            'keystring', 'askeystring', 'keylist', 'askeylist', 'array', 'asarray', 'asanyarray',
            'ones', 'zeros', 'empty', 'full', 'random',
-           'concatenate',
-           'iskeystring', 'iskeylist', 'isarray',
-           'allowed_numpy_functions']
+           'iskeystring', 'iskeylist', 'isarray']
 
 CACHE_MAXSIZE = 128
 CACHES_ENABLED = True
@@ -70,7 +65,7 @@ def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
                 try:
                     return cached(*args, **kwargs)
                 except TypeError as err:
-                    if ignore_unhashable is False or not str(err).startswith('unhashable'):
+                    if ignore_unhashable is False or not startswith(str(err), 'unhashable'):
                         raise err
 
             return uncached(*args, **kwargs)
@@ -190,24 +185,20 @@ def add_preset(name, **kwargs):
         return func
     return decorator
 
-def partial_func(func, name = None, module = None, doc = None, /, **func_kwargs):
+def partial_func(func, name = None, doc = None, /, **func_kwargs):
     new_func = functools.partial(func, **func_kwargs)
     new_func.__name__ = name or func.__name__
-    new_func.__module__  = module or func.__module__
     new_func.__doc__ = doc or func.__doc__
     return new_func
 
-def set_module(module):
-    def decorator(func):
-        func.__module__ = module
-        return func
-    return decorator
+def startswith(string, prefix):
+    return string[:len(prefix)] == prefix
 
 def extract_kwargs(kwargs, prefix, keep_prefix=False):
     new_kwargs = {}
     for kwarg in list(kwargs.keys()):
         prefix_ = f'{prefix}_'
-        if kwarg.startswith(prefix_):
+        if startswith(kwarg, prefix_):
             if keep_prefix:
                 new_kwargs[kwarg] = kwargs.pop(kwarg)
             else:
@@ -262,6 +253,15 @@ def renamed_kwarg(**old_new_name):
         return wrapper
     return renamed_kwarg_func
 
+def deprecrated_function(message, stacklevel = 1):
+    def wrap_func(func):
+        def func_wrapper(*args, **kwargs):
+            warnings.warn(message, stacklevel=stacklevel)
+            return func(*args,**kwargs)
+        return func_wrapper
+    return wrap_func
+
+    
 def hashstr(string):
     return hashlib.md5(string.encode('UTF-8')).hexdigest()
 
@@ -320,7 +320,7 @@ def _split_filter(prefix, filters):
         if key == prefix[:-1]:
             #avoids getting errors
             out['key_eq'] = filters.pop(prefix[:-1])
-        elif key.startswith(prefix): #.startswith(prefix):
+        elif startswith(key, prefix): #.startswith(prefix):
             filter = filters.pop(key)
             key = remove_prefix(key, prefix)
             if key in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
@@ -1832,7 +1832,7 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
             string = string.strip()
 
             # For backwards compatibility
-            if string.startswith('Ratio_') and allow_reformatting is True: #.startswith('Ratio_'):
+            if startswith(string, 'Ratio_') and allow_reformatting is True: #.startswith('Ratio_'):
                 string = remove_prefix(string, 'Ratio_')
                 try:
                     numer, denom = string.split('_', 1)
@@ -1841,7 +1841,7 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
                                         'unable to split string into numerator and denominator')
 
             # For backwards compatibility
-            elif string.startswith('RAT') and string[3].isdigit() and allow_reformatting is True:
+            elif startswith(string, 'RAT') and string[3].isdigit() and allow_reformatting is True:
                 n = int(string[3])
                 string = string[5:]
                 try:
@@ -3113,6 +3113,174 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
 
         return self.__keylist__(key for key in self if key._filter(**filters))
 
+###################################
+### Mixins for Arrays and dicts ###
+###################################
+class ArrayFuncMixin:
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if ufunc not in APPROVED_FUNCTIONS:
+            warnings.warn(f"The functionality of {ufunc.__name__} has not been tested with isopy arrays.")
+
+        if method != '__call__':
+            ufunc = getattr(ufunc, method)
+            #raise TypeError(f'the {ufunc.__name__} method "{method}" is not supported by isopy arrays')
+
+        return call_array_function(ufunc, *inputs, **kwargs)
+
+    def __array_function__(self, func, types, args, kwargs):
+        if func not in APPROVED_FUNCTIONS:
+            warnings.warn(f"The functionality of {func.__name__} has not been tested with isopy arrays.")
+
+        return call_array_function(func, *args, **kwargs)
+
+class ToTextMixin:
+    def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+
+        sdict = {}
+        if include_row:
+            if self.ndim == 0:
+                sdict['(row)'] = ['None']
+            else:
+                sdict['(row)'] = [str(i) for i in range(self.size)]
+
+        for k in self.keys():
+            val = self[k]
+            if include_dtype:
+                title = f'{k} ({val.dtype.kind}{val.dtype.itemsize})'
+            else:
+                title = f'{k}'
+            if val.ndim == 0:
+                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k])]
+            else:
+                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k][i]) for i in
+                                range(self.size)]
+
+        if nrows is not None and nrows > 2 and nrows < self.size:
+            first = nrows // 2
+            last = self.size - (nrows // 2 + nrows % 2)
+            for title, value in sdict.items():
+                sdict[title] = value[:first] + ['...'] + value[last:]
+            nrows += 1
+        else:
+            nrows = self.size
+
+        flen = {}
+        for k in sdict.keys():
+            flen[k] = max([len(x) for x in sdict[k]]) + 1
+            if len(k) >= flen[k]: flen[k] = len(k) + 1
+
+        return flen, sdict, nrows
+
+    def to_text(self, delimiter=', ', include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+        """
+        Returns a string containing the contents of the array.
+
+        Parameters
+        ----------
+        delimiter : str, Default = ', '
+            String used to separate columns in each row.
+        include_row : bool, Default = False
+            If ``True`` a column containing the row index is included. *None* Is given as the
+            row index for 0-dimensional arrays.
+        include_dtype : bool, Default = False
+            If ``True`` the column data type is included in the first row next to the column name.
+        nrows : int, Optional
+            The number of rows to show.
+        vformat : str, Optional
+            Format string for different kinds of data. The key denoted the data kind. Common data
+            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
+            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
+            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
+            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
+        """
+
+        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
+
+        return '{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
+                                   '\n'.join('{}'.format(delimiter.join('{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
+                                             for i in range(nrows)))
+
+    def to_table(self, include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+        """
+        Returns a text string of a markdown table containing the contents of the array.
+
+        Parameters
+        ----------
+        include_row : bool, Default = False
+            If ``True`` a column containing the row index is included. *None* Is given as the
+            row index for 0-dimensional arrays.
+        include_dtype : bool, Default = False
+            If ``True`` the column data type is included in the first row next to the column name.
+        nrows : int, Optional
+            The number of rows to show.
+        vformat : str, Optional
+            Format string for different kinds of data. The key denoted the data kind. Common data
+            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
+            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
+            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
+            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
+        """
+
+        delimiter = '| '
+
+        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
+        flen = {k: f if f > 4 else 4 for k, f in flen.items()}
+
+        lines = []
+        for k in flen.keys():
+            if k == '(row)':
+                lines.append('-' * flen[k])
+            else:
+                lines.append('-' * (flen[k]-1) + ':')
+
+
+        return '{}\n{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
+                                   delimiter.join(lines),
+                               '\n'.join('{}'.format(delimiter.join(
+                                   '{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
+                                         for i in range(nrows)))
+
+    def display_table(self, include_row = False, include_dtype=False,
+                nrows = None, **vformat):
+        """
+       Returns a Markdown display of a table containing the contents of the array. This will render
+       a table in an IPython console or a Jupyter cell.
+
+       An exception is raised if IPython is not installed.
+
+       Parameters
+       ----------
+       include_row : bool, Default = False
+           If ``True`` a column containing the row index is included. *None* Is given as the
+           row index for 0-dimensional arrays.
+       include_dtype : bool, Default = False
+           If ``True`` the column data type is included in the first row next to the column name.
+       nrows : int, Optional
+           The number of rows to show.
+       vformat : str, Optional
+           Format string for different kinds of data. The key denoted the data kind. Common data
+           kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
+           Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
+           Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
+           is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
+       """
+        if IPython is not None:
+            return IPython.display.Markdown(self.to_table(include_row, include_dtype, nrows, **vformat))
+        else:
+            raise TypeError('IPython not installed')
+
+    def to_clipboard(self, delimiter=', ', include_row= False,
+                     include_dtype= False, **vformat):
+        """
+        Copy the string returned from ``array.to_text(*args, **kwargs)`` to the clipboard.
+        """
+        string = self.to_text(delimiter=delimiter, include_row=include_row, include_dtype=include_dtype, **vformat)
+        pyperclip.copy(string)
+        return string
+
 ############
 ### Dict ###
 ############
@@ -3203,6 +3371,13 @@ class IsopyDict(dict):
         return super(IsopyDict, self).__getitem__(key)
 
     @property
+    def keys(self):
+        """
+        Return a keylist with the keys in the dictionary
+        """
+        return askeylist(super(IsopyDict, self).keys())
+
+    @property
     def readonly(self) -> bool:
         """
         ``True`` if the dictionary cannot be edited otherwise ``False``.
@@ -3226,10 +3401,7 @@ class IsopyDict(dict):
 
     @property
     def keylist(self):
-        """
-        Returns the dictionary keys as an isopy key list.
-        """
-        return askeylist(self.keys())
+        return self.keys
 
     def update(self, other):
         """
@@ -3364,7 +3536,7 @@ class IsopyDict(dict):
         raise TypeError(f'key type {type(key)} not understood')
 
 
-class ScalarDict(IsopyDict):
+class ScalarDict(IsopyDict, ArrayFuncMixin):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
@@ -3541,7 +3713,7 @@ class ScalarDict(IsopyDict):
 #############
 ### Array ###
 #############
-class IsopyArray:
+class IsopyArray(ArrayFuncMixin, ToTextMixin):
     """
     An array where data is stored rows and columns of isopy key strings.
 
@@ -3570,6 +3742,8 @@ class IsopyArray:
         have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
         conversion fails the default data type from ``np.array(values[column])`` is used.
     """
+
+    __default__ = nan
 
     def __new__(cls, values, keys=None, *, dtype=None, ndim=None, try_flavours = None):
         try_flavours = default_key_flavours(try_flavours)
@@ -3607,7 +3781,10 @@ class IsopyArray:
 
             else:
                 if dtype is None:
-                    dtype = [(values.dtype,) for i in range(values.shape[-1])]
+                    if values.ndim == 0:
+                        dtype = [(values.dtype,)]
+                    else:
+                        dtype = [(values.dtype,) for i in range(values.shape[-1])]
 
             values = values.tolist()
 
@@ -3733,34 +3910,6 @@ class IsopyArray:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        # if not ufunc.__module__ == 'isopy': isopy has no ufuncs oly array functions
-        allowed = ALLOWED_NUMPY_FUNCTIONS.get(ufunc, False)
-        if allowed is False:
-            warnings.warn(f"The functionality of {ufunc.__name__} has not been tested with isopy arrays.")
-
-        elif allowed is not True:
-            # reimplemented function
-            return allowed(*inputs, **kwargs)
-
-        if method != '__call__':
-            ufunc = getattr(ufunc, method)
-            #raise TypeError(f'the {ufunc.__name__} method "{method}" is not supported by isopy arrays')
-
-        return call_array_function(ufunc, *inputs, **kwargs)
-
-    def __array_function__(self, func, types, args, kwargs):
-        if not func.__module__ == 'isopy':
-            allowed = ALLOWED_NUMPY_FUNCTIONS.get(func, False)
-            if allowed is False:
-                warnings.warn(f"The functionality of {func.__name__} has not been tested with isopy arrays.")
-
-            elif allowed is not True:
-                # reimplemented function
-                return allowed(*args, **kwargs)
-
-        return call_array_function(func, *args, **kwargs)
-
     @property
     def flavour(self):
         """
@@ -3808,12 +3957,17 @@ class IsopyArray:
         """
         return tuple((key, self[key]) for key in self.keys)
 
-    def get(self, key, default = nan):
+    def get(self, key, default = NotGiven):
         """
         Returns the values of column *key* if present in the array. Otherwise an numpy array
         filled with *default* is returned with the same shape as a column in the array. An
         exception will be raised if *default* cannot be broadcast to the correct shape.
+
+        If *default* is not given np.nan is used.
         """
+        if default is NotGiven:
+            default = self.__default__ #This is always nan unless the .default() has been called.
+
         try:
             key = self.__keystring__(key)
             return self.__getitem__(key)
@@ -3880,7 +4034,7 @@ class IsopyArray:
 
         out = IsopyArray(self, numerators, try_flavours=numerators.flavour)
         if denominator not in out.keys():
-            out = concatenate(out, ones(self.nrows, denominator), axis=1)
+            out = isopy.cstack(out, ones(self.nrows, denominator))
         return out * denominator_value
 
     def normalise(self, value = 1, key = None):
@@ -3929,144 +4083,13 @@ class IsopyArray:
     def reshape(self, shape):
         return self.__view__(super(IsopyArray, self).reshape(shape))
 
-    def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
-                nrows = None, **vformat):
+    def default(self, value):
+        """Return a view of the array with a **temporary** default value.
 
-        sdict = {}
-        if include_row:
-            if self.ndim == 0:
-                sdict['(row)'] = ['None']
-            else:
-                sdict['(row)'] = [str(i) for i in range(self.size)]
-
-        for k in self.keys():
-            val = self[k]
-            if include_dtype:
-                title = f'{k} ({val.dtype.kind}{val.dtype.itemsize})'
-            else:
-                title = f'{k}'
-            if val.ndim == 0:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k])]
-            else:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k][i]) for i in
-                                range(self.size)]
-
-        if nrows is not None and nrows > 2 and nrows < self.size:
-            first = nrows // 2
-            last = self.size - (nrows // 2 + nrows % 2)
-            for title, value in sdict.items():
-                sdict[title] = value[:first] + ['...'] + value[last:]
-            nrows += 1
-        else:
-            nrows = self.size
-
-        flen = {}
-        for k in sdict.keys():
-            flen[k] = max([len(x) for x in sdict[k]]) + 1
-            if len(k) >= flen[k]: flen[k] = len(k) + 1
-
-        return flen, sdict, nrows
-
-    def to_text(self, delimiter=', ', include_row = False, include_dtype=False,
-                nrows = None, **vformat):
         """
-        Returns a string containing the contents of the array.
-
-        Parameters
-        ----------
-        delimiter : str, Default = ', '
-            String used to separate columns in each row.
-        include_row : bool, Default = False
-            If ``True`` a column containing the row index is included. *None* Is given as the
-            row index for 0-dimensional arrays.
-        include_dtype : bool, Default = False
-            If ``True`` the column data type is included in the first row next to the column name.
-        nrows : int, Optional
-            The number of rows to show.
-        vformat : str, Optional
-            Format string for different kinds of data. The key denoted the data kind. Common data
-            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-        """
-
-        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
-
-        return '{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
-                                   '\n'.join('{}'.format(delimiter.join('{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
-                                             for i in range(nrows)))
-
-    def to_table(self, include_row = False, include_dtype=False,
-                nrows = None, **vformat):
-        """
-        Returns a text string of a markdown table containing the contents of the array.
-
-        Parameters
-        ----------
-        include_row : bool, Default = False
-            If ``True`` a column containing the row index is included. *None* Is given as the
-            row index for 0-dimensional arrays.
-        include_dtype : bool, Default = False
-            If ``True`` the column data type is included in the first row next to the column name.
-        nrows : int, Optional
-            The number of rows to show.
-        vformat : str, Optional
-            Format string for different kinds of data. The key denoted the data kind. Common data
-            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-        """
-
-        delimiter = '| '
-
-        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
-        flen = {k: f if f > 4 else 4 for k, f in flen.items()}
-
-        lines = []
-        for k in flen.keys():
-            if k == '(row)':
-                lines.append('-' * flen[k])
-            else:
-                lines.append('-' * (flen[k]-1) + ':')
-
-
-        return '{}\n{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
-                                   delimiter.join(lines),
-                               '\n'.join('{}'.format(delimiter.join(
-                                   '{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
-                                         for i in range(nrows)))
-
-    def display_table(self, include_row = False, include_dtype=False,
-                nrows = None, **vformat):
-        """
-       Returns a Markdown display of a table containing the contents of the array. This will render
-       a table in an IPython console or a Jupyter cell.
-
-       An exception is raised if IPython is not installed.
-
-       Parameters
-       ----------
-       include_row : bool, Default = False
-           If ``True`` a column containing the row index is included. *None* Is given as the
-           row index for 0-dimensional arrays.
-       include_dtype : bool, Default = False
-           If ``True`` the column data type is included in the first row next to the column name.
-       nrows : int, Optional
-           The number of rows to show.
-       vformat : str, Optional
-           Format string for different kinds of data. The key denoted the data kind. Common data
-           kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-           Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-           Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-           is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-       """
-        if IPython is not None:
-            return IPython.display.Markdown(self.to_table(include_row, include_dtype, nrows, **vformat))
-        else:
-            raise TypeError('IPython not installed')
-
+        temp_view = self.__view__(self)
+        temp_view.__default__ = value
+        return temp_view
 
     def to_list(self):
         """
@@ -4090,15 +4113,6 @@ class IsopyArray:
         else:
             view = self.view(ndarray)
         return view.copy()
-
-    def to_clipboard(self, delimiter=', ', include_row= False,
-                     include_dtype= False, **vformat):
-        """
-        Copy the string returned from ``array.to_text(*args, **kwargs)`` to the clipboard.
-        """
-        string = self.to_text(delimiter=delimiter, include_row=include_row, include_dtype=include_dtype, **vformat)
-        pyperclip.copy(string)
-        return string
 
     def to_csv(self, filename, comments = None):
         """
@@ -4480,8 +4494,6 @@ def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None):
     The data type and number of dimensions of the returned array can be specified by *dtype and
     *ndim*, respectively.
     """
-    if a is None: return None
-
     if isinstance(a, IsopyArray) and dtype is None:
         return asarray(a, ndim=ndim, try_flavours=try_flavours)
 
@@ -4820,31 +4832,34 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
 ######################################################
 ### reimplementationz of exisiting numpy functions ###
 ######################################################
-def concatenate(*arrays, axis=0, default_value=nan):
+def _concatenate(*arrays, axis=0, default_value=nan):
     """
     Join arrays together along specified axis.
-
-    Same function as ``np.concatenate`` with the additional option of specifying the default value for columns not
-    present in all arrays.
 
     Normal numpy broadcasting rules apply so when concatenating columns the shape of the arrays must be compatible.
     When array with a size of 1 is concatenated to an array of a different size it will be copied into every row
     of the new shape.
 
+    *None* values
+
     Parameters
     ----------
     arrays
-        Arrays to be joined together.
+        Arrays to be joined together. *None* will be treated as a missing row(s).
     axis
         If 0 then the rows of each array in *arrays* will be concatenated. If 1 then the columns of each array will
         be concatenated. If *axis* is 1 an error will be raised if a column key occurs in more than one array.
-    default_value : float, optional
-        The default value for any columns that are missing when concatenating rows. Default value is ``np.nan``.
+    missing_value : float, optional
+        The value used for missing rows. Default value is ``np.nan``.
 
     Returns
     -------
     IsopyArray
         Array containing all the row data and all the columns keys found in *arrays*.
+
+    See Also
+    --------
+    rstack, cstack
     """
     if len(arrays) == 1 and isinstance(arrays[0], (list, tuple)):
         arrays = arrays[0]
@@ -4894,60 +4909,12 @@ def concatenate(*arrays, axis=0, default_value=nan):
         raise np.AxisError(axis, 1, 'isopy.concatenate only accepts axis values of 0 or 1')
 
 
-ALLOWED_NUMPY_FUNCTIONS = {np.concatenate: concatenate}
-afnp_elementwise = [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.degrees, np.isnan,
-                    np.radians, np.deg2rad, np.rad2deg, np.sinh, np.cosh, np.tanh, np.arcsinh,
-                    np.arccosh, np.arctanh,
-                    np.rint, np.floor, np.ceil, np.trunc, np.exp, np.expm1, np.exp2, np.log,
-                    np.log10, np.log2,
-                    np.log1p, np.reciprocal, np.positive, np.negative, np.sqrt, np.cbrt, np.square,
-                    np.fabs, np.sign,
-                    np.absolute, np.abs]
-afnp_cumulative = [np.cumprod, np.cumsum, np.nancumprod, np.nancumsum]
-afnp_reducing = [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
-                 np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.average,
-                 np.std, np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, np.max, np.nanmax, np.min, np.nanmin,
-                 np.all, np.any]
-afnp_special = [np.copyto, np.average]
-afnp_dual = [np.add, np.subtract, np.divide, np.multiply, np.power]
-
-for func in afnp_elementwise: ALLOWED_NUMPY_FUNCTIONS[func] = True
-for func in afnp_cumulative: ALLOWED_NUMPY_FUNCTIONS[func] = True
-for func in afnp_reducing: ALLOWED_NUMPY_FUNCTIONS[func] = True
-for func in afnp_special: ALLOWED_NUMPY_FUNCTIONS[func] = True
-for func in afnp_dual: ALLOWED_NUMPY_FUNCTIONS[func] = True
-
-def allowed_numpy_functions(format = 'name', delimiter = ', '):
-    """
-    Return a string containing the names of all the numpy functions supported by isopy arrays.
-
-     With *format* you can specify the format of the string for each function. Avaliable keywords
-     are ``{name}`` and ``{link}`` for the name and a link the numpy documentation web page for a
-     function. Avaliable presets are ``"name"``, ``"link"``, ``"rst"`` and ``"markdown"`` for just the name,
-     just the link, reStructured text hyper referenced link or a markdown hyper referenced link.
-
-     You can specify the delimiter used to seperate items in the list using the *delimiter* argument.
-    If *delimiter* is ``None`` a python list is returned.
-    """
-    if format == 'name': format = '{name}'
-    if format == 'link': format = '{link}'
-    if format == 'rst': format = '`{name} <{link}>`_'
-    if format == 'markdown': format = '[{name}]({link})'
-
-    strings = []
-    for func in isopy.core.ALLOWED_NUMPY_FUNCTIONS:
-        name = func.__name__
-        link = f'https://numpy.org/doc/stable/reference/generated/numpy.{name}.html'
-        strings.append(format.format(name = name, link=link))
-    if delimiter is None:
-        return strings
-    else:
-        return delimiter.join(strings)
-
 ###############################################
 ### numpy function overrides via            ###
 ###__array_ufunc__ and __array_function__   ###
 ###############################################
+APPROVED_FUNCTIONS = []
+
 @functools.lru_cache(maxsize=CACHE_MAXSIZE)
 def _function_signature(func):
     #returns the signature and number of input arguments for a function
@@ -4962,7 +4929,6 @@ def _function_signature(func):
     else:
         return tuple(parameters.keys()), \
             len([p for p in parameters.values() if (p.default is p.empty)])
-
 
 class _getter:
     """
@@ -4979,7 +4945,7 @@ class _getter:
 # Simplify to that there is one where we know there is only one input and one where we know there is
 # More than two inputs and this one for unknown cases.
 # This is for functions that dont have a return value
-def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **kwargs):
+def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
     """
     Used to call numpy ufuncs/functions on isopy arrays.
 
@@ -5060,41 +5026,29 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
         if axis == 0:
             kwargs['axis'] = None
 
-    if type(default_value) is not tuple:
-        default_value = tuple(default_value for i in range(len(inputs)))
-    elif len(default_value) != len(inputs):
-        raise ValueError('size of default value not the same as the number of inputs')
-
     new_inputs = []
-    new_default_values = []
     new_keys_a = []
     new_keys_d = []
     for i, arg in enumerate(inputs):
         if isinstance(arg, IsopyArray):
             new_inputs.append(arg)
-            new_default_values.append(default_value[i])
             new_keys_a.append(arg.keys())
         elif isinstance(arg, ndarray) and len(arg.dtype) > 1:
             new_inputs.append(asarray(arg))
             new_keys_a.append(new_inputs[-1].keys())
-            new_default_values.append(default_value[i])
         elif isinstance(arg, ScalarDict):
             new_inputs.append(arg)
-            new_default_values.append(arg.default_value)
-            new_keys_d.append(arg.keys())
+            new_keys_d.append(arg.keylist())
         elif isinstance(arg, dict):
-            new_inputs.append(ScalarDict(arg, default_value=default_value[i]))
-            new_default_values.append(new_inputs[-1].default_value)
-            new_keys_d.append(new_inputs[-1].keys())
+            new_inputs.append(ScalarDict(arg))
+            new_keys_d.append(new_inputs[-1].keylist())
         else:
             new_inputs.append(_getter(arg))
-            new_default_values.append(default_value[i])
 
     if keys is None:
         if len(new_keys_a) != 0:
             new_keys = new_keys_a[0].__or__(*new_keys_a[1:])
         elif len(new_keys_d) != 0:
-            new_keys_d = [askeylist(k) for k in new_keys_d]
             new_keys = new_keys_d[0].__or__(*new_keys_d[1:])
         else:
             return func(*inputs, **kwargs)
@@ -5106,7 +5060,7 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
         keykwargs = {kwk: kwargs.pop(kwk) for kwk, kwv in tuple(kwargs.items())
                                 if isinstance(kwv, (IsopyArray, IsopyDict))}
 
-        result = [func(*(input.get(key, default_value) for input, default_value in zip(new_inputs, new_default_values)), **kwargs,
+        result = [func(*(input.get(key) for input in new_inputs), **kwargs,
                        **{k: v.get(key) for k, v in keykwargs.items()}) for key in new_keys]
 
         #There is no return from the function so dont return an array
@@ -5120,20 +5074,19 @@ def call_array_function(func, *inputs, axis=0, default_value= nan, keys=None, **
                     out = np.array(tuple(result), dtype=dtype)
                 else:
                     out = np.fromiter(zip(*result), dtype=dtype)
+                return new_keys.__view_array__(out)
             else:
-                # Return dict
-                pass
-            return new_keys.__view_array__(out)
+                return ScalarDict(zip(new_keys, result))
         else:
             return out
 
     else:
         for kwk, kwv in list(kwargs.items()):
             if isinstance(kwv, (IsopyArray, IsopyDict)):
-                kwargs[kwk] = np.transpose([kwv.get(key, default_value) for key in new_keys])
+                kwargs[kwk] = np.transpose([kwv.get(key) for key in new_keys])
 
-        new_inputs = [np.transpose([input.get(key, default_value) for key in new_keys]) if
-                      not isinstance(input, _getter) else input.get() for input, default_value in zip(new_inputs, new_default_values)]
+        new_inputs = [np.transpose([input.get(key) for key in new_keys]) if
+                      not isinstance(input, _getter) else input.get() for input in new_inputs]
 
         if len(nd :={inp.ndim for inp in new_inputs}) == 1 and nd.pop() == 1:
             #So that 0-dimensional arrays get do not raise axis out of bounds error
