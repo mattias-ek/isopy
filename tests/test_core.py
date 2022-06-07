@@ -3898,127 +3898,6 @@ class Test_Array:
         with pytest.raises(IndexError):
             array[(1,2)] = 1
 
-    # to file is tested in io tests
-    def test_to_obj(self):
-        # size 100, 1-dim
-        array = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
-
-        assert core.hashstr(repr(array)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
-        assert core.hashstr(str(array)) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(array.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
-        assert core.hashstr(array.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
-
-        assert core.hashstr(array.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
-        assert core.hashstr(array.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
-        assert core.hashstr(array.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
-        assert core.hashstr(array.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
-        assert core.hashstr(array.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert False not in [type(v) is list for v in tovalue]
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(v) is list for v in tovalue.values()]
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        tovalue = array[0].to_ndarray()
-        assert type(tovalue) is np.void
-        assert array[0].keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key][0], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
-            new_array1 = isopy.array_from_clipboard()
-            assert isinstance(new_array1, core.IsopyArray)
-            assert new_array1.flavour == array.flavour
-            assert_array_equal_array(new_array1, array)
-
-        # Size 1, 1-dim
-        array = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
-
-        assert core.hashstr(repr(array)) == '309361dd9169fe6d0ffd8ec8be91eddd'
-        assert core.hashstr(str(array)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '46832d224c9c15c09168ed7e3ee77faa'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(array.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert False not in [type(v) is list for v in tovalue]
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(v) is list for v in tovalue.values()]
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        # Size 1, 0-dim
-        array = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
-
-        assert core.hashstr(repr(array)) == '395ea36d5e4c0bce9679de1146eae27c'
-        assert core.hashstr(str(array)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(array.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
     def test_asarray(self):
         # size 1, 0-dim
         array = isopy.random(-1, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4341,6 +4220,273 @@ class Test_Array:
 
         result = isopy.asanyarray(array, dtype=(np.float64, str))
         assert result.dtype == '<U1'
+
+
+class Test_ToTextMixin:
+    def test_100_1_a(self):
+        # size 100, 1-dim
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
+
+        assert core.hashstr(repr(a)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
+        assert core.hashstr(str(a)) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(a.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
+        assert core.hashstr(a.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
+
+        assert core.hashstr(a.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
+        assert core.hashstr(a.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
+        assert core.hashstr(a.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
+        assert core.hashstr(a.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
+        assert core.hashstr(a.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+        tovalue = a[0].to_ndarray()
+        assert type(tovalue) is np.void
+        assert a[0].keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key][0], tovalue[str(key)])
+
+        try:
+            a.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
+            new_array1 = isopy.array_from_clipboard()
+            assert isinstance(new_array1, core.IsopyArray)
+            assert new_array1.flavour == a.flavour
+            assert_array_equal_array(new_array1, a)
+
+    def test_100_1_d(self):
+        # size 100, 1-dim
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+
+        #assert core.hashstr(repr(d)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
+        #assert core.hashstr(str(d)) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(d.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
+        assert core.hashstr(d.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
+
+        assert core.hashstr(d.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
+        assert core.hashstr(d.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
+        assert core.hashstr(d.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
+        assert core.hashstr(d.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
+        assert core.hashstr(d.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+        try:
+            d.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass  # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
+            new_array1 = isopy.array_from_clipboard()
+            assert isinstance(new_array1, core.IsopyArray)
+            assert new_array1.flavour == a.flavour
+            assert_array_equal_array(new_array1, a)
+
+    def test_1_1_a(self):
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == '309361dd9169fe6d0ffd8ec8be91eddd'
+        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '46832d224c9c15c09168ed7e3ee77faa'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+        try:
+            a.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+    def test_1_1_d(self):
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim != a.ndim
+        assert d.ndim == 0
+
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        # assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
+        # assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+        try:
+            d.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass  # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+    def test_1_0_a(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == '395ea36d5e4c0bce9679de1146eae27c'
+        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+        try:
+            a.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+    def test_1_0_d(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+
+        #assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
+        #assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+        try:
+            d.to_clipboard()
+        except pyperclip.PyperclipException:
+            pass # Wont run on travis
+        else:
+            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+    def test_scalardict_default_value(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, np.nan)
+
+        d = a.to_scalardict(1)
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, 1)
+
+        d = a.default(2).to_scalardict()
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, 2)
 
 
 class Test_EmptyArrays:

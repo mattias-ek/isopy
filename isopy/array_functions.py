@@ -432,12 +432,6 @@ def rstack(*arrays):
     keys = core.keylist(*(a.dtype.names for a in arrays if isinstance(a, core.IsopyArray)), ignore_duplicates=True)
     arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
-    asize = {a.size for a in arrays if isinstance(a, core.IsopyArray)}
-    if len(asize) == 1:
-        asize=asize.pop()
-    else:
-        asize = None
-
     for i, a in enumerate(arrays):
         if not isinstance(a, core.IsopyArray):
             arrays[i] = core.full(a.size, a, keys)

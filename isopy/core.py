@@ -3117,6 +3117,7 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
 ### Mixins for Arrays and dicts ###
 ###################################
 class ArrayFuncMixin:
+    # For IsopyArray and ScalarDict
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if ufunc not in APPROVED_FUNCTIONS:
             warnings.warn(f"The functionality of {ufunc.__name__} has not been tested with isopy arrays.")
@@ -3134,6 +3135,7 @@ class ArrayFuncMixin:
         return call_array_function(func, *args, **kwargs)
 
 class ToTextMixin:
+    # For IsopyArray and ScalarDict
     def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
                 nrows = None, **vformat):
 
@@ -3282,6 +3284,7 @@ class ToTextMixin:
         return string
 
 class ToFileMixin:
+    # For IsopyArray and ScalarDict
     def to_csv(self, filename, comments = None):
         """
         Save array to a cv file.
@@ -3563,7 +3566,7 @@ class IsopyDict(dict):
         raise TypeError(f'key type {type(key)} not understood')
 
     def to_dict(self):
-        return dict(*self.items())
+        return {str(key): self[key] for key in self.keys}
 
 
 class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
@@ -3726,6 +3729,9 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
         else:
             return [list(r) for r in zip(*self.values())]
 
+    def to_dict(self):
+        return {str(key): self[key].tolist() for key in self.keys}
+
     def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
         Returns an isopy array based on values in the dictionary.
@@ -3748,8 +3754,7 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
 
     def to_ndarray(self):
         """Return a copy of the dictionary as a normal numpy ndarray"""
-        array = self.to_array()
-        return array.view(ndarray)
+        return self.to_array().to_ndarray()
 
     def to_dataframe(self):
         """
@@ -4160,7 +4165,10 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFileMixin):
         """
         return {str(key): self[key].tolist() for key in self.keys()}
 
-    def to_scalardict(self, default_value=np.nan):
+    def to_scalardict(self, default_value=NotGiven):
+        if default_value is NotGiven:
+            default_value = self.__default__
+
         return ScalarDict(self, default_value=default_value)
 
     def to_ndarray(self):
@@ -4861,85 +4869,6 @@ def _new_empty_array(rows, keys, ndim, dtype, func):
     else:
         return func(shape, dtype=dtype)
 
-######################################################
-### reimplementationz of exisiting numpy functions ###
-######################################################
-def _concatenate(*arrays, axis=0, default_value=nan):
-    """
-    Join arrays together along specified axis.
-
-    Normal numpy broadcasting rules apply so when concatenating columns the shape of the arrays must be compatible.
-    When array with a size of 1 is concatenated to an array of a different size it will be copied into every row
-    of the new shape.
-
-    *None* values
-
-    Parameters
-    ----------
-    arrays
-        Arrays to be joined together. *None* will be treated as a missing row(s).
-    axis
-        If 0 then the rows of each array in *arrays* will be concatenated. If 1 then the columns of each array will
-        be concatenated. If *axis* is 1 an error will be raised if a column key occurs in more than one array.
-    missing_value : float, optional
-        The value used for missing rows. Default value is ``np.nan``.
-
-    Returns
-    -------
-    IsopyArray
-        Array containing all the row data and all the columns keys found in *arrays*.
-
-    See Also
-    --------
-    rstack, cstack
-    """
-    if len(arrays) == 1 and isinstance(arrays[0], (list, tuple)):
-        arrays = arrays[0]
-    arrays = [asanyarray(a) for a in arrays]
-
-    if True not in (tlist:=[isinstance(a, IsopyArray) for a in arrays if a is not None]):
-        return np.concatenate(arrays)
-    if False in tlist:
-        raise ValueError('Cannot concatenate Isopy arrays with normal arrays.')
-
-    if axis == 0 or axis is None: #extend rows
-        keys = keylist(*(a.dtype.names for a in arrays if a is not None), ignore_duplicates=True)
-        arrays = [a.reshape(1) if (a is not None and a.ndim == 0) else a for a in arrays]
-        if None in arrays:
-            if len(size:={a.size for a in arrays if a is not None}) == 1:
-                default_values = np.full(size.pop(), default_value)
-                arrays = [_getter(default_values) if a is None else a for a in arrays]
-            else:
-                raise ValueError('Cannot determine size for None based on other input')
-
-        result = [np.concatenate([a.get(key, default_value) for a in arrays]) for key in keys]
-        dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
-        return keys.__view_array__(np.fromiter(zip(*result), dtype=dtype))
-
-    elif axis == 1: #extend columns
-        arrays = [a for a in arrays if a is not None] #Ignore None values
-        size = {a.size for a in arrays}
-        ndim = {a.ndim for a in arrays}
-        if not (len(size) == 1 or (1 in size and len(size) == 2)):
-            raise ValueError('all arrays must have the same size concatenating in axis 1')
-        if len(ndim) != 1:
-            arrays = [array.reshape(1) if array.ndim == 0 else array for array in arrays]
-
-        if len(arrays) == 1:
-            return arrays[0].copy()
-
-        keys = keylist(*(a.dtype.names for a in arrays), allow_duplicates=False)
-
-        result = {}
-        for a in arrays:
-            for key in a.keys():
-                result[key] = a.get(key, default_value)
-
-        return isopy.full(max(size) * max(ndim) or -1, result, keys, dtype=[v.dtype for v in result.values()])
-
-    else:
-        raise np.AxisError(axis, 1, 'isopy.concatenate only accepts axis values of 0 or 1')
-
 
 ###############################################
 ### numpy function overrides via            ###
@@ -4979,7 +4908,7 @@ class _getter:
 # This is for functions that dont have a return value
 def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
     """
-    Used to call numpy ufuncs/functions on isopy arrays.
+    Used to call numpy ufuncs/functions on isopy arrays and/or scalar dicts.
 
     This function produces the expected result for the majority, but not all, numpy functions.
     With a few exceptions all calls to numpy functions on isopy arrays will be sent to this function
@@ -4989,10 +4918,6 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
     input. Isopy arrays given as kwargs are not used taken into consideration when determining the
     returned array. Analogous to ``isopy.array({key: func(array.get(key, default_value), **kwargs)}
     for key in array.keys())`` for a single isopy array input.
-
-    If all isopy arrays in inputs are of the same flavour then the returned array will have the
-    same flavour. If the inputs are of different flavours then the returned array will be a
-    GeneralArray
 
     If axis == 1 or None the function is called once with all isopy arrays are converted to lists.
     Only isopy arrays given as input are used to determine the keys used when converting isopy
@@ -5004,9 +4929,8 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
     axis == 1.
 
     If inputs contain no isopy arrays then the function is called on the inputs and kwargs as is.
+
     Analogous to ``func(*inputs, **kwargs)``.
-
-
     Parameters
     ----------
     func : callable
