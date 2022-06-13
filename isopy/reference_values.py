@@ -13,7 +13,7 @@ __all__ = ['refval']
 
 def _load_RV_values(filename, datatype=None):
     filepath = os.path.join(os.path.dirname(__file__), 'referencedata', f'{filename}.csv')
-    data = io.read_csv(filepath)
+    data = io.read_csv(filepath, keys_in_first='r')
 
     if datatype is not None:
         data =  {key: datatype(value[0]) for key, value in data.items()}

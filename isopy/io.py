@@ -1,4 +1,7 @@
+import functools
 import os as _os
+import warnings
+
 from isopy import core
 import csv as csv
 import datetime as dt
@@ -12,12 +15,109 @@ import io
 import numpy as np
 
 
-__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard',
+__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard', 'write_clipboard',
            'array_from_csv', 'array_from_xlsx', 'array_from_clipboard']
 
 import isopy.checks
 
-# TODO replace with pandas functions. That way it will be more robust.
+NAN_STRINGS = 'nan #NA #N/A N/A NA =NA() =na()'.split()
+
+def rows_to_data(data, has_keys, keys_in_first):
+    if len(data) == 0 or len(data[0])==0:
+        if has_keys is not True and keys_in_first is None:
+            return [[]]
+        else:
+            return dict()
+
+    # Everything needs to be converted to nan before it gets here
+    if has_keys is not False and keys_in_first is None:
+        r = [type(v) is str for v in data[0]]
+        c = [type(d[0]) is str for d in data]
+
+        if False not in c and False not in r:
+            # Both are strings
+            try:
+                float(data[0][0])
+            except ValueError:
+                f = True
+            else:
+                f = False
+
+            try:
+                [float(v) for v in data[0][1:]]
+            except ValueError:
+                r = True
+            else:
+                r = False
+
+            try:
+                [float(v[0]) for v in data[1:]]
+            except ValueError:
+                c = True
+            else:
+                c = False
+
+            if has_keys is None and not c and not r:
+                if f and (len(data)) == 1:
+                    keys_in_first = 'c'
+                elif f and len(data[0]) == 1:
+                    keys_in_first = 'r'
+                elif f:
+                    raise ValueError('Unable to determine whether the first rows or columns contains the keys')
+                else:
+                    # All values in the first row and the first column can be converted to float
+                    has_keys = False
+            elif c and not r:
+                keys_in_first = 'c'
+            elif r and not c:
+                keys_in_first = 'r'
+            else:
+                # Both the first row and the first column contains at least one value that cant be converted to float
+                raise ValueError('Unable to determine whether the first rows or columns contains the keys')
+
+        elif False not in c:
+            # Only c contains string
+            keys_in_first = 'c'
+        elif False not in r:
+            # Only r contains strings
+            keys_in_first = 'r'
+        else:
+            # Neither contain only strings
+            has_keys=False
+
+    if has_keys is False:
+        return data
+    elif keys_in_first == 'c':
+        return {v[0]: v[1:] for v in data}
+    elif keys_in_first == 'r':
+        return {v[0]: v[1:] for v in zip(*data)}
+    else:
+        raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
+
+def data_to_rows(data, keys_in_first):
+    data = isopy.asanyarray(data)
+
+    if isinstance(data, core.IsopyArray):
+        if data.ndim == 0:
+            data = data.reshape(-1)
+        if keys_in_first == 'r':
+            rows = [[str(k) for k in data.keys()]]
+            rows += data.to_list()
+        elif keys_in_first == 'c':
+            rows = [[str(k)] + v.tolist() for k, v in data.items()]
+        else:
+            raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
+    else:
+        if data.ndim == 0:
+            data = data.reshape((1, 1))
+        elif data.ndim == 1:
+            data = data.reshape((1, -1))
+        elif data.ndim > 2:
+            raise ValueError('data cannot have more than 2 dimensions')
+        rows = data.tolist()
+
+    return rows
+
 ################
 ### read exp ###
 ################
@@ -30,6 +130,7 @@ class NeptuneData:
         self.cycle = cycle
         self.time = time
         self.measurements = measurements
+
 
 def read_exp(filename, rename = None) -> NeptuneData:
     """
@@ -58,7 +159,7 @@ def read_exp(filename, rename = None) -> NeptuneData:
         * measurements - An dictionary containing an an isopy array with the values in for each line measured. Static measurements are always given as line ``1``.
          to extract e.g only the isotope data from the measurement use ``neptune_data.measurement[line].copy(flavour_eq='isotope')``.
     """
-    information = {}
+
 
     # If filename is a string load the files.
     if type(filename) is str:
@@ -69,32 +170,31 @@ def read_exp(filename, rename = None) -> NeptuneData:
     elif type(filename) is io.BytesIO:
         filename.seek(0)
         file = filename.read()
-    elif type(filename) is str:
-        file = filename
     elif type(filename) is io.StringIO:
         filename.seek(0)
         file = filename.read()
     else:
         raise TypeError('filename is of unknown type')
 
-    if type(file is bytes):
+    if type(file) is bytes:
         # find the files encoding
         encoding = chardet.detect(file).get('encoding')
 
         # Decode the bytes into string.
         file = file.decode(encoding)
 
-    dialect = csv.Sniffer().sniff(file)
+    csv_reader = csv.reader(io.StringIO(file), dialect='excel-tab')
 
-    csv_reader = csv.reader(io.StringIO(file), dialect=dialect)
+    information = {}
     for row in csv_reader:
-        if ':' in row[0]:  # mete
+        if ':' in row[0]:  # meta
             name, value = row[0].split(':', 1)
-            information[name] = value
+            information[name.strip()] = value.strip()
 
         if row[0] == 'Cycle':
             # We can reuse the function from before to read the integration data
-            data = _read_csv_ckeys(row, csv_reader, float_prefered=False, termination_symbol='***')
+            data = _read_csv_data(row, csv_reader, termination_symbol='***')
+            data = rows_to_data(data, True, 'r')
 
     if rename is None:
         renamer = lambda name: name
@@ -106,41 +206,43 @@ def read_exp(filename, rename = None) -> NeptuneData:
         raise TypeError('rename must be a dict or a callable function')
 
     data.pop("", None)
-    cycle = np.array(data.pop('Cycle'), dtype ='int')
+    cycle = [int(i) for i in data.pop('Cycle')]
+
     time = data.pop('Time')
     try:
-        time =[dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
-    except ValueError:
-        try:
-            time = [dt.datetime.fromtimestamp(time[i]).strftime('%H:%M:%S:%f') for i in range(len(time))]
-        except:
-            time = [dt.datetime.fromtimestamp(0).strftime('%H:%M:%S:%f') for i in range(len(time))]
+        time = [dt.datetime.strptime(time[i], '%H:%M:%S:%f') for i in range(len(time))]
+    except:
+        # Dont think the time will ever be given as a float
+        # time = [dt.datetime.fromtimestamp(time[i]).strftime('%H:%M:%S:%f') for i in range(len(time))]
+        warnings.warn('Unable to parse the time column')
+        time = [dt.datetime.fromtimestamp(0).strftime('%H:%M:%S:%f') for i in range(len(time))]
+
     measurements = {}
 
     for key in data:
+        # Check if the data has more than one line
         if ":" in key:
             line, keystring = key.split(":", 1)
             line = int(line)
         else:
             line = 1
             keystring = key
+
+        # Rename columns if needed
         keystring = renamer(keystring)
         measurements.setdefault(line, {})[isopy.keystring(keystring)] = data[key]
 
-
+    # Convert to isopy arrays
     measurements = {line: isopy.asarray(measurements[line]) for line in measurements}
+
     return NeptuneData(information, cycle, time, measurements)
 
 ######################
 ### read/write CSV ###
 ######################
-def read_csv(filename, comment_symbol ='#', keys_in = 'c',
-             float_preferred = False, encoding = None,
-             dialect = None):
+def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#', encoding = None, dialect = 'excel'):
     """
     Load data from a csv file.
-
-
 
     Parameters
     ----------
@@ -152,10 +254,7 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
     keys_in : {'c', 'r', None}, Default = 'c'
         If keys are given as the first value in each column pass ``c``. If keys are given as the
         first value in each row pass ``r``. If there are no keys pass ``None``.
-    float_preferred : bool, Default = False
-        If `True` all values will be converted to float if possible. If conversion fails the
-        value will be left as a string.
-    encoding
+    encoding : str
         Encoding of the file. If None the encoding will be guessed from the file.
     dialect
         Dialect of the csv file. If None the dialect will be guessed from the file.
@@ -165,177 +264,50 @@ def read_csv(filename, comment_symbol ='#', keys_in = 'c',
     data : dict or list
         Returns a dictionary for data with keys otherwise a list.
     """
-    filename = isopy.checks.check_type('filename', filename, str, bytes)
-    comment_symbol = isopy.checks.check_type('comment_symbol', comment_symbol, str)
-    keys_in = isopy.checks.check_type('keys_in', keys_in, str,allow_none=True)
-    encoding = isopy.checks.check_type('encoding', encoding, str, allow_none=True)
-    dialect = isopy.checks.check_type('dialect', dialect, str, allow_none=True)
 
     #If filename is a string load the files.
     if type(filename) is str:
         with open(filename, 'rb') as fileio:
-            file = fileio.read()
+            text = fileio.read()
     elif type(filename) is bytes:
-        file = filename
+        text = filename
     elif type(filename) is io.BytesIO:
         filename.seek(0)
-        file = filename.read()
-    elif type(filename) is str:
-        file = filename
+        text = filename.read()
     elif type(filename) is io.StringIO:
         filename.seek(0)
-        file = filename.read()
+        text = filename.read()
     else:
-        raise TypeError('filename is of unknown type')
+        raise TypeError(f'filename is of unknown type {type(filename)}')
 
-    if type(file is bytes):
+    if type(text) is bytes:
         #find the files encoding
         if encoding is None:
-            encoding = chardet.detect(file).get('encoding')
+            encoding = chardet.detect(text).get('encoding')
 
         #Decode the bytes into string.
-        file = file.decode(encoding)
+        text = text.decode(encoding)
 
     #find the csv dialect
     if dialect is None:
-        dialect = csv.Sniffer().sniff(file)
+        dialect = csv.Sniffer().sniff(text)
 
     # Create a reader object by converting the file string to a file-like object
-    csv_reader = csv.reader(io.StringIO(file), dialect=dialect)
+    csv_reader = csv.reader(io.StringIO(text), dialect=dialect)
     for row in csv_reader:
-        row_data = [r.strip() for r in
-                    row]  # Remove any training whitespaces from the data in this row
+        row_data = [r.strip() for r in row]  # Remove any training whitespaces from the data in this row
+        if len(row_data) == 0:
+            return rows_to_data([[]], has_keys, keys_in_first)
 
-        if row_data.count('') == len(row):
-            # All the columns in this row are empty. Ignore it
-            continue
-
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #startswith(comment_symbol):
-            # This is a comment so ignore it.
-            continue
-
-        if keys_in == 'c':
-            data =  _read_csv_ckeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
-            data.pop("", None)
-            return data
-        elif keys_in == 'r':
-            data =  _read_csv_rkeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
-            data.pop("", None)
-            return data
-        elif keys_in is None:
-            return _read_csv_nokeys(row_data, csv_reader, comment_symbol, float_prefered=float_preferred)
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
+            pass # This is a comment so ignore it.
         else:
-            raise ValueError(f'Unknown value for "keys_in" {keys_in}')
+            data = _read_csv_data(row_data, csv_reader, comment_symbol)
+            return rows_to_data(data, has_keys, keys_in_first)
 
-def read_clipboard(comment_symbol ='#', keys_in = 'c',
-             float_preferred = False, dialect = None):
-    """
-    Load data from values in the clipboard.
+    return rows_to_data([[]], has_keys, keys_in_first)
 
-    Parameters
-    ----------
-    comment_symbol : str, Default = '#'
-        Rows starting with this string will be ignored.
-    keys_in : {'c', 'r', None}, Default = 'c'
-        If keys are given as the first value in each column pass ``c``. If keys are given as the
-        first value in each row pass ``r``. If there are no keys pass ``None``.
-    float_preferred : bool, Default = False
-        If `True` all values will be converted to float if possible. If conversion fails the
-        value will be left as a string.
-    dialect
-        Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
-
-    Returns
-    -------
-    data : dict or list
-        Returns a dictionary for data with keys otherwise a list.
-    """
-    data = pyperclip.paste()
-    data = data.encode('UTF-8')
-    return read_csv(data, encoding='UTF-8', comment_symbol=comment_symbol, keys_in=keys_in,
-                    float_preferred=float_preferred, dialect=dialect)
-
-
-def _read_csv_ckeys(first_row, reader, comment_symbol=None, termination_symbol=None, float_prefered = False):
-    keys = first_row  # First row contains the the name of each column
-    values = [[] for i in range(len(keys))]  # Create an empty list for each key
-
-    # Loop over the remaining rows
-    for i, row in enumerate(reader):
-        row = [r.strip() for r in row]
-
-        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #startswith(termination_symbol):
-            # Stop reading data if we find this string at the beginning of a row
-            break
-
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
-            # Row is a comment, ignore
-            continue
-
-        if row.count('') == len(row):
-            # Empty row, ignore
-            continue
-
-        if len(row) < len(keys):
-            # There is not enough values in this row to give one to each key
-            raise ValueError(f'Row {i} does not have enough columns')
-
-        for j in range(len(keys)):
-            value = row[j]
-
-            if float_prefered:
-                try:
-                    value = float(value)
-                except:
-                    value = str(value)
-
-            values[j].append(value)
-
-    return dict(zip(keys, values))  # creates a dictionary from two lists
-
-
-def _read_csv_rkeys(first_row, reader, comment_symbol=None, termination_symbol=None,
-                    float_prefered=False):
-    data = {}
-    dlen = None
-
-    # Loop over the remaining rows
-    for i, row in enumerate(itertools.chain([first_row], reader)):
-        row = [r.strip() for r in row]
-
-        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #.startswith(termination_symbol):
-            # Stop reading data if we find this string at the beginning of a row
-            break
-
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
-            # Row is a comment, ignore
-            continue
-
-        if row.count('') == len(row):
-            # Empty row, ignore
-            continue
-
-        data[row[0]] = []
-        if dlen is None: dlen = len(row)
-        elif dlen != len(row):
-            raise ValueError('Rows have different number of values')
-
-        for j in range(1, len(row)):
-            value = row[j]
-
-            if float_prefered:
-                try:
-                    value = float(value)
-                except:
-                    value = str(value)
-
-            data[row[0]].append(value)
-
-    return data
-
-
-def _read_csv_nokeys(first_row, reader, comment_symbol=None, termination_symbol=None,
-                    float_prefered=False):
+def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=None):
     data = []
     dlen = None
 
@@ -343,40 +315,34 @@ def _read_csv_nokeys(first_row, reader, comment_symbol=None, termination_symbol=
     for i, row in enumerate(itertools.chain([first_row], reader)):
         row = [r.strip() for r in row]
 
-        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol: #.startswith(termination_symbol):
+        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol:
             # Stop reading data if we find this string at the beginning of a row
             break
 
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol: #.startswith(comment_symbol):
+        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
             # Row is a comment, ignore
-            continue
-
-        if row.count('') == len(row):
-            # Empty row, ignore
             continue
 
         data.append([])
         if dlen is None:
             dlen = len(row)
+
         elif dlen != len(row):
             raise ValueError('Rows have different number of values')
 
         for j in range(len(row)):
             value = row[j]
 
-            if float_prefered:
-                try:
-                    value = float(value)
-                except:
-                    value = str(value)
+            if value in NAN_STRINGS:
+                value = float('nan')
 
             data[-1].append(value)
 
     return data
 
 
-def write_csv(filename, data, comments=None, keys_in='c',
-              delimiter = ',', comment_symbol = '#' ) -> None:
+def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol = '#',
+              dialect = 'excel') -> None:
     """
     Save data to a csv file.
 
@@ -392,105 +358,89 @@ def write_csv(filename, data, comments=None, keys_in='c',
     keys_in : {'c', 'r'}, Default = 'c'
         Only applicable for isopy arrays like *data*. For keys as the first value in each column
         pass ``"c"``. For keys as the first value in each row pass ``"r"``.
-    delimiter : str, Default = ','
-        This string will be used to separate values in the file
+    dialect
+        The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file.
     """
-    #filename = isopy.checks.check_type('filename', filename, str)
-    comments = isopy.checks.check_type_list('comments', comments, str, allow_none=True, make_list=True)
-    keys_in = isopy.checks.check_type('keys_in', keys_in, str, allow_none=True)
-    delimiter = isopy.checks.check_type('delimiter', delimiter, str)
-    comment_symbol = isopy.checks.check_type('comment_symbol', comment_symbol, str)
 
-    data = isopy.asanyarray(data)
-    if isinstance(data, core.IsopyArray):
-        if data.ndim == 0:
-            data = data.reshape(-1)
-
-        dsize = data.nrows
-        csize = data.ncols
-        ndim = data.ndim
-        data = data.to_dict()
-
-        if keys_in == 'c':
-            func = _write_csv_ckeys
-            csize = csize - 1
-        elif keys_in == 'r':
-            func = _write_csv_rkeys
-            csize = dsize
-        elif keys_in is None:
-            func = _write_csv_nokeys
-            data = np.array(data.to_array())
-            csize = csize - 1
-    else:
-        ndim = data.ndim
-        if ndim == 0:
-            data = data.reshape((1,1))
-        elif ndim == 1:
-            data = data.reshape((1, -1))
-        elif ndim > 2:
-            raise ValueError('Cannot save data with more than two dimensions')
-        dsize = data.shape[0]
-        csize = data.shape[1] - 1
-        func = _write_csv_nokeys
-
-    rows = []
+    rows = data_to_rows(data, keys_in_first)
 
     if comments is not None:
-        for comment in comments:
-            rows.append([f'{comment_symbol}{comment}'] + ['' for i in range(csize)])
+        if type(comments) is not list:
+            comments = [comments]
 
-    rows += func(data, dsize)
+        crows = []
+        for comment in comments:
+            crows.append([f'{comment_symbol}{comment}'] + ['' for i in range(len(rows[0][1:]))])
+
+        if len(rows[0]) == 0:
+            rows = crows
+        else:
+            rows = crows + rows
+
     if type(filename) is str:
         with open(filename, mode='w', newline='') as file:
-            csv_writer = csv.writer(file, delimiter=delimiter)
+            csv_writer = csv.writer(file, dialect=dialect)
             for row in rows:
                 csv_writer.writerow(row)
 
-    if type(filename) is io.StringIO:
-        csv_writer = csv.writer(filename, delimiter=delimiter)
+    elif type(filename) is io.StringIO:
+        filename.truncate(0)
+        filename.seek(0)
+        csv_writer = csv.writer(filename, dialect=dialect)
         for row in rows:
             csv_writer.writerow(row)
 
-    if type(filename) is io.BytesIO:
+    elif type(filename) is io.BytesIO:
+        filename.truncate(0)
+        filename.seek(0)
+
         file = io.StringIO()
-        csv_writer = csv.writer(file, delimiter=delimiter)
+        csv_writer = csv.writer(file, dialect=dialect)
         for row in rows:
             csv_writer.writerow(row)
         file.seek(0)
-        string = file.read()
-        filename.write(string.encode('UTF-8'))
+        text = file.read()
+        filename.write(text.encode('UTF-8'))
+    else:
+        raise TypeError(f'filename is of unknown type {type(filename)}')
 
-def _write_csv_ckeys(data, dsize):
-    keys = data.keys()
-    rows = []
-    rows.append([f'{key}' for key in keys])
+def read_clipboard(has_keys= None, keys_in_first = None, comment_symbol ='#', dialect = None):
+    """
+    Load data from values in the clipboard.
 
-    for i in range(dsize):
-        rows.append([f'{data[key][i]}' for key in keys])
+    Parameters
+    ----------
+    comment_symbol : str, Default = '#'
+        Rows starting with this string will be ignored.
+    keys_in : {'c', 'r', None}, Default = 'c'
+        If keys are given as the first value in each column pass ``c``. If keys are given as the
+        first value in each row pass ``r``. If there are no keys pass ``None``.
+    dialect
+        Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
 
-    return rows
+    Returns
+    -------
+    data : dict or list
+        Returns a dictionary for data with keys otherwise a list.
+    """
+    data = pyperclip.paste()
+    return read_csv(io.StringIO(data), comment_symbol=comment_symbol, has_keys=has_keys,
+                    keys_in_first=keys_in_first, dialect=dialect)
 
-def _write_csv_rkeys(data, dsize):
-    keys = data.keys()
-    rows = []
+def write_clipboard(data, comments=None, keys_in_first='r',
+              comment_symbol = '#', dialect = 'excel'):
+    text = io.StringIO()
+    write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect, comment_symbol=comment_symbol)
 
-    for key in keys:
-        rows.append([f'{key}'] + [f'{data[key][i]}' for i in range(dsize)])
-    return rows
-
-def _write_csv_nokeys(data, dsize):
-    rows = []
-    for i in range(data.shape[0]):
-        rows.append([f'{data[i][j]}' for j in range(data.shape[-1])])
-    return rows
+    text.seek(0)
+    pyperclip.copy(text.read())
 
 #######################
 ### Read/write xlsx ###
 #######################
-def read_xlsx(filename, sheetname=None, keys_in='c',
-              default_value = np.nan, comment_symbol='#'):
+def read_xlsx(filename, sheetname=None, has_keys = None, keys_in_first=None, comment_symbol='#', start_at='A1'):
     """
     Load data from an excel file.
 
@@ -516,161 +466,113 @@ def read_xlsx(filename, sheetname=None, keys_in='c',
         A dictionary containing the data for a single sheet or a dictionary containing the data
         for multiple sheets in the workbook indexed by sheet name.
     """
-    if filename is bytes:
+    if type(filename) is bytes:
         filename = io.BytesIO(filename)
 
-    workbook = openpyxl.load_workbook(filename, data_only=True, read_only=True)
+    if type(filename) is openpyxl.Workbook:
+        workbook = filename
+    else:
+        workbook = openpyxl.load_workbook(filename, data_only=True, read_only=True)
 
     sheetnames = workbook.sheetnames
 
     if sheetname is None:
         sheet_data = {}
         for sheetname in sheetnames:
-            sheet_data[sheetname] = _read_xlsx_sheet(workbook[sheetname], keys_in, comment_symbol, default_value)
+            sheet_data[sheetname] = _read_xlsx_sheet(workbook[sheetname], has_keys, keys_in_first, comment_symbol, start_at)
         return sheet_data
 
-    elif type(sheetname) is int:
-        return _read_xlsx_sheet(workbook[sheetnames[sheetname]], keys_in, comment_symbol, default_value)
+    elif type(sheetname) is int and sheetname < len(sheetnames):
+        return _read_xlsx_sheet(workbook[sheetnames[sheetname]], has_keys, keys_in_first, comment_symbol, start_at)
 
     elif sheetname in sheetnames:
-        return _read_xlsx_sheet(workbook[sheetname], keys_in, comment_symbol, default_value)
+        return _read_xlsx_sheet(workbook[sheetname], has_keys, keys_in_first, comment_symbol, start_at)
 
     else:
         raise ValueError(f'sheetname "{sheetname}" not found in workbook"')
 
 
-def _read_xlsx_sheet(worksheet, keys_in, comment_symbol, default_value):
-    for ri in range(1, worksheet.max_row + 1):
-        cell = worksheet.cell(ri, 1)
-        if cell.data_type == 's' and cell.value[:len(comment_symbol)] == comment_symbol:
-            continue
+def _read_xlsx_sheet(worksheet, has_keys, keys_in_first, comment_symbol, start_at):
+    if type(start_at) is tuple:
+        start_r, start_c = start_at
+    else:
+        start_r, start_c = openpyxl.utils.cell.coordinate_to_tuple(start_at)
 
-        if keys_in == 'c':
-            return _read_xlsx_sheet_ckeys(worksheet, ri, default_value)
-        elif keys_in == 'r':
-            return _read_xlsx_sheet_rkeys(worksheet, ri, default_value)
-        elif keys_in is None:
-            return _read_xlsx_sheet_nokeys(worksheet, ri, default_value)
+    #Remove inital comments
+    for ri in range(start_r, worksheet.max_row + 1):
+        value = worksheet.cell(ri, start_c).value
+        if type(value) is str and value[:len(comment_symbol)] == comment_symbol and value not in NAN_STRINGS:
+            continue
         else:
-            raise ValueError(f'Unknown value for "keys_in" {keys_in}')
+            start_r = ri
+            break
 
-def _read_xlsx_sheet_ckeys(worksheet, row_index, default_value):
-    data = {}
-    ERROR = object()
+    # Select area containing data
+    stop_c = worksheet.max_column + 1
+    stop_r = worksheet.max_row + 1
 
-    # Iterate over each column
-    for ci in range(1, worksheet.max_column + 1):
-        # First value is the key
-        key = f'{worksheet.cell(row_index, ci).value}'.strip()
+    for ri in range(start_r + 1, stop_r+1):
+        values_r = []
+        for ci in range(start_c, stop_c):
+            if ri != stop_r:
+                # All rows should be included
+                cell = worksheet.cell(ri, start_c)
+                value = cell.value
 
-        if key == '':
-            continue
-
-        data[key] = []
-
-        for ri in range(row_index + 1, worksheet.max_row + 1):
-            cell = worksheet.cell(ri, ci)
-            value = cell.value
-            if type(value) is str:
-                value = value.strip()
-            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
-                data[key].append(ERROR)
-            elif cell.data_type == 's':
                 if value == '':
-                    data[key].append(None)
+                    values_r.append(None)
                 else:
-                    data[key].append(value)
-            else:
-                data[key].append(cell.value)
+                    values_r.append(value)
 
-    keys = list(data.keys())
-    for i in range(len(data[keys[0]])):
-        is_none = [(data[key][i] is None) for key in keys]
-        if is_none.count(True) == len(keys):
-            for key in keys:
-                data[key].pop(i)
-        else:
-            for j, key in enumerate(keys):
-                if is_none[j] or data[key][i] is ERROR:
-                    data[key][i] = default_value
-    return data
+            if values_r.count(None) == len(values_r):
+                values_c = []
+                if ci != (stop_c-1):
+                    for rj in range(start_r, ri + 1):
+                        cell = worksheet.cell(rj, ci + 1)
+                        value = cell.value
 
-def _read_xlsx_sheet_rkeys(worksheet, row_index, default_value):
-    data = {}
-    ERROR = object()
+                        if value == '':
+                            values_c.append(None)
+                        else:
+                            values_c.append(value)
 
-    # Iterate over each column
-    for ri in range(row_index, worksheet.max_row + 1):
-        # First value is the key
-        key = f'{worksheet.cell(ri, 1).value}'.strip()
+                if values_c.count(None) == len(values_c):
+                    stop_r = ri
+                    stop_c = ci + 1
 
-        if key == '':
-            continue
+            if ci == stop_c: break
+        if ri == stop_r: break
 
-        data[key] = []
+    if (stop_r-start_r) == 1 and (stop_c-start_c) == 1 and ((cell:=worksheet.cell(start_r,start_c)).value is None or cell.value==''):
+        return rows_to_data([[]], has_keys, keys_in_first)
 
-        for ci in range(2, worksheet.max_column + 1):
-            cell = worksheet.cell(ri, ci)
-            value = cell.value
-            if type(value) is str:
-                value = value.strip()
-            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
-                data[key].append(ERROR)
-            elif cell.data_type == 's':
-                if value == '':
-                    data[key].append(None)
-                else:
-                    data[key].append(value)
-            else:
-                data[key].append(cell.value)
-
-    keys = list(data.keys())
-    for i in range(len(data[keys[0]])):
-        is_none = [(data[key][i] is None) for key in keys]
-        if is_none.count(True) == len(keys):
-            for key in keys:
-                data[key].pop(i)
-        else:
-            for j, key in enumerate(keys):
-                if is_none[j] or data[key][i] is ERROR:
-                    data[key][i] = default_value
-    return data
-
-def _read_xlsx_sheet_nokeys(worksheet, row_index, default_value):
     data = []
-    ERROR = object()
 
     # Iterate over each column
-    for ri in range(row_index, worksheet.max_row + 1):
-        # First value is the key
-        data.append([])
+    for ri in range(start_r, stop_r):
+        value = worksheet.cell(ri, start_c).value
+        if type(value) is str and value[:len(comment_symbol)] == comment_symbol and value not in NAN_STRINGS:
+            continue
 
-        for ci in range(1, worksheet.max_column + 1):
+        data.append([])
+        for ci in range(start_c, stop_c):
             cell = worksheet.cell(ri, ci)
             value = cell.value
             if type(value) is str:
                 value = value.strip()
-            if cell.data_type == 'e' or (type(value) is str and value.upper()) == '=NA()':
-                data[-1].append(ERROR)
-            elif cell.data_type == 's':
-                if value == '':
-                    data[-1].append(None)
-                else:
-                    data[-1].append(value)
+
+            if cell.data_type == 'e' or (type(value) is str and value.upper() == '=NA()'):
+                data[-1].append(float('nan'))
+            elif value == '' or value in NAN_STRINGS or value is None:
+                data[-1].append(float('nan'))
             else:
-                data[-1].append(cell.value)
+                data[-1].append(value)
 
-        if data[-1].count(None) == len(data[-1]):
-            data.pop(-1)
-        else:
-            for i, v in enumerate(data[-1]):
-                if v is None or v is ERROR:
-                    data[-1][i] = default_value
-    return data
+    return rows_to_data(data, has_keys, keys_in_first)
 
-#TODO change np.nan values to '=NA()'
-def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
-               keys_in= 'c', append = False, clear = True, first_cell ="A1", **sheetnames):
+
+def write_xlsx(filename, *sheets, comments = None,
+               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True, **sheetnames):
     """
     Save data to an excel file.
 
@@ -693,7 +595,7 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
         is raised if *filename* is not a valid excel workbook.
     clear : bool, Default = True
         If ``True`` any preexisting sheets are cleared before any new data is written to it.
-    first_cell: str
+    start_at: str
         The first cell where the data is written. Defaults value is ``"A1"``.
     sheetnames : isopy_array, numpy_array
         Data array given here will be saved in the workbook with the keyword as the sheet name
@@ -703,14 +605,11 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
         workbook = filename
         save = False
     elif type(filename) is io.BytesIO:
-        if append:
-            #TODO some sort of check to make sure the file isnt empty
-            try:
-                workbook = openpyxl.load_workbook(filename=filename)
-            except:
-                workbook = openpyxl.Workbook()
-                workbook.remove(workbook.active)
+        if append and filename.seek(0,2) > 0:
+            workbook = openpyxl.load_workbook(filename=filename)
         else:
+            # openpyxl truncates BytesIO objects automatically via the use of ZipFile('w')
+
             workbook = openpyxl.Workbook()
             workbook.remove(workbook.active)
     elif type(filename) is str:
@@ -733,7 +632,7 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
             else:
                worksheet = workbook[sheetname]
 
-            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in, first_cell)
+            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at)
 
         #Workbooks must have at least one sheet
         if len(workbook.sheetnames) == 0:
@@ -743,73 +642,31 @@ def write_xlsx(filename, *sheets, comments = None, comment_symbol= '#',
     finally:
         if save: workbook.close()
 
-def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in, cell):
-    data = isopy.asanyarray(data)
-
-    if type(cell) is tuple:
-        ri, ci = cell
+def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at):
+    rows = data_to_rows(data, keys_in_first)
+    if type(start_at) is tuple:
+        start_r, start_c = start_at
     else:
-        ri, ci = openpyxl.utils.cell.coordinate_to_tuple(cell)
+        start_r, start_c = openpyxl.utils.cell.coordinate_to_tuple(start_at)
 
     if comments is not None:
-        if type(comments) is not list:
+        if not isinstance(comments, (list, tuple)):
             comments = [comments]
         for comment in comments:
-            worksheet.cell(ri, ci).value = f'{comment_symbol}{comment}'
-            ri += 1
+            worksheet.cell(start_r, start_c).value = f'{comment_symbol}{comment}'
+            start_r += 1
 
-    if isinstance(data, isopy.core.IsopyArray):
-        if data.ndim == 0:
-            data = data.reshape(-1)
-        if keys_in == 'c':
-            data = data.to_dict()
-            _write_xlsx_ckeys(worksheet, data, ri, ci)
-        elif keys_in == 'r':
-            data = data.to_dict()
-            _write_xlsx_rkeys(worksheet, data, ri, ci)
-        elif keys_in is None:
-            data = np.array(data.to_list())
-            _write_xlsx_nokeys(worksheet, data, ri, ci)
-    else:
-        ndim = data.ndim
-        if ndim == 0:
-            data = data.reshape((1, 1))
-        elif ndim == 1:
-            data = data.reshape((1, -1))
-        elif ndim > 2:
-            raise ValueError('Cannot save data with more than two dimensions')
-        _write_xlsx_nokeys(worksheet, data, ri, ci)
-
-
-def _write_xlsx_ckeys(worksheet, data, ri, ci):
-    for cj, key in enumerate(data.keys()):
-        worksheet.cell(ri, ci + cj).value = f'{key}'
-
-        for rj, value in enumerate(data[key]):
-            if np.isnan(value):
+    for ri, row in enumerate(rows):
+        for ci, value in enumerate(row):
+            if str(value) == 'nan':
                 value = '#N/A'
-            worksheet.cell(ri + rj + 1, ci + cj).value = value
-
-def _write_xlsx_rkeys(worksheet, data, ri, ci):
-    for rj, key in enumerate(data.keys()):
-        worksheet.cell(ri + rj, ci).value = f'{key}'
-
-        for cj, value in enumerate(data[key]):
-            if np.isnan(value):
-                value = '#N/A'
-            worksheet.cell(ri + rj, ci + cj + 1).value = value
-
-def _write_xlsx_nokeys(worksheet, data, ri, ci):
-    for rj, row in enumerate(data):
-        for cj, value in enumerate(row):
-            if np.isnan(value):
-                value = '#N/A'
-            worksheet.cell(ri + rj, ci+ cj).value = value
+            if value is not None and value != '':
+                worksheet.cell(start_r + ri, start_c + ci).value = value
 
 ################
 ### to array ###
 ################
-
+@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
 def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
     """
     Returns an array of values from a csv file.
@@ -817,6 +674,7 @@ def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
     data = read_csv(filename, **read_csv_kwargs)
     return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
+@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
 def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_kwargs):
     """
     Returns an array of values from *sheet_name* in a xlsx file.
@@ -824,6 +682,7 @@ def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_k
     data = read_xlsx(filename, sheetname, **read_xlsx_kwargs)
     return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
 
+@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
 def array_from_clipboard(*, dtype=None, ndim=None, **read_clipboard_kwargs):
     """
     Returns an array of values from the clipboard.

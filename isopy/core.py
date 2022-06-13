@@ -7,6 +7,7 @@ import itertools
 import hashlib
 import warnings
 import collections.abc as abc
+import io
 
 #optional imports
 try:
@@ -261,7 +262,6 @@ def deprecrated_function(message, stacklevel = 1):
         return func_wrapper
     return wrap_func
 
-    
 def hashstr(string):
     return hashlib.md5(string.encode('UTF-8')).hexdigest()
 
@@ -3274,7 +3274,7 @@ class ToTextMixin:
         else:
             raise TypeError('IPython not installed')
 
-    def to_clipboard(self, delimiter=', ', include_row= False,
+    def _to_clipboard(self, delimiter=', ', include_row= False,
                      include_dtype= False, **vformat):
         """
         Copy the string returned from ``array.to_text(*args, **kwargs)`` to the clipboard.
@@ -3283,32 +3283,59 @@ class ToTextMixin:
         pyperclip.copy(string)
         return string
 
-class ToFileMixin:
+class ToFromFileMixin:
     # For IsopyArray and ScalarDict
-    def to_csv(self, filename, comments = None):
+    def to_csv(self, filename, comments = None, keys_in_first='r',
+              dialect = 'excel', comment_symbol = '#'):
         """
-        Save array to a cv file.
+        Save array to a csv file.
 
-        If *filename* already exits it will be overwritten. If *comments*
-        are given they will be included before the array data.
+        If *filename* already exits it will be overwritten.
         """
-        isopy.write_csv(filename, self, comments=comments)
+        isopy.write_csv(filename, self, comments=comments, keys_in_first=keys_in_first,
+                        dialect=dialect, comment_symbol=comment_symbol)
 
-    def to_xlsx(self, filename, sheetname = 'sheet1',
-                comments = None, append = False):
+    def to_xlsx(self, filename, sheetname = 'sheet1', comments = None,
+               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True):
+
+        isopy.write_xlsx(filename, comments=comments, keys_in_first=keys_in_first, comment_symbol=comment_symbol,
+                        start_at=start_at, append=append, clear=clear, **{sheetname: self})
+
+    def to_clipboard(self, comments=None, keys_in_first='r', dialect = 'excel', comment_symbol = '#'):
+        isopy.write_clipboard(self, comments=comments,  keys_in_first=keys_in_first,
+                        dialect=dialect, comment_symbol=comment_symbol)
+
+    def to_dataframe(self):
         """
-        Save array to a excel workbook.
-
-        If *sheetname* is not given the array will be saved as
-        "sheet1".  If *comments* are given they will be included before the array data. Existing
-        files will be overwritten unless append is ``True``.
+        Convert array to a pandas dataframe. An exception is raised if pandas is not installed.
         """
-        #If *filename* exists and *append* is ``True`` the sheet will be added to the existing workbook. Otherwise the existing file will be overwritten.
-        if sheetname is None:
-            sheetname = 'sheet1'
+        if pandas is not None:
+            return pandas.DataFrame(self)
+        else:
+            raise TypeError('Pandas is not installed')
 
-        # TODO if sheetname is given and file exits open it and add the sheet, overwrite if nessecary
-        isopy.write_xlsx(filename, comments=comments, append=append, **{sheetname: self})
+    @classmethod
+    def from_csv(cls, filename, comment_symbol ='#', keys_in_first=None, encoding = None, dialect = None, **kwargs):
+        data = isopy.read_csv(filename, comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
+                                  encoding=encoding, dialect=dialect)
+        return cls(data, **kwargs)
+
+    @classmethod
+    def from_xlsx(cls, filename, sheetname, keys_in_first=None,
+                  comment_symbol='#', start_at='A1', **kwargs):
+        data = isopy.read_xlsx(filename, sheetname, has_keys=True, keys_in_first=keys_in_first,
+                               comment_symbol=comment_symbol, start_at=start_at)
+        return cls(data, **kwargs)
+
+    @classmethod
+    def from_clipboard(cls, comment_symbol ='#', keys_in_first=None, dialect = None, **kwargs):
+        data = isopy.read_clipboard(comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
+                                    dialect=dialect)
+        return cls(data, **kwargs)
+
+    @classmethod
+    def from_dataframe(cls, dataframe, **kwargs):
+        return cls(dataframe, **kwargs)
 
 
 ############
@@ -3367,6 +3394,9 @@ class IsopyDict(dict):
         for arg in args:
             if isinstance(arg, IsopyArray):
                 self.update(arg.to_dict())
+            if pandas is not None and isinstance(arg, pandas.DataFrame):
+                arg = arg.to_dict('list')
+                self.update(arg)
             elif isinstance(arg, dict):
                 self.update(arg)
             elif isinstance(arg, abc.Iterable):
@@ -3569,7 +3599,7 @@ class IsopyDict(dict):
         return {str(key): self[key] for key in self.keys}
 
 
-class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
+class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
@@ -3772,7 +3802,7 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFileMixin):
 #############
 ### Array ###
 #############
-class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFileMixin):
+class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     """
     An array where data is stored rows and columns of isopy key strings.
 
@@ -4179,15 +4209,6 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFileMixin):
             view = self.view(ndarray)
         return view.copy()
 
-    def to_dataframe(self):
-        """
-        Convert array to a pandas dataframe. An exception is raised if pandas is not installed.
-        """
-        if pandas is not None:
-            return pandas.DataFrame(self)
-        else:
-            raise TypeError('Pandas is not installed')
-
     # ufuncs
     @functools.wraps(np.ndarray.all)
     def all(self, *args, **kwargs):
@@ -4484,7 +4505,7 @@ def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_ref
                    ignore_charge=ignore_charge, allow_reformatting=allow_reformatting)
 
 
-def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, **columns):
+def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, **columns_or_read_kwargs):
     """
     Convert the input arguments to a isopy array.
 
@@ -4493,22 +4514,39 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, *
     If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope', 'molecule',
     'ratio', 'general']``. Unknown flavours will simply be skipped.
     """
-    if values is None and len(columns) == 0:
+    if isinstance(values, (str, bytes, io.StringIO, io.BytesIO)):
+        if values == 'clipboard':
+            values = isopy.read_clipboard(**columns_or_read_kwargs)
+        elif 'sheetname' in columns_or_read_kwargs:
+            values = isopy.read_xlsx(values, **columns_or_read_kwargs)
+        else:
+            values = isopy.read_csv(values, **columns_or_read_kwargs)
+        columns_or_read_kwargs = dict()
+
+    if values is None and len(columns_or_read_kwargs) == 0:
         raise ValueError('No values were given')
-    elif values is not None and len(columns) != 0:
+    elif values is not None and len(columns_or_read_kwargs) != 0:
         raise ValueError('values and column kwargs cannot be given together')
     elif values is None:
-        values = columns
+        values = columns_or_read_kwargs
     
     return IsopyArray(values, keys=keys, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
 
-def asarray(a, *, ndim = None, try_flavours = None):
+def asarray(a, *, ndim = None, try_flavours = None, **read_kwargs):
     """
     If *a* is an isopy array return it otherwise convert *a* into an isopy array and return it. If
     *ndim* is given a view of the array with the specified dimensionality is returned.
     """
     try_flavours = default_key_flavours(try_flavours)
+
+    if isinstance(a, (str, bytes, io.StringIO, io.BytesIO)):
+        if a == 'clipboard':
+            a = isopy.read_clipboard(**read_kwargs)
+        elif 'sheetname' in read_kwargs:
+            a = isopy.read_xlsx(a, **read_kwargs)
+        else:
+            a = isopy.read_csv(a, **read_kwargs)
 
     if not isinstance(a, IsopyArray) or a.flavour not in try_flavours:
         a = array(a, try_flavours=try_flavours)
@@ -4527,13 +4565,21 @@ def asarray(a, *, ndim = None, try_flavours = None):
     return a
 
 
-def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None):
+def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None, **read_kwargs):
     """
     Return ``isopy.asarray(a)`` if *a* possible otherwise return ``numpy.asanyarray(a)``.
 
     The data type and number of dimensions of the returned array can be specified by *dtype and
     *ndim*, respectively.
     """
+    if isinstance(a, (str, bytes, io.StringIO, io.BytesIO)):
+        if a == 'clipboard':
+            a = isopy.read_clipboard(**read_kwargs)
+        elif 'sheetname' in read_kwargs:
+            a = isopy.read_xlsx(a, **read_kwargs)
+        else:
+            a = isopy.read_csv(a, **read_kwargs)
+
     if isinstance(a, IsopyArray) and dtype is None:
         return asarray(a, ndim=ndim, try_flavours=try_flavours)
 
@@ -4541,18 +4587,21 @@ def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None):
         return array(a, dtype=dtype, ndim=ndim, try_flavours=try_flavours)
 
     else:
-        if type(dtype) is not tuple:
-            dtype = (dtype, )
+        if not (dtype is None and isinstance(a, np.ndarray)):
+            if dtype is None:
+                dtype = (float64, None)
+            elif type(dtype) is not tuple:
+                dtype = (dtype, )
 
-        for dt in dtype:
-            try:
-                a = np.asanyarray(a, dtype=dt)
-            except Exception as err:
-                pass
+            for dt in dtype:
+                try:
+                    a = np.asanyarray(a, dtype=dt)
+                except Exception as err:
+                    pass
+                else:
+                    break
             else:
-                break
-        else:
-            raise TypeError(f'Unable to convert array to dtype {dtype}')
+                raise TypeError(f'Unable to convert array to dtype {dtype}')
 
         if ndim is not None:
             if ndim < -1 or ndim > 2:
@@ -4884,7 +4933,7 @@ def _function_signature(func):
         parameters = inspect.signature(func).parameters
     except:
         #No signature avaliable. Should be a rare occurance but applies to for example
-        # concatenate (which wont call this anyway)
+        # np.concatenate (which doesnt work with isopy arrays)
         #This return assumes all args are inputs
         return None, None
     else:

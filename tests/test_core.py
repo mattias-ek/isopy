@@ -4074,7 +4074,7 @@ class Test_Array:
 
     def test_asanyarray3(self):
         # size 1, 0-dim
-        array1 = 1
+        array1 = 1.0
         array2 = np.asarray(array1)
 
         with pytest.raises(ValueError):
@@ -4118,7 +4118,7 @@ class Test_Array:
         assert result2.base is array2
 
         # size 1, 1-dim
-        array1 = [1]
+        array1 = [1.0]
         array2 = np.asarray(array1)
 
         result1 = isopy.asanyarray(array1)
@@ -4264,17 +4264,6 @@ class Test_ToTextMixin:
         for key in a.keys:
             np.testing.assert_allclose(a[key][0], tovalue[str(key)])
 
-        try:
-            a.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
-            new_array1 = isopy.array_from_clipboard()
-            assert isinstance(new_array1, core.IsopyArray)
-            assert new_array1.flavour == a.flavour
-            assert_array_equal_array(new_array1, a)
-
     def test_100_1_d(self):
         # size 100, 1-dim
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4315,17 +4304,6 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
-        try:
-            d.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass  # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
-            new_array1 = isopy.array_from_clipboard()
-            assert isinstance(new_array1, core.IsopyArray)
-            assert new_array1.flavour == a.flavour
-            assert_array_equal_array(new_array1, a)
-
     def test_1_1_a(self):
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
 
@@ -4353,13 +4331,6 @@ class Test_ToTextMixin:
         assert a.keys == tovalue.dtype.names
         for key in a.keys:
             np.testing.assert_allclose(a[key], tovalue[str(key)])
-
-        try:
-            a.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
     def test_1_1_d(self):
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4395,12 +4366,6 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
-        try:
-            d.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass  # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
     def test_1_0_a(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4427,13 +4392,6 @@ class Test_ToTextMixin:
         assert a.keys == tovalue.dtype.names
         for key in a.keys:
             np.testing.assert_allclose(a[key], tovalue[str(key)])
-
-        try:
-            a.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
     def test_1_0_d(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4466,12 +4424,6 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
-        try:
-            d.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
 
     def test_scalardict_default_value(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
