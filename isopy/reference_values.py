@@ -501,7 +501,7 @@ class ReferenceValues:
                 raise ValueError(f'Reference value group "{group}" not found')
 
             path_or_dict = getattr(group, value, None)
-            if value is None:
+            if path_or_dict is None:
                 raise ValueError(f'Reference value "{group.__class__.__name__}.{value}" not found')
 
         if isinstance(path_or_dict, datatype):

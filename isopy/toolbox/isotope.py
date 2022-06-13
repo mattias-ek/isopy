@@ -230,7 +230,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
 
 
 def make_ms_beams(*args, mf_factor=None, fixed_voltage = 10, fixed_key = isopy.keymax, integrations = 100, integration_time=8.389, resistor=1E11,
-                  random_seed = None, isotope_fractions=None, isotope_masses=None, **kwargs):
+                  random_seed = None, isotope_fractions='isotope.fraction', isotope_masses='isotope.mass', **kwargs):
     """
     Simulates a series of measurements with a standard deviation equal to the johnson-nyquist noise
     and counting statistics.
@@ -322,7 +322,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
                    spike = None, spike_fraction = 0.5,
                    integrations = 100, integration_time = 8.389, resistors = 1E11,
                    random_seed = None,
-                   isotope_fractions=None, isotope_masses=None, **interferences):
+                   isotope_fractions='isotope.fraction', isotope_masses='isotope.mass', **interferences):
     """
     Creates a simulated the measurement of a sample with natural and instrumental mass
     fractionation added to the array. The standard deviation of measurements for each isotope
@@ -587,7 +587,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
 @core.renamed_function(internal_normalisation, normalisation_factor='extnorm_factor', normalisation_value='extnorm_value')
 def mass_independent_correction(data, mf_ratio,
                            normalisation_value = None, normalisation_factor=None,
-                           isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
+                           isotope_fractions='isotope.fraction', isotope_masses='isotope.mass', mf_tol=1E-8):
     pass
 
 def calculate_mass_fractionation_factor(data, mf_ratio,

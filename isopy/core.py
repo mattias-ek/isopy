@@ -3403,7 +3403,7 @@ class IsopyDict(dict):
                 arg = dict(arg)
                 self.update(arg)
             else:
-                raise TypeError('arg must be dict')
+                raise TypeError(f'arg must be dict not {type(arg)}')
 
         self.update(kwargs)
         self._readonly = readonly
