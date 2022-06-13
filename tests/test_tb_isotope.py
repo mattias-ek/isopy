@@ -654,7 +654,7 @@ class Test_IsobaricInterferences:
                  fraction_ref=fraction_ref, mass_ref=mass_ref, mf_factor=mf_factor)
 
     def run(self, data1, data2, correct1, correct2, interferences1, interferences2, denom=None,
-            mf_factor=None, fraction_ref=None, mass_ref=None):
+            mf_factor=None, fraction_ref='isotope.fraction', mass_ref='isotope.mass'):
 
         interferences = isopy.tb.find_isobaric_interferences('pd', data1)
         assert len(interferences) == len(interferences)
