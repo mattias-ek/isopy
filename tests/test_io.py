@@ -1240,13 +1240,9 @@ class Test_CSV:
         data = dict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
         save_data = isopy.array(data)
 
-        try:
-            isopy.write_clipboard(save_data)
-        except:
-            pass
-        else:
-            read = isopy.read_clipboard()
-            self.compare(data, read)
+        isopy.write_clipboard(save_data)
+        read = isopy.read_clipboard()
+        self.compare(data, read)
 
     def test_truncate(self):
         # Make sure that file like objects are cleared.
@@ -1824,6 +1820,7 @@ class Test_ToFrom:
 
     def test_a_to_clipboard(self):
         data = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+
 
         data.to_clipboard()
         read = isopy.read_clipboard()
