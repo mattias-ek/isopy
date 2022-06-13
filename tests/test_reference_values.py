@@ -6,9 +6,8 @@ import os
 import numpy as np
 
 #The hashes are different on Travis so these tests fail
-class Test_FileHash:
+class _Test_Integrity:
     def hash_file(self, filename):
-        # hashlib.md5(open('isopy/referencedata/isotope_sprocess_fraction_B11.csv', 'rb').read()).hexdigest()
         filepath = os.path.join(os.path.dirname(isopy.__file__), 'referencedata', f'{filename}')
         with open(filepath, 'rb') as file:
             filehash = hashlib.md5(file.read()).hexdigest().lower()
@@ -62,7 +61,6 @@ class Test:
         repr(isopy.refval.mass)
         repr(isopy.refval.element)
         repr(isopy.refval.isotope)
-
 
     def test_ls(self):
         isopy.refval.ls()

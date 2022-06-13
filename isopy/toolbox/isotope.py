@@ -112,7 +112,7 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     else:
         return t_noise
 
-def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_masses=None, **kwargs):
+def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction', isotope_masses='isotope.mass', **kwargs):
     """
     Constructs an isotope array where the first created isotope contains the sum of all given
     isotopes with the same mass number. The construction order is first *args* and then *kwargs*.
@@ -171,10 +171,8 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = None, isotope_mas
     make_ms_beams, make_ms_sample
     """
 
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
-                                                           isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
-                                                        isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     input = []
     for key in args:
@@ -459,7 +457,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
 @core.add_preset(('mu', 'ppm'), extnorm_factor=1E6)
 def internal_normalisation(data, mf_ratio, interference_correction=True,
                            extnorm_value = None, extnorm_factor=None,
-                           isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
+                           isotope_fractions='isotope.fraction', isotope_masses='isotope.mass', mf_tol=1E-8):
     """
     A data reduction scheme for internaly normalised data.
 
@@ -523,8 +521,8 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
     extnorm_factor = isopy.checks.check_type('normalisation_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     # Convert the data into a ratio array
     if data.flavour == 'ratio':
@@ -592,7 +590,8 @@ def mass_independent_correction(data, mf_ratio,
                            isotope_fractions=None, isotope_masses=None, mf_tol=1E-8):
     pass
 
-def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, isotope_masses=None):
+def calculate_mass_fractionation_factor(data, mf_ratio,
+                                        isotope_fractions='isotope.fraction', isotope_masses='isotope.mass'):
     """
     Calculate the mass fractionation factor for a given ratio in *data*.
 
@@ -637,8 +636,8 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, 
     """
     data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions, isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     if data.flavour == 'isotope':
         data = data.get(mf_ratio.numerator) / data.get(mf_ratio.denominator)
@@ -648,7 +647,7 @@ def calculate_mass_fractionation_factor(data, mf_ratio, isotope_fractions=None, 
     return (np.log(data / isotope_fractions.get(mf_ratio)) / np.log(isotope_masses.get(mf_ratio)))
 
 
-def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_masses=None):
+def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_masses='isotope.mass'):
     """
     Remove exponential mass fractionation from *data*.
 
@@ -697,7 +696,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array], allow_none=True)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
 
     if fractionation_factor is None:
@@ -713,7 +712,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
         return data / (mass_array ** fractionation_factor)
 
 
-def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masses=None):
+def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masses='isotope.mass'):
     """
     Add exponential mass fractionation to *data*.
 
@@ -764,7 +763,8 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
 
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array],allow_none=True)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses, isopy.refval.isotope.mass)
+
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     if fractionation_factor is None:
         return data
@@ -880,7 +880,7 @@ def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
 
 
 def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
-                                   isotope_fractions=None, isotope_masses=None):
+                                   isotope_fractions='isotope.fraction', isotope_masses='isotope.mass'):
     """
     Remove all isobaric interferences for a given element(s).
 
@@ -946,11 +946,8 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 
     mf_factor = isopy.checks.check_type('mf_factor', mf_factor, np.float64, np.ndarray, coerce=True,
                                         coerce_into=[np.float64, np.array], allow_none=True)
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions',
-                                                            isotope_fractions,
-                                                            isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
-                                                        isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     # Get the information we need to make the correction that works
     # for both isotope arrays and ratio arrays
