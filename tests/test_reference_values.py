@@ -3,14 +3,15 @@ from isopy import core
 import pytest
 import hashlib
 import os
+import numpy as np
 
 #The hashes are different on Travis so these tests fail
-class _Test_FileHash:
+class Test_FileHash:
     def hash_file(self, filename):
         # hashlib.md5(open('isopy/referencedata/isotope_sprocess_fraction_B11.csv', 'rb').read()).hexdigest()
         filepath = os.path.join(os.path.dirname(isopy.__file__), 'referencedata', f'{filename}')
         with open(filepath, 'rb') as file:
-            filehash = hashlib.md5(file.read()).hexdigest()
+            filehash = hashlib.md5(file.read()).hexdigest().lower()
         return filehash
 
     def test_element_atomic_number(self):
@@ -52,3 +53,64 @@ class _Test_FileHash:
         filename = 'isotope_sprocess_fraction_B11.csv'
         valid_hash = '3b926ab45f85e6ff815da2907368dff8'
         assert self.hash_file(filename) == valid_hash
+
+class Test:
+    def test_repr(self):
+        # Just see that the function work
+
+        repr(isopy.refval)
+        repr(isopy.refval.mass)
+        repr(isopy.refval.element)
+        repr(isopy.refval.isotope)
+
+
+    def test_ls(self):
+        isopy.refval.ls()
+
+        isopy.refval.mass.ls()
+        isopy.refval.element.ls()
+        isopy.refval.isotope.ls()
+
+    def test_call(self):
+        assert isopy.refval('mass.isotopes') is isopy.refval.mass.isotopes
+        assert isopy.refval('element.atomic_weight') is isopy.refval.element.atomic_weight
+        assert isopy.refval('isotope.mass') is isopy.refval.isotope.mass
+
+        data = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
+        refval = isopy.refval(data)
+        assert type(refval) is dict
+
+        refval = isopy.refval(data, dict)
+        assert type(refval) is dict
+
+        refval = isopy.refval(data, isopy.IsopyDict)
+        assert type(refval) is isopy.IsopyDict
+
+        refval = isopy.refval(data, isopy.ScalarDict)
+        assert type(refval) is isopy.ScalarDict
+
+        data = isopy.IsopyDict(data)
+        refval = isopy.refval(data)
+        assert type(refval) is isopy.IsopyDict
+
+        refval = isopy.refval(data, dict)
+        assert type(refval) is isopy.IsopyDict
+
+        refval = isopy.refval(data, isopy.IsopyDict)
+        assert type(refval) is isopy.IsopyDict
+
+        refval = isopy.refval(data, isopy.ScalarDict)
+        assert type(refval) is isopy.ScalarDict
+
+        data = isopy.ScalarDict(data)
+        refval = isopy.refval(data)
+        assert type(refval) is isopy.ScalarDict
+
+        refval = isopy.refval(data, dict)
+        assert type(refval) is isopy.ScalarDict
+
+        refval = isopy.refval(data, isopy.IsopyDict)
+        assert type(refval) is isopy.ScalarDict
+
+        refval = isopy.refval(data, isopy.ScalarDict)
+        assert type(refval) is isopy.ScalarDict

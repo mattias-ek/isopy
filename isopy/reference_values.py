@@ -5,8 +5,6 @@ import numpy as np
 import functools
 import os
 
-__all__ = ['refval']
-
 ########################
 ### Reference Values ###
 ########################
@@ -33,6 +31,9 @@ def is_reference_value(func):
     return func
 
 class RefValGroup:
+    def __init__(self, parent):
+        self._parent = parent
+
     def __repr__(self):
         defval = []
         refval = []
@@ -99,7 +100,6 @@ class mass(RefValGroup):
                                default_value=isopy.IsotopeKeyList(), readonly=True)
 
 
-#TODO use best isotope and isotope weight to calculate atomic weight
 class element(RefValGroup):
     @is_reference_value
     @core.cached_property
@@ -141,7 +141,6 @@ class element(RefValGroup):
         return tuple(self.symbol_name.keys())
     
     @is_reference_value
-    @is_default_value  
     @core.cached_property
     def symbol_name(self):
         """
@@ -208,8 +207,8 @@ class element(RefValGroup):
         weights = {}
         # Isotopes is also taken from best_measurement_fraction_M16
         for element, isotopes in self.isotopes.items():
-            weights[element] = np.sum([refval.isotope.mass_W17.get(isotope) *
-                                       refval.isotope.best_measurement_fraction_M16.get(isotope)
+            weights[element] = np.sum([self._parent.isotope.mass_W17.get(isotope) *
+                                       self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
         return core.IsopyDict(**weights, readonly=True)
         
@@ -247,7 +246,8 @@ class element(RefValGroup):
         return core.ScalarDict(_load_RV_values('element_initial_solar_system_abundance_L09', np.float64), default_value=np.nan, readonly = True)
 
 class isotope(RefValGroup):
-    def __init__(self):
+    def __init__(self, parent):
+        self._parent = parent
         self.__mass = None
         self.__fraction = None
     
@@ -471,7 +471,6 @@ class isotope(RefValGroup):
         """
         return core.ScalarDict(_load_RV_values('isotope_sprocess_fraction_B11', np.float64), default_value=np.nan, readonly = True)
 
-
 class ReferenceValues:
     """ Reference values useful for working with geochemical data"""
     def __init__(self):
@@ -484,12 +483,37 @@ class ReferenceValues:
         string += f'isotope - {self.__class__.isotope.fget.__doc__}'
         return string
 
+    def ls(self):
+        names = []
+        names += [f'mass.{n}' for n in self.mass.ls()]
+        names += [f'element.{n}' for n in self.element.ls()]
+        names += [f'isotope.{n}' for n in self.isotope.ls()]
+
+    def __call__(self, path_or_dict, datatype=dict):
+        if type(path_or_dict) is str:
+            try:
+                group, value = path_or_dict.split('.', 1)
+            except ValueError:
+                raise ValueError(f'Unable to parse "{path_or_dict}"')
+
+            group = getattr(self, group, None)
+            if group is None:
+                raise ValueError(f'Reference value group "{group}" not found')
+
+            path_or_dict = getattr(group, value, None)
+            if value is None:
+                raise ValueError(f'Reference value "{group.__class__.__name__}.{value}" not found')
+
+        if isinstance(path_or_dict, datatype):
+            return path_or_dict
+        else:
+            return datatype(path_or_dict)
 
     def reset(self):
         """Resets the reference values to the default values"""
-        self._element = element()
-        self._isotope = isotope()
-        self._mass = mass()
+        self._element = element(self)
+        self._isotope = isotope(self)
+        self._mass = mass(self)
 
     @property
     def isotope(self):
