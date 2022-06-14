@@ -139,14 +139,12 @@ def read_exp(filename, rename = None) -> NeptuneData:
     Parameters
     ----------
     filename : str, bytes, StringIO, BytesIO
-        Path for file to be opened. Alternatively a file like byte string can be supplied.
-        Also accepts file like objects.
+        Path for file to be opened. Alternatively a file like byte string or a file like object can be supplied.
     rename : dict, Callable, Optional
         For renaming keys in the analysed data. Useful for cases when the key is the mass rather
         than the isotope measured. If a dictionary is passed then every key present in the
         dictionary will be replaced by the associated value. A callable can also be passed that
-        takes one key in the file and returns the new key.
-
+        takes the key in the file and returns the new key.
 
     Returns
     -------
@@ -157,7 +155,8 @@ def read_exp(filename, rename = None) -> NeptuneData:
         * cycle - A list containing the cycle number for each measurement.
         * time - A list containing datetime objects for each measurement.
         * measurements - An dictionary containing an an isopy array with the values in for each line measured. Static measurements are always given as line ``1``.
-         to extract e.g only the isotope data from the measurement use ``neptune_data.measurement[line].copy(flavour_eq='isotope')``.
+
+         To extract e.g only the isotope data from a measurement use ``neptune_data.measurement[line].copy(flavour_eq='isotope')``.
     """
 
 
@@ -249,11 +248,16 @@ def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#'
     filename : str, bytes, StringIO, BytesIO
         Path for file to be opened. Alternatively a file like byte string can be supplied.
         Also accepts file like objects.
+    has_keys : bool, None
+        If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+        always returned. If None it will return a nested list of all values in the first row and column
+        can be converted to/is a float.
+    keys_in_first : {'c', 'r', None}
+        Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+        keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+        is not False an exception will be raised if it cant determine where the keys are.
     comment_symbol : str, Default = '#'
         Rows starting with this string will be ignored.
-    keys_in : {'c', 'r', None}, Default = 'c'
-        If keys are given as the first value in each column pass ``c``. If keys are given as the
-        first value in each row pass ``r``. If there are no keys pass ``None``.
     encoding : str
         Encoding of the file. If None the encoding will be guessed from the file.
     dialect
@@ -355,13 +359,13 @@ def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol =
         Data to be saved in the array.
     comments : str, Sequence[str], Optional
         Comments to be included at the top of the file
-    keys_in : {'c', 'r'}, Default = 'c'
-        Only applicable for isopy arrays like *data*. For keys as the first value in each column
-        pass ``"c"``. For keys as the first value in each row pass ``"r"``.
-    dialect
-        The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
+    keys_in_first : {'c', 'r'}
+        Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+        keys should be in the first column.
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file.
+    dialect
+        The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
     """
 
     rows = data_to_rows(data, keys_in_first)
@@ -414,16 +418,16 @@ def read_clipboard(has_keys= None, keys_in_first = None, comment_symbol ='#', di
     ----------
     comment_symbol : str, Default = '#'
         Rows starting with this string will be ignored.
-    keys_in : {'c', 'r', None}, Default = 'c'
-        If keys are given as the first value in each column pass ``c``. If keys are given as the
-        first value in each row pass ``r``. If there are no keys pass ``None``.
+    has_keys : bool, None
+        If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+        always returned. If None it will return a nested list of all values in the first row and column
+        can be converted to/is a float.
+    keys_in_first : {'c', 'r', None}
+        Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+        keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+        is not False an exception will be raised if it cant determine where the keys are.
     dialect
         Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
-
-    Returns
-    -------
-    data : dict or list
-        Returns a dictionary for data with keys otherwise a list.
     """
     data = pyperclip.paste()
     return read_csv(io.StringIO(data), comment_symbol=comment_symbol, has_keys=has_keys,
@@ -431,6 +435,23 @@ def read_clipboard(has_keys= None, keys_in_first = None, comment_symbol ='#', di
 
 def write_clipboard(data, comments=None, keys_in_first='r',
               comment_symbol = '#', dialect = 'excel'):
+    """
+    Copies data to the clipboard
+
+    Parameters
+    ----------
+    data : isopy_array_like, numpy_array_like
+        Data to be copied.
+    comments : str, Sequence[str], Optional
+        Comments to be included
+    keys_in_first : {'c', 'r'}
+        Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+        keys should be in the first column.
+    dialect
+        The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
+    comment_symbol : str, Default = '#'
+        This string will precede any comments.
+    """
     text = io.StringIO()
     write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect, comment_symbol=comment_symbol)
 
@@ -452,13 +473,18 @@ def read_xlsx(filename, sheetname=None, has_keys = None, keys_in_first=None, com
         To load data from a single sheet in the workbook pass either the name of the sheet or
         the position of the sheet. If nothing is specified all the data for all sheets in the
         workbook is returned.
-    keys_in : {'c', 'r', None}, Default = 'c'
-        If keys are given as the first value in each column pass ``c``. If keys are given as the
-        first value in each row pass ``r``. If there are no keys pass ``None``.
-    default_value : scalar, Default = np.nan
-        Value substituted for empty cells or cells containing errors
+    has_keys : bool, None
+        If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+        always returned. If None it will return a nested list of all values in the first row and column
+        can be converted to/is a float.
+    keys_in_first : {'c', 'r', None}
+        Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+        keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+        is not False an exception will be raised if it cant determine where the keys are.
     comment_symbol : str, Default = '#'
         Rows starting with this string will be ignored.
+    start_at : str, (int, int)
+        Start scanning at this cell. Can either be a excel style cell reference or a (row, column) tuple of integers.
 
     Returns
     -------
@@ -582,23 +608,24 @@ def write_xlsx(filename, *sheets, comments = None,
         Path/name of the excel file to be created. Any existing file with the same path/name
         will be overwritten. Also accepts file like objects.
     sheets : isopy_array_like, numpy_array_like
-        Data arrays given here will be saved as sheet1, sheet2 etc.
+        Data given here will be saved as sheet1, sheet2 etc.
     comments : str, Sequence[str], Optional
         Comments to be included at the top of the file
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file
-    keys_in : {'c', 'r'}, Default = 'c'
-        Only applicable for isopy arrays like *data*. For keys as the first value in each column
-        pass ``"c"``. For keys as the first value in each row pass ``"r"``.
+    keys_in_first : {'c', 'r'}
+        Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+        keys should be in the first column.
+    start_at: str, (int, int)
+        The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
+        tuple of integers.
     append : bool, Default = False
         If ``True`` and *filename* exists it will append the data to this workbook. An exception
         is raised if *filename* is not a valid excel workbook.
     clear : bool, Default = True
         If ``True`` any preexisting sheets are cleared before any new data is written to it.
-    start_at: str
-        The first cell where the data is written. Defaults value is ``"A1"``.
     sheetnames : isopy_array, numpy_array
-        Data array given here will be saved in the workbook with the keyword as the sheet name
+        Data given here will be saved in a sheet with *sheetname* name.
     """
     save = True
     if type(filename) is openpyxl.Workbook:

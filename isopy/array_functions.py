@@ -8,7 +8,8 @@ import warnings
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad', 'nancount',
            'rstack', 'cstack', 'concatenate',
            'arrayfunc', 'keymax', 'keymin',
-           'add', 'subtract', 'power', 'multiply', 'divide']
+           'add', 'subtract', 'power', 'multiply', 'divide',
+           'approved_numpy_functions']
 
 __all__ += 'sd2 sd3 sd95 sd99 nansd2 nansd3 nansd95 nansd99'.split()
 __all__ += 'se2 se3 se95 se99 nanse2 nanse3 nanse95 nanse99'.split()

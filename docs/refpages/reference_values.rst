@@ -52,8 +52,9 @@ A collection of reference values relating to individual isotopes.
     isotope.mass_number
     isotope.mass_W17
     isotope.best_measurement_fraction_M16
-    isotope.initial_solar_system_abundance_L09
     isotope.initial_solar_system_fraction_L09
+    isotope.initial_solar_system_abundance_L09
+    isotope.initial_solar_system_abundance_L09b
     isotope.sprocess_fraction_B11
 
 

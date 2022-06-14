@@ -50,7 +50,6 @@ __all__ = ['MassKeyString', 'ElementKeyString', 'IsotopeKeyString', 'RatioKeyStr
 CACHE_MAXSIZE = 128
 CACHES_ENABLED = True
 
-#TODO stackoverflow error that i cannot figure out
 def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
     """
     decorator for functools.lru_cache but with the option to call the original function when an unhashable value
@@ -329,6 +328,8 @@ def _split_filter(prefix, filters):
     for k, v in list(out.items()):
         if v is None: out.pop(k)
     return out
+
+
 
 def iskeystring(item) -> bool:
     """
@@ -3134,6 +3135,7 @@ class ArrayFuncMixin:
 
         return call_array_function(func, *args, **kwargs)
 
+
 class ToTextMixin:
     # For IsopyArray and ScalarDict
     def __to_text(self, delimiter=', ', include_row = False, include_dtype=False,
@@ -3177,7 +3179,7 @@ class ToTextMixin:
     def to_text(self, delimiter=', ', include_row = False, include_dtype=False,
                 nrows = None, **vformat):
         """
-        Returns a string containing the contents of the array.
+        Convert the array/dictionary to a text string.
 
         Parameters
         ----------
@@ -3207,7 +3209,7 @@ class ToTextMixin:
     def to_table(self, include_row = False, include_dtype=False,
                 nrows = None, **vformat):
         """
-        Returns a text string of a markdown table containing the contents of the array.
+        Convert the array/dictionary to a markdown table text string.
 
         Parameters
         ----------
@@ -3248,7 +3250,7 @@ class ToTextMixin:
     def display_table(self, include_row = False, include_dtype=False,
                 nrows = None, **vformat):
         """
-       Returns a Markdown display of a table containing the contents of the array. This will render
+       Convert the array/dictionary to a IPython markdown table. This will render
        a table in an IPython console or a Jupyter cell.
 
        An exception is raised if IPython is not installed.
@@ -3274,48 +3276,119 @@ class ToTextMixin:
         else:
             raise TypeError('IPython not installed')
 
-    def _to_clipboard(self, delimiter=', ', include_row= False,
-                     include_dtype= False, **vformat):
-        """
-        Copy the string returned from ``array.to_text(*args, **kwargs)`` to the clipboard.
-        """
-        string = self.to_text(delimiter=delimiter, include_row=include_row, include_dtype=include_dtype, **vformat)
-        pyperclip.copy(string)
-        return string
 
 class ToFromFileMixin:
     # For IsopyArray and ScalarDict
     def to_csv(self, filename, comments = None, keys_in_first='r',
               dialect = 'excel', comment_symbol = '#'):
         """
-        Save array to a csv file.
+        Save the array/dictionary to a csv file.
 
-        If *filename* already exits it will be overwritten.
+        Parameters
+        ----------
+        filename : str, StringIO, BytesIO
+            Path/name of the csv file to be created. Any existing file with the same path/name will be
+            over written. Also accepts file like objects.
+        comments : str, Sequence[str], Optional
+            Comments to be included at the top of the file
+        keys_in_first : {'c', 'r'}
+            Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+            keys should be in the first column.
+        comment_symbol : str, Default = '#'
+            This string will precede any comments at the beginning of the file.
+        dialect
+            The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
         """
         isopy.write_csv(filename, self, comments=comments, keys_in_first=keys_in_first,
                         dialect=dialect, comment_symbol=comment_symbol)
 
     def to_xlsx(self, filename, sheetname = 'sheet1', comments = None,
                keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True):
+        """
+        Save the array/dictionary to an excel workbook.
 
+        Parameters
+        ----------
+        filename : str, BytesIO
+            Path/name of the excel file to be created. Any existing file with the same path/name
+            will be overwritten. Also accepts file like objects.
+        sheetname : isopy_array_like, numpy_array_like
+            Data will be saved in a sheet with this name.
+        comments : str, Sequence[str], Optional
+            Comments to be included at the top of the file
+        comment_symbol : str, Default = '#'
+            This string will precede any comments at the beginning of the file
+        keys_in_first : {'c', 'r'}
+            Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+            keys should be in the first column.
+        start_at: str, (int, int)
+            The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
+            tuple of integers.
+        append : bool, Default = False
+            If ``True`` and *filename* exists it will append the data to this workbook. An exception
+            is raised if *filename* is not a valid excel workbook.
+        clear : bool, Default = True
+            If ``True`` any preexisting sheets are cleared before any new data is written to it.
+        """
         isopy.write_xlsx(filename, comments=comments, keys_in_first=keys_in_first, comment_symbol=comment_symbol,
                         start_at=start_at, append=append, clear=clear, **{sheetname: self})
 
     def to_clipboard(self, comments=None, keys_in_first='r', dialect = 'excel', comment_symbol = '#'):
+        """
+        Copy the array/dictionary to the clipboard.
+
+        Parameters
+        ----------
+        comments : str, Sequence[str], Optional
+            Comments to be included
+        keys_in_first : {'c', 'r'}
+            Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
+            keys should be in the first column.
+        dialect
+            The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
+        comment_symbol : str, Default = '#'
+            This string will precede any comments.
+        """
         isopy.write_clipboard(self, comments=comments,  keys_in_first=keys_in_first,
                         dialect=dialect, comment_symbol=comment_symbol)
 
     def to_dataframe(self):
         """
-        Convert array to a pandas dataframe. An exception is raised if pandas is not installed.
+        Convert the array/dictionary to a pandas dataframe
         """
         if pandas is not None:
             return pandas.DataFrame(self)
         else:
             raise TypeError('Pandas is not installed')
 
+    # FROM functions
     @classmethod
     def from_csv(cls, filename, comment_symbol ='#', keys_in_first=None, encoding = None, dialect = None, **kwargs):
+        """
+        Convert the data in csv file to IsopyArray/ScalarDict.
+
+        Parameters
+        ----------
+        filename : str, bytes, StringIO, BytesIO
+            Path for file to be opened. Alternatively a file like byte string can be supplied.
+            Also accepts file like objects.
+        has_keys : bool, None
+            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+            always returned. If None it will return a nested list of all values in the first row and column
+            can be converted to/is a float.
+        keys_in_first : {'c', 'r', None}
+            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+            is not False an exception will be raised if it cant determine where the keys are.
+        comment_symbol : str, Default = '#'
+            Rows starting with this string will be ignored.
+        encoding : str
+            Encoding of the file. If None the encoding will be guessed from the file.
+        dialect
+            Dialect of the csv file. If None the dialect will be guessed from the file.
+        **kwargs
+            Arguments pass when initialing the array/dictionary.
+        """
         data = isopy.read_csv(filename, comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
                                   encoding=encoding, dialect=dialect)
         return cls(data, **kwargs)
@@ -3323,18 +3396,74 @@ class ToFromFileMixin:
     @classmethod
     def from_xlsx(cls, filename, sheetname, keys_in_first=None,
                   comment_symbol='#', start_at='A1', **kwargs):
+        """
+        Convert data in excel worksheet to IsopyArray/ScalarDict.
+
+        Parameters
+        ----------
+        filename : str, bytes, BytesIO
+            Path for file to be opened. Also accepts file like objects.
+        sheetname : str, int, Optional
+            To load data from a single sheet in the workbook pass either the name of the sheet or
+            the position of the sheet. If nothing is specified all the data for all sheets in the
+            workbook is returned.
+        has_keys : bool, None
+            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+            always returned. If None it will return a nested list of all values in the first row and column
+            can be converted to/is a float.
+        keys_in_first : {'c', 'r', None}
+            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+            is not False an exception will be raised if it cant determine where the keys are.
+        comment_symbol : str, Default = '#'
+            Rows starting with this string will be ignored.
+        start_at : str, (int, int)
+            Start scanning at this cell. Can either be a excel style cell reference or a (row, column) tuple of integers.
+        **kwargs
+            Arguments pass when initialing the array/dictionary.
+        """
         data = isopy.read_xlsx(filename, sheetname, has_keys=True, keys_in_first=keys_in_first,
                                comment_symbol=comment_symbol, start_at=start_at)
         return cls(data, **kwargs)
 
     @classmethod
     def from_clipboard(cls, comment_symbol ='#', keys_in_first=None, dialect = None, **kwargs):
+        """
+        Convert clipboard data to IsopyArray/ScalarDict.
+
+        Parameters
+        ----------
+        comment_symbol : str, Default = '#'
+            Rows starting with this string will be ignored.
+        has_keys : bool, None
+            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
+            always returned. If None it will return a nested list of all values in the first row and column
+            can be converted to/is a float.
+        keys_in_first : {'c', 'r', None}
+            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
+            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
+            is not False an exception will be raised if it cant determine where the keys are.
+        dialect
+            Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
+        **kwargs
+            Arguments pass when initialing the array/dictionary.
+        """
         data = isopy.read_clipboard(comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
                                     dialect=dialect)
         return cls(data, **kwargs)
 
     @classmethod
     def from_dataframe(cls, dataframe, **kwargs):
+        """
+        Convert a pandas dataframe to IsopyArray/ScalarDict.
+
+        Parameters
+        ----------
+        dataframe
+            Pandas dataframe to be converted
+        **kwargs
+            Arguments pass when initialing the array/dictionary.
+        """
         return cls(dataframe, **kwargs)
 
 
@@ -3379,7 +3508,7 @@ class IsopyDict(dict):
     """
 
     def __repr__(self):
-        d = f'(default_value = {self.default_value}'
+        d = f'default_value = {self.default_value}'
         r = f'readonly = {self.readonly}'
         k = f'key_flavours = {self.key_flavours}'
         items = '\n'.join([f'"{key}": {value}' for key, value in self.items()])
@@ -3461,6 +3590,7 @@ class IsopyDict(dict):
 
     @property
     def keylist(self):
+        warnings.warn('This attribute has been deprecated. Use keys directly')
         return self.keys
 
     def update(self, other):
@@ -3596,14 +3726,18 @@ class IsopyDict(dict):
         raise TypeError(f'key type {type(key)} not understood')
 
     def to_dict(self):
+        """
+        Convert the dictionary to a normal python dictionary.
+        """
         return {str(key): self[key] for key in self.keys}
-
 
 class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
-    Each value in the dictionary has the same shape.
+    Each value in the dictionary has the same ndim and size.
+
+    If the dictionary has a size of 1 ndim will always be 0.
 
     Behaves just like, and contains all the methods, that a normal dictionary does unless otherwise
     noted. Only methods that behave differently from a normal dictionary are documented below.
@@ -3744,15 +3878,21 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
 
     @property
     def ndim(self):
+        """
+        The number of dimensions for each item in the dictionary.
+        """
         return self._ndim
 
     @property
     def size(self):
+        """
+        The number of values for each item in the dictionary.
+        """
         return self._size
 
     def to_list(self):
         """
-        Return a list containing the data in the dictionary.
+        Convert the dictionary to a list.
         """
         if self.ndim == 0:
             return list(self.values())
@@ -3760,13 +3900,16 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
             return [list(r) for r in zip(*self.values())]
 
     def to_dict(self):
+        """
+        Convert the dictionary to a normal python dictionary
+        """
         return {str(key): self[key].tolist() for key in self.keys}
 
     def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
-        Returns an isopy array based on values in the dictionary.
+        Convert the dictionary to an IsopyArray.
 
-        If *keys* are given then the array will contain these keys. If no *keys* are given then the
+        If *keys* are given then the array will only contain these keys. If no *keys* are given then the
         array will contain all the values in the dictionary unless *key_filters* are given.
 
         If key filters are specified then only the items that pass these filters are included in
@@ -3783,17 +3926,10 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
         return array(d)
 
     def to_ndarray(self):
-        """Return a copy of the dictionary as a normal numpy ndarray"""
+        """
+        Convert the dictionary to a normal numpy ndarray.
+        """
         return self.to_array().to_ndarray()
-
-    def to_dataframe(self):
-        """
-        Convert dictionary to a pandas dataframe. An exception is raised if pandas is not installed.
-        """
-        if pandas is not None:
-            return pandas.DataFrame(self)
-        else:
-            raise TypeError('Pandas is not installed')
 
     @renamed_function(to_array)
     def asarray(self, keys=None, default=NotGiven, **key_filters): pass
@@ -4173,8 +4309,23 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
         return self.__view__(super(IsopyArray, self).reshape(shape))
 
     def default(self, value):
-        """Return a view of the array with a **temporary** default value.
+        """
+        Return a view of the array with a **temporary** default value.
 
+        This should only be used directly in conjuction with mathematical expressions. Any new view created
+        will not inherit the default value.
+
+        Examples
+        --------
+        >>> a1 = isopy.array([1,2,3], 'ru pd cd'.split())
+        >>> a2 = isopy.array([20, 10], 'ru cd'.split())
+        >>> a1 + a2 # Default value is np.nan
+        (row) , Ru , Pd  , Cd
+        None  , 21 , nan , 13
+
+        >>> a1 + a2.default(0) # a2 has a temporary default value of 0
+        (row) , Ru , Pd , Cd
+        None  , 21 , 2  , 13
         """
         temp_view = self.__view__(self)
         temp_view.__default__ = value
@@ -4182,7 +4333,7 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
 
     def to_list(self):
         """
-        Return a list containing the data in the array.
+        Convert the array to a list of values
         """
         if self.ndim == 0:
             return list(self.tolist())
@@ -4191,18 +4342,23 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
 
     def to_dict(self):
         """
-        Return a dictionary containing a list of the data in each column of the array.
+        Convert the array to a normal python dictionary.
         """
         return {str(key): self[key].tolist() for key in self.keys()}
 
     def to_scalardict(self, default_value=NotGiven):
+        """
+        Convert the array to a ScalarDict.
+        """
         if default_value is NotGiven:
             default_value = self.__default__
 
         return ScalarDict(self, default_value=default_value)
 
     def to_ndarray(self):
-        """Return a copy of the array as a normal numpy ndarray"""
+        """
+        Convert the array to a numpy ndarray.
+        """
         if isinstance(self, void):
             view = self.view((np.void, self.dtype))
         else:
@@ -4509,6 +4665,11 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, *
     """
     Convert the input arguments to a isopy array.
 
+    If *values* is a string it assumes it is a filename and will load the contents of the file together
+    with *columns_or_read_kwargs*. If *values* is 'clipboard' it will read values from the clipboard.
+    If *columns_or_read_kwargs* in *read_kwargs* it assumes *a* is an excel file. Otherwise it
+    assumes *values* is a CSV file.
+
     Will attempt to convert the input into an array with a column key string flavour
     using those listed in listed in *try_flavours* in turn.
     If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope', 'molecule',
@@ -4537,6 +4698,10 @@ def asarray(a, *, ndim = None, try_flavours = None, **read_kwargs):
     """
     If *a* is an isopy array return it otherwise convert *a* into an isopy array and return it. If
     *ndim* is given a view of the array with the specified dimensionality is returned.
+
+    If *a* is a string it assumes it is a filename and will load the contents of the file together with *read_kwargs*.
+    If *a* is 'clipboard' it will read values from the clipboard. If *sheetname* in *read_kwargs* it assumes *a*
+    is an excel file. Otherwise it assumes *a* is a CSV file.
     """
     try_flavours = default_key_flavours(try_flavours)
 
@@ -4571,6 +4736,10 @@ def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None, **read_kwargs
 
     The data type and number of dimensions of the returned array can be specified by *dtype and
     *ndim*, respectively.
+
+    If *a* is a string it assumes it is a filename and will load the contents of the file together with *read_kwargs*.
+    If *a* is 'clipboard' it will read values from the clipboard. If *sheetname* in *read_kwargs* it assumes *a*
+    is an excel file. Otherwise it assumes *a* is a CSV file.
     """
     if isinstance(a, (str, bytes, io.StringIO, io.BytesIO)):
         if a == 'clipboard':
@@ -5043,10 +5212,10 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
             new_keys_a.append(new_inputs[-1].keys())
         elif isinstance(arg, ScalarDict):
             new_inputs.append(arg)
-            new_keys_d.append(arg.keylist())
+            new_keys_d.append(arg.keys())
         elif isinstance(arg, dict):
             new_inputs.append(ScalarDict(arg))
-            new_keys_d.append(new_inputs[-1].keylist())
+            new_keys_d.append(new_inputs[-1].keys())
         else:
             new_inputs.append(_getter(arg))
 

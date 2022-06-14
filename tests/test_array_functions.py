@@ -803,6 +803,10 @@ class Test_ArrayFunctions:
         true = a1.default(0) + ds2
         assert_array_equal_array(result, true)
 
+        # keys
+        result = isopy.add(a1, ds2, keys=('ru', 'cd'))
+        assert result.keys == ('ru', 'cd')
+
     def test_count_finite(self):
         array = isopy.array([[1, 2, 3], [4, np.nan, 6]], 'ru pd cd'.split())
         answer = isopy.array((2, 1, 2), 'ru pd cd'.split())
@@ -1028,15 +1032,12 @@ class Test_ArrayFunctions:
             if func not in tested:
                 raise ValueError(f'special function {func.__name__} not tested')
 
-    def test_concatenate(self):
+    def test_concatenate_1(self):
         # Axis = 0
 
         array1 = isopy.ones(2, 'ru pd cd'.split())
         array2 = isopy.ones(-1, 'pd ag107 cd'.split()) * 2
         array3 = isopy.ones(2, '101ru ag107'.split()) * 3
-
-        array4 = isopy.ones(2) * 4
-        array5 = isopy.ones(2) * 5
 
         # Concatenate
         result = isopy.concatenate(array1)
@@ -1080,8 +1081,9 @@ class Test_ArrayFunctions:
 
         # Axis = 1
         array1 = isopy.ones(2, 'ru pd cd'.split())
-        array2 = isopy.ones(1, 'rh ag'.split()) * 2
+        array2 = isopy.ones(-1, 'rh ag'.split()) * 2
         array3 = isopy.ones(2, '103rh 107ag'.split()) * 3
+        array4 = isopy.ones(3, '103rh 107ag'.split()) * 4
 
         result = isopy.concatenate(array1, axis=1)
         assert result is not array1
@@ -1116,10 +1118,29 @@ class Test_ArrayFunctions:
         with pytest.raises(ValueError):
             isopy.cstack(array1, np.nan, array3)
 
+        with pytest.raises(ValueError):
+            isopy.cstack(array3, array4)
+
         # invalid axis
 
         with pytest.raises(np.AxisError):
             result = isopy.concatenate(array1, array2, array3, axis=2)
+
+    def test_cocatenate_2(self):
+        array1 = isopy.ones(2) * 4
+        array2 = isopy.ones(2) * 5
+        array1 = array1.reshape((1, -1))
+        array2 = array2.reshape((1, -1))
+
+        true = np.concatenate([array1, array2], axis=0)
+        result = isopy.concatenate(array1, array2)
+        assert not isinstance(result, core.IsopyArray)
+        np.testing.assert_allclose(result, true)
+
+        true = np.concatenate([array1, array2], axis=1)
+        result = isopy.concatenate(array1, array2, axis=1)
+        assert not isinstance(result, core.IsopyArray)
+        np.testing.assert_allclose(result, true)
 
 
 def test_allowed_numpy_functions():

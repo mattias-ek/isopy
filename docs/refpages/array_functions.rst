@@ -27,20 +27,15 @@ The following isopy array functions require that at least one isopy array as inp
 
     keymax
     keymin
-    add
-    subtract
-    multiply
-    divide
-    power
     arrayfunc
 
 .. rubric:: Numpy functions
 
-Isopy arrays are compatible with many numpy functions. Numpy functions that have not been tested with
+Isopy arrays are compatible with many numpy functions. The functions that have been tested with isopy arrays
+have been imported into the isopy namespace. Numpy functions that have not been tested with
 isopy arrays will raise a warning the first time they are used.
 
-The following function will return a list of the name of each numpy function that has been tested with
-isopy arrays.
+The following function will return a list with the name of each numpy function that has been tested with isopy arrays..
 
 .. autosummary::
     :toctree: array_functions

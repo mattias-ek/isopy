@@ -198,11 +198,24 @@ class Test_misc:
         isopy.refval.element.ls()
         isopy.refval.isotope.ls()
 
-    def test_call(self):
+    def test_call_string(self):
         assert isopy.refval('mass.isotopes') is isopy.refval.mass.isotopes
         assert isopy.refval('element.atomic_weight') is isopy.refval.element.atomic_weight
         assert isopy.refval('isotope.mass') is isopy.refval.isotope.mass
 
+        with pytest.raises(ValueError):
+            # Unable to split into two
+            isopy.refval('mass_isotopes')
+
+        with pytest.raises(ValueError):
+            # ratio does not exist
+            isopy.refval('ratio.isotopes')
+
+        with pytest.raises(ValueError):
+            # reference value does not exist
+            isopy.refval('isotopes.doesnt_exist')
+
+    def test_call_dict(self):
         data = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
         refval = isopy.refval(data)
         assert type(refval) is dict
