@@ -761,7 +761,9 @@ class Test_ArrayFunctions:
 
         a1 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=1)
         a2 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
+        d1 = a1.to_dict()
         d2 = a2.to_dict()
+        ds1 = a1.to_scalardict()
         ds2 = a2.to_scalardict()
 
         # a, a
@@ -790,6 +792,19 @@ class Test_ArrayFunctions:
         true = a1.default(0) + a2.to_scalardict(1)
         assert_array_equal_array(result, true)
 
+        # d a
+        result = isopy.add(d1, a2)
+        true = a1.to_scalardict() + a2
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(d1, a2, 0)
+        true = a1.to_scalardict(0) + a2.default(0)
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(d1, a2, (0, 1))
+        true = a1.to_scalardict(0) + a2.default(1)
+        assert_array_equal_array(result, true)
+
         # a ds
         result = isopy.add(a1, ds2)
         true = a1 + ds2
@@ -801,6 +816,19 @@ class Test_ArrayFunctions:
 
         result = isopy.add(a1, ds2, (0, 1))
         true = a1.default(0) + ds2
+        assert_array_equal_array(result, true)
+
+        # ds a
+        result = isopy.add(ds1, a2)
+        true = ds1 + a2
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(ds1, a2, 0)
+        true = ds1 + a2.default(0)
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(ds1, a2, (0, 1))
+        true = ds1 + a2.default(1)
         assert_array_equal_array(result, true)
 
         # keys
