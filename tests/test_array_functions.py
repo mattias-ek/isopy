@@ -1071,7 +1071,7 @@ class Test_ArrayFunctions:
             true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
             np.testing.assert_allclose(result[key], true)
 
-        result = isopy.rstack(array1, np.nan, array3, axis=0)
+        result = isopy.rstack(array1, np.nan, array3)
         keys = array1.keys + array3.keys
         assert result.keys == keys
         for key in keys:
