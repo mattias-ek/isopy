@@ -3,16 +3,18 @@ from numpy.lib.function_base import array_function_dispatch
 from scipy import stats
 import functools
 from . import core
+import warnings
 
-__all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad',
-           'nancount',
-           'add', 'subtract', 'divide', 'multiply', 'power', 'arrayfunc',
-           'keymax', 'keymin']
+__all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad', 'nancount',
+           'rstack', 'cstack', 'concatenate',
+           'arrayfunc', 'keymax', 'keymin',
+           'add', 'subtract', 'power', 'multiply', 'divide',
+           'approved_numpy_functions']
+
 __all__ += 'sd2 sd3 sd95 sd99 nansd2 nansd3 nansd95 nansd99'.split()
 __all__ += 'se2 se3 se95 se99 nanse2 nanse3 nanse95 nanse99'.split()
 __all__ += 'mad2 mad3 mad95 mad99 nanmad2 nanmad3 nanmad95 nanmad99'.split()
 
-# TODO homoscedastic_sd(*args)
 
 def calculate_ci(ci, df=None):
     if df is None:
@@ -26,7 +28,6 @@ def calculate_ci(ci, df=None):
 def _sd_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where=None):
     return (a,)
 
-@core.set_module('isopy')
 @array_function_dispatch(_sd_dispatcher)
 def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
@@ -73,15 +74,7 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     return result
 
-#TODO
-def homoscedastic_sd(*a, axis=1):
-    raise NotImplementedError()
-    ddof = len(a)
-    a = np.concatenate(a) #wont work if a is not 1 dimensional
-    return np.std(a, ddof = ddof)
 
-
-@core.set_module('isopy')
 @array_function_dispatch(_sd_dispatcher)
 def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
@@ -133,7 +126,6 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
 def _se_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where = None):
     return (a,)
 
-@core.set_module('isopy')
 @array_function_dispatch(_se_dispatcher)
 def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
@@ -181,7 +173,6 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     return result
 
-@core.set_module('isopy')
 @array_function_dispatch(_se_dispatcher)
 def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
@@ -236,7 +227,6 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 def _mad_dispatcher(a, axis=None, scale=None, *, ci = None, zscore=None): #, where = None):
     return (a,)
 
-@core.set_module('isopy')
 @array_function_dispatch(_mad_dispatcher)
 def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = core.NotGiven):
     """
@@ -273,7 +263,8 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
     --------
     :func:`nanmad`, `scipy.stats.median_abs_deviation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html#scipy.stats.median_abs_deviation>`_
     """
-    result = stats.median_abs_deviation(a, scale=scale, nan_policy='propagate', axis=axis)
+    # function sometimes return a float value
+    result = np.asarray( stats.median_abs_deviation(a, scale=scale, nan_policy='propagate', axis=axis) )
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
@@ -282,9 +273,9 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
     if zscore is not None:
         return result * zscore
 
+    # result is not always an array
     return result
 
-@core.set_module('isopy')
 @array_function_dispatch(_mad_dispatcher)
 def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where = core.NotGiven):
     """
@@ -321,7 +312,8 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
     --------
     :func:`mad`, `scipy.stats.median_abs_deviation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html#scipy.stats.median_abs_deviation>`_
     """
-    result = stats.median_abs_deviation(a, scale=scale, nan_policy = 'omit', axis=axis)
+    # function sometimes return a float value
+    result = np.asarray( stats.median_abs_deviation(a, scale=scale, nan_policy = 'omit', axis=axis) )
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
@@ -332,8 +324,37 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
 
     return result
 
-### preset functions
+def _count_dispatcher(a, axis=None): #, where = None):
+    return (a,)
 
+@array_function_dispatch(_count_dispatcher)
+def nancount(a, axis=None): #, where = core.NotGiven):
+    """
+    Count all values in array that are not NaN or Inf along the specified axis.
+
+    Shortcut for ``np.count_nonzero(np.isfinite(a), axis=axis)``.
+
+    Examples
+    --------
+    >>> array = isopy.array(ru = [np.nan, 1.1, 2.2, 1.8],
+                            pd = [3.1, 3.8, 2.9, 4.2],
+                            cd = [6.1, 5.8, 4.7, 8.1])
+    >>> isopy.nancount(array)
+    (row) , Ru      , Pd      , Cd
+    None  , 3.00000 , 4.00000 , 4.00000
+    >>> isopy.nancount(array, axis=1)
+    array([2, 3, 3, 3], dtype=int64)
+    """
+    #if where is not core.NotGiven:
+    #    a = a[where]
+
+    return np.count_nonzero(np.isfinite(a), axis=axis)
+
+for func in [sd, nansd, se, nanse, mad, nanmad, nancount]:
+    core.APPROVED_FUNCTIONS.append(func)
+
+### preset functions
+# These dont need to be approved
 sd2 = core.partial_func(sd, 'sd2', zscore=2)
 sd3 = core.partial_func(sd, 'sd3', zscore=3)
 sd95 = core.partial_func(sd, 'sd95', ci=0.95)
@@ -361,180 +382,174 @@ nanmad3 = core.partial_func(nanmad, 'nanmad3', zscore=3)
 nanmad95 = core.partial_func(nanmad, 'nanmad95', ci=0.95)
 nanmad99 = core.partial_func(nanmad, 'nanmad99', ci=0.99)
 
-def _count_dispatcher(a, axis=None): #, where = None):
-    return (a,)
-
-
-@core.set_module('isopy')
-@array_function_dispatch(_count_dispatcher)
-def nancount(a, axis=None): #, where = core.NotGiven):
-    """
-    Count all values in array that are not NaN or Inf along the specified axis.
-
-    Shortcut for ``np.count_nonzero(np.isfinite(a), axis=axis)``.
-
-    Examples
-    --------
-    >>> array = isopy.array(ru = [np.nan, 1.1, 2.2, 1.8],
-                            pd = [3.1, 3.8, 2.9, 4.2],
-                            cd = [6.1, 5.8, 4.7, 8.1])
-    >>> isopy.nancount(array)
-    (row) , Ru      , Pd      , Cd
-    None  , 3.00000 , 4.00000 , 4.00000
-    >>> isopy.nancount(array, axis=1)
-    array([2, 3, 3, 3], dtype=int64)
-    """
-    #if where is not core.NotGiven:
-    #    a = a[where]
-
-    return np.count_nonzero(np.isfinite(a), axis=axis)
-
 #####################################
 ### Functions without dispatchers ###
 #####################################
-# These should  only be used with isopy arrays
-@core.set_module('isopy')
-def add(x1, x2, default_value=np.nan, keys=None):
+def arrayfunc(func, *inputs, keys=None, **kwargs):
     """
-    Add *x2* to *x1* substituting *default_value* for absent columns.
+    Call a function *func* on each column in the *inputs*.
 
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a default value for each input.
+    Useful for functions that does not support the numpy __array_function__ interface, e.g. scipy functions.
+
     If *keys* are given then the operation if only performed for those
     keys.
 
     Examples
     --------
-    >>> array1 = isopy.ones(1, ('ru', 'pd'))
-    >>> array2 = isopy.ones(1, ('pd', 'cd'))
-    >>> isopy.add(array1, array2) #Same as array1 + array2
-    (row) , Ru  , Pd      , Cd
-    0     , nan , 2.00000 , nan
-    >>> isopy.add(array1, array2, 0)
+    >>> isopy.arrayfunc(scipy.stats.sem, array)
     (row) , Ru      , Pd      , Cd
-    0     , 1.00000 , 2.00000 , 1.00000
-    """
-    return core.call_array_function(np.add, x1, x2, default_value=default_value, keys=keys)
+    None  , 0.09129 , 0.09430 , 0.09021
 
-@core.set_module('isopy')
-def subtract(x1, x2, default_value=np.nan, keys=None):
-    """
-    Subtract *x2* from *x1* substituting *default_value* for absent columns.
-
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a default value for each input.
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    Examples
-    --------
-    >>> array1 = isopy.ones(1, ('ru', 'pd'))
-    >>> array2 = isopy.ones(1, ('pd', 'cd'))
-    >>> isopy.subtract(array1, array2) #Same as array1 - array2
-    (row) , Ru  , Pd      , Cd
-    0     , nan , 0.00000 , nan
-    >>> isopy.subtract(array1, array2, 0)
-    (row) , Ru      , Pd      , Cd
-    0     , 1.00000 , 0.00000 , -1.00000
-    """
-    return core.call_array_function(np.subtract, x1, x2, default_value=default_value, keys=keys)
-
-@core.set_module('isopy')
-def multiply(x1, x2, default_value=np.nan, keys=None):
-    """
-    Multiply *x1* by *x2* substituting *default_value* for absent columns.
-
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a default value for each input.
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    Examples
-    --------
-    >>> array1 = isopy.ones(1, ('ru', 'pd')) * 2
-    >>> array2 = isopy.ones(1, ('pd', 'cd')) * 5
-    >>> isopy.multiply(array1, array2) #Same as array1 * array2
-    (row) , Ru  , Pd       , Cd
-    0     , nan , 10.00000 , nan
-    >>> isopy.multiply(array1, array2, 1)
-    (row) , Ru      , Pd       , Cd
-    0     , 2.00000 , 10.00000 , 5.00000
-    """
-    return core.call_array_function(np.multiply, x1, x2, default_value=default_value, keys=keys)
-
-@core.set_module('isopy')
-def divide(x1, x2, default_value=np.nan, keys=None):
-    """
-    Divide *x1* by *x2* substituting *default_value* for absent columns.
-
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a default value for each input.
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    Examples
-    --------
-    >>> array1 = isopy.ones(1, ('ru', 'pd')) * 2
-    >>> array2 = isopy.ones(1, ('pd', 'cd')) * 5
-    >>> isopy.divide(array1, array2) #Same as array1 / array2
-    (row) , Ru  , Pd      , Cd
-    0     , nan , 0.40000 , nan
-    >>> isopy.divide(array1, array2, 1)
-    (row) , Ru      , Pd      , Cd
-    0     , 2.00000 , 0.40000 , 0.20000
-    """
-    return core.call_array_function(np.divide, x1, x2, default_value=default_value, keys=keys)
-
-@core.set_module('isopy')
-def power(x1, x2, default_value=np.nan, keys=None):
-    """
-    Raise *x1* to the power of *x2* substituting *default_value* for absent columns.
-
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a value for each input.
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    Examples
-    --------
-    >>> array1 = isopy.ones(1, ('ru', 'pd')) * 2
-    >>> array2 = isopy.ones(1, ('pd', 'cd')) * 5
-    >>> isopy.power(array1, array2) #Same as array1 ** array2
-    (row) , Ru  , Pd       , Cd
-    0     , nan , 32.00000 , nan
-    >>> isopy.power(array1, array2, 1)
-    (row) , Ru      , Pd       , Cd
-    0     , 2.00000 , 32.00000 , 1.00000
-    """
-    return core.call_array_function(np.power, x1, x2, default_value=default_value, keys=keys)
-
-@core.set_module('isopy')
-def arrayfunc(func, *inputs, default_value=np.nan, keys=None, **kwargs):
-    """
-    Call a numpy function *func* on the *inputs* values substituting *default_value* for absent columns.
-
-    *default_values* can either be a single value which will be used for
-    all the inputs or a tuple containing a value for each input.
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    This function is useful for calling numpy functions with the isopy specific
-    *default_value* and *keys* arguments or for array functions that dont employ
-    numpys array function dispatch.
-
-    Examples
-    --------
     >>> array = isopy.random(100, keys=('ru', 'pd', 'cd')
     >>> isopy.arrayfunc(np.std, array, keys=('ru', 'cd'))
     (row) , Ru      , Cd
     None  , 0.90836 , 0.89753
-    >>> isopy.arrayfunc(scipy.stats.sem, array) #Scipy functions do not support isopy arrays natively
-    (row) , Ru      , Pd      , Cd
-    None  , 0.09129 , 0.09430 , 0.09021
     """
-    return core.call_array_function(func, *inputs, default_value=default_value, keys=keys, **kwargs)
+    return core.call_array_function(func, *inputs, keys=keys, **kwargs)
 
-@core.set_module('isopy')
+def rstack(*arrays):
+    """
+    Stack the rows of multiple arrays.
+
+    If scalar value(s) are given then these values will be appended to each column in the returned array.
+
+    Parameters
+    ----------
+    arrays
+        Arrays to be joined together.
+
+    Returns
+    -------
+    IsopyArray
+        Array containing all the row data and all the columns keys found in *arrays*.
+
+    See Also
+    --------
+    rstack, cstack
+    """
+    arrays = [core.asanyarray(a) for a in arrays]
+
+    keys = core.keylist(*(a.dtype.names for a in arrays if isinstance(a, core.IsopyArray)), ignore_duplicates=True)
+    arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
+
+    for i, a in enumerate(arrays):
+        if not isinstance(a, core.IsopyArray):
+            arrays[i] = core.full(a.size, a, keys)
+
+    result = [np.concatenate([a.get(key) for a in arrays]) for key in keys]
+    dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
+    return keys.__view_array__(np.fromiter(zip(*result), dtype=dtype))
+
+def cstack(*arrays):
+    """
+    Stack the columns of multiple arrays.
+
+    An error will thrown if a column occurs in more than one array.
+
+    Normal numpy broadcasting rules apply so when concatenating columns the shape of the arrays must be compatible.
+    When array with a size of 1 is concatenated to an array of a different size it will be copied into every row
+    of the new shape.
+
+    Parameters
+    ----------
+    arrays
+        Arrays to be joined together.
+
+    Returns
+    -------
+    IsopyArray
+        Array containing all the row data and all the columns keys found in *arrays*.
+
+    See Also
+    --------
+    rstack, cstack
+    """
+    arrays = [core.asarray(a) for a in arrays]
+    size = {a.size for a in arrays}
+    ndim = {a.ndim for a in arrays}
+
+    if not (len(size) == 1 or (1 in size and len(size) == 2)):
+        raise ValueError('Arrays have incompatible sizes and cannot be stacked')
+    if len(ndim) != 1:
+        arrays = [array.reshape(1) if array.ndim == 0 else array for array in arrays]
+
+    keys = core.keylist(*(a.dtype.names for a in arrays), allow_duplicates=False)
+
+    result = {}
+    for a in arrays:
+        for key in a.keys():
+            result[key] = a.get(key)
+
+    return core.full(max(size) * max(ndim) or -1, result, keys, dtype=[v.dtype for v in result.values()])
+
+def concatenate(*arrays, axis=0):
+    """
+    Join arrays together along specified axis.
+
+    If *arrays* contains at least one isopy array the input is forwarded to *rstack*/*cstack*. Otherwise the
+    input is forwarded to *np.concatenate*.
+
+    Parameters
+    ----------
+    arrays
+        Arrays to be joined together.
+    axis
+        If 0 *rstack* is used. If 1 *cstack* is used.
+
+    Returns
+    -------
+    IsopyArray
+        Array containing all the row data and all the columns keys found in *arrays*.
+
+    See Also
+    --------
+    rstack, cstack
+    """
+    arrays = [core.asanyarray(a) for a in arrays]
+
+    if True not in [isinstance(a, core.IsopyArray) for a in arrays]:
+        return np.concatenate([a for a in arrays if a is not None], axis=axis)
+
+    if axis == 0 or axis is None:
+        return rstack(*arrays)
+    elif axis == 1:
+        return cstack(*arrays)
+    else:
+        raise np.AxisError(axis, 1, 'concatenate only accepts axis values of 0 or 1')
+
+def deprecated_dual_arrayfunc(func):
+    # With the new array.default() feature these functions are not necessary any more. In the future
+    # the numpy functions will be used directly.
+    def func_wrapper(a1, a2, default_value=None, keys=None):
+        if default_value is not None:
+            warnings.warn("The default_value argument is deprecated for this function and will be "
+                          "removed in a future release. Use array.default(default_value) instead.", stacklevel=1)
+            if type(default_value) is not tuple:
+                default_value = (default_value, default_value)
+
+            if isinstance(a1, core.IsopyArray):
+                a1 = a1.default(default_value[0])
+            elif isinstance(a1, dict) and type(a1) is not core.ScalarDict:
+                a1 = core.ScalarDict(a1, default_value = default_value[0])
+
+            if isinstance(a2, core.IsopyArray):
+                a2 = a2.default(default_value[1])
+            elif isinstance(a2, dict) and type(a2) is not core.ScalarDict:
+                a2 = core.ScalarDict(a2, default_value = default_value[1])
+
+        if keys is not None:
+            warnings.warn("The keys argument is deprecated for this function and will be "
+                          "removed in a future release. Call isopy.arrayfunc(function, a1, a2, keys=keys) instead", stacklevel=1)
+
+        return arrayfunc(func, a1, a2, keys=keys)
+    return func_wrapper
+
+add = deprecated_dual_arrayfunc(np.add)
+subtract = deprecated_dual_arrayfunc(np.subtract)
+multiply = deprecated_dual_arrayfunc(np.multiply)
+divide = deprecated_dual_arrayfunc(np.divide)
+power = deprecated_dual_arrayfunc(np.power)
+
 @core.append_preset_docstring
 @core.add_preset('abs', abs = True)
 def keymax(a, evalfunc = np.nanmedian, abs=False):
@@ -558,7 +573,6 @@ def keymax(a, evalfunc = np.nanmedian, abs=False):
         key_index = np.nanargmax([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
 
-@core.set_module('isopy')
 @core.append_preset_docstring
 @core.add_preset('abs', abs = True)
 def keymin(a, evalfunc= np.nanmedian, abs = False):
@@ -582,3 +596,58 @@ def keymin(a, evalfunc= np.nanmedian, abs = False):
         key_index = np.nanargmin([evalfunc(v) for v in array.values()])
     return array.keys[key_index]
 
+################################
+### Approved numpy functions ###
+################################
+
+np_elementwise = [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.degrees, np.isnan,
+                  np.radians, np.deg2rad, np.rad2deg, np.sinh, np.cosh, np.tanh, np.arcsinh,
+                  np.arccosh, np.arctanh,
+                  np.rint, np.floor, np.ceil, np.trunc, np.exp, np.expm1, np.exp2, np.log,
+                  np.log10, np.log2,
+                  np.log1p, np.reciprocal, np.positive, np.negative, np.sqrt, np.cbrt, np.square,
+                  np.fabs, np.sign,
+                  np.absolute, np.abs]
+np_cumulative = [np.cumprod, np.cumsum, np.nancumprod, np.nancumsum]
+np_reducing = [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
+               np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.average,
+               np.std, np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, np.max, np.nanmax, np.min, np.nanmin,
+               np.all, np.any]
+np_special = [np.copyto, np.average]
+np_dual = [np.add, np.subtract, np.divide, np.multiply, np.power]
+
+
+for functions in [np_elementwise, np_cumulative, np_reducing, np_special, np_dual]:
+    for func in functions:
+        core.APPROVED_FUNCTIONS.append(func)
+        if func.__name__ not in __all__:
+            __all__.append(func.__name__)
+            globals()[func.__name__] = func
+
+def approved_numpy_functions(format ='name', delimiter =', '):
+    """
+    Return a string containing the names of all the numpy functions supported by isopy arrays.
+
+    With *format* you can specify the format of the string for each function. Avaliable keywords
+    are ``{name}`` and ``{link}`` for the name and a link the numpy documentation web page for a
+    function. Avaliable presets are ``"name"``, ``"link"``, ``"rst"`` and ``"markdown"`` for just the name,
+    just the link, reStructured text hyper referenced link or a markdown hyper referenced link.
+
+    You can specify the delimiter used to seperate items in the list using the *delimiter* argument.
+    If *delimiter* is ``None`` a python list is returned.
+    """
+    if format == 'name': format = '{name}'
+    if format == 'link': format = '{link}'
+    if format == 'rst': format = '`{name} <{link}>`_'
+    if format == 'markdown': format = '[{name}]({link})'
+
+    strings = []
+    for functions in [np_elementwise, np_cumulative, np_reducing, np_special, np_dual]:
+        for func in functions:
+            name = func.__name__
+            link = f'https://numpy.org/doc/stable/reference/generated/numpy.{name}.html'
+            strings.append(format.format(name = name, link=link))
+    if delimiter is None:
+        return strings
+    else:
+        return delimiter.join(strings)

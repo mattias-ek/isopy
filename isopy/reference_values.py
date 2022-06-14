@@ -5,15 +5,13 @@ import numpy as np
 import functools
 import os
 
-__all__ = ['refval']
-
 ########################
 ### Reference Values ###
 ########################
 
 def _load_RV_values(filename, datatype=None):
     filepath = os.path.join(os.path.dirname(__file__), 'referencedata', f'{filename}.csv')
-    data = io.read_csv(filepath)
+    data = io.read_csv(filepath, keys_in_first='r')
 
     if datatype is not None:
         data =  {key: datatype(value[0]) for key, value in data.items()}
@@ -33,6 +31,9 @@ def is_reference_value(func):
     return func
 
 class RefValGroup:
+    def __init__(self, parent):
+        self._parent = parent
+
     def __repr__(self):
         defval = []
         refval = []
@@ -68,7 +69,6 @@ class RefValGroup:
             
         return defval + refval
 
-
 class mass(RefValGroup):
     @is_reference_value        
     @core.cached_property
@@ -98,8 +98,6 @@ class mass(RefValGroup):
         return core.IsopyDict(**{key: value for key, value in isotopes.items() if len(value) > 0},
                                default_value=isopy.IsotopeKeyList(), readonly=True)
 
-
-#TODO use best isotope and isotope weight to calculate atomic weight
 class element(RefValGroup):
     @is_reference_value
     @core.cached_property
@@ -141,7 +139,6 @@ class element(RefValGroup):
         return tuple(self.symbol_name.keys())
     
     @is_reference_value
-    @is_default_value  
     @core.cached_property
     def symbol_name(self):
         """
@@ -208,10 +205,10 @@ class element(RefValGroup):
         weights = {}
         # Isotopes is also taken from best_measurement_fraction_M16
         for element, isotopes in self.isotopes.items():
-            weights[element] = np.sum([refval.isotope.mass_W17.get(isotope) *
-                                       refval.isotope.best_measurement_fraction_M16.get(isotope)
+            weights[element] = np.sum([self._parent.isotope.mass_W17.get(isotope) *
+                                       self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
-        return core.IsopyDict(**weights, readonly=True)
+        return core.ScalarDict(**weights, readonly=True)
         
     @is_reference_value
     @core.cached_property
@@ -243,11 +240,20 @@ class element(RefValGroup):
         The ``get()`` method of this dictionary will automatically calculate the ratio of two
         isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
         for absent keys.
+
+        Examples
+        --------
+        >>> isopy.refval.element.atomic_number['pd']
+        1.36
+
+        >>> isopy.refval.element.atomic_number.get('ge')
+        32
         """
         return core.ScalarDict(_load_RV_values('element_initial_solar_system_abundance_L09', np.float64), default_value=np.nan, readonly = True)
 
 class isotope(RefValGroup):
-    def __init__(self):
+    def __init__(self, parent):
+        self._parent = parent
         self.__mass = None
         self.__fraction = None
     
@@ -279,8 +285,8 @@ class isotope(RefValGroup):
 
     @mass.setter
     def mass(self, value):
-        if not isinstance(value, core.IsopyDict):
-            raise TypeError('attribute must be a dictionary')
+        if not isinstance(value, core.ScalarDict):
+            raise TypeError('attribute must be a scalar dictionary')
         self.__mass = value
     
     @is_default_value
@@ -311,7 +317,7 @@ class isotope(RefValGroup):
 
     @fraction.setter
     def fraction(self, value):
-        if not isinstance(value, core.IsopyDict):
+        if not isinstance(value, core.ScalarDict):
             raise TypeError('attribute must be a dictionary')
         self.__fraction = value
     
@@ -407,7 +413,7 @@ class isotope(RefValGroup):
         0.2233
 
         >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('ge76')
-        0.07444
+        0.0.07444
 
         >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
         1.1849529780564263
@@ -420,9 +426,35 @@ class isotope(RefValGroup):
         """
         Dictionary containing the isotope abundance of the inital solar system composition (normalized to N(Si) = 10^6 atoms) from Lodders et al. (2019).
 
-        **Note** These values are not directly taken from the table but calculated from the elemental abundances and
-        the isotope fractions given the table. This ensures consistency between all three reference values. Discrepancies
-        between the calculated isotope abundances and those listen in the table are due to rounding errors.
+        Reference: `Lodders et al. (2019) <http://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+
+        Examples
+        --------
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
+        0.3032
+
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        8.5
+
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        1.184036939313984
+        """
+        return core.ScalarDict(_load_RV_values('isotope_initial_solar_system_abundance_L09', np.float64), default_value = np.nan, readonly = True)
+
+    @is_reference_value
+    @core.cached_property
+    def initial_solar_system_abundance_L09b(self):
+        """
+        Dictionary containing the isotope abundance calcualted from the elemental abundance and the isotope fraction.
+
+        **Note** These values are not directly taken from the table but calculated from
+        *element.initial_solar_system_abundance_L09* and *isotope.initial_solar_system_fraction_L09*. This ensures
+        consistency between all three reference values. Discrepancies between the calculated these isotope abundances
+        and *isotope.initial_solar_system_abundance_L09* are due to rounding errors.
 
         Reference: `Lodders et al. (2019) <http://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34>`_.
 
@@ -443,9 +475,10 @@ class isotope(RefValGroup):
         """
         element_abundance = isopy.refval.element.initial_solar_system_abundance_L09
         isotope_fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
-        return core.ScalarDict({key: value * element_abundance.get(key.element_symbol) for key, value in isotope_fraction.items()},
-                               default_value=np.nan, readonly = True)
-        
+        result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
+
+        return core.ScalarDict(result, default_value=np.nan, readonly=True)
+
     @is_reference_value
     @core.cached_property
     def sprocess_fraction_B11(self):
@@ -471,7 +504,6 @@ class isotope(RefValGroup):
         """
         return core.ScalarDict(_load_RV_values('isotope_sprocess_fraction_B11', np.float64), default_value=np.nan, readonly = True)
 
-
 class ReferenceValues:
     """ Reference values useful for working with geochemical data"""
     def __init__(self):
@@ -484,12 +516,37 @@ class ReferenceValues:
         string += f'isotope - {self.__class__.isotope.fget.__doc__}'
         return string
 
+    def ls(self):
+        names = []
+        names += [f'mass.{n}' for n in self.mass.ls()]
+        names += [f'element.{n}' for n in self.element.ls()]
+        names += [f'isotope.{n}' for n in self.isotope.ls()]
+
+    def __call__(self, path_or_dict, datatype=dict):
+        if type(path_or_dict) is str:
+            try:
+                group, value = path_or_dict.split('.', 1)
+            except ValueError:
+                raise ValueError(f'Unable to parse "{path_or_dict}"')
+
+            group = getattr(self, group, None)
+            if group is None:
+                raise ValueError(f'Reference value group "{group}" not found')
+
+            path_or_dict = getattr(group, value, None)
+            if path_or_dict is None:
+                raise ValueError(f'Reference value "{group.__class__.__name__}.{value}" not found')
+
+        if isinstance(path_or_dict, datatype):
+            return path_or_dict
+        else:
+            return datatype(path_or_dict)
 
     def reset(self):
         """Resets the reference values to the default values"""
-        self._element = element()
-        self._isotope = isotope()
-        self._mass = mass()
+        self._element = element(self)
+        self._isotope = isotope(self)
+        self._mass = mass(self)
 
     @property
     def isotope(self):

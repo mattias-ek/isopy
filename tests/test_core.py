@@ -1,5 +1,5 @@
 import isopy
-from isopy import core
+from isopy import core, array_functions
 import numpy as np
 import pytest
 import itertools
@@ -231,7 +231,8 @@ class Test_IsopyKeyString:
             assert key1 == string
 
             key2 = isopy.askeystring(key1)
-            assert key2 is key1
+            assert key2 == key1
+            assert type(key2) == type(key1)
 
             key1 = isopy.askeystring(string)
             assert type(key1) == keytype
@@ -779,6 +780,7 @@ class Test_IsopyList:
         assert type(ratio.denominators) is tuple
         assert len(ratio.numerators) == 0
         assert len(ratio.denominators) == 0
+
         for numerator, denominator in itertools.permutations((mass, element, isotope, molecule, general), 2):
             correct = [f'{n}/{d}' for n, d in zip(numerator, denominator)]
             same = [(correct[0], correct[2], correct[1])]
@@ -866,7 +868,7 @@ class Test_IsopyList:
 
         same_list = isopy.askeylist(correct_list)
         assert same_list == correct_list
-        assert same_list is correct_list
+        assert type(same_list) is type(correct_list)
 
         dictionary = {k: i for i, k in enumerate(correct)}
         assert isopy.keylist(dictionary) == correct_list
@@ -1161,7 +1163,6 @@ class Test_IsopyList:
         result = keylist.filter()
         assert type(result) == listtype
         assert result == keylist
-        assert result is not keylist
 
         result = keylist.filter(**{f'{prefix}_eq': eq[0]})
         assert type(result) is listtype
@@ -1688,8 +1689,6 @@ class Test_IsopyList:
 
         with pytest.raises(ValueError):
             keylist.index('102pd')
-
-
 
 # 100 % coverage
 class Test_Dict:
@@ -3899,127 +3898,6 @@ class Test_Array:
         with pytest.raises(IndexError):
             array[(1,2)] = 1
 
-    # to file is tested in io tests
-    def test_to_obj(self):
-        # size 100, 1-dim
-        array = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
-
-        assert core.hashstr(repr(array)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
-        assert core.hashstr(str(array)) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(array.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
-        assert core.hashstr(array.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
-
-        assert core.hashstr(array.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
-        assert core.hashstr(array.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
-        assert core.hashstr(array.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
-        assert core.hashstr(array.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
-        assert core.hashstr(array.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert False not in [type(v) is list for v in tovalue]
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(v) is list for v in tovalue.values()]
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        tovalue = array[0].to_ndarray()
-        assert type(tovalue) is np.void
-        assert array[0].keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key][0], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == '8019204da3be1770ee071e75afd1dd0f'
-            new_array1 = isopy.array_from_clipboard()
-            assert isinstance(new_array1, core.IsopyArray)
-            assert new_array1.flavour == array.flavour
-            assert_array_equal_array(new_array1, array)
-
-        # Size 1, 1-dim
-        array = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
-
-        assert core.hashstr(repr(array)) == '309361dd9169fe6d0ffd8ec8be91eddd'
-        assert core.hashstr(str(array)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '46832d224c9c15c09168ed7e3ee77faa'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(array.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert False not in [type(v) is list for v in tovalue]
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(v) is list for v in tovalue.values()]
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        # Size 1, 0-dim
-        array = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
-
-        assert core.hashstr(repr(array)) == '395ea36d5e4c0bce9679de1146eae27c'
-        assert core.hashstr(str(array)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(array.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(array.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
-        assert core.hashstr(array.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(array.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
-        tovalue = array.to_list()
-        assert type(tovalue) is list
-        assert_array_equal_array(array, isopy.array(tovalue, array.keys))
-
-        tovalue = array.to_dict()
-        assert type(tovalue) is dict
-        assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(array, isopy.array(tovalue))
-
-        tovalue = array.to_ndarray()
-        assert type(tovalue) is np.ndarray
-        assert array.keys == tovalue.dtype.names
-        for key in array.keys:
-            np.testing.assert_allclose(array[key], tovalue[str(key)])
-
-        try:
-            array.to_clipboard()
-        except pyperclip.PyperclipException:
-            pass # Wont run on travis
-        else:
-            assert core.hashstr(pyperclip.paste()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-
     def test_asarray(self):
         # size 1, 0-dim
         array = isopy.random(-1, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -4196,7 +4074,7 @@ class Test_Array:
 
     def test_asanyarray3(self):
         # size 1, 0-dim
-        array1 = 1
+        array1 = 1.0
         array2 = np.asarray(array1)
 
         with pytest.raises(ValueError):
@@ -4240,7 +4118,7 @@ class Test_Array:
         assert result2.base is array2
 
         # size 1, 1-dim
-        array1 = [1]
+        array1 = [1.0]
         array2 = np.asarray(array1)
 
         result1 = isopy.asanyarray(array1)
@@ -4344,814 +4222,223 @@ class Test_Array:
         assert result.dtype == '<U1'
 
 
-class Test_ArrayFunctions:
-    def test_singleinput(self):
-        keys = 'ru pd cd'.split()
-        array1 = isopy.random(None, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed = 46)
-        array2 = isopy.random(100, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed = 46)
-        array3 = array2.copy()
-        array3['pd'][5] = np.nan
-
-        # Elementwise functions
-        for func in core.afnp_elementwise:
-            self.singleinput(func, array1)
-            self.singleinput(func, array2)
-            self.singleinput(func, array3)
-
-        # This means a warning should be raised for ufunc
-        core.ALLOWED_NUMPY_FUNCTIONS.pop(np.abs)
-
-        self.singleinput(np.abs, array1)
-        self.singleinput(np.abs, array2)
-        self.singleinput(np.abs, array3)
-
-        core.ALLOWED_NUMPY_FUNCTIONS[np.abs] = lambda *args, **kwargs: 'hello'
-        assert np.abs(array1) == 'hello'
-        core.ALLOWED_NUMPY_FUNCTIONS[np.abs] = True
-
-        # Cumulative functions
-        for func in core.afnp_cumulative:
-            self.singleinput(func, array1)
-            self.singleinput(func, array2)
-            self.singleinput(func, array3)
-
-            self.singleinput(func, array1, axis = None)
-            self.singleinput(func, array2, axis = None)
-            self.singleinput(func, array3, axis = None)
-
-            self.singleinput(func, array1, axis=0)
-            self.singleinput(func, array2, axis=0)
-            self.singleinput(func, array3, axis=0)
-
-            self.singleinput(func, array2, axis=1)
-            self.singleinput(func, array3, axis=1)
-
-        # reducing numpy functions
-        for func in core.afnp_reducing:
-            self.singleinput(func, array1)
-            self.singleinput(func, array2)
-            self.singleinput(func, array3)
-
-            self.singleinput(func, array1, axis=None)
-            self.singleinput(func, array2, axis=None)
-            self.singleinput(func, array3, axis=None)
-
-            self.singleinput(func, array1, axis=0)
-            self.singleinput(func, array2, axis=0)
-            self.singleinput(func, array3, axis=0)
-
-            self.singleinput(func, array2, axis=1)
-            self.singleinput(func, array3, axis=1)
-
-        #This means a warning should be raised for array_function
-        core.ALLOWED_NUMPY_FUNCTIONS.pop(np.mean)
-
-        self.singleinput(np.mean, array1)
-        self.singleinput(np.mean, array2)
-        self.singleinput(np.mean, array3)
-
-        self.singleinput(np.mean, array1, axis=None)
-        self.singleinput(np.mean, array2, axis=None)
-        self.singleinput(np.mean, array3, axis=None)
-
-        self.singleinput(np.mean, array1, axis=0)
-        self.singleinput(np.mean, array2, axis=0)
-        self.singleinput(np.mean, array3, axis=0)
-
-        self.singleinput(np.mean, array2, axis=1)
-        self.singleinput(np.mean, array3, axis=1)
-
-        core.ALLOWED_NUMPY_FUNCTIONS[np.mean] = lambda *args, **kwargs: 'hello'
-        assert np.mean(array1) == 'hello'
-        core.ALLOWED_NUMPY_FUNCTIONS[np.mean] = True
-
-        # reducing isopy functions
-        for func in [isopy.mad, isopy.nanmad, isopy.se, isopy.nanse, isopy.sd, isopy.nansd,
-                     isopy.sd2, isopy.sd95, isopy.se2, isopy.se95, isopy.mad2, isopy.mad95,
-                     isopy.nansd2, isopy.nansd95, isopy.nanse2, isopy.nanse95, isopy.nanmad2, isopy.nanmad95]:
-            self.singleinput(func, array1)
-            self.singleinput(func, array2)
-            self.singleinput(func, array3)
-
-            self.singleinput(func, array1, axis=None)
-            self.singleinput(func, array2, axis=None)
-            self.singleinput(func, array3, axis=None)
-
-            self.singleinput(func, array1, axis=0)
-            self.singleinput(func, array2, axis=0)
-            self.singleinput(func, array3, axis=0)
-
-            self.singleinput(func, array2, axis=1)
-            self.singleinput(func, array3, axis=1)
-
-
-
-        # Test the reduce method
-        self.singleinput(np.add.reduce, array1)
-        self.singleinput(np.add.reduce, array2)
-        self.singleinput(np.add.reduce, array3)
-
-        self.singleinput(np.add.reduce, array1, axis=None)
-        self.singleinput(np.add.reduce, array2, axis=None)
-        self.singleinput(np.add.reduce, array3, axis=None)
-
-        self.singleinput(np.add.reduce, array1, axis=0)
-        self.singleinput(np.add.reduce, array2, axis=0)
-        self.singleinput(np.add.reduce, array3, axis=0)
-
-        self.singleinput(np.add.reduce, array2, axis=1)
-        self.singleinput(np.add.reduce, array3, axis=1)
-
-        # Test the accumulate method
-        #self.singleinput(np.add.accumulate, array1) # Dosnt work for 0-dim
-        self.singleinput(np.add.accumulate, array2)
-        self.singleinput(np.add.accumulate, array3)
-
-        self.singleinput(np.add.accumulate, array1, axis=None)
-        #self.singleinput(np.add.accumulate, array2, axis=None) # Doesnt work for > 1-dim
-        #self.singleinput(np.add.accumulate, array3, axis=None) # Doesnt work for > 1-dim
-
-        # self.singleinput(np.add.accumulate, array1, axis=0) # Dosnt work for 0-dim
-        self.singleinput(np.add.accumulate, array2, axis=0)
-        self.singleinput(np.add.accumulate, array3, axis=0)
-
-        self.singleinput(np.add.accumulate, array2, axis=1)
-        self.singleinput(np.add.accumulate, array3, axis=1)
-
-    def singleinput(self, func, array, axis = core.NotGiven, out = core.NotGiven, where = core.NotGiven):
-        kwargs = {}
-        if axis is not core.NotGiven: kwargs['axis'] = axis
-        if out is not core.NotGiven: kwargs['out'] = out
-        if where is not core.NotGiven: kwargs['where'] = where
-
-        if axis is core.NotGiven or axis == 0:
-            result = func(array, **kwargs)
-            result2 = isopy.arrayfunc(func, array, **kwargs)
-
-            assert type(result) is type(array)
-            assert result.keys == array.keys
-            for key in result.keys:
-                rvalue = result[key]
-                tvalue = func(array[key])
-                assert type(rvalue) is not float
-                if not isinstance(tvalue, (np.generic, np.ndarray)):
-                    # isopy mad returns float for tvalue but i cant replicate it elsewhere
-                    warnings.warn(f'function {func.__name__} returned {type(tvalue)} with a value of {tvalue} for an array with shape {array.shape}')
-                else:
-                    assert rvalue.size == tvalue.size
-                    assert rvalue.ndim == tvalue.ndim
-                np.testing.assert_allclose(rvalue, tvalue)
-
-            assert_array_equal_array(result, result2)
-
-            # For builtin functions
-            funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
-            if hasattr(array, func.__name__):
-                assert_array_equal_array(result, getattr(array, funcname)(**kwargs))
-
-        else:
-            result = func(array, **kwargs)
-            true = func(array.to_list(), **kwargs)
-            if not isinstance(true, (np.generic, np.ndarray)):
-                # isopy mad returns float for tvalue but i cant replicate it elsewhere
-                warnings.warn(
-                    f'function {func.__name__} returned {type(true)} with a value of {true} for an array with shape {array.shape}')
-            else:
-                assert result.size == true.size
-                assert result.ndim == true.ndim
-            np.testing.assert_allclose(result, true)
-
-            result2 = isopy.arrayfunc(func, array, **kwargs)
-            np.testing.assert_allclose(result2, true)
-
-            # For builtin functions
-            funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
-            if hasattr(array, funcname):
-                np.testing.assert_allclose(true, getattr(array, funcname)(**kwargs))
-
-        # There isnt enough arguments to an error should be thrown
-        with pytest.raises((ValueError, TypeError)):
-            func()
-
-        # In case its not caught by the array dispatcher.
-        with pytest.raises((ValueError, TypeError)):
-            isopy.arrayfunc(func)
-
-    # TODO mixed flavours
-    def test_dualinput(self):
-        keys1 = 'ru pd cd'.split()
-        keys2 = 'pd ag cd'.split()
-        keys12 = 'ru pd cd ag'.split()
-        keys21 = 'pd ag cd ru'.split()
-
-        array1 = isopy.random(None, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=1)
-        array2 = isopy.random(None, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
-        array3 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=3)
-        array4 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=4)
-        array5 = isopy.random(10, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=5)
-        array6 = isopy.random(10, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=6)
-        array7 = isopy.random(3, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=7)
-        value1 = 1.5
-        value2 = [3.2]
-        value3 = [i for i in range(10)]
-        value4 = [i for i in range(3)]
-        dict1 = dict(rh=array2['ag'], pd=array2['pd'], ag=array2['pd'], cd=array2['cd'], te=array2['cd'])
-        dict2 = dict(rh=array4['ag'], pd=array4['pd'], ag=array4['pd'], cd=array4['cd'], te=array4['cd'])
-        dict3 = dict(rh=array6['ag'], pd=array6['pd'], ag=array6['pd'], cd=array6['cd'], te=array6['cd'])
-        dict4 = dict(rh=array7['ru'], pd=array7['pd'], ag=array7['pd'], cd=array7['cd'], te=array7['cd'])
-
-        isopy_dual_functions = [isopy.add, isopy.subtract, isopy.multiply, isopy.divide, isopy.power]
-        for func in (core.afnp_dual + isopy_dual_functions):
-            # all different array combinations
-            self.dualinput_aa(func, array1, array2, keys12, 0)
-            self.dualinput_aa(func, array1, array4, keys12, 1)
-            self.dualinput_aa(func, array1, array6, keys12, 1)
-
-            self.dualinput_aa(func, array3, array2, keys12, 1)
-            self.dualinput_aa(func, array3, array4, keys12, 1)
-            self.dualinput_aa(func, array3, array6, keys12, 1)
-
-            self.dualinput_aa(func, array5, array2, keys12, 1)
-            self.dualinput_aa(func, array5, array4, keys12, 1)
-            self.dualinput_aa(func, array5, array6, keys12, 1)
-
-            self.dualinput_aa(func, array2, array1, keys21, 0)
-            self.dualinput_aa(func, array2, array3, keys21, 1)
-            self.dualinput_aa(func, array2, array5, keys21, 1)
-
-            self.dualinput_aa(func, array4, array1, keys21, 1)
-            self.dualinput_aa(func, array4, array3, keys21, 1)
-            self.dualinput_aa(func, array4, array5, keys21, 1)
-
-            self.dualinput_aa(func, array6, array1, keys21, 1)
-            self.dualinput_aa(func, array6, array3, keys21, 1)
-            self.dualinput_aa(func, array6, array5, keys21, 1)
-
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, array5, array7, keys12, 1)
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, array7, array6, keys21, 1)
-
-            # array dict combinations
-            self.dualinput_aa(func, array1, dict1, keys1, 0)
-            self.dualinput_aa(func, array1, dict2, keys1, 0)
-            self.dualinput_aa(func, array1, dict3, keys1, 1)
-
-            self.dualinput_aa(func, array3, dict1, keys1, 1)
-            self.dualinput_aa(func, array3, dict2, keys1, 1)
-            self.dualinput_aa(func, array3, dict3, keys1, 1)
-
-            self.dualinput_aa(func, array5, dict1, keys1, 1)
-            self.dualinput_aa(func, array5, dict2, keys1, 1)
-            self.dualinput_aa(func, array5, dict3, keys1, 1)
-
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, array5, dict4, keys1, 1)
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, array7, dict3, keys1, 1)
-
-            # dict array combinations
-            self.dualinput_aa(func, dict1, array1, keys1, 0)
-            self.dualinput_aa(func, dict2, array1, keys1, 0)
-            self.dualinput_aa(func, dict3, array1, keys1, 1)
-
-            self.dualinput_aa(func, dict1, array3, keys1, 1)
-            self.dualinput_aa(func, dict2, array3, keys1, 1)
-            self.dualinput_aa(func, dict3, array3, keys1, 1)
-
-            self.dualinput_aa(func, dict1, array5, keys1, 1)
-            self.dualinput_aa(func, dict2, array5, keys1, 1)
-            self.dualinput_aa(func, dict3, array5, keys1, 1)
-
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, dict3, array7, keys1, 1)
-            with pytest.raises(ValueError):
-                self.dualinput_aa(func, dict4, array5, keys1, 1)
-
-            # all array value combinations
-            self.dualinput_av(func, array1, value1, keys1)
-            self.dualinput_av(func, array1, value2, keys1)
-            self.dualinput_av(func, array1, value3, keys1)
-
-            self.dualinput_av(func, array3, value1, keys1)
-            self.dualinput_av(func, array3, value2, keys1)
-            self.dualinput_av(func, array3, value3, keys1)
-
-            self.dualinput_av(func, array5, value1, keys1)
-            self.dualinput_av(func, array5, value2, keys1)
-            self.dualinput_av(func, array5, value3, keys1)
-
-            with pytest.raises(ValueError):
-                self.dualinput_av(func, array5, value4, keys1)
-            with pytest.raises(ValueError):
-                self.dualinput_av(func, array7, value3, keys1)
-
-            # all value array combinations
-            self.dualinput_va(func, value1, array1, keys1)
-            self.dualinput_va(func, value1, array3, keys1)
-            self.dualinput_va(func, value1, array5, keys1)
-
-            self.dualinput_va(func, value2, array1, keys1)
-            self.dualinput_va(func, value2, array3, keys1)
-            self.dualinput_va(func, value2, array5, keys1)
-
-            self.dualinput_va(func, value3, array1, keys1)
-            self.dualinput_va(func, value3, array3, keys1)
-            self.dualinput_va(func, value3, array5, keys1)
-
-            with pytest.raises(ValueError):
-                self.dualinput_va(func, value3, array7, keys1)
-            with pytest.raises(ValueError):
-                self.dualinput_va(func, value4, array5, keys1)
-
-            # There isnt enough arguments to an error should be thrown
-            with pytest.raises((ValueError, TypeError)):
-                func()
-
-            # In case its not caught by the array dispatcher.
-            with pytest.raises((ValueError, TypeError)):
-                isopy.arrayfunc(func)
-
-        np.testing.assert_allclose(isopy.add(value1, value2), np.add(value1, value2))
-        np.testing.assert_allclose(isopy.subtract(value1, value3), np.subtract(value1, value3))
-        np.testing.assert_allclose(isopy.divide(value3, value2), np.divide(value3, value2))
-        np.testing.assert_allclose(isopy.multiply(value1, value2), np.multiply(value1, value2))
-        np.testing.assert_allclose(isopy.power(value1, value2), np.power(value1, value2))
-
-    def dualinput_aa(self, func, a1, a2, keys, ndim):
-        if type(a1) is dict: b1 = isopy.ScalarDict(a1)
-        else: b1 = a1
-        if type(a2) is dict: b2 = isopy.ScalarDict(a2)
-        else: b2 = a2
-
-        result = func(a1, a2)
-        assert isinstance(result, core.IsopyArray)
-        assert result.keys == keys
-        assert result.ndim == ndim
-        for key in keys:
-            true = func(b1.get(key, np.nan), b2.get(key, np.nan))
-            assert result.size == true.size
-            np.testing.assert_allclose(result[key], true)
-
-        result2 = isopy.arrayfunc(func, a1, a2)
-        assert result2.ndim == ndim
-        assert_array_equal_array(result, result2)
-
-        result2 = isopy.arrayfunc(func, a1, a2, default_value=1)
-        for key in keys:
-            true = func(b1.get(key, 1), b2.get(key, 1))
-            assert result2.size == true.size
-            np.testing.assert_allclose(result2[key], true)
-        try:
-            assert_array_equal_array(result2, result)
-        except AssertionError:
-            pass
-        else:
-            raise AssertionError()
-
-        result2 = isopy.arrayfunc(func, a1, a2, default_value=(1, 2))
-        assert result2.ndim == ndim
-        for key in keys:
-            true = func(b1.get(key, 1), b2.get(key, 2))
-            assert result2.size == true.size
-            np.testing.assert_allclose(result2[key], true)
-        try:
-            assert_array_equal_array(result, result2)
-        except AssertionError:
-            pass
-        else:
-            raise AssertionError()
-
-        with pytest.raises(ValueError):
-            isopy.arrayfunc(func, a1, a2, default_value=(1,))
-
-        with pytest.raises(ValueError):
-            isopy.arrayfunc(func, a1, a2, default_value=(1,2,3))
-
-    def dualinput_av(self, func, a1, a2, keys):
-        result = func(a1, a2)
-        assert isinstance(result, core.IsopyArray)
-        assert result.keys == keys
-        for key in keys:
-            true = func(a1.get(key), a2)
-            assert result.size == true.size
-            assert result.ndim == true.ndim
-            np.testing.assert_allclose(result[key], true)
-
-        result2 = isopy.arrayfunc(func, a1, a2)
-        assert_array_equal_array(result, result2)
-
-    def dualinput_va(self, func, a1, a2, keys):
-        result = func(a1, a2)
-        assert isinstance(result, core.IsopyArray)
-        assert result.keys == keys
-        for key in keys:
-            true = func(a1, a2.get(key))
-            assert result.size == true.size
-            assert result.ndim == true.ndim
-            np.testing.assert_allclose(result[key], true)
-
-        result2 = isopy.arrayfunc(func, a1, a2)
-        assert_array_equal_array(result, result2)
-
-    def test_count_finite(self):
-        array = isopy.array([[1,2,3], [4, np.nan, 6]], 'ru pd cd'.split())
-        answer = isopy.array((2,1,2), 'ru pd cd'.split())
-
-        assert_array_equal_array(isopy.nancount(array), answer)
-        np.testing.assert_allclose(isopy.nancount(array, axis=1), [3, 2])
-        assert isopy.nancount(array, axis=None) == 5
-
-        data = [[1,2,3], [4, np.nan, 6]]
-        answer = (2,1,2)
-
-        assert isopy.nancount(data) == 5
-        np.testing.assert_allclose(isopy.nancount(data, axis=0), answer)
-        np.testing.assert_allclose(isopy.nancount(data, axis=1), [3, 2])
-
-    def test_keyminmax(self):
-        array = isopy.random(10, [3, 1, 5], 'ru pd cd'.split(), seed=46)
-        array['ru'][1] = 100
-        array['ru'][2] = -2
-
-        assert isopy.keymax(array) == 'cd'
-        assert isopy.keymax(array, np.mean) == 'ru'
-
-        assert isopy.keymin(array) == 'pd'
-        assert isopy.keymin(array, np.min) == 'ru'
-
-    def test_where(self):
-        data = [[1, 2, 3], [3,np.nan, 5], [6, 7, 8], [9, 10, np.nan]]
-        array = isopy.array(data, 'ru pd cd'.split())
-
-        where1 = [True, False, True, True]
-        where1t = [[True, True, True], [False, False, False], [True, True, True], [True, True, True]]
-
-        where2 = [[False, True, True], [False, False, True], [True, True, True], [True, True, False]]
-        arrayw2 = isopy.array(where2, 'ru pd cd'.split(), dtype=bool)
-
-        for func in [np.mean, np.std]:
-            try:
-                result = func(array, where=where1, axis=0)
-                true = func(data, where=where1t, axis=0)
-                np.testing.assert_allclose(result.tolist(), true)
-
-                result = func(array, where=arrayw2, axis=0)
-                true = func(data, where=where2, axis=0)
-                np.testing.assert_allclose(result.tolist(), true)
-            except Exception as err:
-                raise AssertionError(f'func {func} test failed') from err
-
-    def test_out(self):
-        data = [[1, 2, 3], [3,np.nan, 5], [6, 7, 8], [9, 10, np.nan]]
-        array = isopy.array(data, 'ru pd cd'.split())
-
-        for func in [np.std, np.nanstd]:
-            out = isopy.ones(None, 'ru pd cd'.split())
-            result1 = func(array)
-            result2 = func(array, out=out)
-            assert_array_equal_array(result1, result2)
-            assert result2 is out
-
-            out = np.ones(4)
-            result1 = func(array, axis=1)
-            result2 = func(array, axis=1, out=out)
-            np.testing.assert_allclose(result1, result2)
-            assert result2 is out
-
-            out = isopy.ones(None, 'ag ru cd'.split())
-            result1 = func(array)
-            assert result1.keys == 'ru pd cd'.split()
-            result2 = func(array, out=out)
-            assert result2 is out
-            assert result2.keys == 'ag ru cd'.split()
-
-            np.testing.assert_allclose(result1['ru'], result2['ru'])
-            np.testing.assert_allclose(result1['cd'], result2['cd'])
-            np.testing.assert_allclose(np.ones(4), result2['ag'])
-
-    def test_special(self):
-        # np.average, np.copyto
-        tested = []
-
-        #Tests for copyto
-        tested.append(np.copyto)
-
-        array1 = isopy.array([[1, 2, 3], [11, 12, 13]], 'ru pd cd'.split())
-        array2 = isopy.empty(2, 'ru pd cd'.split())
-        np.copyto(array2, array1)
-        assert array2 is not array1
-        assert_array_equal_array(array2, array1)
-
-        dictionary = dict(ru = 1, rh = 1.5, pd = 2, ag = 2.5, cd = 3)
-        array1 = isopy.array([1, 2, 3], 'ru pd cd'.split())
-        array2 = isopy.empty(-1, 'ru pd cd'.split())
-        np.copyto(array2, dictionary)
-        assert_array_equal_array(array2, array1)
-
-        #Tests for average
-        tested.append(np.average)
-
-        #axis = 0
-        array = isopy.array([[1, 2, 3], [11, 12, 13]], 'ru pd cd'.split())
-        weights = [2, 1]
-        correct = isopy.array((13/3, 16/3, 19/3), 'ru pd cd'.split())
-        result = np.average(array, weights=weights)
-        assert_array_equal_array(result, correct)
-
-        result = np.average(array, 0, weights=weights)
-        assert_array_equal_array(result, correct)
-
-        weights = isopy.array((2, 0.5, 1), 'ru pd cd'.split())
-        with pytest.raises(TypeError):
-            np.average(array, weights=weights)
-
-        #axis = 1
-        weights = [2, 0.5, 1]
-        correct = np.array([(1 * 2 + 2 * 0.5 + 3 * 1) / 3.5, (11 * 2 + 12 * 0.5 + 13 * 1) / 3.5])
-        result = np.average(array, axis=1, weights=weights)
-        np.testing.assert_allclose(result, correct)
-
-        result = np.average(array, 1, weights)
-        np.testing.assert_allclose(result, correct)
-
-        #axis = None
-        # shape mismatch
-        weights = [2, 1]
-        with pytest.raises(TypeError):
-            np.average(array, axis=None, weights=weights)
-
-        weights = isopy.array((2, 0.5, 1), 'ru pd cd'.split())
-        with pytest.raises(TypeError):
-            np.average(array, axis=None, weights=weights)
-
-        # axis = 0
-        array = isopy.array([[1, 2, 3], [11, 12, 13]], 'ru pd cd'.split())
-        weights = [[2, 0.5, 1], [0.5, 0.5, 0.5]]
-        with pytest.raises(TypeError):
-            #Shape mismatch
-            np.average(array, weights=weights)
-
-        weights = isopy.array([[2, 0.5, 1],[0.5, 0.5, 0.5]], 'ru pd cd'.split())
-        correct = isopy.array(((1*2+11*0.5)/2.5,(2*0.5+12*0.5)/1, (3*1+13*0.5)/1.5), 'ru pd cd'.split())
-        result = np.average(array, weights=weights)
-        assert_array_equal_array(result, correct)
-
-        result = np.average(array, 0, weights)
-        assert_array_equal_array(result, correct)
-
-        weights2 = isopy.IsopyDict(weights)
-        result = np.average(array, weights=weights2)
-        assert_array_equal_array(result, correct)
-
-        weights2 = isopy.ScalarDict(weights)
-        result = np.average(array, weights=weights2)
-        assert_array_equal_array(result, correct)
-
-        weights2 = weights.to_dict()
-        with pytest.raises(Exception):
-            #Not sure what will throw an error but soemthign will
-            np.average(array, weights=weights2)
-
-        # axis = 1
-        weights = isopy.array([[2, 0.5, 1],[0.5, 0.5, 0.5]], 'ru pd cd'.split())
-        correct = np.array([(1 * 2 + 2 * 0.5 + 3 * 1) / 3.5, (11 * 0.5 + 12 * 0.5 + 13 * 0.5) / 1.5])
-        result = np.average(array, axis=1, weights=weights)
-        np.testing.assert_allclose(result, correct)
-
-        result = np.average(array, 1, weights)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = isopy.IsopyDict(weights)
-        result = np.average(array, axis=1, weights=weights2)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = isopy.ScalarDict(weights)
-        result = np.average(array, axis=1, weights=weights2)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = weights.to_dict()
-        with pytest.raises(Exception):
-            # Not sure what will throw an error but soemthign will
-            np.average(array, axis=1, weights=weights2)
-
-        weights = [[2, 0.5, 1],[0.5, 1, 2]]
-        correct = np.array([(1*2+2*0.5+3*1)/3.5, (11*0.5+12*1+13*2)/3.5])
-        result = np.average(array, axis=1, weights=weights)
-        np.testing.assert_allclose(result, correct)
-
-        result = np.average(array, 1, weights)
-        np.testing.assert_allclose(result, correct)
-
-        # axis = None
-        weights = isopy.array([[2, 0.5, 1],[0.5, 0.5, 0.5]], 'ru pd cd'.split())
-        correct = (1 * 2 + 2 * 0.5 + 3 * 1 + 11 * 0.5 + 12 * 0.5 + 13 * 0.5) / 5
-        result = np.average(array, axis=None, weights=weights)
-        np.testing.assert_allclose(result, correct)
-
-        result = np.average(array, None, weights)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = isopy.IsopyDict(weights)
-        result = np.average(array, axis=None, weights=weights2)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = isopy.ScalarDict(weights)
-        result = np.average(array, axis=None, weights=weights2)
-        np.testing.assert_allclose(result, correct)
-
-        weights2 = weights.to_dict()
-        with pytest.raises(Exception):
-            # Not sure what will throw an error but soemthign will
-            np.average(array, axis=None, weights=weights2)
-
-        weights = [[2, 0.5, 1], [0.5, 0.5, 0.5]]
-        correct = (1 * 2 + 2 * 0.5 + 3 * 1 + 11 * 0.5 + 12 * 0.5 + 13 * 0.5) / 5
-        result = np.average(array, axis=None, weights=weights)
-        np.testing.assert_allclose(result, correct)
-
-        result = np.average(array, None, weights)
-        np.testing.assert_allclose(result, correct)
-
-        # Make sure functions are tested.
-        for func in core.afnp_special:
-            if func not in tested:
-                raise ValueError(f'special function {func.__name__} not tested')
-
-    def test_concatenate(self):
-        # Axis = 0
-
-        array1 = isopy.ones(2, 'ru pd cd'.split())
-        array2 = isopy.ones(-1, 'pd ag107 cd'.split()) * 2
-        array3 = isopy.ones(2, '101ru ag107'.split()) * 3
-
-        array4 = isopy.ones(2) * 4
-        array5 = isopy.ones(2) * 5
-
-        np.testing.assert_allclose(isopy.concatenate(array4, array5), np.concatenate([array4, array5]))
-
-        with pytest.raises(ValueError):
-            isopy.concatenate(array1, array4)
-
-        with pytest.raises(ValueError):
-            isopy.concatenate(array1, array5)
-
-        result = isopy.concatenate(array1)
-        assert result is not array1
-        assert_array_equal_array(result, array1)
-
-        result = isopy.concatenate(array1, array2, array3)
-
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate( (array1.get(key), [array2.get(key)], array3.get(key)) )
-            np.testing.assert_allclose(result[key], true)
-
-        result = isopy.concatenate( (array1, array2, array3) )
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
-            np.testing.assert_allclose(result[key], true)
-
-        result = isopy.concatenate( [array1, array2, array3] )
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
-            np.testing.assert_allclose(result[key], true)
-
-        result = isopy.concatenate(array1, None, array3, axis=0)
-        keys = array1.keys + array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key), [np.nan, np.nan], array3.get(key)))
-            np.testing.assert_allclose(result[key], true)
-
-        # Raises exception because it cannot guess the size of the mising array
-        with pytest.raises(ValueError):
-            result = isopy.concatenate(array1, array2, None, axis=0)
-
-        # np.concencate
-        result = np.concatenate( (array1) )
-        assert result is not array1
-        assert_array_equal_array(result, array1)
-
-        result = np.concatenate((array1, array2, array3))
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
-            np.testing.assert_allclose(result[key], true)
-
-        result = np.concatenate([array1, array2, array3])
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
-            np.testing.assert_allclose(result[key], true)
-
-
-        # Axis = 0 with default value
-
-        array1 = isopy.ones(2, 'ru pd cd'.split())
-        array2 = isopy.ones(1, 'pd ag107 cd'.split()) * 2
-        array3 = isopy.ones(2, '101ru ag107'.split()) * 3
-
-        result = isopy.concatenate(array1, array2, array3, default_value=100)
-        keys = array1.keys | array2.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key, 100), array2.get(key, 100), array3.get(key, 100)))
-            np.testing.assert_allclose(result[key], true)
-
-        result = isopy.concatenate(array1, None, array3, axis=0, default_value=66)
-        keys = array1.keys | array3.keys
-        assert result.keys == keys
-        for key in keys:
-            true = np.concatenate((array1.get(key, 66), [66, 66], array3.get(key, 66)))
-            np.testing.assert_allclose(result[key], true)
-
-        # Axis = 1
-        array1 = isopy.ones(2, 'ru pd cd'.split())
-        array2 = isopy.ones(1, 'rh ag'.split()) * 2
-        array3 = isopy.ones(2, '103rh 107ag'.split()) * 3
-
-        result = isopy.concatenate(array1, axis=1)
-        assert result is not array1
-        assert_array_equal_array(result, array1)
-
-        result = isopy.concatenate(array1, array2, array3, axis=1)
-        assert result.keys == array1.keys + array2.keys + array3.keys
-        for key, v in array1.items():
-            np.testing.assert_allclose(result[key], v)
-        for key, v in array2.items():
-            np.testing.assert_allclose(result[key], v.repeat(2))
-        for key, v in array3.items():
-            np.testing.assert_allclose(result[key], v)
-
-        result = isopy.concatenate(array1, None, array3, axis=1)
-        assert result.keys == array1.keys + array3.keys
-        for key, v in array1.items():
-            np.testing.assert_allclose(result[key], v)
-        for key, v in array3.items():
-            np.testing.assert_allclose(result[key], v)
-
-        # np.concatenate
-
-        result = np.concatenate( (array1), axis=1)
-        assert result is not array1
-        assert_array_equal_array(result, array1)
-
-        result = np.concatenate((array1, array2, array3), axis=1)
-        assert result.keys == array1.keys + array2.keys + array3.keys
-        for key, v in array1.items():
-            np.testing.assert_allclose(result[key], v)
-        for key, v in array2.items():
-            np.testing.assert_allclose(result[key], v.repeat(2))
-        for key, v in array3.items():
-            np.testing.assert_allclose(result[key], v)
-
-        # invalid axis
-
-        with pytest.raises(np.AxisError):
-            result = isopy.concatenate(array1, array2, array3, axis=2)
-
-    def test_arrayfunc(self):
-        # default value
-
-        array1 = isopy.ones(4, 'ru pd cd'.split()) * [1, 2 ,3, 4]
-        array2 = isopy.ones(4, 'pd ag cd'.split()) * [0.1, 0.2, 0.3, 0.4]
-
-        result1 = isopy.arrayfunc(np.add, array1, array2)
-        result2 = isopy.arrayfunc(np.add, array1, array2, default_value=666)
-        result3 = isopy.arrayfunc(np.add, array1, array2, default_value=(666, 111))
-        result4 = isopy.arrayfunc(np.add, array1, array2, default_value=[111, 222, 333, 444])
-        result5 = result1 = isopy.arrayfunc(isopy.add, x2 = array2, x1 = array1)
-        assert result1.keys == 'ru pd cd ag'.split()
-        assert result2.keys == 'ru pd cd ag'.split()
-        assert result3.keys == 'ru pd cd ag'.split()
-        for key in result1.keys():
-            true1 = np.add(array1.get(key), array2.get(key))
-            true2 = np.add(array1.get(key, 666), array2.get(key, 666))
-            true3 = np.add(array1.get(key, 666), array2.get(key, 111))
-            true4 = np.add(array1.get(key, [111, 222, 333, 444]), array2.get(key, [111, 222, 333, 444]))
-            np.testing.assert_allclose(result1[key], true1)
-            np.testing.assert_allclose(result2[key], true2)
-            np.testing.assert_allclose(result3[key], true3)
-            np.testing.assert_allclose(result4[key], true4)
-            np.testing.assert_allclose(result5[key], true1)
-
-        # keys
-        array1 = isopy.ones(4, 'ru pd cd'.split()) * [1, 2, 3, 4]
-        array2 = isopy.ones(4, 'pd ag cd'.split()) * [0.1, 0.2, 0.3, 0.4]
-
-        result = isopy.arrayfunc(np.add, array1, array2, keys='rh pd ag'.split())
-        assert result.keys == 'rh pd ag'.split()
-        for key in result.keys:
-            true = np.add(array1.get(key), array2.get(key))
-            np.testing.assert_allclose(result[key], true)
+class Test_ToTextMixin:
+    def test_100_1_a(self):
+        # size 100, 1-dim
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
+
+        assert core.hashstr(repr(a)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
+        assert core.hashstr(str(a)) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(a.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
+        assert core.hashstr(a.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
+
+        assert core.hashstr(a.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
+        assert core.hashstr(a.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
+        assert core.hashstr(a.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
+        assert core.hashstr(a.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
+        assert core.hashstr(a.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+        tovalue = a[0].to_ndarray()
+        assert type(tovalue) is np.void
+        assert a[0].keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key][0], tovalue[str(key)])
+
+    def test_100_1_d(self):
+        # size 100, 1-dim
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+
+        #assert core.hashstr(repr(d)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
+        #assert core.hashstr(str(d)) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(d.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
+        assert core.hashstr(d.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
+
+        assert core.hashstr(d.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
+        assert core.hashstr(d.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
+        assert core.hashstr(d.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
+        assert core.hashstr(d.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
+        assert core.hashstr(d.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+    def test_1_1_a(self):
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == '309361dd9169fe6d0ffd8ec8be91eddd'
+        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '46832d224c9c15c09168ed7e3ee77faa'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert False not in [type(v) is list for v in tovalue]
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(v) is list for v in tovalue.values()]
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+    def test_1_1_d(self):
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim != a.ndim
+        assert d.ndim == 0
+
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        # assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
+        # assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+
+    def test_1_0_a(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == '395ea36d5e4c0bce9679de1146eae27c'
+        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = a.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, a.keys))
+
+        tovalue = a.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = a.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert a.keys == tovalue.dtype.names
+        for key in a.keys:
+            np.testing.assert_allclose(a[key], tovalue[str(key)])
+
+    def test_1_0_d(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+
+        #assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
+        #assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
+        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
+        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
+        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+
+        tovalue = d.to_list()
+        assert type(tovalue) is list
+        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+
+        tovalue = d.to_dict()
+        assert type(tovalue) is dict
+        assert False not in [type(k) is str for k in tovalue.keys()]
+        assert_array_equal_array(a, isopy.array(tovalue))
+
+        tovalue = d.to_ndarray()
+        assert type(tovalue) is np.ndarray
+        assert d.keys == tovalue.dtype.names
+        for key in d.keys:
+            np.testing.assert_allclose(d[key], tovalue[str(key)])
+
+
+    def test_scalardict_default_value(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        d = a.to_scalardict()
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, np.nan)
+
+        d = a.to_scalardict(1)
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, 1)
+
+        d = a.default(2).to_scalardict()
+        assert type(d) is core.ScalarDict
+        np.testing.assert_allclose(d.default_value, 2)
 
 
 class Test_EmptyArrays:
@@ -5638,27 +4925,6 @@ class Test_Misc:
                     assert names[i] != keys[j].flavour
                     assert str(keys[i].flavour) != flavours[i].__class__.__name__
 
-    def test_allowed_numpy_functions(self):
-        # These are non-vital so just make sure they return a string
-        result = isopy.allowed_numpy_functions()
-        assert isinstance(result, str)
-
-        result = isopy.allowed_numpy_functions('name')
-        assert isinstance(result, str)
-
-        result = isopy.allowed_numpy_functions('link')
-        assert isinstance(result, str)
-
-        result = isopy.allowed_numpy_functions('rst')
-        assert isinstance(result, str)
-
-        result = isopy.allowed_numpy_functions('markdown')
-        assert isinstance(result, str)
-
-        # this returns a list
-        result = isopy.allowed_numpy_functions(delimiter=None)
-        assert isinstance(result, list)
-        assert False not in [isinstance(string, str) for string in result]
 
     def test_extract_kwargs(self):
         kwargs = dict(Test_a = 'testa', b = 'b', Test_b = 'testb', a = 'a')

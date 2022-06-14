@@ -299,7 +299,7 @@ def ds_inversion_siebert(MS, ST, SP, Mass, Fins_guess=2, Fnat_guess=-0.00001,
     return DSResult(static_items, dynamic_items)
 
 
-def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_keys=None,
+def ds_inversion(measured, spike, standard=None, isotope_masses='isotope.mass', inversion_keys=None,
                  method='rudge', **method_kwargs):
     """
     Double spike inversion.
@@ -365,8 +365,7 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
     else:
         standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
 
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
-                                                        isopy.refval.isotope.mass)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     numerators, denominator, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
 
@@ -401,7 +400,7 @@ def ds_inversion(measured, spike, standard=None, isotope_masses=None, inversion_
 
 def ds_correction(measured, spike, standard=None, inversion_keys=None,
                   interference_correction = True,
-                  isotope_fractions=None, isotope_masses=None,
+                  isotope_fractions='isotope.fraction', isotope_masses='isotope.mass',
                   method='rudge', fins_tol = 0.000001,
                   fins_guess = None, **method_kwargs):
     """
@@ -475,10 +474,9 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
     inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
                                              isopy.RatioKeyList, coerce=True, allow_none=True)
 
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
-                                                           isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
-                                                        isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
+
     if standard is None:
         standard = isotope_fractions
     else:
@@ -593,7 +591,7 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
             blank = None, blank_fixed_voltage = None, blank_fixed_key = None,
             integrations=100, integration_time=8.389, resistor=1E11,
             random_seed=46, method='siebert', fins_guess = None,
-            isotope_masses=None, isotope_fractions=None,
+            isotope_masses='isotope.mass', isotope_fractions='isotope.fraction',
             correction_method=ds_correction,
             interferences = None,
             **kwargs):
@@ -719,10 +717,8 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
 
         * ``xz(yval=0.5, zeval=isopy.sd, zattr='solutions.fnat')`` - Returns ``input.doublespike_fraction`` and a 1-dimensional array of ``zeval(getattr(grid_result, zattr))`` at *yval*.
     """
-    isotope_fractions = isopy.checks.check_reference_value('isotope_fractions', isotope_fractions,
-                                                           isopy.refval.isotope.fraction)
-    isotope_masses = isopy.checks.check_reference_value('isotope_masses', isotope_masses,
-                                                        isopy.refval.isotope.mass)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
 
     numer, denom, inversion_keys = _deduce_inversion_keys(spike1, inversion_keys)
 

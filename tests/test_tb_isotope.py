@@ -654,7 +654,7 @@ class Test_IsobaricInterferences:
                  fraction_ref=fraction_ref, mass_ref=mass_ref, mf_factor=mf_factor)
 
     def run(self, data1, data2, correct1, correct2, interferences1, interferences2, denom=None,
-            mf_factor=None, fraction_ref=None, mass_ref=None):
+            mf_factor=None, fraction_ref='isotope.fraction', mass_ref='isotope.mass'):
 
         interferences = isopy.tb.find_isobaric_interferences('pd', data1)
         assert len(interferences) == len(interferences)
@@ -1424,14 +1424,14 @@ class Test_Make:
         sample = isopy.refval.isotope.fraction.to_array(element_symbol='pd')
         sample = sample.normalise(1, spike.keys)
 
-        correct = isopy.add(sample * 0.5, spike * 0.5, 0)
+        correct = sample * 0.5 + (spike * 0.5).default(0)
         correct = correct.normalise(10, isopy.keymax)
         result = isopy.tb.make_ms_sample('pd', spike=spike, integrations=None)
         self.compare(correct, result)
         result = isopy.tb.make_ms_sample('pd', spike=spike)
         self.compare_sd(correct, 100, result)
 
-        correct = isopy.add(sample * 0.1, spike * 0.9, 0)
+        correct = sample * 0.1 + (spike * 0.9).default(0)
         correct = correct.normalise(10, isopy.keymax)
         result = isopy.tb.make_ms_sample('pd', spike=spike, integrations=None, spike_fraction=0.9)
         self.compare(correct, result)

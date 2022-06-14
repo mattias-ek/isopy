@@ -56,9 +56,13 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
     Uncertainties on the slope and intercept are given as standard errors. Based on the formulas from `York et al. (2004)
     American Journal of Physics 72, 367 <https://doi.org/10.1119/1.1632486>`_.
 
-    The functions *yorkregress2* and *yorkregress3* are also avaliable with preset values for *err_zscore* and
-    *result_zscore* of 2 and 3 respectively. Similarly, *yorkregress95* and *yorkregress99* exists with preset values
-    *err_ci* and *result_ci* or 0.95 and 0.99.
+    If *err_ci* or *err_zscore* are given it assumes the uncertainties represent 1 SD/SE. If neither
+    *result_ci* or *result_zscore* are giuen the *err_ci*/*err_zscore* is also used for the
+    uncertainty on the slope and intercept.
+
+    The functions *yorkregress2* and *yorkregress3* are also avaliable with preset values for *err_zscore*
+    of 2 and 3 respectively. Similarly, *yorkregress95* and *yorkregress99* exists with preset values
+    *err_ci* 0.95 and 0.99.
 
     Parameters
     ----------
@@ -92,10 +96,6 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
         * **msdw** - The mean square weighted deviate of the regression.
         * **df** - The degrees of freedom of the regression (N - 2).
         * **pvalue** - The two-tailed probability of the chi-squared value with *df* degrees of freedom.
-        * **ci** - The confidence interval associated with *slope_se* and *intercept_se*. Changing this value will
-        change the *slope_se* and *intercept_se* appropriately.
-        * **zscore** - The zscore of the associated with *slope_se* and *intercept_se*. Changing this value will
-        change the *slope_se* and *intercept_se* appropriately.
 
         The returned object also contains the following methods:
 
@@ -154,9 +154,13 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
         ci = array_functions.calculate_ci(err_ci)
         Xerr = Xerr / ci
         Yerr = Yerr / ci
+        if result_ci is None and result_zscore is None:
+            result_ci = err_ci
     elif err_zscore is not None:
         Xerr = Xerr / err_zscore
         Yerr = Yerr / err_zscore
+        if result_ci is None and result_zscore is None:
+            result_zscore = err_zscore
 
     # Do calculations
     wX = 1 / (Xerr ** 2)
@@ -215,8 +219,17 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
         msdw = 1
         p2 = 1
 
-    return YorkregressResult(slope, intercept, slope_error, intercept_error, dof, msdw, p2,
-                             np.sum(W), xbar, result_ci, result_zscore)
+    if result_ci is not None:
+        slope_se = slope_error * stats.norm.ppf(0.5 + result_ci / 2)
+    elif result_zscore is not None:
+        slope_se = slope_error * result_zscore
+    else:
+        slope_se = slope_error
+
+    intercept_se = np.sqrt(1 / np.sum(W) + ((0 - xbar) ** 2) * (slope_se ** 2))
+
+    return YorkregressResult(slope, intercept, slope_se, intercept_se, dof, msdw, p2,
+                             np.sum(W), xbar)
 
 
 yorkregress2 = core.partial_func(yorkregress, 'yorkregress2', err_zscore=2, result_zscore=2)
@@ -227,7 +240,6 @@ yorkregress99 = core.partial_func(yorkregress, 'yorkregress99', err_ci=0.99, res
 
 class LinregressResult:
     def __init__(self, slope, intercept, slope_se, intercept_se, df):
-        #The slope_se and intercept_se should be 1 se. The ci and zscore will be applied here
         self.slope = slope
         self.intercept = intercept
         self.slope_se = slope_se
@@ -260,7 +272,7 @@ class LinregressResult:
         return label
 
 class YorkregressResult(LinregressResult):
-    def __init__(self, slope, intercept, slope_se, intercept_se, df, msdw, pvalue, sumW, xbar, ci, zscore):
+    def __init__(self, slope, intercept, slope_se, intercept_se, df, msdw, pvalue, sumW, xbar):
         self.slope = slope
         self.intercept = intercept
         self.slope_se = slope_se
@@ -270,22 +282,11 @@ class YorkregressResult(LinregressResult):
         self.pvalue = pvalue
         self._sumW = sumW
         self._xbar = xbar
-        self._ci = None
-        self._zscore = None
-        self.ci = ci
-        self.zscore = zscore
 
     def __repr__(self):
-        if self._ci is not None:
-            ciz = f', ci={self._ci}'
-        elif self._zscore is not None:
-            ciz = f', zscore={self._zscore}'
-        else:
-            ciz = ''
-
         return (f'{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, '
                 f'slope_se={self.slope_se}, intercept_se={self.intercept_se}, df={self.df}, '
-                f'msdw={self.msdw}, pvalue={self.pvalue}{ciz})')
+                f'msdw={self.msdw}, pvalue={self.pvalue})')
 
     def y_se(self, x):
         """
@@ -294,71 +295,13 @@ class YorkregressResult(LinregressResult):
         return np.sqrt(1 / self._sumW + ((x - self._xbar) ** 2) * (self.slope_se ** 2))
 
     def label(self, sigfig=5):
-        if self._ci is not None:
-            ciz = f', ci={self._ci}'
-        elif self._zscore is not None:
-            ciz = f', zscore={self._zscore}'
-        else:
-            ciz = ''
-
         label = 'y='
         label = f'{label}({toolbox.plotting._format_sigfig(self.slope, sigfig, self.slope_se)}'
         label = f'{label}±{toolbox.plotting._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
         label = f'{label} + ({toolbox.plotting._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
         label = f'{label}±{toolbox.plotting._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
-        label = f'{label}, msdw={self.msdw:.2f}{ciz}'
+        label = f'{label}, msdw={self.msdw:.2f}'
         return label
-
-    def _reset_ci_zscore(self):
-        if self.ci is not None:
-            val = stats.norm.ppf(0.5 + self.ci / 2)
-        elif self.zscore is not None:
-            val = self.zscore
-        else:
-            return
-
-        self.slope_se = self.slope_se / val
-        self.intercept_se = self.y_se(0)
-
-    @property
-    def ci(self):
-        return self._ci
-
-    @ci.setter
-    def ci(self, ci):
-        self._reset_ci_zscore()
-
-        self._ci = ci
-        self._zscore = None
-
-        if ci is not None:
-            try:
-                ci = stats.norm.ppf(0.5 + ci / 2)
-                self.slope_se = self.slope_se * ci
-                self.intercept_se = self.y_se(0)
-            except:
-                self._reset_ci_zscore()
-                raise
-
-
-    @property
-    def zscore(self):
-        return self._zscore
-
-    @ci.setter
-    def zscore(self, zscore):
-        self._reset_ci_zscore()
-
-        self._zscore = zscore
-        self._ci = None
-
-        if zscore is not None:
-            try:
-                self.slope_se = self.slope_se * zscore
-                self.intercept_se = self.y_se(0)
-            except:
-                self._reset_ci_zscore()
-                raise
 
 
 

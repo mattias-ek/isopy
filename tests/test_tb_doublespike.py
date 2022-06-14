@@ -219,7 +219,6 @@ class Test_Correction:
         np.testing.assert_allclose(result_siebert.Q, result_rudge.Q)
         np.testing.assert_allclose(result_siebert.lambda_, result_rudge.lambda_)
 
-
 class Test_Delta:
     def test_delta(self):
         spike = isopy.array(pd104=1, pd106=0, pd108=1, pd110=0)
