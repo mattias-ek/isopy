@@ -132,46 +132,55 @@ class Test_Reference_Value:
 
 class Test_Default_value:
     def test_isotope_mass(self):
-        assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
+        try:
+            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
 
-        isopy.refval.isotope.mass = isopy.refval.isotope.mass_number
-        assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_number
+            isopy.refval.isotope.mass = isopy.refval.isotope.mass_number
+            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_number
 
-        isopy.refval.reset()
-        assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
+            isopy.refval.reset()
+            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
 
-        alt = {str(key): key.mass_number for key in isopy.refval.element.isotopes['pd']}
-        with pytest.raises(TypeError):
+            alt = {str(key): key.mass_number for key in isopy.refval.element.isotopes['pd']}
+            with pytest.raises(TypeError):
+                isopy.refval.isotope.mass = alt
+
+            alt = isopy.IsopyDict(alt)
+            with pytest.raises(TypeError):
+                isopy.refval.isotope.mass = alt
+
+            alt = isopy.ScalarDict(alt)
             isopy.refval.isotope.mass = alt
-
-        alt = isopy.IsopyDict(alt)
-        with pytest.raises(TypeError):
-            isopy.refval.isotope.mass = alt
-
-        alt = isopy.ScalarDict(alt)
-        isopy.refval.isotope.mass = alt
-        assert isopy.refval.isotope.mass is alt
+            assert isopy.refval.isotope.mass is alt
+        finally:
+            # So that other tests dont use the wrong reference value
+            isopy.refval.reset()
 
     def test_isotope_fraction(self):
-        assert isopy.refval.isotope.fraction is isopy.refval.isotope.best_measurement_fraction_M16
+        try:
+            assert isopy.refval.isotope.fraction is isopy.refval.isotope.best_measurement_fraction_M16
 
-        isopy.refval.isotope.fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
-        assert isopy.refval.isotope.fraction is isopy.refval.isotope.initial_solar_system_fraction_L09
+            isopy.refval.isotope.fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
+            assert isopy.refval.isotope.fraction is isopy.refval.isotope.initial_solar_system_fraction_L09
 
-        isopy.refval.reset()
-        assert isopy.refval.isotope.fraction is isopy.refval.isotope.best_measurement_fraction_M16
+            isopy.refval.reset()
+            assert isopy.refval.isotope.fraction is isopy.refval.isotope.best_measurement_fraction_M16
 
-        alt = {str(key): key.mass_number for key in isopy.refval.element.isotopes['pd']}
-        with pytest.raises(TypeError):
+            alt = {str(key): key.mass_number for key in isopy.refval.element.isotopes['pd']}
+            with pytest.raises(TypeError):
+                isopy.refval.isotope.fraction = alt
+
+            alt = isopy.IsopyDict(alt)
+            with pytest.raises(TypeError):
+                isopy.refval.isotope.fraction = alt
+
+            alt = isopy.ScalarDict(alt)
             isopy.refval.isotope.fraction = alt
+            assert isopy.refval.isotope.fraction is alt
+        finally:
+            # So that other tests dont use the wrong reference value
+            isopy.refval.reset()
 
-        alt = isopy.IsopyDict(alt)
-        with pytest.raises(TypeError):
-            isopy.refval.isotope.fraction = alt
-
-        alt = isopy.ScalarDict(alt)
-        isopy.refval.isotope.fraction = alt
-        assert isopy.refval.isotope.fraction is alt
 
 class Test_misc:
     def test_repr(self):

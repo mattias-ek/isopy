@@ -251,7 +251,6 @@ class element(RefValGroup):
         """
         return core.ScalarDict(_load_RV_values('element_initial_solar_system_abundance_L09', np.float64), default_value=np.nan, readonly = True)
 
-
 class isotope(RefValGroup):
     def __init__(self, parent):
         self._parent = parent
@@ -318,7 +317,7 @@ class isotope(RefValGroup):
 
     @fraction.setter
     def fraction(self, value):
-        if not isinstance(value, core.IsopyDict):
+        if not isinstance(value, core.ScalarDict):
             raise TypeError('attribute must be a dictionary')
         self.__fraction = value
     
