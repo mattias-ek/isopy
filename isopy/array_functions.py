@@ -7,13 +7,12 @@ import warnings
 
 __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad', 'nancount',
            'rstack', 'cstack', 'concatenate',
-           'arrayfunc', 'keymax', 'keymin']
+           'arrayfunc', 'keymax', 'keymin',
+           'add', 'subtract', 'power', 'multiply', 'divide']
 
 __all__ += 'sd2 sd3 sd95 sd99 nansd2 nansd3 nansd95 nansd99'.split()
 __all__ += 'se2 se3 se95 se99 nanse2 nanse3 nanse95 nanse99'.split()
 __all__ += 'mad2 mad3 mad95 mad99 nanmad2 nanmad3 nanmad95 nanmad99'.split()
-
-
 
 
 def calculate_ci(ci, df=None):
@@ -524,15 +523,18 @@ def deprecated_dual_arrayfunc(func):
         if default_value is not None:
             warnings.warn("The default_value argument is deprecated for this function and will be "
                           "removed in a future release. Use array.default(default_value) instead.", stacklevel=1)
+            if type(default_value) is not tuple:
+                default_value = (default_value, default_value)
+
             if isinstance(a1, core.IsopyArray):
-                a1 = a1.default(default_value)
+                a1 = a1.default(default_value[0])
             elif isinstance(a1, dict) and type(a1) is not core.ScalarDict:
-                a1 = core.ScalarDict(a1, default_value = default_value)
+                a1 = core.ScalarDict(a1, default_value = default_value[0])
 
             if isinstance(a2, core.IsopyArray):
-                a2 = a2.default(default_value)
+                a2 = a2.default(default_value[1])
             elif isinstance(a2, dict) and type(a2) is not core.ScalarDict:
-                a2 = core.ScalarDict(a2, default_value = default_value)
+                a2 = core.ScalarDict(a2, default_value = default_value[1])
 
         if keys is not None:
             warnings.warn("The keys argument is deprecated for this function and will be "

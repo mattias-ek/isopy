@@ -18,14 +18,7 @@ def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, all
     if allow_none and value is None:
         return value
     if allow_list and isinstance(value, list):
-        out = []
-        try:
-            for i in range(len(value)):
-                out.append(check_type(name, value[i], *accepted_types, coerce=coerce, coerce_into=coerce_into))
-        except TypeError as err:
-            raise TypeError('index {} of {}'.format(i, str(err)))
-        else:
-            return out
+        raise NotImplementedError()
 
     for accepted_type in accepted_types:
         if isinstance(value, accepted_type):

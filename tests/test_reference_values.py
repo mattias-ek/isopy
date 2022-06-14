@@ -5,8 +5,8 @@ import hashlib
 import os
 import numpy as np
 
-#The hashes are different on Travis so these tests fail
-class _Test_Integrity:
+# Some hashes seem to be different on Travis compared to my mac
+class Test_Integrity:
     def hash_file(self, filename):
         filepath = os.path.join(os.path.dirname(isopy.__file__), 'referencedata', f'{filename}')
         with open(filepath, 'rb') as file:
@@ -15,13 +15,13 @@ class _Test_Integrity:
 
     def test_element_atomic_number(self):
         filename = 'element_atomic_number.csv'
-        valid_hash = 'dd448ec495daa9c09ab0507507808b24'
-        assert self.hash_file(filename) == valid_hash
+        valid_hash = ['dd448ec495daa9c09ab0507507808b24','71ddcf788ab22ad8e130c282775e41d8']
+        assert self.hash_file(filename) in valid_hash
 
     def test_element_symbol_name(self):
         filename = 'element_symbol_name.csv'
-        valid_hash = 'b67bd960a682ea7ce6563d1a18c7f276'
-        assert self.hash_file(filename) == valid_hash
+        valid_hash = ['b67bd960a682ea7ce6563d1a18c7f276', '1b7ea0b32389d4d601cdfecd327eb862']
+        assert self.hash_file(filename) in valid_hash
 
     def test_element_initial_solar_system_abundance_L09(self):
         filename = 'element_initial_solar_system_abundance_L09.csv'
@@ -45,8 +45,8 @@ class _Test_Integrity:
 
     def test_isotope_mass_W17(self):
         filename = 'isotope_mass_W17.csv'
-        valid_hash = '2e754cd8f5edec16e7afe2eedc5dbcb5'
-        assert self.hash_file(filename) == valid_hash
+        valid_hash = ['2e754cd8f5edec16e7afe2eedc5dbcb5', '457605e1208eb35b043d16b4514a53b3']
+        assert self.hash_file(filename) in valid_hash
 
     def test_isotope_sprocess_fraction_B11(self):
         filename = 'isotope_sprocess_fraction_B11.csv'

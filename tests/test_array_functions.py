@@ -755,6 +755,54 @@ class Test_ArrayFunctions:
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
+    def test_deprecated_dualinput(self):
+        keys1 = 'ru pd cd'.split()
+        keys2 = 'pd ag cd'.split()
+
+        a1 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=1)
+        a2 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
+        d2 = a2.to_dict()
+        ds2 = a2.to_scalardict()
+
+        # a, a
+        result = isopy.add(a1, a2)
+        true = a1 + a2
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, a2, 0)
+        true = a1.default(0) + a2.default(0)
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, a2, (0,1))
+        true = a1.default(0) + a2.default(1)
+        assert_array_equal_array(result, true)
+
+        # a, d
+        result = isopy.add(a1, d2)
+        true = a1 + a2.to_scalardict()
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, d2, 0)
+        true = a1.default(0) + a2.to_scalardict(0)
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, d2, (0, 1))
+        true = a1.default(0) + a2.to_scalardict(1)
+        assert_array_equal_array(result, true)
+
+        # a ds
+        result = isopy.add(a1, ds2)
+        true = a1 + ds2
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, ds2, 0)
+        true = a1.default(0) + ds2
+        assert_array_equal_array(result, true)
+
+        result = isopy.add(a1, ds2, (0, 1))
+        true = a1.default(0) + ds2
+        assert_array_equal_array(result, true)
+
     def test_count_finite(self):
         array = isopy.array([[1, 2, 3], [4, np.nan, 6]], 'ru pd cd'.split())
         answer = isopy.array((2, 1, 2), 'ru pd cd'.split())
@@ -990,6 +1038,7 @@ class Test_ArrayFunctions:
         array4 = isopy.ones(2) * 4
         array5 = isopy.ones(2) * 5
 
+        # Concatenate
         result = isopy.concatenate(array1)
         assert result is not array1
         assert_array_equal_array(result, array1)
@@ -1003,6 +1052,26 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.concatenate(array1, np.nan, array3, axis=0)
+        keys = array1.keys + array3.keys
+        assert result.keys == keys
+        for key in keys:
+            true = np.concatenate((array1.get(key), [np.nan], array3.get(key)))
+            np.testing.assert_allclose(result[key], true)
+
+        # rstack
+        result = isopy.rstack(array1)
+        assert result is not array1
+        assert_array_equal_array(result, array1)
+
+        result = isopy.rstack(array1, array2, array3)
+
+        keys = array1.keys | array2.keys | array3.keys
+        assert result.keys == keys
+        for key in keys:
+            true = np.concatenate((array1.get(key), [array2.get(key)], array3.get(key)))
+            np.testing.assert_allclose(result[key], true)
+
+        result = isopy.rstack(array1, np.nan, array3, axis=0)
         keys = array1.keys + array3.keys
         assert result.keys == keys
         for key in keys:
@@ -1029,6 +1098,23 @@ class Test_ArrayFunctions:
 
         with pytest.raises(ValueError):
             isopy.concatenate(array1, np.nan, array3, axis=1)
+
+        # cstack
+        result = isopy.cstack(array1)
+        assert result is not array1
+        assert_array_equal_array(result, array1)
+
+        result = isopy.cstack(array1, array2, array3)
+        assert result.keys == array1.keys + array2.keys + array3.keys
+        for key, v in array1.items():
+            np.testing.assert_allclose(result[key], v)
+        for key, v in array2.items():
+            np.testing.assert_allclose(result[key], v.repeat(2))
+        for key, v in array3.items():
+            np.testing.assert_allclose(result[key], v)
+
+        with pytest.raises(ValueError):
+            isopy.cstack(array1, np.nan, array3)
 
         # invalid axis
 
