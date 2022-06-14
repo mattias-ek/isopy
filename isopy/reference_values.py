@@ -69,7 +69,6 @@ class RefValGroup:
             
         return defval + refval
 
-
 class mass(RefValGroup):
     @is_reference_value        
     @core.cached_property
@@ -98,7 +97,6 @@ class mass(RefValGroup):
                     for mass in range(1, 239)}
         return core.IsopyDict(**{key: value for key, value in isotopes.items() if len(value) > 0},
                                default_value=isopy.IsotopeKeyList(), readonly=True)
-
 
 class element(RefValGroup):
     @is_reference_value
@@ -210,7 +208,7 @@ class element(RefValGroup):
             weights[element] = np.sum([self._parent.isotope.mass_W17.get(isotope) *
                                        self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
-        return core.IsopyDict(**weights, readonly=True)
+        return core.ScalarDict(**weights, readonly=True)
         
     @is_reference_value
     @core.cached_property
@@ -242,8 +240,17 @@ class element(RefValGroup):
         The ``get()`` method of this dictionary will automatically calculate the ratio of two
         isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
         for absent keys.
+
+        Examples
+        --------
+        >>> isopy.refval.element.atomic_number['pd']
+        1.36
+
+        >>> isopy.refval.element.atomic_number.get('ge')
+        32
         """
         return core.ScalarDict(_load_RV_values('element_initial_solar_system_abundance_L09', np.float64), default_value=np.nan, readonly = True)
+
 
 class isotope(RefValGroup):
     def __init__(self, parent):
@@ -279,8 +286,8 @@ class isotope(RefValGroup):
 
     @mass.setter
     def mass(self, value):
-        if not isinstance(value, core.IsopyDict):
-            raise TypeError('attribute must be a dictionary')
+        if not isinstance(value, core.ScalarDict):
+            raise TypeError('attribute must be a scalar dictionary')
         self.__mass = value
     
     @is_default_value
@@ -407,7 +414,7 @@ class isotope(RefValGroup):
         0.2233
 
         >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('ge76')
-        0.07444
+        0.0.07444
 
         >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
         1.1849529780564263
@@ -420,9 +427,35 @@ class isotope(RefValGroup):
         """
         Dictionary containing the isotope abundance of the inital solar system composition (normalized to N(Si) = 10^6 atoms) from Lodders et al. (2019).
 
-        **Note** These values are not directly taken from the table but calculated from the elemental abundances and
-        the isotope fractions given the table. This ensures consistency between all three reference values. Discrepancies
-        between the calculated isotope abundances and those listen in the table are due to rounding errors.
+        Reference: `Lodders et al. (2019) <http://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+
+        Examples
+        --------
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
+        0.3032
+
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        8.5
+
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        1.184036939313984
+        """
+        return core.ScalarDict(_load_RV_values('isotope_initial_solar_system_abundance_L09', np.float64), default_value = np.nan, readonly = True)
+
+    @is_reference_value
+    @core.cached_property
+    def initial_solar_system_abundance_L09b(self):
+        """
+        Dictionary containing the isotope abundance calcualted from the elemental abundance and the isotope fraction.
+
+        **Note** These values are not directly taken from the table but calculated from
+        *element.initial_solar_system_abundance_L09* and *isotope.initial_solar_system_fraction_L09*. This ensures
+        consistency between all three reference values. Discrepancies between the calculated these isotope abundances
+        and *isotope.initial_solar_system_abundance_L09* are due to rounding errors.
 
         Reference: `Lodders et al. (2019) <http://materials.springer.com/lb/docs/sm_lbs_978-3-540-88055-4_34>`_.
 
@@ -443,9 +476,10 @@ class isotope(RefValGroup):
         """
         element_abundance = isopy.refval.element.initial_solar_system_abundance_L09
         isotope_fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
-        return core.ScalarDict({key: value * element_abundance.get(key.element_symbol) for key, value in isotope_fraction.items()},
-                               default_value=np.nan, readonly = True)
-        
+        result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
+
+        return core.ScalarDict(result, default_value=np.nan, readonly=True)
+
     @is_reference_value
     @core.cached_property
     def sprocess_fraction_B11(self):
