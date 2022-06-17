@@ -1015,10 +1015,19 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         raise ValueError(f'size of x ({x.shape[1]}) and y ({y.shape[1]}) do not match')
 
     if constants:
-        if not isinstance(constants, dict):
+        if isinstance(constants, str):
+            constants = isopy.askeystring(constants)
+            if constants.flavour == 'ratio':
+                xconstants = np.array([constants.numerator.mz(), constants.denominator.mz()])
+                yconstants = np.array([0, 0])
+            else:
+                xconstants = np.array([constants.mz()])
+                yconstants = np.array([0])
+        elif isinstance(constants, dict):
+            xconstants = np.array(list(constants.keys()), dtype=np.float64)
+            yconstants = np.array(list(constants.values()), dtype=np.float64)
+        else:
             raise ValueError(f'constants must be a dictionary not "{type(constants).__name__}"')
-        xconstants = np.array(list(constants.keys()), dtype=np.float64)
-        yconstants = np.array(list(constants.values()), dtype=np.float64)
 
         if xconstants.ndim != 1 or yconstants.ndim != 1:
             raise ValueError(f'constants must be scalar values')

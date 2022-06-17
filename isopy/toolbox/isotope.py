@@ -186,7 +186,6 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
     for item in kwargs.items():
         input.append(item)
 
-
     out_keys = isopy.IsotopeKeyList()
     for key, val in input:
         if isinstance(key, core.IsopyArray):
@@ -198,12 +197,12 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
             else:
                 raise ValueError(f'Unknown input: {key} input must be an element or isotope key string')
 
-        keys = keys.filter(mz_neq = out_keys.mz())
+        keys = keys.filter(mz_neq = out_keys.mz)
 
-        out_keys += tuple(dict(zip(keys.mz(), keys)).values())
+        out_keys += tuple(dict(zip(keys.mz, keys)).values())
 
     out_keys = out_keys.sorted()
-    mz_keys = [key.mz() for key in out_keys]
+    mz_keys = [key.mz for key in out_keys]
     mzkey_map = dict(zip(mz_keys, out_keys))
 
     out = isopy.zeros(None, out_keys)
@@ -212,10 +211,11 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
             array = key
         else:
             key = isopy.askeystring(key)
-            keys = key.element().isotopes()
+            keys = key.element_symbol.isotopes
             keys = keys.filter(mz_eq=mz_keys)
 
-            array = isopy.array(keys.fractions(isotope_fractions=isotope_fractions), keys)
+            array = isotope_fractions.get(keys)
+            #array = isopy.array(keys.fractions(isotope_fractions=isotope_fractions), keys)
 
         if mf_factor is not None:
             array = add_mass_fractionation(array, mf_factor, isotope_masses=isotope_masses)
@@ -224,7 +224,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
         array = array * val
 
         for k, v in array.items():
-            out[mzkey_map[k.mz()]] += v
+            out[mzkey_map[k.mz]] += v
 
     return out
 
@@ -828,29 +828,21 @@ def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
     {"Ba": IsotopeKeyList('138Ce')
     "La": IsotopeKeyList('138Ce')})
     """
-    main = isopy.askeylist(main).flatten(ignore_duplicates=True)
-    if not isinstance(main, (isopy.ElementKeyList, isopy.IsotopeKeyList)):
-        raise ValueError(f'main must be element or isotope key list not {type(main).__name__}')
+    main = isopy.askeylist(main).flatten(ignore_duplicates=True, try_flavours=('element', 'isotope', 'molecule'))
+
+    if len({key.contains_flavours for key in main}) > 1:
+        raise ValueError('All keys must be either element or isotope')
 
     if interferences is not None:
-        interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True)
-        if not isinstance(interferences, (isopy.ElementKeyList, isopy.IsotopeKeyList)):
-            raise ValueError(
-                f'interference must be element or isotope key list not {type(interferences).__name__}')
-
-        if isinstance(interferences, isopy.ElementKeyList):
-            interference_isotopes = isopy.IsotopeKeyList()
-            for element in interferences:
-                isotopes = isopy.refval.element.isotopes.get(element, None)
-                if isotopes is None: continue
-                isotopes = isotopes.set_charges(element.charge)
-                interference_isotopes += isotopes
-        else:
-            interference_isotopes = interferences
+        interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True, try_flavours=('element', 'isotope', 'molecule'))
+        # Create a list of all the possible isotopes
+        interference_isotopes = interferences.isotopes
     else:
         interference_isotopes = isopy.IsotopeKeyList()
 
-    if isinstance(main, isopy.ElementKeyList):
+
+    if 'element' in main.contains_flavours:
+        # Either ElementKeyList or a MoleculeKeyList with no isotopes
         main_isotopes = isopy.IsotopeKeyList()
         for element in main:
             if element in interference_isotopes.element_symbols:
@@ -863,17 +855,15 @@ def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
     if interferences is None:
         interference_isotopes = isopy.IsotopeKeyList()
         for mass in main_isotopes.mass_numbers:
-            interference_isotopes += isopy.refval.mass.isotopes[mass]
+            interference_isotopes += isopy.refval.mass.isotopes.get(mass)
 
     interference_elements = interference_isotopes.element_symbols.flatten(ignore_duplicates=True)
 
     result = isopy.IsopyDict(default_value=tuple())
     for element in interference_elements:
-        interferences = isopy.refval.element.isotopes.get(element, None)
-        if interferences is None: continue
-        interferences = interferences.set_charges(element.charge)
+        interferences = element.isotopes()
         main = main_isotopes.filter(element_symbol_neq=element,
-                                    mz_eq=interferences.mz())
+                                    mz_eq=interferences.mz)
         if len(main) > 0:
             result[element] = main
     return result
@@ -984,9 +974,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
                 interference_isotope = isopy.keymax(data.copy(element_symbol_eq=interference_element))
 
         # Get the abundances of all isotopes of the interfering element
-        inf_data = isotope_fractions.copy(element_symbol_eq=interference_isotope.element_symbol.basekey)
-        inf_data  = {key.set_charge(interference_isotope.charge): value for key, value in inf_data.items()}
-        inf_data = isopy.array(inf_data)
+        inf_data = isotope_fractions.get(interference_isotope.element_symbol.isotopes)
 
         # Turn into a ratio relative to interference isotope
         inf_data = inf_data.ratio(interference_isotope, remove_denominator=False)
@@ -999,16 +987,16 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
         inf_data = inf_data * data[keys[numer.index(interference_isotope)]]
 
         # Convert to a mass array for easy lookup later
-        inf_data = {key.numerator.mz(): value for key, value in inf_data.items()}
+        inf_data = {key.numerator.mz: value for key, value in inf_data.items()}
 
         # Loop through each key and remove interference
         for i, key in enumerate(keys):
             if (numer[i] in correct_isotopes or numer[i].element_symbol == interference_element):
-                out[key] = out[key] - inf_data.get(numer[i].mz(), 0)
+                out[key] = out[key] - inf_data.get(numer[i].mz, 0)
 
         # If *data* is a ratio array then correct for any interference on the denominator
         if denom is not None and denom in correct_isotopes:
-            out = out / (1 - inf_data.get(denom.mz(), 0))
+            out = out / (1 - inf_data.get(denom.mz, 0))
 
     return out
 

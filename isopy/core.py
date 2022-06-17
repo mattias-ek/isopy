@@ -293,10 +293,6 @@ def parse_keyfilters(**filters):
     if element_symbol:
         filters['element_symbol'] = parse_keyfilters(**element_symbol)
 
-    mz = _split_filter('mz', filters)
-    if mz and not (len(mz) == 1 and 'true_mass' in mz):
-        filters['mz'] = parse_keyfilters(**mz)
-
     #For ratio keys
     numerator = _split_filter('numerator', filters)
     if numerator:
@@ -387,6 +383,9 @@ class KeyTypeError(KeyParseError, TypeError):
 class IsopyFlavour:
     def __repr__(self):
         return self.__class__.__name__
+
+    def __hash__(self):
+        return hash(self.__class__.__name__)
 
     def __eq__(self, other):
         if type(other) is not str:
@@ -546,11 +545,12 @@ FLAVOURS = {f.__flavour_name__: f for f in [MassFlavour, ElementFlavour,
                                             RatioFlavour, MixedFlavour,
                                             GeneralFlavour]}
 
-DEFAULT_TRY_FLAVOURS = ('mass', 'element', 'isotope', 'ratio', 'mixed', 'molecule', 'general')
+# TODO change docs
+ALL_FLAVOURS = ('mass', 'element', 'isotope', 'ratio',  'mixed', 'molecule', 'general')
 
-def default_key_flavours(flavours):
-    if flavours is None:
-        flavours = DEFAULT_TRY_FLAVOURS
+def parse_key_flavours(flavours):
+    if flavours is None or flavours == 'all':
+        flavours = ALL_FLAVOURS
     elif not isinstance(flavours, (list, tuple)):
         flavours = (flavours, )
     else:
@@ -565,10 +565,8 @@ class IsopyKeyString(str):
     def __repr__(self):
         return f"{self.__class__.__name__}('{self}')"
 
-    def __new__(cls, string, basekey = None, **kwargs):
+    def __new__(cls, string, **kwargs):
         obj = str.__new__(cls, string)
-        if basekey is None: basekey = obj
-        object.__setattr__(obj, 'basekey', basekey)
 
         #object.__setattr__(obj, '_colname', string)
         for name, value in kwargs.items():
@@ -605,6 +603,10 @@ class IsopyKeyString(str):
         else:
             return askeystring(other).__truediv__(self)
 
+    @property
+    def contains_flavours(self):
+        return (self.flavour,)
+
     def str(self, format = None):
         if format is None: return str(self)
         options = self._str_options()
@@ -616,6 +618,38 @@ class IsopyKeyString(str):
 
     def _flatten(self):
         return (self,)
+
+    def _filter(self, **filters):
+        for f, v in filters.items():
+            try:
+                attr, comparison = f.rsplit('_', 1)
+            except ValueError:
+                return False
+
+            if attr == 'key':
+                attr = self
+            else:
+                attr = getattr(self, attr, NotImplemented)
+
+            if attr is NotImplemented or comparison not in ('eq', 'neq', 'lt', 'gt', 'le', 'ge'):
+                return False
+
+            try:
+                if comparison == 'eq' and attr not in v:
+                    return False
+                elif comparison == 'neq' and attr in v:
+                    return False
+                elif comparison == 'lt' and not attr < v:
+                    return False
+                elif comparison == 'gt' and not attr > v:
+                    return False
+                elif comparison == 'le' and not attr <= v:
+                    return False
+                elif comparison == 'ge' and not attr >= v:
+                    return False
+            except:
+                return False
+        return True
 
 
 class MassKeyString(IsopyKeyString, MassFlavour):
@@ -660,10 +694,9 @@ class MassKeyString(IsopyKeyString, MassFlavour):
     """
 
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, allow_reformatting=True, ignore_charge = False):
+    def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
-            if ignore_charge: return string.basekey
-            else: return string
+            return string
 
         if isinstance(string, int) and allow_reformatting:
             string = str(string)
@@ -723,29 +756,6 @@ class MassKeyString(IsopyKeyString, MassFlavour):
                 pass
 
         return int(self) < item
-
-    def _filter(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq = None,
-                *, key_lt=None, key_gt=None, key_le=None, key_ge=None, **invalid):
-        if invalid:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
-            return False
-        if key_lt is not None and not self < key_lt:
-            return False
-        if key_gt is not None and not self > key_gt:
-            return False
-        if key_le is not None and not self <= key_le:
-            return False
-        if key_ge is not None and not self >= key_ge:
-            return False
-
-        return True
 
     def _sortkey(self):
         return f'A{self:0>4}'
@@ -814,12 +824,9 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
     """
 
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, charge = NotGiven, allow_reformatting=True, ignore_charge = False):
-        if isinstance(string, cls) and charge is NotGiven:
-            if ignore_charge:
-                return string.basekey
-            else:
-                return string
+    def __new__(cls, string, *, allow_reformatting=True):
+        if isinstance(string, cls):
+            return string
 
         if not isinstance(string, str):
             raise KeyTypeError(cls, string)
@@ -831,23 +838,6 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
 
         if len(string) == 0:
             raise KeyValueError(cls, string, 'Cannot parse empty string')
-
-        if charge is NotGiven:
-            if '+' in string:
-                charge = len(string) - len(string:=string.rstrip('+'))
-            elif '-' in string:
-                charge = -(len(string) - len(string:=string.rstrip('-')))
-            else:
-                charge = None
-        elif type(charge) is int or charge is None:
-            if '+' in string:
-                string = string.rstrip('+')
-            elif '-' in string:
-                string = string.rstrip('-')
-            if charge == 0:
-                charge = None
-        else:
-            raise TypeError('charge must be an integer or None')
 
         if len(string) > 2:
             if allow_reformatting:
@@ -869,27 +859,9 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
         else:
             raise KeyValueError(cls, string, 'First character must be upper case and second character must be lower case')
 
-        if not ignore_charge and charge is not None:
-            basekey = super(ElementKeyString, cls).__new__(cls, string, charge = None)
-            string = f'{string}{"+" * charge or "-" * abs(charge)}'
-        else:
-            basekey = None
-            charge = None
-
-        return super(ElementKeyString, cls).__new__(cls, string, basekey, charge = charge)
-
-    def _filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq = None, **invalid):
-        if invalid:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
-            return False
-        return True
+        key = super(ElementKeyString, cls).__new__(cls, string)
+        object.__setattr__(key, 'element_symbol', key)
+        return key
 
     def _z(self):
         return isopy.refval.element.atomic_number.get(self, 0)
@@ -924,35 +896,19 @@ class ElementKeyString(IsopyKeyString, ElementFlavour):
         return super(ElementKeyString, self).str(format)
 
     def _str_options(self):
-        name: str = isopy.refval.element.symbol_name.get(self.basekey, str(self.basekey))
-        if self.charge is not None: name = f'{name}^{"+" * self.charge or "-" * abs(self.charge)}'
+        name = isopy.refval.element.symbol_name.get(self, str(self))
         return dict(key = str(self),
                     es=self.lower(), ES=self.upper(), Es=str(self),
                     name=name.lower(), NAME=name.upper(), Name=name,
                     math = fr'\mathrm{{{self}}}',
                     latex = fr'$\mathrm{{{self}}}$')
 
-    def set_charge(self, charge):
-        """
-        Returns a copy of this key string with a new charge.
-
-        If *charge* is ``0`` charge will be set to ``None``.
-
-        Examples
-        --------
-        >>> isopy.IsotopeKeyString('pd').set_charge(2)
-        ElementKeyString('Pd++')
-        """
-        return self.__class__(self, charge=charge)
-
-    def element(self):
-        return self
-
+    @property
     def isotopes(self, isotopes = None):
         if isotopes is None:
             isotopes = isopy.refval.element.isotopes
 
-        return IsotopeKeyList(isotopes.get(self, [])).set_charges(self.charge)
+        return IsotopeKeyList(isotopes.get(self, []))
 
 
 class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
@@ -988,6 +944,8 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         The mass number of the isotope
     element_symbol : ElementKeyString
         The element symbol of the isotope
+    mz : float
+        The m/z for this isotope on the basis of the mass number.
 
 
     Examples
@@ -996,7 +954,7 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
     '104Pd'
     >>> isopy.IsotopeKeyString('104pd')
     '104Pd'
-    >>> isopy.IsotopeKeyString('Pd104').mass_W17
+    >>> isopy.IsotopeKeyString('Pd104').mass
     '104'
     >>> isopy.IsotopeKeyString('Pd104').element_symbol
     'Pd'
@@ -1011,12 +969,9 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
     """
 
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, allow_reformatting=True, ignore_charge = False):
+    def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
-            if ignore_charge:
-                return string.basekey
-            else:
-                return string
+            return string
 
         if not isinstance(string, str):
             raise KeyTypeError(cls, string)
@@ -1048,23 +1003,18 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
             mass = string.rstrip(element)
 
         try:
-            mass = MassKeyString(mass, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
-            element = ElementKeyString(element, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
+            mass = MassKeyString(mass, allow_reformatting=allow_reformatting)
+            element = ElementKeyString(element, allow_reformatting=allow_reformatting)
         except KeyParseError as err:
             raise KeyValueError(cls, string,
                                 'unable to separate string into a mass number and an element symbol') from err
 
-        basekey = super(IsotopeKeyString, cls).__new__(cls, f'{mass.basekey}{element.basekey}',
-                                                       mass_number = mass.basekey,
-                                                       element_symbol = element.basekey,
-                                                       charge = None)
-
         string = '{}{}'.format(mass, element)
 
-        return super(IsotopeKeyString, cls).__new__(cls, string, basekey,
+        return super(IsotopeKeyString, cls).__new__(cls, string,
                                                    mass_number = mass,
                                                    element_symbol = element,
-                                                   charge = element.charge)
+                                                    mz = float(mass))
 
     def __hash__(self):
         return hash( (self.__class__, hash(self.mass_number), hash(self.element_symbol)) )
@@ -1075,47 +1025,17 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
         """
         return self.mass_number == string or self.element_symbol == string
 
-    def _filter(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq = None,
-                mass_number = {}, element_symbol = {}, mz = {}, **invalid):
-        if len(invalid) > 0:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
+    def _filter(self, mass_number = {}, element_symbol = {}, **filters):
+        if filters and not super(IsotopeKeyString, self)._filter(**filters):
             return False
         if mass_number and not self.mass_number._filter(**mass_number):
             return False
         if element_symbol and not self.element_symbol._filter(**element_symbol):
             return False
-        if mz and not self._filter_mz(**mz):
-            return False
-
-        return True
-
-    def _filter_mz(self, key_eq=None, key_neq=None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
-                   true_mass=False, isotope_masses=None):
-        mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
-        if key_eq is not None and mz not in key_eq:
-            return False
-        if key_neq is not None and mz in key_neq:
-            return False
-        if key_lt is not None and not mz < key_lt:
-            return False
-        if key_gt is not None and not mz > key_gt:
-            return False
-        if key_le is not None and not mz <= key_le:
-            return False
-        if key_ge is not None and not mz >= key_ge:
-            return False
-
         return True
 
     def _sortkey(self):
-        return f'C{self.mz():0>8.3f}{self._z():0>4}'
+        return f'C{self.mz:0>8.3f}{self._z():0>4}'
 
     def _z(self):
         return self.element_symbol._z()
@@ -1172,90 +1092,8 @@ class IsotopeKeyString(IsopyKeyString, IsotopeFlavour):
 
         return options
 
-    def set_charge(self, charge):
-        """
-        Returns a copy of this key string with a new charge.
-
-        If *charge* is ``0`` charge will be set to ``None``.
-
-        Examples
-        --------
-        >>> isopy.IsotopeKeyString('105pd').set_charge(2)
-        IsotopeKeyString('105Pd++')
-        """
-        return self.__class__(f'{self.mass_number}{self.element_symbol.set_charge(charge)}')
-
-    def mz(self, true_mass = False, isotope_masses = None):
-        """
-        Return the mass over charge ratio for this isotope.
-
-        If the isotope does not have a charge then the mass of the
-        isotope is returned. Negative charges will return a positive
-        number.
-
-        Parameters
-        ----------
-        true_mass
-            If ``False`` then the mass_number is returned. If ``True``
-            then real mass is returned.
-        isotope_masses
-            A dictionary containing the real masses of the isotopes.
-            Only used if *true_mass* is ``True``
-
-        Returns
-        -------
-        >>> isopy.IsotopeKeyString('105pd').mz()
-        105.0
-        >>> isopy.IsotopeKeyString('105pd').mz(True)
-        104.9050795
-        >>> isopy.IsotopeKeyString('105pd++').mz()
-        52.5
-        """
-        charge = abs(self.charge or 1)
-        if true_mass:
-            if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
-            return isotope_masses[self.basekey] / charge
-        else:
-            return float(self.mass_number) / charge
-
-    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
-        """
-        Returns the fraction of this isotope from all isotopes of this element.
-
-        This assumes that the sum off all isotopes of an element in *isotope_fraction*
-        equals 1.
-
-        Parameters
-        ----------
-        default_value
-            The default value returned for isotopes not present in *isotope_fractions*. Default
-            value is ``np.nan``.
-        isotope_fractions
-            A dictionary containing the isotope fractions of each element. Default is
-            ``isopy.refval.isotope.fraction``.
-
-        Examples
-        --------
-        >>> isopy.IsotopeKeyString('105pd').fraction()
-        0.2233
-        """
-        if isotope_fractions is None:
-            isotope_fractions = isopy.refval.isotope.fraction
-        if not isinstance(isotope_fractions, ScalarDict):
-            isotope_fractions = ScalarDict(isotope_fractions)
-
-        return isotope_fractions.get(self, default_value)
-
-    @renamed_function(isotope_fraction)
-    def fraction(self, default_value = np.nan, isotope_fractions = None): pass
-
-    def element(self):
-        """
-        Returns the element symbol.
-        """
-        return self.element_symbol
-
-    def isotopes(self, isotopes=None):
+    @property
+    def isotopes(self):
         """
         Return the key as a single item key list.
 
@@ -1271,8 +1109,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
     Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
     Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`IsotopeKeyString`.
-
+    :class:`MoleculeKeyString`.
 
     Parameters
     ----------
@@ -1285,13 +1122,16 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         If ``True`` the string will be reformatted to the correct format. If ``False`` an exception
         will be raised it the string is not correctly formatted.
 
-    Raises
-    ------
-    KeyValueError
-        Is raised when the supplied string cannot be parsed into the correct format
-    KeyTypeError
-        Raised when the supplied item cannot be turned into a string
-
+    Attributes
+    ----------
+    mz : float
+        The m/z ratio for this molecule on the basis of the mass numbers.
+    components : tuple
+        A sequence of the components of this molecule
+    n: int
+        The multiplier of this molecule
+    charge : int, None
+        The charge of this molecule
 
     Examples
     --------
@@ -1305,200 +1145,237 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
     >>> isopy.MoleculeKeyString('oh') # Becomes element symbol Oh
     'Oh'
     """
+    subcomponents : tuple
+
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, allow_reformatting=True, ignore_charge=False):
-        # This adds the subcomponents
-        # And simplifies if possible
-        def make_molecule(mol, n, charge):
-            molstr = cls._makestr(mol, n, charge)
+    def __new__(cls, components, *, allow_reformatting=True):
+        if type(components) is cls:
+            return components
 
-            return super(MoleculeKeyString, cls).__new__(cls, molstr,
-                                                             subcomponents=mol,
-                                                             n=n,
-                                                             charge=charge)
+        parsed_components = cls._parse_components(components)
+        if isinstance(parsed_components, IsopyKeyString):
+            new = parsed_components
+        else:
+            new = cls._new(parsed_components)
 
-        def append(z, mol, n, charge, subcomponent):
-            if n == '':
-                n = 1
-            else:
-                n = int(n)
+        if (allow_reformatting is False and type(components) is str and
+                str(components) != str(new)):
+            raise KeyValueError(cls, str(components), f'Final string "{new}" does not match input')
 
-            if charge == '' or ignore_charge is True:
-                charge = None
-            else:
-                charge = (charge.count('-') * -1) or charge.count('+')
+        return new
 
-            if type(mol) is str:
-                if z == '':
-                    mol = isopy.ElementKeyString(mol, allow_reformatting=allow_reformatting)
+    @classmethod
+    def _new(cls, components, n=1, charge=None):
+        if type(components) is list:
+            components = tuple(components)
+        elif type(components) is not tuple:
+            components = (components,)
+
+        string = cls._make_string(components, n, charge, bracket=False)
+        return super(MoleculeKeyString, cls).__new__(cls, string,
+                                                     components=components,
+                                                     n=n,
+                                                     charge=charge)
+
+    @classmethod
+    def _parse_components(cls, components, ignore_charge = False):
+        if not isinstance(components, (list, tuple)):
+            components = [components]
+
+        items = []
+
+        for component in components:
+            if isinstance(component, (ElementKeyString, IsotopeKeyString, MoleculeKeyString)):
+                items.append(component)
+            elif isinstance(component, str):
+                items += cls._parse_string(component, ignore_charge=ignore_charge)
+            elif type(component) is int:
+                if component > 0:
+                    items.append(component)
                 else:
-                    mol = isopy.IsotopeKeyString(z + mol, allow_reformatting=allow_reformatting)
-                if n ==1 and charge is None:
-                    # Doesnt need to be its own molecule
-                    subcomponent.append(mol)
-                else:
-                    molecule = make_molecule((mol, ), n, charge)
-                    subcomponent.append(molecule)
-
-            elif (mol.n == 1 or n == 1) and (mol.charge is None or charge is None):
-                n = mol.n if n == 1 else n
-                charge = charge or mol.charge
-                if n == 1 and charge is None:
-                    subcomponent.extend(tuple(mol.subcomponents))
-                else:
-                    molecule = make_molecule(mol.subcomponents, n, charge)
-                    subcomponent.append(molecule)
+                    raise KeyValueError(cls, component, 'Negative value encountered')
+            elif isinstance(component, (list, tuple)):
+                items.append(cls._parse_components(component, ignore_charge=ignore_charge))
             else:
-                molecule = make_molecule((mol, ), n, charge)
-                subcomponent.append(molecule)
+                raise KeyTypeError(cls, component)
 
-            return '', '', '', ''
+        if len(items) == 0:
+            raise KeyValueError(cls, components, 'No molecule components found')
 
-        if isinstance(string, cls) and not ignore_charge:
-            return string
+        out = []
+        for i, item in enumerate(items):
+            if type(item) is str and not item.isdigit():
+                if item.isalpha():
+                    out.append(ElementKeyString(item))
+                elif item.isalnum():
+                    out.append(IsotopeKeyString(item))
+                elif not ignore_charge:
+                    charge = item.count('+') or item.count('-') * -1
+                    if len(out) != 0:
+                        if type(out[-1]) is cls and out[-1].charge is None:
+                            out[-1] = cls._new(out[-1].components, n=out[-1].n, charge=charge)
+                        else:
+                            out[-1] = cls._new(out[-1], charge=charge)
+                    else:
+                        raise KeyValueError(cls, item, f'Unattached charge')
 
-        if not isinstance(string, str):
-            raise KeyTypeError(cls, string)
+            elif type(item) is int or (type(item) is str and item.isdigit()):
+                n = int(item)
+                if len(out) != 0:
+                    if type(out[-1]) is cls and out[-1].n == 1:
+                        out[-1] = cls._new(out[-1].components, n=n, charge=out[-1].charge)
+                    else:
+                        out[-1] = cls._new(out[-1], n=n)
+                else:
+                    raise KeyValueError(cls, item, f'Unattached number')
 
-        string = string.strip()
-        if len(string) == 0:
-            raise KeyValueError(cls, string, 'Cannot parse empty string')
+            elif type(item) is list:
+                out.append(cls._new(item))
 
+            else:
+                # Key string
+                out.append(item)
+
+        if len(out) == 1:
+            return out[0]
+        else:
+            return out
+
+    @classmethod
+    def _parse_string(cls, string, ignore_charge=False):
         # A molecule contains at least one subcomponent
-        subcomponents = []
+        components = []
 
         # This is the variables we are extracting from the string
-        z, mol, n, charge = '', '', '', ''
+        number = ''
+        text = ''
 
         i = 0
         while i < len(string):
             char = string[i]
 
-            if char.isalpha():
-                if type(mol) is str and (len(mol) == 0 or (char.islower() and n == '' and charge == '')):
-                    mol += char
-                else:
-                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
-                    mol = char
+            if char.isdigit():
+                if text:
+                    components.append(number + text)
+                    number, text = '', ''
 
-            elif char.isdigit():
-                #if type(mol) is str and len(mol) == 0:
-                if mol == '':
-                    z += char
+                number += char
 
-                elif charge != '':
-                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
-                    z = char
-                else:
-                    n += char
+            elif char.isalpha():
+                if text and (char.isupper() or not text.isalpha()):
+                    components.append(number + text)
+                    number, text = '', ''
+
+                if number and len(components) != 0:
+                    components.append(number + text)
+                    number, text = '', ''
+
+                text += char
+
+            elif char == '+' or char == '-':
+                if text.count(char) != len(text) or number:
+                    components.append(number + text)
+                    number, text = '', ''
+
+                text += char
 
             elif char == '(':
-                if type(mol) is not str or len(mol) != 0:
-                    z, mol, n, charge = append(z, mol, n, charge, subcomponents)
+                if number or text:
+                    components.append(number + text)
+                    number, text = '', ''
 
-                elif len(z) != 0:
-                    raise KeyValueError(cls, string, f'Unattached digits "{z}"')
-
-                starts = 1
+                open_brackets = 1
                 for j, jc in enumerate(string[i + 1:]):
                     if jc == '(':
-                        starts += 1
-                    if jc == ')':
-                        starts -= 1
-                    if starts == 0:
-                        j = j + i + 1
+                        open_brackets += 1
+                    elif jc == ')':
+                        open_brackets -= 1
+
+                    if open_brackets == 0:
+                        j = i + j + 1
                         break
                 else:
-                    raise KeyValueError(cls, string, 'Unmatched "("')
+                    raise KeyValueError(cls, string, f'Unmatched "(" at index {i}')
 
-                mol = MoleculeKeyString(string[i + 1:j], ignore_charge=ignore_charge, allow_reformatting=allow_reformatting)
+                components.append(cls._parse_components(string[i + 1:j], ignore_charge=ignore_charge))
                 i = j
-            elif char == ')':
-                raise KeyValueError(cls, string, 'Unmatched ")"')
-            elif char == '+' or char == '-':
-                if mol == '':
-                    raise KeyValueError(cls, string, 'Unattached charge')
-                elif charge != '' and char not in charge:
-                    raise KeyValueError(cls, string, 'Mixed signs in charge')
-                else:
-                    charge += char
-            else:
-                raise KeyValueError(cls, string, f'Unknown character "{char}"')
 
+            else:
+                raise KeyValueError(cls, string, f'Invalid character "{char}" found.')
+
+            # Move to next char
             i += 1
 
-        if len(mol) != 0:
-            z, mol, n, charge = append(z, mol, n, charge, subcomponents)
-        elif z != '':
-            raise KeyValueError(cls, string, f'Unattached digits "{z}"')
+        components.append(number + text)
+        while components.count('') > 0:
+            components.remove('')
 
-        if len(subcomponents) == 1 and type(sm1 := subcomponents[0]) is MoleculeKeyString:
-            out = sm1
-        else:
-            out = make_molecule(tuple(subcomponents), 1, None)
+        return components
 
-        if allow_reformatting is False and str(out) != string:
-            raise KeyValueError(cls, string, f'Molecule string {out} does not match the input string {string}')
+    @classmethod
+    def _make_string(cls, components, n=None, charge=None, format=None, bracket=True):
+        if format == 'math':
+            l = fr'\left('
+            r = fr'\right)'
         else:
-            if ignore_charge is False and ('+' in out or '-' in out):
-                # Reprocess the string to remove charges
-                base_molecule = MoleculeKeyString(out, ignore_charge=True)
-                return super(MoleculeKeyString, cls).__new__(cls, out, base_molecule,
-                                                                 subcomponents=out.subcomponents,
-                                                                 n=out.n,
-                                                                 charge=out.charge)
+            l = '('
+            r = ')'
+
+        ncharge = ''
+        if n is not None and n != 1:
+            if format == 'math':
+                ncharge += f'_{{{n}}}'
             else:
-                return out
+                ncharge += str(n)
 
-    def _filter(self, key_eq=None, key_neq=None, flavour_eq=None, flavour_neq=None, mz = {},  **invalid):
-        if invalid:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
-            return False
-        if mz and not self._filter_mz(**mz):
-            return False
+        if charge is not None:
+            c = ('+' * charge or '-' * abs(charge))
+            if format == 'math':
+                c = f'^{{{c}}}'
+            else:
+                ncharge += c
 
-        return True
+        if isinstance(components, (list, tuple)) and len(components) == 1:
+            components = components[0]
 
-    def _filter_mz(self, key_eq=None, key_neq=None,key_lt=None, key_gt=None, key_le=None, key_ge=None,
-                   true_mass=False, isotope_masses=None):
-        try:
-            mz = self.mz(true_mass=true_mass, isotope_masses=isotope_masses)
-        except:
-            return None
-        if key_eq is not None and mz not in key_eq:
-            return False
-        if key_neq is not None and mz in key_neq:
-            return False
-        if key_lt is not None and not mz < key_lt:
-            return False
-        if key_gt is not None and not mz > key_gt:
-            return False
-        if key_le is not None and not mz <= key_le:
-            return False
-        if key_ge is not None and not mz >= key_ge:
-            return False
+        if type(components) == ElementKeyString:
+            return f'{components.str(format)}{ncharge}'
 
-        return True
+        elif type(components) == IsotopeKeyString:
+            if format == 'math':
+                return f'{components.str(format)}{ncharge}'
+            else:
+                return f'{l}{components.str(format)}{r}{ncharge}'
+
+        elif type(components) == MoleculeKeyString:
+            if ncharge:
+                return f'{l}{components.str(format)}{r}{ncharge}'
+            else:
+                return cls._make_string(components.components, components.n, components.charge, format, bracket)
+
+        else:
+            string = ''.join([cls._make_string(c, format=format) for c in components])
+
+            if ncharge:
+                string = f'{l}{string}{r}{ncharge}'
+
+            if bracket:
+                return f'{l}{string}{r}'
+            else:
+                return string
 
     def _z(self):
         z = 0
-        for sc in self.subcomponents:
+        for sc in self.components:
             z += (sc._z() * self.n)
 
         return z
 
     def _sortkey(self):
-        if self.has_element():
+        if self.contains_element_key:
             return f'D{0:0>8.3f}{self._z():0>4}'
         else:
-            return f'D{self.mz():0>8.3f}{self._z():0>4}'
+            return f'D{self.mz:0>8.3f}{self._z():0>4}'
 
     def str(self, format=None):
         """
@@ -1514,113 +1391,36 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
         """
         return super(MoleculeKeyString, self).str(format)
 
-    @classmethod
-    def _makestr(cls, thing, n = None, charge = None, format = None):
-        if format == 'latex':
-            # We want the maths option. The latex part is handled by _str_options
-            format = 'math'
-
-        if type(thing) is ElementKeyString:
-            return thing.str(format)
-        elif type(thing) is IsotopeKeyString:
-            return thing.str(format)
-        elif type(thing) is MoleculeKeyString:
-            n = thing.n
-            charge = thing.charge
-            subcomponents = thing.subcomponents
-        else:
-            subcomponents = thing
-
-        if n == 1: n = ''
-        elif format == 'math': n = f'_{{{n}}}'
-
-        if charge is None: charge = ''
-        else:
-            charge = '+' * charge or '-' * abs(charge)
-            if format == 'math':
-                charge = fr'^{{{charge}}}'
-
-        subcomponents = [cls._makestr(s, format=format) for s in subcomponents]
-        if len(subcomponents) == 1:
-            if subcomponents[0][0].isdigit() and (charge != '' or n != ''):
-                #Isotope not in math mode
-                return f'({subcomponents[0]}){n}{charge}'
-            else:
-                return f'{subcomponents[0]}{n}{charge}'
-        else:
-            #Isotopes not in math mode
-            subcomponents = [f'({s})' if s[0].isdigit() else s for s in subcomponents]
-            subcomponents = "".join(subcomponents)
-            if charge != '' or n != '':
-                if format == 'math':
-                    subcomponents = fr'\left({subcomponents}\right)'
-                else:
-                    subcomponents = f'({subcomponents})'
-
-            return f'{subcomponents}{n}{charge}'
-
     def _str_options(self):
         options = dict(key = str(self))
-        options['math'] = self._makestr(self, format='math')
-        options['latex'] = fr'${self._makestr(self, format="latex")}$'
+        options['math'] = self._make_string(self, format='math', bracket=False)
+        options['latex'] = fr'${self._make_string(self, format="math", bracket=False)}$'
         return options
 
-    def set_charge(self, charge):
-        """
-        Returns a copy of this key string with a new charge.
+    @property
+    def mz(self):
+        # Has to be a property as it looks up the value
+        return isopy.refval.isotope.mass_number.get(self)
 
-        If *charge* is ``0`` charge will be set to ``None``.
+    @property
+    def element_symbol(self):
+        """
+        Returns the elemental composition of this molecule.
+
+        This function does not condense the molecule formula thus
+        ``"(1H)(1H)(16O)"`` will come back as ``"HHO"`` rather than
+        ``"H2O"``.
 
         Examples
         --------
-        >>> isopy.MoleculeKeyString('H2O').set_charge(2)
-        MoleculeKeyString('(H2O)++')
+        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').element()
+        MoleculeKeyString('HHO')
         """
-        if charge == 0:
-            charge = None
-        molstr = self._makestr(self.subcomponents, self.n, charge)
-        return super(MoleculeKeyString, self).__new__(self.__class__, molstr, self.basekey,
-                                                     subcomponents=self.subcomponents,
-                                                     n=self.n,
-                                                     charge=charge)
+        components = []
+        for c in self.components:
+            components.append(c.element_symbol)
 
-    def mz(self, true_mass = False, isotope_masses = None):
-        """
-        Return the mass over charge ratio for this molecule.
-
-        If the molecule does not have a charge then the mass of the
-        molecule is returned. Negative charges will return a positive
-        number.
-
-        Parameters
-        ----------
-        true_mass
-            If ``False`` then the mass_number is used as the mass for each isotope. If ``True``
-            then real mass is used.
-        isotope_masses
-            A dictionary containing the real masses of the isotopes.
-            Only used if *true_mass* is ``True``
-
-        Returns
-        -------
-        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').mz()
-        18.0
-        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').mz(True)
-        18.010564684
-        >>> isopy.MoleculeKeyString('((1H)(1H)(16O))++').mz()
-        9
-        """
-        if isotope_masses is None: isotope_masses = isopy.refval.isotope.mass
-
-        mz = 0
-        for sc in self.subcomponents:
-            if type(sc) is ElementKeyString:
-                raise TypeError(f'Molecule contains an element key string ("{sc}")')
-            else:
-                mz += sc.mz(true_mass, isotope_masses)
-
-        charge = abs(self.charge or 1)
-        return (mz * self.n) / charge
+        return self._new(components, self.n, self.charge)
 
     def __isotopes(self, isotopes):
         if isotopes is None:
@@ -1628,7 +1428,7 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
 
         all = [[]]
 
-        for sc in self.subcomponents:
+        for sc in self.components:
             # Should save a bit of time
             if type(sc) is MoleculeKeyString:
                 molecules = sc.__isotopes(isotopes)
@@ -1648,99 +1448,29 @@ class MoleculeKeyString(IsopyKeyString, MoleculeFlavour):
                         alliso.extend([a + [molecule] for a in all])
                     all = alliso
 
-        allmol = []
-        for mol in all:
-            molstr = self._makestr(mol, 1, self.charge)
-            allmol.append(super(MoleculeKeyString, self).__new__(self.__class__, molstr,
-                                                          subcomponents=mol,
-                                                          n=1,
-                                                          charge=self.charge))
-        return allmol
+        return [self._new(mol, 1, self.charge) for mol in all]
 
+    @property
     def isotopes(self, isotopes = None):
         return MoleculeKeyList(self.__isotopes(isotopes))
 
-    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
-        """
-        Returns the fraction of this molecule from all molecules with
-        the same elemental formula.
+    @property
+    def contains_flavours(self):
+        return tuple({component.contains_flavours for component in self.components})
 
-        This assumes that the sum off all isotopes of an element in *isotope_fraction*
-        equals 1. Element keys are always equal to 1.
-
-        Parameters
-        ----------
-        default_value
-            The default value returned for isotopes not present in *isotope_fractions*. Default
-            value is ``np.nan``.
-        isotope_fractions
-            A dictionary containing the isotope fractions of each element. Default is
-            ``isopy.refval.isotope.fraction``.
-
-        Examples
-        --------
-        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').fraction()
-        0.9973098853327474
-        """
-        if isotope_fractions is None:
-            isotope_fractions = isopy.refval.isotope.fraction
-        if not isinstance(isotope_fractions, IsopyDict):
-            isotope_fractions = IsopyDict(isotope_fractions)
-
-        fraction = 1
-        for sc in self.subcomponents:
-            for i in range(self.n):
-                if type(sc) is ElementKeyString:
-                    fraction *= 1
-                else:
-                    fraction *= sc.fraction(default_value, isotope_fractions)
-        return fraction
-
-    @renamed_function(isotope_fraction)
-    def fraction(self, default_value = np.nan, isotope_fractions = None): pass
-
-    def element(self):
-        """
-        Returns the elemental composition of this molecule.
-
-        This function does not condense the molecule formula thus
-        ``"(1H)(1H)(16O)"`` will come back as ``"HHO"`` rather than
-        ``"H2O"``.
-
-        Examples
-        --------
-        >>> isopy.MoleculeKeyString('(1H)(1H)(16O)').element()
-        MoleculeKeyString('HHO')
-        """
-        subcomponents = []
-        for sc in self.subcomponents:
-            if type(sc) is ElementKeyString: subcomponents.append(sc)
-            elif type(sc) is IsotopeKeyString: subcomponents.append(sc.element_symbol)
-            else: subcomponents.append(sc.element())
-
-        molstr = self._makestr(subcomponents, self.n, self.charge)
-        return super(MoleculeKeyString, self).__new__(self.__class__, molstr,
-                                                      subcomponents=subcomponents,
-                                                      n=self.n,
-                                                      charge=self.charge)
-
+    @property
     def contains_element_key(self):
-        for sc in self.subcomponents:
+        for sc in self.components:
             if sc.flavour == 'element': return True
-            elif sc.flavour == 'molecule' and sc.contains_element_key(): return True
+            elif sc.flavour == 'molecule' and sc.contains_element_key: return True
         return False
 
+    @property
     def contains_isotope_key(self):
-        for sc in self.subcomponents:
+        for sc in self.components:
             if sc.flavour == 'isotope': return True
-            elif sc.flavour == 'molecule' and sc.contains_isotope_key(): return True
+            elif sc.flavour == 'molecule' and sc.contains_isotope_key: return True
         return False
-
-    @renamed_function(contains_element_key)
-    def has_element(self): pass
-
-    @renamed_function(contains_isotope_key)
-    def has_isotope(self): pass
 
 
 class RatioKeyString(IsopyKeyString, RatioFlavour):
@@ -1817,12 +1547,9 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
     """
 
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, allow_reformatting=True, ignore_charge = False):
+    def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
-            if ignore_charge:
-                return string.basekey
-            else:
-                return string
+            return string
 
         if isinstance(string, tuple) and len(string) == 2:
             numer, denom = string
@@ -1861,8 +1588,8 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
                     raise KeyValueError(cls, string,
                                             'unable to split string into numerator and denominator')
 
-        numer = askeystring(numer, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
-        denom = askeystring(denom, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
+        numer = askeystring(numer, allow_reformatting=allow_reformatting)
+        denom = askeystring(denom, allow_reformatting=allow_reformatting)
 
         for n in range(1, 10):
             divider = '/' * n
@@ -1873,11 +1600,9 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
         else:
             raise KeyValueError('Limit of nested ratios reached')
 
-        basekey = super(RatioKeyString, cls).__new__(cls, f'{numer.basekey}{divider}{denom.basekey}',
-                                                  numerator = numer.basekey, denominator = denom.basekey)
         string = f'{numer}{divider}{denom}'
 
-        return super(RatioKeyString, cls).__new__(cls, string, basekey,
+        return super(RatioKeyString, cls).__new__(cls, string,
                                                   numerator = numer, denominator = denom)
 
     def __hash__(self):
@@ -1889,23 +1614,13 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
         """
         return self.numerator == string or self.denominator == string
 
-    def _filter(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq = None,
-                numerator = {}, denominator = {}, **invalid):
-        if invalid:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
+    def _filter(self, numerator = {}, denominator = {}, **filters):
+        if filters and not super(RatioKeyString, self)._filter(**filters):
             return False
         if numerator and not self.numerator._filter(**numerator):
             return False
         if denominator and not self.denominator._filter(**denominator):
             return False
-
         return True
 
     def _sortkey(self):
@@ -1979,41 +1694,12 @@ class RatioKeyString(IsopyKeyString, RatioFlavour):
         options['latex'] = fr'${options["math"]}$'
         return options
 
-    def isotope_fraction(self, default_value = np.nan, isotope_fractions = None):
-        """
-        Returns the ratio of the isotope fraction of the numerator and denominator.
-
-        This assumes that the sum off all isotopes of an element in *isotope_fractions*
-        equals 1.
-
-        Parameters
-        ----------
-        default_value
-            The default value returned for isotopes not present in *isotope_fractions*. Default
-            value is ``np.nan``.
-        isotope_fractions
-            A dictionary containing the isotope fractions of each element. Default is
-            ``isopy.refval.isotope.fraction``.
-        """
-        if isotope_fractions is None:
-            isotope_fractions = isopy.refval.isotope.fraction
-        if not isinstance(isotope_fractions, ScalarDict):
-            isotope_fractions = ScalarDict(isotope_fractions)
-
-        if self.numerator.flavour in ['isotope', 'molecule', 'ratio']:
-            n = self.numerator.isotope_fraction(default_value, isotope_fractions)
-        else:
-            raise AttributeError(f'{type(self.numerator)} does not have an isotope_fraction method')
-
-        if self.denominator.flavour in ['isotope', 'molecule', 'ratio']:
-            d = self.denominator.isotope_fraction(default_value, isotope_fractions)
-        else:
-            raise AttributeError(f'{type(self.denominator)} does not have an isotope_fraction method')
-
-        return n / d
-
     def _flatten(self):
         return self.numerator._flatten() + self.denominator._flatten()
+
+    @property
+    def contains_flavours(self):
+        return tuple({*self.numerator.contains_flavours, *self.denominator.contains_flavours})
 
 
 class GeneralKeyString(IsopyKeyString, GeneralFlavour):
@@ -2053,12 +1739,9 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
     """
 
     @lru_cache(CACHE_MAXSIZE)
-    def __new__(cls, string, *, allow_reformatting=True, ignore_charge = False):
+    def __new__(cls, string, *, allow_reformatting=True):
         if isinstance(string, cls):
-            if ignore_charge:
-                return string.basekey
-            else:
-                return string
+            return string
 
         elif isinstance(string, (str, int, float)):
             string = str(string).strip()
@@ -2073,20 +1756,6 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
             #colname = string.replace('/', '_SLASH_') #For backwards compatibility
             string = string.replace('_SLASH_', '/') #For backwards compatibility
         return super(GeneralKeyString, cls).__new__(cls, string)
-
-    def _filter(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq = None, **invalid):
-        if invalid:
-            return False
-        if key_eq is not None and self not in key_eq:
-            return False
-        if key_neq is not None and self in key_neq:
-            return False
-        if flavour_eq is not None and self.flavour not in flavour_eq:
-            return False
-        if flavour_neq is not None and self.flavour in flavour_neq:
-            return False
-
-        return True
 
     def _sortkey(self):
         return f'F{self}'
@@ -2124,8 +1793,7 @@ class GeneralKeyString(IsopyKeyString, GeneralFlavour):
 ### List ###
 ############
 
-#TODO document sorted with exampels in each key string
-
+# TODO filter docstring
 class IsopyKeyList(tuple):
     """
         When comparing the list against another list the order of items is not considered.
@@ -2140,11 +1808,10 @@ class IsopyKeyList(tuple):
     @combine_keys_method
     @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, *keys, ignore_duplicates = False,
-                allow_duplicates = True, allow_reformatting = True, ignore_charge=False):
+                allow_duplicates = True, allow_reformatting = True):
 
         #keys is precombined so ther is ever only 1 argument
-        new_keys = [cls.__keystring__(k, allow_reformatting=allow_reformatting,
-                                                        ignore_charge=ignore_charge) for k in keys[0]]
+        new_keys = [cls.__keystring__(k, allow_reformatting=allow_reformatting) for k in keys[0]]
 
         if ignore_duplicates:
             new_keys = list(dict.fromkeys(new_keys).keys())
@@ -2233,6 +1900,39 @@ class IsopyKeyList(tuple):
     def __rsub__(self, other):
         return askeylist(other).__sub__(self)
 
+    def filter(self, key_eq= None, key_neq = None, **filters):
+        """
+        Return a new key string list containing only the key strings that satisfies the specified
+        filters.
+
+        Parameters
+        ----------
+        key_eq : str, Sequence[str], Optional
+           Only key strings equal to/found in *key_eq* pass this filter.
+        key_neq : str, Sequence[str], Optional
+           Only key strings not equal to/found in *key_neq* pass this filter.
+        flavour_eq : str, Sequence[str]
+            Only key strings of this flavour(s) pass this filter.
+        flavour_neq : str, Sequence[str]
+            Only key strings not of this flavour(s) pass this filter.
+
+        Returns
+        -------
+        result : GeneralKeyList
+            Key strings in the sequence that satisfy the specified filters
+
+        Examples
+        --------
+        >>> keylist = GeneralKeyList(['harry', 'ron', 'hermione'])
+        >>> keylist.copy(key_eq=['harry', 'ron', 'neville'])
+        ('harry', 'ron')
+        >>> keylist.copy(key_neq='harry')
+        ('ron', 'hermione')
+        """
+
+        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq, **filters)
+        return self.__keylist__(key for key in self if key._filter(**filters))
+
     def count(self, item):
         try:
             item = self.__keystring__(item)
@@ -2273,13 +1973,16 @@ class IsopyKeyList(tuple):
         """
         return self.__keylist__(reversed(self))
 
-    def flatten(self, ignore_duplicates = False, allow_duplicates = True, allow_reformatting = False,
-                ignore_charge=False):
+    def flatten(self, ignore_duplicates = False, allow_duplicates = True, allow_reformatting = False, try_flavours = 'all'):
         keys = tuple()
         for k in self:
             keys += k._flatten()
         return keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
-                                      allow_reformatting=allow_reformatting, ignore_charge=ignore_charge)
+                                      allow_reformatting=allow_reformatting, try_flavours = try_flavours)
+
+    @property
+    def contains_flavours(self):
+        return tuple({k.flavour for k in self})
 
     ##########################################
     ### Cached methods for increased speed ###
@@ -2368,56 +2071,6 @@ class MassKeyList(IsopyKeyList, MassFlavour):
     ('99', '105', '111')
     """
 
-    def filter(self, key_eq=None, key_neq=None, flavour_eq = None, flavour_neq= None,
-               *, key_lt=None, key_gt=None, key_le=None, key_ge=None):
-        """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-        Parameters
-        ----------
-        key_eq : str, int, Sequence[(str, int)]
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, int, Sequence[(str, int)]
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-        key_lt : str, int
-            Only key strings less than *key_lt* pass this filter.
-        key_gt : str, int
-            Only key strings greater than *key_gt* pass this filter.
-        key_le : str, int
-            Only key strings less than or equal to *key_le* pass this filter.
-        key_ge : str, int
-            Only key strings greater than or equal to *key_ge* pass this filter.
-
-
-        Returns
-        -------
-        result : MassKeyList
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = MassKeyList(['99', '105', '111'])
-        >>> keylist.copy(key_eq=[105, 107, 111])
-        ('105', '111')
-        >>> keylist.copy(key_neq='111'])
-        ('99', '105')
-        >>> keylist.copy(key_gt='99'])
-        ('105', '111')
-        >>> keylist.copy(key_le=105])
-        ('99', '105')
-        """
-
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                     flavour_eq=flavour_eq, flavour_neq=flavour_neq,
-                                     key_lt=key_lt, key_gt=key_gt,
-                                     key_le=key_le, key_ge=key_ge)
-        return self.__keylist__(key for key in self if key._filter(**filters))
-
 
 class ElementKeyList(IsopyKeyList, ElementFlavour):
     """
@@ -2455,65 +2108,16 @@ class ElementKeyList(IsopyKeyList, ElementFlavour):
     ('Ru', 'Pd', 'Cd')
     """
 
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None):
-        """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-
-        Parameters
-        ----------
-        key_eq : str, Sequence[str], Optional
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, Sequence[str], Optional
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-
-
-        Returns
-        -------
-        result : ElementKeyList
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = ElementKeyList(['ru', 'pd', 'cd'])
-        >>> keylist.copy(key_eq=['pd','ag', 'cd'])
-        ('Pd', 'Cd')
-        >>> keylist.copy(key_neq='cd')
-        ('Ru', 'Pd')
-        """
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq)
-        return self.__keylist__(key for key in self if key._filter(**filters))
+    @cached_property
+    def element_symbols(self):
+        return self
 
     @cached_property
-    def charges(self):
-        """
-        Returns a tuple containing the charges of key string in the list.
-        """
-        return tuple(item.charge for item in self)
-
-    def set_charges(self, charges):
-        """
-        Returns a new key list with new charges for keys in the list.
-
-        *charges* can either be a single valued applied to all
-        key strings in the list or a sequence of charges, one for each
-         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
-        """
-        if type(charges) is tuple or type(charges) is list:
-            if len(charges) != len(self):
-                raise ValueError(f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
-            else:
-                return self.__class__(self[i].set_charge(charges[i]) for i in range(len(self)))
-        elif type(charges) is int or charges is None:
-            return self.__class__(self[i].set_charge(charges) for i in range(len(self)))
-        else:
-            raise TypeError('charges must be None or an integer or a list of integers')
+    def isotopes(self):
+        isotopes =  IsotopeKeyList()
+        for key in self:
+            isotopes += key.isotopes()
+        return isotopes
 
 
 class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
@@ -2576,123 +2180,17 @@ class IsotopeKeyList(IsopyKeyList, IsotopeFlavour):
         """
         return ElementFlavour.__keylist__(tuple(x.element_symbol for x in self))
 
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, *,
-               mz_eq = None, mz_neq = None, mz_lt = None, mz_gt = None, mz_le = None, mz_ge = None,
-               mz_true_mass=False, mz_isotope_masses=None,
-               **mass_number_and_element_symbol_kwargs) -> 'IsotopeKeyList':
+    @cached_property
+    def mz(self):
         """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-        Parameters
-        ----------
-        key_eq : str, Sequence[str], Optional
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, Sequence[str], Optional
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-        mass_number_and_element_symbol_kwargs : str, Sequence[str], Optional
-            Filter based on the mass number or element symbol of the key strings. Prefix
-            :func:`MassKeyList.filter` filters with ``mass_number_ and :func:`Element.filter`
-            filters with ``element_symbol``.
-
-
-        Returns
-        -------
-        result : IsotopeKeyList
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = IsotopeKeyList(['99ru', '105pd', '111cd'])
-        >>> keylist.copy(key_eq=['105pd','107ag', '111cd'])
-        ('105Pd', '111Cd)
-        >>> keylist.copy(key_neq='111cd')
-        ('99Ru', '105Pd')
-        >>> keylist.copy(mass_number_key_gt = 100)
-        ('105Pd', '111Cd)
-        >>> keylist.copy(element_symbol_key_neq='pd'])
-        ('99Ru', '111Cd)
+        A tuple containing the mass over charge ratio for each
+        key string in the list on the basis of the mass number.
         """
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq,
-                                   mz_eq = mz_eq, mz_neq = mz_neq,
-                                   mz_lt = mz_lt, mz_gt = mz_gt, mz_le = mz_le, mz_ge = mz_ge,
-                                   mz_true_mass = mz_true_mass, mz_isotope_masses = mz_isotope_masses,
-                                   **mass_number_and_element_symbol_kwargs)
-
-        return self.__keylist__(key for key in self if key._filter(**filters))
+        return tuple(key.mz for key in self)
 
     @cached_property
-    def charges(self):
-        """
-        Returns a tuple containing the charges of key string in the list.
-        """
-        return tuple(item.charge for item in self)
-
-    def set_charges(self, charges):
-        """
-        Returns a new key list with new charges for keys in the list.
-
-        *charges* can either be a single valued applied to all
-        key strings in the list or a sequence of charges, one for each
-         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
-        """
-        if type(charges) is tuple or type(charges) is list:
-            if len(charges) != len(self):
-                raise ValueError(f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
-            else:
-                return self.__class__(self[i].set_charge(charges[i]) for i in range(len(self)))
-        elif type(charges) is int or charges is None:
-            return self.__class__(self[i].set_charge(charges) for i in range(len(self)))
-        else:
-            raise TypeError('charges must be None or an integer or a list of integers')
-
-    def mz(self, true_mass = False, isotope_masses = None):
-        """
-        Returns a tuple containing the mass over charge ratio for each
-        key string in the list.
-
-        If the key string does not have a charge then the mass of the
-        isotope is returned. Negative charges will return a positive
-        number.
-
-        Parameters
-        ----------
-        true_mass
-            If ``False`` then the mass_number is returned. If ``True``
-            then real mass is returned.
-        isotope_masses
-            A dictionary containing the real masses of the isotopes.
-            Only used if *true_mass* is ``True``
-        """
-        return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
-
-    def isotope_fractions(self, default_value = np.nan, isotope_fractions = None):
-        """
-        Returns the fraction of each isotope in the list from all isotopes of this element.
-
-        This assumes that the sum of all isotopes of an element in *isotope_fraction*
-        equals 1.
-
-        Parameters
-        ----------
-        default_value
-            The default value returned for isotopes not present in *isotope_fractions*. Default
-            value is ``np.nan``.
-        isotope_fractions
-            A dictionary containing the isotope fractions of each element. Default is
-            ``isopy.refval.isotope.fraction``.
-        """
-        if isotope_fractions is None:
-            isotope_fractions = isopy.refval.isotope.fraction
-        return tuple(item.fraction(default_value, isotope_fractions) for item in self)
-
-    @renamed_function(isotope_fractions)
-    def fractions(self, default_value = np.nan, isotope_fractions = None): pass
+    def isotopes(self):
+        return self
 
 
 class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
@@ -2727,9 +2225,25 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
     >>> IsotopeKeyList('H2O', ['HNO3', 'HCl'])
     ('H2O', 'HNO3', 'HCl')
     """
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, *,
-               mz_eq = None, mz_neq = None, mz_lt = None, mz_gt = None, mz_le = None, mz_ge = None,
-               mz_true_mass = False, mz_isotope_masses = None):
+
+    @combine_keys_method
+    @lru_cache(CACHE_MAXSIZE)
+    def __new__(cls, *keys, ignore_duplicates=False,
+                allow_duplicates=True, allow_reformatting=True):
+        keys = super(MoleculeKeyList, cls).__new__(cls, *keys, ignore_duplicates=ignore_duplicates,
+                                                allow_duplicates=allow_duplicates,
+                                                allow_reformatting=allow_reformatting)
+
+        if keys.contains_flavours == ('element',):
+            return ElementKeyList(keys)
+        elif keys.contains_flavours == ('isotope', ):
+            return IsotopeKeyList(keys)
+        else:
+            return keys
+
+    def _filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, *,
+               element_eq = None, element_neq = None,
+               mz_eq = None, mz_neq = None, mz_lt = None, mz_gt = None, mz_le = None, mz_ge = None):
         """
         Return a new key string list containing only the key strings that satisfies the specified
         filters.
@@ -2757,81 +2271,34 @@ class MoleculeKeyList(IsopyKeyList, MoleculeFlavour):
         """
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
                                    flavour_eq=flavour_eq, flavour_neq=flavour_neq,
+                                   element_eq = element_eq, element_neq = element_neq,
                                    mz_eq = mz_eq, mz_neq = mz_neq,
-                                   mz_lt = mz_lt, mz_gt = mz_gt, mz_le = mz_le, mz_ge = mz_ge,
-                                   mz_true_mass = mz_true_mass, mz_isotope_masses = mz_isotope_masses)
+                                   mz_lt = mz_lt, mz_gt = mz_gt, mz_le = mz_le, mz_ge = mz_ge)
 
         return self.__keylist__(key for key in self if key._filter(**filters))
 
     @cached_property
-    def charges(self):
+    def mz(self):
         """
-        Returns a tuple containing the charges of key string in the list.
-        """
-        return tuple(item.charge for item in self)
-
-    def set_charges(self, charges):
-        """
-        Returns a new key list with new charges for keys in the list.
-
-        *charges* can either be a single valued applied to all
-        key strings in the list or a sequence of charges, one for each
-         key string in the list. If *charge* is ``0`` charge will be set to ``None``.
-        """
-        if type(charges) is tuple or type(charges) is list:
-            if len(charges) != len(self):
-                raise ValueError(
-                    f'size of charges ({len(charges)}) does not match size of key list ({len(self)})')
-            else:
-                return self.__class__(self[i].set_charge(charges[i]) for i in range(len(self)))
-        elif type(charges) is int or charges is None:
-            return self.__class__(self[i].set_charge(charges) for i in range(len(self)))
-        else:
-            raise TypeError('charges must be None or an integer or a list of integers')
-
-    def mz(self, true_mass=False, isotope_masses=None, first_occurence=False):
-        """
-        Returns a tuple containing the mass over charge ratio for each
-        key string in the list.
+        A tuple containing the mass over charge ratio for each
+        key string in the list on the basis of the mass number.
 
         If the key string does not have a charge then the mass of the
-        isotope is returned. Negative charges will return a positive
+        isotope is returned. Negative charges will always return a positive
         number.
-
-        Parameters
-        ----------
-        true_mass
-            If ``False`` then the mass_number is returned. If ``True``
-            then real mass is returned.
-        isotope_masses
-            A dictionary containing the real masses of the isotopes.
-            Only used if *true_mass* is ``True``
         """
-        return tuple(key.mz(true_mass=true_mass, isotope_masses=isotope_masses) for key in self)
+        return tuple(key.mz for key in self)
 
-    def isotope_fractions(self, default_value = np.nan, isotope_fractions = None):
-        """
-        Returns the isotope fraction of each molecule in the list from all molecules with
-        the same elemental formula.
+    @cached_property
+    def element_symbols(self):
+        return isopy.MoleculeKeyList( (key.element_symbol for key in self) )
 
-        This assumes that the sum off all isotopes of an element in *isotope_fraction*
-        equals 1.
-
-        Parameters
-        ----------
-        default_value
-            The default value returned for isotopes not present in *isotope_fractions*. Default
-            value is ``np.nan``.
-        isotope_fractions
-            A dictionary containing the isotope fractions of each element. Default is
-            ``isopy.refval.isotope.fraction``.
-        """
-        if isotope_fractions is None:
-            isotope_fractions = isopy.refval.isotope.fraction
-        return tuple(item.fraction(default_value, isotope_fractions) for item in self)
-
-    @renamed_function(isotope_fractions)
-    def fractions(self, default_value = np.nan, isotope_fractions = None): pass
+    @cached_property
+    def isotopes(self):
+        isotopes =  MoleculeKeyList()
+        for key in self:
+            isotopes += key.isotopes()
+        return MoleculeKeyList(isotopes)
 
 
 class RatioKeyList(IsopyKeyList, RatioFlavour):
@@ -2917,49 +2384,6 @@ class RatioKeyList(IsopyKeyList, RatioFlavour):
         else:
             return None
 
-    def filter(self, key_eq = None, key_neq = None, flavour_eq = None, flavour_neq= None, **numerator_and_denominator_kwargs):
-        """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-        Parameters
-        ----------
-        key_eq : str, Sequence[str], Optional
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, Sequence[str], Optional
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-        mass_number_and_element_symbol_kwargs : str, Sequence[str], Optional
-            Filter based on the numerator and denominator key strings of the ratio. Prefix
-            numerator filters with ``numerator_`` and denominator
-            filters with ``denominator_``.
-
-
-        Returns
-        -------
-        result : RatioKeyList
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = RatioKeyList(['99ru/108Pd', '105pd/108Pd', '111cd/108Pd'])
-        >>> keylist.copy(key_eq=['105pd/108Pd','107ag/108Pd', '111cd/108Pd'])
-        ('105Pd/108Pd', '111Cd/108Pd')
-        >>> keylist.copy(key_neq='111cd/108Pd')
-        ('99Ru/108Pd', '105Pd/108Pd')
-        >>> keylist.copy(numerator_isotope_symbol_key_eq = ['pd', 'ag', 'cd'])
-        ('105Pd/108Pd', '111Cd/108Pd')
-        >>> keylist.copy(numerator_mass_number_key_lt = 100)
-        ('99Ru/108Pd', '105Pd/108Pd')
-        """
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq,
-                                   **numerator_and_denominator_kwargs)
-        return self.__keylist__(key for key in self if key._filter(**filters))
-
 
 class GeneralKeyList(IsopyKeyList, GeneralFlavour):
     """
@@ -2995,39 +2419,7 @@ class GeneralKeyList(IsopyKeyList, GeneralFlavour):
     >>> GeneralKeyList(harry, ['ron' , 'hermione'])
     ('harry', 'ron', 'hermione')
     """
-    def filter(self, key_eq= None, key_neq = None, flavour_eq = None, flavour_neq= None):
-        """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-        Parameters
-        ----------
-        key_eq : str, Sequence[str], Optional
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, Sequence[str], Optional
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-
-        Returns
-        -------
-        result : GeneralKeyList
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = GeneralKeyList(['harry', 'ron', 'hermione'])
-        >>> keylist.copy(key_eq=['harry', 'ron', 'neville'])
-        ('harry', 'ron')
-        >>> keylist.copy(key_neq='harry')
-        ('ron', 'hermione')
-        """
-
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq)
-        return self.__keylist__(key for key in self if key._filter(**filters))
+    pass
 
 
 class MixedKeyList(IsopyKeyList, MixedFlavour):
@@ -3068,51 +2460,17 @@ class MixedKeyList(IsopyKeyList, MixedFlavour):
     @combine_keys_method
     @lru_cache(CACHE_MAXSIZE)
     def __new__(cls, *keys, ignore_duplicates=False,
-                allow_duplicates=True, allow_reformatting=True, ignore_charge=False):
+                allow_duplicates=True, allow_reformatting=True):
+        #keys = tuple(askeystring(key, allow_reformatting=allow_reformatting, try_flavours=try_flavours) for key in keys)
+
         keys = super(MixedKeyList, cls).__new__(cls, *keys, ignore_duplicates=ignore_duplicates,
-                allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                                                ignore_charge=ignore_charge)
+                                                allow_duplicates=allow_duplicates,
+                                                allow_reformatting=allow_reformatting)
 
         if len(flavours:={type(k) for k in keys}) == 1:
-            keys =  flavours.pop().__keylist__(keys)
-
-        return keys
-
-
-    def filter(self, key_eq= None, key_neq = None, flavour_eq = None, flavour_neq= None):
-        """
-        Return a new key string list containing only the key strings that satisfies the specified
-        filters.
-
-        Parameters
-        ----------
-        key_eq : str, Sequence[str], Optional
-           Only key strings equal to/found in *key_eq* pass this filter.
-        key_neq : str, Sequence[str], Optional
-           Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
-
-        Returns
-        -------
-        result : key_list
-            Key strings in the sequence that satisfy the specified filters
-
-        Examples
-        --------
-        >>> keylist = MixedKeyList(['Ru', '105Pd', 'Cd'])
-        >>> keylist.copy(flavour_eq='element')
-        ElementKeyList('Ru', 'Pd')
-        >>> keylist.copy(key_neq='element')
-        IsotopeKeyList('105Pd')
-        """
-
-        filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq,
-                                   flavour_eq=flavour_eq, flavour_neq=flavour_neq)
-
-        return self.__keylist__(key for key in self if key._filter(**filters))
+            return flavours.pop().__keylist__(keys)
+        else:
+            return keys
 
 ###################################
 ### Mixins for Arrays and dicts ###
@@ -3199,7 +2557,6 @@ class ToTextMixin:
             Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
             is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
         """
-
         flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, **vformat)
 
         return '{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
@@ -3518,7 +2875,7 @@ class IsopyDict(dict):
         super(IsopyDict, self).__init__()
         self._readonly = False
         self._default_value = default_value
-        self._key_flavours = default_key_flavours(key_flavours)
+        self._key_flavours = parse_key_flavours(key_flavours)
 
         for arg in args:
             if isinstance(arg, IsopyArray):
@@ -3679,7 +3036,7 @@ class IsopyDict(dict):
             raise TypeError('this dictionary is readonly. Make a copy to make changes')
         super(IsopyDict, self).clear()
 
-    def get(self, key=None, default=NotGiven, **key_filters):
+    def get(self, key=None, default=NotGiven):
         """
         Return the the value for *key* if present in the dictionary. Otherwise *default* is
         returned.
@@ -3711,10 +3068,6 @@ class IsopyDict(dict):
             try:
                 return super(IsopyDict, self).__getitem__(key)
             except KeyError:
-                if key != key.basekey:
-                    try: return super(IsopyDict, self).__getitem__(key.basekey)
-                    except KeyError: pass
-
                 if default is NotGiven:
                     raise ValueError('No default value given')
                 else:
@@ -3730,6 +3083,7 @@ class IsopyDict(dict):
         Convert the dictionary to a normal python dictionary.
         """
         return {str(key): self[key] for key in self.keys}
+
 
 class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     """
@@ -3751,6 +3105,8 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     readonly : bool, Default = True
         If ``True`` the dictionary cannot be edited. This attribute is not inherited by child
         dictionaries.
+    ratio_func : callable
+        This function is applied
     kwargs : scalar, Optional
         Key, Value pairs to be included in the dictionary
 
@@ -3771,12 +3127,21 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     """
 
     def __init__(self, *args: dict, default_value=nan,
-                 readonly= False, key_flavours = None, **kwargs):
+                 readonly= False, key_flavours = None, ratio_func = None,
+                 molecule_funcs = None, **kwargs):
+        if isinstance(molecule_funcs, (list,tuple)) and len(molecule_funcs) != 3:
+            raise ValueError('molecule_funcs must be a sequence of 3 functions')
+
+        # For asscalardict
+        if default_value is NotGiven:
+            default_value = np.nan
         self._size = 1
         self._ndim = 0
         default_value = self.__make_value(default_value, 'default_value', default_value=True)
         self._size = default_value.size
         self._ndim = default_value.ndim
+        self._ratio_func = ratio_func
+        self._molecule_funcs = molecule_funcs
 
         super(ScalarDict, self).__init__(*args, default_value=default_value,
                                          readonly=readonly,
@@ -3790,6 +3155,14 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     def __setitem__(self, key, value):
         value = self.__make_value(value, key)
         super(ScalarDict, self).__setitem__(key, value)
+
+    @functools.wraps(IsopyDict.copy)
+    def copy(self,  **key_filters):
+        c = super(ScalarDict, self).copy(**key_filters)
+        c._ratio_func = self._ratio_func
+        c._molecule_funcs = self._molecule_funcs
+
+        return c
 
     def __make_value(self, value, key, resize = True, default_value = False):
         try:
@@ -3826,49 +3199,49 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
 
     def get(self, key = None, default = NotGiven):
         """
-        Return the the value for *key* if present in the dictionary.
+        Return the the value for *key* if present in the dictionary. If *default* is
+        not given the default value of the dictionary is used.
 
         If *key* is a sequence of keys then an array in returned containing the value for each key.
 
-        If *key* not in the dictionary
-        and *key* is a ratio key string the numerator value divided by the denominator value will
-        be returned if both key strings are present in the dictionary. Otherwise *default* is
-        returned. If *key* is a sequence of keys a dictionary is returned. If *default* is
-        not given the default value of the dictionary is used.
+        If *key* is a RatioKeyString and not in the dictionary and the dictionary has a ratio function set
+        then that function is used to calculate the
+
+        If *key* is a MoleculeKeyString and not in the dictionary and the dictionary has molecule functions set
+        then those used to calculate the value of the molecule.
 
         Examples
         --------
-        >>> reference = ScalarDict({'108Pd': 100, '105Pd': 20, '104Pd': 150})
+        >>> reference = ScalarDict({'108Pd': 100, '105Pd': 20, '104Pd': 150},
+                                    ratio_func=isopy.divide, molecule_funcs=(isopy.multiply, isopy.multiply, None))
         >>> reference.get('pd108')
         100
-        >>> reference.get('104Pd/105Pd')
+        >>> reference.get('104Pd/105Pd') # Automatically divides the values
         7.5
-        >>> reference.get('110Pd/105Pd')
-        nan
+        >>> reference.get('(105Pd)2') # Return the product of all the components multiplied by n ignoring any charge
+        40
         """
-        if default is NotGiven:
-            default = self._default_value
-        else:
-            default = self.__make_value(default, 'default', False)
-
         if isinstance(key, (str, int)):
             key = askeystring(key, try_flavours=self._key_flavours)
-
             try:
                 return super(IsopyDict, self).__getitem__(key).copy()
             except KeyError:
-                if key != key.basekey:
-                    try: return super(IsopyDict, self).__getitem__(key.basekey).copy()
-                    except KeyError: pass
-                if type(key) is RatioKeyString:
-                    try:
-                        n = super(IsopyDict, self).__getitem__(key.numerator)
-                        d = super(IsopyDict, self).__getitem__(key.denominator)
-                        return n / d
-                    except KeyError:
-                        pass
+                if type(key) is RatioKeyString and self._ratio_func is not None:
+                    return self._ratio_func(self.get(key.numerator, default), self.get(key.denominator, default))
 
-                return default.copy()
+                if type(key) is MoleculeKeyString and self._molecule_funcs is not None:
+                    m = functools.reduce(self._molecule_funcs[0], [self.get(c, default) for c in key.components])
+                    m = self._molecule_funcs[1](m, key.n)
+
+                    if  key.charge is not None and self._molecule_funcs[2] is not None:
+                        m = self._molecule_funcs[2](m, key.charge)
+
+                    return m
+
+                if default is NotGiven:
+                    return self._default_value.copy()
+                else:
+                    return self.__make_value(default, 'default', False).copy()
 
         elif isinstance(key, abc.Sequence):
             keys = askeylist(key, try_flavours=self._key_flavours)
@@ -3908,10 +3281,8 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     def to_array(self, keys = None, default=NotGiven, **key_filters):
         """
         Convert the dictionary to an IsopyArray.
-
         If *keys* are given then the array will only contain these keys. If no *keys* are given then the
         array will contain all the values in the dictionary unless *key_filters* are given.
-
         If key filters are specified then only the items that pass these filters are included in
         the returned array.
         """
@@ -3932,7 +3303,9 @@ class ScalarDict(IsopyDict, ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
         return self.to_array().to_ndarray()
 
     @renamed_function(to_array)
-    def asarray(self, keys=None, default=NotGiven, **key_filters): pass
+    def asarray(self, keys=None, default=NotGiven, **key_filters):
+        pass
+
 
 
 #############
@@ -3971,7 +3344,7 @@ class IsopyArray(ArrayFuncMixin, ToTextMixin, ToFromFileMixin):
     __default__ = nan
 
     def __new__(cls, values, keys=None, *, dtype=None, ndim=None, try_flavours = None):
-        try_flavours = default_key_flavours(try_flavours)
+        try_flavours = parse_key_flavours(try_flavours)
 
         if type(values) is IsopyNdarray and keys is None and dtype is None and ndim is None:
             return values.copy()
@@ -4552,23 +3925,22 @@ class IsopyVoid(IsopyArray, void):
 ###############################################
 
 @lru_cache(CACHE_MAXSIZE)
-def keystring(string, *, allow_reformatting=True, ignore_charge = False, try_flavours=None):
+def keystring(string, *, allow_reformatting=True, try_flavours='all'):
     """
     Convert *string* into a key string and return it.
 
     Will attempt to convert *string* into the key string flavours listed in *try_flavours* in turn.
-    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
-    'ratio', 'molecule', 'general']``. Unknown flavours will simply be skipped.
+    If *try_flavours* is 'all' the order that is used is ``['mass', 'element', 'isotope',
+    'ratio','molecule', 'general']``.
     """
-    try_flavours = default_key_flavours(try_flavours)
+    try_flavours = parse_key_flavours(try_flavours)
 
     for flavour in try_flavours:
         if flavour == 'mixed': continue
 
         cls = FLAVOURS[flavour].__keystring__
         try:
-            return cls(string, allow_reformatting=allow_reformatting,
-                       ignore_charge=ignore_charge)
+            return cls(string, allow_reformatting=allow_reformatting)
         except KeyParseError as err:
             pass
 
@@ -4577,7 +3949,7 @@ def keystring(string, *, allow_reformatting=True, ignore_charge = False, try_fla
 
 
 @lru_cache(CACHE_MAXSIZE)
-def askeystring(key, *, allow_reformatting=True, ignore_charge = False, try_flavours = None):
+def askeystring(key, *, allow_reformatting=True, try_flavours = 'all'):
     """
     If *string* is a key string it is returned otherwise convert *string* to a key string and
     return it.
@@ -4586,21 +3958,16 @@ def askeystring(key, *, allow_reformatting=True, ignore_charge = False, try_flav
     If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
     'ratio', 'molecule', 'general']``. Unknown flavours will simply be skipped.
     """
-    try_flavours = default_key_flavours(try_flavours)
+    try_flavours = parse_key_flavours(try_flavours)
 
     if isinstance(key, IsopyKeyString) and key.flavour in try_flavours:
-        if ignore_charge:
-            return key.basekey
-        else:
-            return key
+        return key
     else:
-        return keystring(key, allow_reformatting=allow_reformatting, ignore_charge=ignore_charge,
-                         try_flavours=try_flavours)
+        return keystring(key, allow_reformatting=allow_reformatting, try_flavours=try_flavours)
 
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
-            ignore_charge=False, try_flavours = None):
+def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, try_flavours = 'all'):
     """
     Convert *keys* into a key string list and return it. *keys* can be a string or a sequence of
     string.
@@ -4609,14 +3976,13 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
     If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
     'ratio', 'mixed', 'molecule', 'general']``. Unknown flavours will simply be skipped.
     """
-    try_flavours = default_key_flavours(try_flavours)
+    try_flavours = parse_key_flavours(try_flavours)
 
     for flavour in try_flavours:
         cls = FLAVOURS[flavour].__keylist__
         try:
             return cls(*keys, ignore_duplicates=ignore_duplicates,
-                       allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting,
-                       ignore_charge=ignore_charge)
+                       allow_duplicates=allow_duplicates, allow_reformatting=allow_reformatting)
         except KeyParseError:
             pass
 
@@ -4625,7 +3991,7 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
 def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
-              ignore_charge = False, try_flavours = None):
+              try_flavours = 'all'):
     """
     If *keys* is a key string list return it otherwise convert *keys* to a key string list and
     return it.
@@ -4634,16 +4000,15 @@ def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_ref
     If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope',
     'ratio', 'molecule', 'mixed', 'general']``. Unknown flavours will simply be skipped.
     """
-    try_flavours = default_key_flavours(try_flavours)
+    try_flavours = parse_key_flavours(try_flavours)
 
     if isinstance(keys, IsopyArray) or isinstance(keys, dict):
         keys = keys.keys()
 
     if isinstance(keys, IsopyKeyList) and keys.flavour in try_flavours:
-        if ignore_duplicates or not allow_duplicates or ignore_charge:
+        if ignore_duplicates or not allow_duplicates:
             return keys.__keylist__(keys, ignore_duplicates=ignore_duplicates,
-                                    allow_duplicates=allow_duplicates,
-                                    ignore_charge=ignore_charge)
+                                    allow_duplicates=allow_duplicates)
         else:
             return keys
 
@@ -4654,14 +4019,13 @@ def askeylist(keys, *, ignore_duplicates=False, allow_duplicates=True, allow_ref
 
     if len(types) == 1 and issubclass((keytype:=types.pop()), IsopyKeyString):
         return keytype.__keylist__(keys, ignore_duplicates=ignore_duplicates,
-                                             allow_duplicates=allow_duplicates,
-                                            ignore_charge=ignore_charge)
+                                             allow_duplicates=allow_duplicates)
 
     return keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
-                   ignore_charge=ignore_charge, allow_reformatting=allow_reformatting)
+                   allow_reformatting=allow_reformatting)
 
 
-def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, **columns_or_read_kwargs):
+def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours='all', **columns_or_read_kwargs):
     """
     Convert the input arguments to a isopy array.
 
@@ -4672,7 +4036,7 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, try_flavours=None, *
 
     Will attempt to convert the input into an array with a column key string flavour
     using those listed in listed in *try_flavours* in turn.
-    If *try_flavours* is not given it defaults to ``['mass', 'element', 'isotope', 'molecule',
+    If *try_flavours* is 'all' it defaults to ``['mass', 'element', 'isotope', 'molecule',
     'ratio', 'general']``. Unknown flavours will simply be skipped.
     """
     if isinstance(values, (str, bytes, io.StringIO, io.BytesIO)):
@@ -4703,7 +4067,7 @@ def asarray(a, *, ndim = None, try_flavours = None, **read_kwargs):
     If *a* is 'clipboard' it will read values from the clipboard. If *sheetname* in *read_kwargs* it assumes *a*
     is an excel file. Otherwise it assumes *a* is a CSV file.
     """
-    try_flavours = default_key_flavours(try_flavours)
+    try_flavours = parse_key_flavours(try_flavours)
 
     if isinstance(a, (str, bytes, io.StringIO, io.BytesIO)):
         if a == 'clipboard':
@@ -4790,6 +4154,20 @@ def asanyarray(a, *, dtype = None, ndim = None, try_flavours=None, **read_kwargs
                 a = a.reshape(-1, a.size)
 
         return a
+
+def asdict(d, default_value = NotGiven):
+    if isinstance(d, isopy.IsopyDict) and (default_value is not NotGiven or d.default_value == default_value):
+        return d
+    else:
+        return IsopyDict(d, default_value = default_value)
+
+def asscalardict(d, default_value = NotGiven):
+    if type(d) == str:
+        return isopy.refval(d)
+    elif isinstance(d, isopy.IsopyDict) and (default_value is not NotGiven or d.default_value == default_value):
+        return d
+    else:
+        return ScalarDict(d, default_value = default_value)
 
 ###########################
 ### Create empty arrays ###
