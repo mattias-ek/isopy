@@ -1018,10 +1018,10 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         if isinstance(constants, str):
             constants = isopy.askeystring(constants)
             if constants.flavour == 'ratio':
-                xconstants = np.array([constants.numerator.mz(), constants.denominator.mz()])
+                xconstants = np.array([constants.numerator.mz, constants.denominator.mz])
                 yconstants = np.array([0, 0])
             else:
-                xconstants = np.array([constants.mz()])
+                xconstants = np.array([constants.mz])
                 yconstants = np.array([0])
         elif isinstance(constants, dict):
             xconstants = np.array(list(constants.keys()), dtype=np.float64)
