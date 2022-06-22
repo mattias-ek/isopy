@@ -8,6 +8,7 @@ import hashlib
 import warnings
 import collections.abc as abc
 import io
+import operator
 
 #optional imports
 try:
@@ -1423,7 +1424,11 @@ class MoleculeKeyString(IsopyKeyString, flavour = 'molecule'):
 
     @property
     def contains_flavours(self):
-        return tuple({component.contains_flavours for component in self.components})
+        flavours = tuple()
+        for component in self.components:
+            flavours += component.contains_flavours
+
+        return tuple(sorted({*flavours}, key = lambda f: f.__flavour_id__))
 
     @property
     def contains_element_key(self):
@@ -1666,7 +1671,8 @@ class RatioKeyString(IsopyKeyString, flavour = 'ratio'):
 
     @property
     def contains_flavours(self):
-        return tuple({*self.numerator.contains_flavours, *self.denominator.contains_flavours})
+        return tuple(sorted({*self.numerator.contains_flavours, *self.denominator.contains_flavours},
+                            key=lambda f: f.__flavour_id__))
 
 
 class GeneralKeyString(IsopyKeyString, flavour = 'general'):
@@ -1948,7 +1954,7 @@ class IsopyKeyList(tuple):
 
     @property
     def contains_flavours(self):
-        return tuple({k.flavour for k in self})
+        return tuple(sorted({k.flavour for k in self}, key = lambda f: f.__flavour_id__))
 
     ##########################################
     ### Cached methods for increased speed ###
