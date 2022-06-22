@@ -820,7 +820,7 @@ class Test_IsopyList:
         assert keylist != keys[:-1]
         assert (keylist == keys[:-1]) is False
         assert len(keylist) == len(keys)
-        assert keylist.has_duplicates() is False
+        assert len(set(keylist)) == len(keylist)
         for key in keys:
             if isinstance(key, str):
                 assert key in keylist
@@ -845,7 +845,7 @@ class Test_IsopyList:
         assert keylist2 != keylist
         assert keylist2 == keys2
         assert len(keylist2) == len(keys2)
-        assert keylist2.has_duplicates() is True
+        assert len(set(keylist2)) != len(keylist2)
         for key in keys:
             if isinstance(key, str):
                 assert key in keylist2
@@ -857,7 +857,7 @@ class Test_IsopyList:
         keylist3 = listtype(keys2, ignore_duplicates = True)
         assert keylist3 == keys3
         assert len(keylist3) == len(keys3)
-        assert keylist3.has_duplicates() is False
+        assert len(set(keylist3)) == len(keylist3)
         for key in keys3:
             if isinstance(key, str):
                 assert key in keylist3
@@ -4729,34 +4729,23 @@ class Test_Misc:
         for i in range(6):
             assert not flavours[i] == [i]
             assert not keys[i].flavour == i
-            assert not flavours[i].flavour == float(i)
 
             for j in range(6):
                 if i == j:
                     assert keys[i].flavour == flavours[j]
-                    assert flavours[i].flavour == flavours[j]
 
                     assert keys[i].flavour == flavours[j]
                     assert keys[i].flavour == keys[j].flavour
                     assert keys[i].flavour == names[j]
 
-                    assert flavours[i].flavour == flavours[j]
-                    assert flavours[i].flavour == keys[j].flavour
-                    assert flavours[i].flavour == names[j]
-
                     assert names[i] == keys[j].flavour
                     assert str(keys[i].flavour) == flavours[i].__name__
                 else:
                     assert keys[i].flavour != flavours[j]
-                    assert flavours[i].flavour != flavours[j]
 
                     assert keys[i].flavour != flavours[j]
                     assert keys[i].flavour != keys[j].flavour
                     assert keys[i].flavour != names[j]
-
-                    assert flavours[i].flavour != flavours[j]
-                    assert flavours[i].flavour != keys[j].flavour
-                    assert flavours[i].flavour != names[j]
 
                     assert names[i] != keys[j].flavour
                     assert str(keys[i].flavour) != flavours[i].__class__.__name__
