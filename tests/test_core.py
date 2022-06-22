@@ -2325,7 +2325,7 @@ class Test_Dict:
         for key in subkeys3:
             assert filtered[key] == isopydict[key]
 
-        filtered = isopydict.copy(element_symbol_eq = ['ru', 'rh', 'ag', 'cd'])
+        filtered = isopydict.copy(element_symbol_eq = ['ru', 'rh', 'ag', 'cd'], flavour='isotope')
         assert type(filtered) is type(isopydict)
         assert filtered.default_value == 'default'
         assert filtered is not isopydict
@@ -2383,7 +2383,7 @@ class Test_Dict:
         for key in subkeys3:
             assert filtered[key] == isopydict[key]
 
-        filtered = isopydict.copy(element_symbol_eq=['ru', 'rh', 'ag', 'cd'])
+        filtered = isopydict.copy(element_symbol_eq=['ru', 'rh', 'ag', 'cd'], flavour='isotope')
         assert type(filtered) is type(isopydict)
         assert filtered.default_value == 666
         assert filtered is not isopydict

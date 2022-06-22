@@ -265,68 +265,6 @@ def deprecrated_function(message, stacklevel = 1):
 def hashstr(string):
     return hashlib.md5(string.encode('UTF-8')).hexdigest()
 
-def parse_keyfilters(**filters):
-    """
-    Parses key filters into a format that is accepted by KeyString._filter. Allows
-    nesting of filter arguments for Isotope and RatioKeyString's.
-    """
-    #Make sure these are lists
-    if 'mz' in filters: filters['mz_eq'] = filters.pop('mz')
-    if 'key' in filters: filters['key_eq'] = filters.pop('key')
-    for key in ['key_eq', 'key_neq', 'mz_eq', 'mz_neq']:
-        if (f:=filters.get(key, None)) is not None and not isinstance(f, (list, tuple)):
-            filters[key] = (f,)
-
-    if 'flavour' in filters: filters['flavour_eq'] = filters.pop('flavour')
-    for key in ['flavour_eq', 'flavour_neq']:
-        if (f:=filters.get(key, None)) is not None:
-            if not isinstance(f, (list, tuple)):
-                filters[key] = (f,)
-            else:
-                filters[key] = f
-
-    #For isotope keys
-    mass_number = _split_filter('mass_number', filters)
-    if mass_number:
-        filters['mass_number'] = parse_keyfilters(**mass_number)
-
-    element_symbol = _split_filter('element_symbol', filters)
-    if element_symbol:
-        filters['element_symbol'] = parse_keyfilters(**element_symbol)
-
-    #For ratio keys
-    numerator = _split_filter('numerator', filters)
-    if numerator:
-        filters['numerator'] = parse_keyfilters(**numerator)
-
-    denominator = _split_filter('denominator', filters)
-    if denominator:
-        filters['denominator'] = parse_keyfilters(**denominator)
-
-    for k, v in list(filters.items()):
-        if v is None: filters.pop(k)
-
-    return filters
-
-def _split_filter(prefix, filters):
-    #Seperates out filters with a specific prefix
-    out = {}
-    if prefix[-1] != '_': prefix = f'{prefix}_'
-    for key in tuple(filters.keys()):
-        if key == prefix[:-1]:
-            #avoids getting errors
-            out['key_eq'] = filters.pop(prefix[:-1])
-        elif startswith(key, prefix): #.startswith(prefix):
-            filter = filters.pop(key)
-            key = remove_prefix(key, prefix)
-            if key in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
-                key = f'key_{key}'
-            out[key] = filter
-    for k, v in list(out.items()):
-        if v is None: out.pop(k)
-    return out
-
-
 
 def iskeystring(item) -> bool:
     """
@@ -504,13 +442,11 @@ class GeneralFlavour(IsopyFlavour):
         return GeneralKeyList(*args, **kwargs)
 
 
-
 FLAVOURS = {f.__flavour_name__: f for f in [MassFlavour, ElementFlavour,
                                             IsotopeFlavour, MoleculeFlavour,
                                             RatioFlavour, MixedFlavour,
                                             GeneralFlavour]}
 
-# TODO change docs
 ALL_FLAVOURS = ('mass', 'element', 'isotope', 'ratio',  'mixed', 'molecule', 'general')
 
 def parse_key_flavours(flavours):
@@ -1766,7 +1702,59 @@ class GeneralKeyString(IsopyKeyString, flavour = 'general'):
 ### List ###
 ############
 
-# TODO filter docstring
+def parse_keyfilters(**filters):
+    """
+    Parses key filters into a format that is accepted by KeyString._filter. Allows
+    nesting of filter arguments for RatioKeyString's.
+    """
+    parsed_filters = {}
+    for key, v in list(filters.items()):
+        if v is None:
+            continue
+
+        try:
+            attr, comparison = key.rsplit('_', 1)
+        except ValueError:
+            attr = key
+            comparison = 'eq'
+
+        if comparison not in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
+            attr = f'{attr}_{comparison}'
+            comparison = 'eq'
+
+        if comparison in ('eq', 'neq') and not isinstance(v, (list, tuple)):
+            v = (v, )
+
+        parsed_filters[f'{attr}_{comparison}'] = v
+
+    #For ratio keys
+    numerator = _split_filter('numerator', parsed_filters)
+    if numerator:
+        parsed_filters['numerator'] = parse_keyfilters(**numerator)
+
+    denominator = _split_filter('denominator', parsed_filters)
+    if denominator:
+        parsed_filters['denominator'] = parse_keyfilters(**denominator)
+
+    return parsed_filters
+
+def _split_filter(prefix, filters):
+    #Seperates out filters with a specific prefix
+    out = {}
+    if prefix[-1] != '_': prefix = f'{prefix}_'
+    for key in tuple(filters.keys()):
+        if key == prefix[:-1]:
+            #avoids getting errors
+            out['key_eq'] = filters.pop(prefix[:-1])
+        elif startswith(key, prefix): #.startswith(prefix):
+            parsed_key = remove_prefix(key, prefix)
+            if parsed_key in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
+                parsed_key = f'key_{parsed_key}'
+            out[parsed_key] = filters.pop(key)
+
+    return out
+
+
 class IsopyKeyList(tuple):
     """
     The ``in`` operator can be used to test whether a string is in the list. To test whether all items in a list are
@@ -1881,29 +1869,40 @@ class IsopyKeyList(tuple):
         Return a new key string list containing only the key strings that satisfies the specified
         filters.
 
+        Only keys that satify **all** the filter arguments are returned.
+
         Parameters
         ----------
         key_eq : str, Sequence[str], Optional
            Only key strings equal to/found in *key_eq* pass this filter.
         key_neq : str, Sequence[str], Optional
            Only key strings not equal to/found in *key_neq* pass this filter.
-        flavour_eq : str, Sequence[str]
-            Only key strings of this flavour(s) pass this filter.
-        flavour_neq : str, Sequence[str]
-            Only key strings not of this flavour(s) pass this filter.
+        **filters
+            A filter consists of the attribute to be filtered and followed by the comparison type speperated by a ``_``.
+            Avaliable comparison types are:
+             * ``eq`` for ``==`` or ``in`` for multiple values
+             * ``neq`` for ``!=`` or ``in`` for multiple values
+             * ``lt`` for ``<``
+             * ``gt`` for ``>``
+             * ``le`` for ``<=``
+             * ``ge`` for ``>=``
 
-        Returns
-        -------
-        result : GeneralKeyList
-            Key strings in the sequence that satisfy the specified filters
+            Any filter preceded by ``numerator_`` or ``denominator_``
+            will be forwarded to the numerator and denominator keys of ratio key strings.
 
         Examples
         --------
-        >>> keylist = GeneralKeyList(['harry', 'ron', 'hermione'])
-        >>> keylist.copy(key_eq=['harry', 'ron', 'neville'])
-        ('harry', 'ron')
-        >>> keylist.copy(key_neq='harry')
-        ('ron', 'hermione')
+        >>> keylist = isopy.askeylist(['101Ru', '105Pd', '111Cd'])
+        >>> keylist.filter(key_neq = '105pd')
+        ('101Ru', '111Cd')
+        >>> keylist.filter(element_symbol_eq=['pd', 'cd'])
+        ('105Pd', '111Cd')
+        >>> keylist.filter(mass_number_le=105)
+        ('101Ru', '105Pd')
+
+        >>> keylist = isopy.askeylist(['101Ru/102Ru', '108Pd/105Pd', '111Cd/110Cd'])
+        >>> keylist.filter(numerator_element_symbol_neq='pd')
+        ('101Ru/102Ru', '111Cd/110Cd')
         """
 
         filters = parse_keyfilters(key_eq=key_eq, key_neq=key_neq, **filters)
@@ -1949,7 +1948,7 @@ class IsopyKeyList(tuple):
         keys = tuple()
         for k in self:
             keys += k._flatten()
-        return keylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
+        return askeylist(keys, ignore_duplicates=ignore_duplicates, allow_duplicates=allow_duplicates,
                                       allow_reformatting=allow_reformatting, try_flavours = try_flavours)
 
     @property
