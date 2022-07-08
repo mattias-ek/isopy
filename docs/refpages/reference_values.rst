@@ -50,7 +50,7 @@ A collection of reference values relating to individual isotopes.
     isotope.mass
     isotope.fraction
     isotope.mass_number
-    isotope.mass_W17
+    isotope.mass_AME20
     isotope.best_measurement_fraction_M16
     isotope.initial_solar_system_fraction_L09
     isotope.initial_solar_system_abundance_L09

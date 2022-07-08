@@ -3,6 +3,7 @@ from isopy import core, array_functions
 import numpy as np
 import pytest
 import warnings
+import operator as op
 
 def assert_array_equal_array(array1, array2, match_dtype=True):
     assert isinstance(array1, core.IsopyArray)
@@ -31,9 +32,9 @@ class Test_ArrayFunctions:
         array3 = array2.copy()
         array3['pd'][5] = np.nan
 
-        dict1 = array1.to_scalardict()
-        dict2 = array2.to_scalardict()
-        dict3 = array3.to_scalardict()
+        dict1 = array1.to_refval()
+        dict2 = array2.to_refval()
+        dict3 = array3.to_refval()
 
         # Elementwise functions
         for func in array_functions.np_elementwise:
@@ -309,7 +310,7 @@ class Test_ArrayFunctions:
 
         if axis is core.NotGiven or axis == 0:
             result = func(ds, **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -321,7 +322,7 @@ class Test_ArrayFunctions:
                 np.testing.assert_allclose(result[key], true)
 
             result = isopy.arrayfunc(func, ds, **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -333,7 +334,7 @@ class Test_ArrayFunctions:
                 np.testing.assert_allclose(result[key], true)
 
             result = isopy.arrayfunc(func, ds.to_dict(), **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -348,13 +349,13 @@ class Test_ArrayFunctions:
             true = func(ds.to_list(), **kwargs)
 
             result = func(ds, **kwargs)
-            assert not isinstance(result, core.ScalarDict)
+            assert not isinstance(result, core.RefValDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
 
             result = isopy.arrayfunc(func, ds, **kwargs)
-            assert not isinstance(result, core.ScalarDict)
+            assert not isinstance(result, core.RefValDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
@@ -382,7 +383,9 @@ class Test_ArrayFunctions:
         value3 = [i for i in range(10)]
         value4 = [i for i in range(3)]
 
-        for func in (array_functions.np_dual):
+        dual_funcs = array_functions.np_dual
+        dual_funcs += [op.add, op.sub, op.mul, op.truediv, op.floordiv, op.pow]
+        for func in dual_funcs:
             # all different array combinations
             self.dualinput_aa(func, array1, array2, 0)
             self.dualinput_aa(func, array1, array4, 1)
@@ -473,6 +476,7 @@ class Test_ArrayFunctions:
             with pytest.raises(ValueError):
                 self.dualinput_dv(func, dict7, value3)
 
+
     def dualinput_aa(self, func, a1, a2, ndim):
         keys = a1.keys | a2.keys
 
@@ -529,7 +533,7 @@ class Test_ArrayFunctions:
 
     def dualinput_ad(self, func, a, d, ndim):
         keys = a.keys
-        ds = isopy.ScalarDict(d)
+        ds = isopy.RefValDict(d)
 
         result = func(a, d)
         assert isinstance(result, core.IsopyArray)
@@ -571,15 +575,15 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dd(self, func, d1, d2):
-        ds1 = isopy.ScalarDict(d1)
-        ds2 = isopy.ScalarDict(d2)
+        ds1 = isopy.RefValDict(d1)
+        ds2 = isopy.RefValDict(d2)
         keys = ds1.keys | ds2.keys
 
         with pytest.raises(TypeError):
             func(d1, d2) # At least one dictionaries must be a scalar dict
 
         result = func(ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -587,7 +591,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -595,7 +599,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -604,7 +608,7 @@ class Test_ArrayFunctions:
 
         #Array func
         result = isopy.arrayfunc(func, d1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -612,7 +616,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -620,7 +624,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -628,22 +632,22 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
-        ds1 = isopy.ScalarDict(d1, default_value=1)
-        ds2 = isopy.ScalarDict(d2, default_value=2)
+        ds1 = isopy.RefValDict(d1, default_value=1)
+        ds2 = isopy.RefValDict(d2, default_value=2)
         keys = ds1.keys | ds2.keys
 
         with pytest.raises(TypeError):
             func(d1, d2)  # At least one dictionaries must be a scalar dict
 
         result = func(ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, 1), ds2.get(key, np.nan))
@@ -651,7 +655,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, 2))
@@ -659,7 +663,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, 1), ds2.get(key, 2))
@@ -697,33 +701,34 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dv(self, func, d, v):
-        ds = isopy.ScalarDict(d)
+        ds = isopy.RefValDict(d)
+        av = np.array(v)
         keys = ds.keys
 
         with pytest.raises(TypeError):
             func(d, v)  # At least one dictionaries must be a scalar dict
 
         result = isopy.arrayfunc(func, d, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
@@ -732,26 +737,26 @@ class Test_ArrayFunctions:
             func(v, d)  # At least one dictionaries must be a scalar dict
 
         result = isopy.arrayfunc(func, v, d)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = func(v, ds)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, v, ds)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
@@ -763,8 +768,8 @@ class Test_ArrayFunctions:
         a2 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
         d1 = a1.to_dict()
         d2 = a2.to_dict()
-        ds1 = a1.to_scalardict()
-        ds2 = a2.to_scalardict()
+        ds1 = a1.to_refval()
+        ds2 = a2.to_refval()
 
         # a, a
         result = isopy.add(a1, a2)
@@ -781,28 +786,28 @@ class Test_ArrayFunctions:
 
         # a, d
         result = isopy.add(a1, d2)
-        true = a1 + a2.to_scalardict()
+        true = a1 + a2.to_refval()
         assert_array_equal_array(result, true)
 
         result = isopy.add(a1, d2, 0)
-        true = a1.default(0) + a2.to_scalardict(0)
+        true = a1.default(0) + a2.to_refval(0)
         assert_array_equal_array(result, true)
 
         result = isopy.add(a1, d2, (0, 1))
-        true = a1.default(0) + a2.to_scalardict(1)
+        true = a1.default(0) + a2.to_refval(1)
         assert_array_equal_array(result, true)
 
         # d a
         result = isopy.add(d1, a2)
-        true = a1.to_scalardict() + a2
+        true = a1.to_refval() + a2
         assert_array_equal_array(result, true)
 
         result = isopy.add(d1, a2, 0)
-        true = a1.to_scalardict(0) + a2.default(0)
+        true = a1.to_refval(0) + a2.default(0)
         assert_array_equal_array(result, true)
 
         result = isopy.add(d1, a2, (0, 1))
-        true = a1.to_scalardict(0) + a2.default(1)
+        true = a1.to_refval(0) + a2.default(1)
         assert_array_equal_array(result, true)
 
         # a ds
@@ -986,7 +991,7 @@ class Test_ArrayFunctions:
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.RefValDict(weights)
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
@@ -1008,7 +1013,7 @@ class Test_ArrayFunctions:
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.RefValDict(weights)
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
@@ -1038,7 +1043,7 @@ class Test_ArrayFunctions:
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.RefValDict(weights)
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
@@ -1170,6 +1175,77 @@ class Test_ArrayFunctions:
         assert not isinstance(result, core.IsopyArray)
         np.testing.assert_allclose(result, true)
 
+    def test_refval_inheritance(self):
+        keys = 'ru pd cd'.split()
+        array1 = isopy.random(None, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
+        array2 = isopy.random(100, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
+
+        dict1 = array1.to_refval()
+        dict1.ratio_func = 'divide'
+        dict1.molecule_funcs = 'abundance'
+        dict1.default_value = 1
+
+        assert dict1.ratio_func == np.divide
+        assert dict1.molecule_funcs == (np.add, np.multiply, None)
+
+        dict2 = array2.to_refval()
+        dict2.ratio_func = np.add
+        dict2.molecule_funcs = 'mass'
+        dict2.default_value = 2
+
+        assert dict2.ratio_func == np.add
+        assert dict2.molecule_funcs[:2] == (np.add, np.multiply)
+
+        dict3 = array2.to_refval()
+        dict3.ratio_func = np.multiply
+        dict3.molecule_funcs = 'fraction'
+        dict3.default_value = [i for i in range(100)]
+
+        assert dict3.ratio_func == np.multiply
+        assert dict3.molecule_funcs == (np.multiply, np.multiply, None)
+
+        # abs
+        result = np.abs(dict1)
+        assert result.ratio_func == dict1.ratio_func
+        assert result.molecule_funcs == dict1.molecule_funcs
+        assert np.all(result.default_value == dict1.default_value)
+
+        result = np.abs(dict2)
+        assert result.ratio_func == dict2.ratio_func
+        assert result.molecule_funcs == dict2.molecule_funcs
+        assert np.all(result.default_value == dict2.default_value)
+
+        result = np.abs(dict3)
+        assert result.ratio_func == dict3.ratio_func
+        assert result.molecule_funcs == dict3.molecule_funcs
+        assert np.all(result.default_value == dict3.default_value)
+
+        # sum
+        result = np.sum(dict1)
+        assert result.ratio_func == dict1.ratio_func
+        assert result.molecule_funcs == dict1.molecule_funcs
+        assert np.all(result.default_value == dict1.default_value)
+
+        result = np.sum(dict2)
+        assert result.ratio_func == dict2.ratio_func
+        assert result.molecule_funcs == dict2.molecule_funcs
+        assert np.all(result.default_value == dict2.default_value[0])
+
+        result = np.sum(dict3)
+        assert result.ratio_func == dict3.ratio_func
+        assert result.molecule_funcs == dict3.molecule_funcs
+        assert np.isnan(result.default_value)
+
+        #add
+        result = np.add(dict1, dict2)
+        assert result.ratio_func is None
+        assert result.molecule_funcs is None
+        assert np.all(np.isnan(result.default_value))
+
+        result = np.add(dict1, dict2.to_dict())
+        assert result.ratio_func == dict1.ratio_func
+        assert result.molecule_funcs == dict1.molecule_funcs
+        assert np.all(result.default_value == dict1.default_value)
 
 def test_allowed_numpy_functions():
         # These are non-vital so just make sure they return a string

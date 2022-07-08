@@ -200,7 +200,7 @@ class Test_MassIndependentCorrection:
         # We wont get an exact match here so we have to lower the tolerance.
 
         # Default reference values
-        mass_ref = isopy.refval.isotope.mass_W17
+        mass_ref = isopy.refval.isotope.mass_AME20
         fraction_ref = isopy.refval.isotope.best_measurement_fraction_M16
 
         mf_factor = isopy.random(100, (0, 2), seed=47)

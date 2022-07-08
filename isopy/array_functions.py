@@ -440,6 +440,7 @@ def rstack(*arrays):
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
     return keys.flavour.__view_array__(np.fromiter(zip(*result), dtype=dtype))
 
+# TODO does this preserve dtype?
 def cstack(*arrays):
     """
     Stack the columns of multiple arrays.
@@ -473,13 +474,15 @@ def cstack(*arrays):
     if len(ndim) != 1:
         arrays = [array.reshape(1) if array.ndim == 0 else array for array in arrays]
 
-    keys = core.keylist(*(a.dtype.names for a in arrays), allow_duplicates=False)
+    keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False)
 
     result = {}
+    size = max(size) * max(ndim) or None
     for a in arrays:
         for key in a.keys():
-            result[key] = a.get(key)
+            result[key] = np.full(size, a.get(key))
 
+    return core.array(result, keys)
     return core.full(max(size) * max(ndim) or -1, result, keys, dtype=[v.dtype for v in result.values()])
 
 def concatenate(*arrays, axis=0):
@@ -517,38 +520,33 @@ def concatenate(*arrays, axis=0):
     else:
         raise np.AxisError(axis, 1, 'concatenate only accepts axis values of 0 or 1')
 
-def deprecated_dual_arrayfunc(func):
+# TODO dont deprecate. Inlude error propagation
+def dual_arrayfunc(func):
     # With the new array.default() feature these functions are not necessary any more. In the future
     # the numpy functions will be used directly.
     def func_wrapper(a1, a2, default_value=None, keys=None):
         if default_value is not None:
-            warnings.warn("The default_value argument is deprecated for this function and will be "
-                          "removed in a future release. Use array.default(default_value) instead.", stacklevel=1)
             if type(default_value) is not tuple:
                 default_value = (default_value, default_value)
 
             if isinstance(a1, core.IsopyArray):
                 a1 = a1.default(default_value[0])
-            elif isinstance(a1, dict) and type(a1) is not core.ScalarDict:
-                a1 = core.ScalarDict(a1, default_value = default_value[0])
+            elif isinstance(a1, dict) and type(a1) is not core.RefValDict:
+                a1 = core.RefValDict(a1, default_value = default_value[0])
 
             if isinstance(a2, core.IsopyArray):
                 a2 = a2.default(default_value[1])
-            elif isinstance(a2, dict) and type(a2) is not core.ScalarDict:
-                a2 = core.ScalarDict(a2, default_value = default_value[1])
-
-        if keys is not None:
-            warnings.warn("The keys argument is deprecated for this function and will be "
-                          "removed in a future release. Call isopy.arrayfunc(function, a1, a2, keys=keys) instead", stacklevel=1)
+            elif isinstance(a2, dict) and type(a2) is not core.RefValDict:
+                a2 = core.RefValDict(a2, default_value = default_value[1])
 
         return arrayfunc(func, a1, a2, keys=keys)
     return func_wrapper
 
-add = deprecated_dual_arrayfunc(np.add)
-subtract = deprecated_dual_arrayfunc(np.subtract)
-multiply = deprecated_dual_arrayfunc(np.multiply)
-divide = deprecated_dual_arrayfunc(np.divide)
-power = deprecated_dual_arrayfunc(np.power)
+add = dual_arrayfunc(np.add)
+subtract = dual_arrayfunc(np.subtract)
+multiply = dual_arrayfunc(np.multiply)
+divide = dual_arrayfunc(np.divide)
+power = dual_arrayfunc(np.power)
 
 @core.append_preset_docstring
 @core.add_preset('abs', abs = True)

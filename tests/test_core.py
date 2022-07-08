@@ -1546,46 +1546,46 @@ class Test_Dict:
         dictionary2 = dict(zip(keys[:3], values[:3]))
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
-        isopydict = isopy.ScalarDict(dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1, 1)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=[1, 2])
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=[1, 2])
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2, [1, 2])
 
-        isopydict = isopy.ScalarDict(**dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2, dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2)
+        assert type(isopydict) is isopy.RefValDict
         isopydict.update(dictionary3)
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(**dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(zip(keys, values))
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(zip(keys, values))
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
         with pytest.raises(TypeError):
             # This doesnt work for isopy dicts at present
-            isopydict = isopy.ScalarDict(values, keys)
+            isopydict = isopy.RefValDict(values, keys)
 
         keys = '101 pd ru cd 105pd hermione'.split()
         values = [[1], [2], [3], [4], [5], [6]]
@@ -1594,41 +1594,41 @@ class Test_Dict:
         dictionary2 = dict(zip(keys[:3], values[:3]))
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
-        isopydict = isopy.ScalarDict(dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1, 1)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=[1, 2])
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=[1, 2])
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2, [1, 2])
 
-        isopydict = isopy.ScalarDict(**dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2, dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2)
+        assert type(isopydict) is isopy.RefValDict
         isopydict.update(dictionary3)
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(**dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
-        isopydict = isopy.ScalarDict(zip(keys, values))
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(zip(keys, values))
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 0, 1)
 
         keys = '101 pd ru cd 105pd hermione'.split()
@@ -1638,41 +1638,41 @@ class Test_Dict:
         dictionary2 = dict(zip(keys[:3], values[:3]))
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
-        isopydict = isopy.ScalarDict(dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2, 1)
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=[1, 2])
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary1, default_value=[1, 2])
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2, [1, 2])
 
-        isopydict = isopy.ScalarDict(**dictionary1)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary1)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(dictionary2, dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(dictionary2)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2)
+        assert type(isopydict) is isopy.RefValDict
         isopydict.update(dictionary3)
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(**dictionary2, **dictionary3)
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(**dictionary2, **dictionary3)
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
-        isopydict = isopy.ScalarDict(zip(keys, values))
-        assert type(isopydict) is isopy.ScalarDict
+        isopydict = isopy.RefValDict(zip(keys, values))
+        assert type(isopydict) is isopy.RefValDict
         self.check_creation_scalar(isopydict, keys, values, 1, 2)
 
         keys = '101 pd ru cd 105pd hermione'.split()
@@ -1683,26 +1683,26 @@ class Test_Dict:
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary1)
+            isopy.RefValDict(dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary1)
+            isopy.RefValDict(**dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, dictionary3)
+            isopy.RefValDict(dictionary2, dictionary3)
 
-        isopydict = isopy.ScalarDict(dictionary2)
+        isopydict = isopy.RefValDict(dictionary2)
         with pytest.raises(ValueError):
             isopydict.update(dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, **dictionary3)
+            isopy.RefValDict(dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary2, **dictionary3)
+            isopy.RefValDict(**dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(zip(keys, values))
+            isopy.RefValDict(zip(keys, values))
 
         keys = '101 pd ru cd 105pd hermione'.split()
         values = [[1, 2], 2, [3], [], [5], 6]
@@ -1712,26 +1712,26 @@ class Test_Dict:
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary1)
+            isopy.RefValDict(dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary1)
+            isopy.RefValDict(**dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, dictionary3)
+            isopy.RefValDict(dictionary2, dictionary3)
 
-        isopydict = isopy.ScalarDict(dictionary2)
+        isopydict = isopy.RefValDict(dictionary2)
         with pytest.raises(ValueError):
             isopydict.update(dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, **dictionary3)
+            isopy.RefValDict(dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary2, **dictionary3)
+            isopy.RefValDict(**dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(zip(keys, values))
+            isopy.RefValDict(zip(keys, values))
 
         keys = '101 pd ru cd 105pd hermione'.split()
         values = [[1, 2], 2, [3], [[1], [2]], [5], 6]
@@ -1741,28 +1741,28 @@ class Test_Dict:
         dictionary3 = dict(zip(keys[3:], values[3:]))
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary1)
+            isopy.RefValDict(dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary1)
+            isopy.RefValDict(**dictionary1)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, dictionary3)
+            isopy.RefValDict(dictionary2, dictionary3)
 
-        isopydict = isopy.ScalarDict(dictionary2)
+        isopydict = isopy.RefValDict(dictionary2)
         with pytest.raises(ValueError):
             isopydict.update(dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(dictionary2, **dictionary3)
+            isopy.RefValDict(dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(**dictionary2, **dictionary3)
+            isopy.RefValDict(**dictionary2, **dictionary3)
 
         with pytest.raises(ValueError):
-            isopy.ScalarDict(zip(keys, values))
+            isopy.RefValDict(zip(keys, values))
 
-    def check_creation(self, isopydict, keys, values, scalar = False):
+    def check_creation(self, isopydict, keys, values):
         keylist = isopy.keylist(keys)
         assert len(isopydict) == len(keys)
 
@@ -1777,8 +1777,6 @@ class Test_Dict:
 
         for i, value in enumerate(isopydict.values()):
             assert value == values[i]
-            if scalar:
-                assert type(value) == np.float64
 
         for i, key in enumerate(keys):
             assert key in isopydict
@@ -1827,7 +1825,7 @@ class Test_Dict:
         keys = '101 pd ru cd 105pd hermione'.split()
         values = [1, 2, 3, 4, 5, 6]
 
-        isopydict = isopy.ScalarDict(dict(zip(keys, values)))
+        isopydict = isopy.RefValDict(dict(zip(keys, values)))
         repr(isopydict)
         str(isopydict)
 
@@ -1917,8 +1915,9 @@ class Test_Dict:
         assert copy is not isopydict
         assert copy.default_value == 'default'
 
-        with pytest.raises(AttributeError):
-            isopydict.default_value = 'fail'
+        isopydict.default_value = 'fail'
+        assert isopydict.default_value == 'fail'
+        assert copy.default_value == 'default'
 
         # readonly = True
 
@@ -1946,8 +1945,8 @@ class Test_Dict:
             value = isopydict.pop('107ag')
 
         # set default
-        value = isopydict.setdefault('ru')
-        assert value == 'a'
+        with pytest.raises(TypeError):
+            value = isopydict.setdefault('ru')
         with pytest.raises(TypeError):
             value = isopydict.setdefault('107ag', None)
         with pytest.raises(TypeError):
@@ -1975,7 +1974,7 @@ class Test_Dict:
         values = [1, 2, 3, 4, 5, 6]
         dictionary1 = dict(zip(keys, values))
 
-        isopydict = isopy.ScalarDict(dictionary1, default_value=666)
+        isopydict = isopy.RefValDict(dictionary1, default_value=666)
         assert isopydict.default_value == 666
         assert isopydict.default_value.dtype == np.float64
 
@@ -1986,11 +1985,14 @@ class Test_Dict:
         assert copy is not isopydict
         assert copy.default_value == 666
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             isopydict.default_value = 'fail'
 
+        isopydict.default_value = 1
+        assert isopydict.default_value == 1
+
         with pytest.raises(ValueError):
-            isopydict = isopy.ScalarDict(dictionary1, default_value='a')
+            isopydict = isopy.RefValDict(dictionary1, default_value='a')
 
     def test_get_isopydict(self):
         keys = '101 pd ru cd 105pd hermione'.split()
@@ -2088,19 +2090,18 @@ class Test_Dict:
         subkeys3 =  ['105pd/ru', '107ag/ru']
 
         dictionary = dict(zip(keys, values))
-        isopydict1 = isopy.ScalarDict(dictionary)
-        isopydict2 = isopy.ScalarDict(dictionary, default_value=10)
+        isopydict1 = isopy.RefValDict(dictionary)
+        isopydict2 = isopy.RefValDict(dictionary, default_value=10)
 
         for key in keys:
             assert isopydict1[key] == dictionary.get(key)
             assert isopydict2[key] == dictionary.get(key)
-            assert isopydict1[key] is not isopydict1[key]
-            assert isopydict2[key] is not isopydict2[key]
+            assert isopydict1[key] is isopydict1[key]
 
             assert isopydict1.get(key) == dictionary.get(key)
             assert isopydict2.get(key) == dictionary.get(key)
-            assert isopydict1.get(key) is not isopydict1.get(key)
-            assert isopydict2.get(key) is not isopydict2.get(key)
+            assert isopydict1.get(key) is isopydict1.get(key)
+            assert isopydict2.get(key) is isopydict2.get(key)
 
             assert isopydict1.get(key, [1, 2]) == dictionary.get(key)
 
@@ -2116,8 +2117,8 @@ class Test_Dict:
             assert np.isnan(isopydict1.get(key))
             assert isopydict2.get(key) == 10
 
-            assert isopydict1.get(key) is not isopydict1.default_value
-            assert isopydict2.get(key) is not isopydict2.default_value
+            assert isopydict1.get(key) is isopydict1.default_value
+            assert isopydict2.get(key) is isopydict2.default_value
 
             value1 = isopydict1.get(key, 666)
             value2 = isopydict2.get(key, 666)
@@ -2141,14 +2142,14 @@ class Test_Dict:
         subkeys3 = ['105pd/ru', '107ag/ru']
 
         dictionary = dict(zip(keys, values))
-        isopydict1 = isopy.ScalarDict(dictionary)
-        isopydict2 = isopy.ScalarDict(dictionary, default_value=10)
+        isopydict1 = isopy.RefValDict(dictionary)
+        isopydict2 = isopy.RefValDict(dictionary, default_value=10)
 
         assert np.isnan(isopydict1.get('105pd/ru'))
         assert isopydict2.get('105pd/ru') == 10
 
-        isopydict1 = isopy.ScalarDict(dictionary, ratio_func=np.divide)
-        isopydict2 = isopy.ScalarDict(dictionary, default_value=10, ratio_func=np.divide)
+        isopydict1 = isopy.RefValDict(dictionary, ratio_func=np.divide)
+        isopydict2 = isopy.RefValDict(dictionary, default_value=10, ratio_func=np.divide)
 
         assert isopydict1.get('105pd/ru') == 5 / 3
         assert isopydict2.get('105pd/ru') == 5/3
@@ -2231,8 +2232,8 @@ class Test_Dict:
         keys = 'ru rh pd ag cd'.split()
         values = (1,2 ,3, 4, 5)
 
-        scalardict1 = isopy.ScalarDict(zip(keys, values))
-        scalardict2 = isopy.ScalarDict(zip(keys, values), default_value=10)
+        scalardict1 = isopy.RefValDict(zip(keys, values))
+        scalardict2 = isopy.RefValDict(zip(keys, values), default_value=10)
 
         assert np.isnan(scalardict1.get('RuPd'))
         assert scalardict2.get('RuPd') == 10
@@ -2249,8 +2250,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = isopy.ScalarDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, None))
-        scalardict2 = isopy.ScalarDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, None))
+        scalardict1 = isopy.RefValDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, None))
+        scalardict2 = isopy.RefValDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, None))
 
         assert scalardict1.get('RuPd') == 4
         assert scalardict2.get('RuPd') == 4
@@ -2267,8 +2268,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = isopy.ScalarDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, np.divide))
-        scalardict2 = isopy.ScalarDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, np.divide))
+        scalardict1 = isopy.RefValDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, np.divide))
+        scalardict2 = isopy.RefValDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, np.divide))
 
         assert scalardict1.get('Pd++') == 1.5
         assert scalardict2.get('Pd++') == 1.5
@@ -2351,7 +2352,7 @@ class Test_Dict:
         ratio_func = np.divide
         molecule_funcs=(np.add, np.divide, None)
 
-        isopydict = isopy.ScalarDict(dict(zip(keys, values)), default_value=666,
+        isopydict = isopy.RefValDict(dict(zip(keys, values)), default_value=666,
                                      ratio_func=ratio_func, molecule_funcs=molecule_funcs)
         filtered = isopydict.copy(flavour_eq='element')
         assert type(filtered) is type(isopydict)
@@ -2421,8 +2422,8 @@ class Test_Dict:
         subkeys4 = 'ru 108pd 111cd'.split()
 
         dictionary = dict(zip(keys, values))
-        isodict1 = isopy.ScalarDict(dictionary)
-        isodict2 = isopy.ScalarDict(dictionary, default_value=0)
+        isodict1 = isopy.RefValDict(dictionary)
+        isodict2 = isopy.RefValDict(dictionary, default_value=0)
 
         array1 = isodict1.to_array(subkeys1)
         array2 = isodict2.to_array(subkeys1)
@@ -2492,6 +2493,97 @@ class Test_Dict:
 
         assert array1 == isodict1.asarray(key_eq=subkeys2)
         assert array2 == isodict2.asarray(key_eq=subkeys2)
+
+    def test_asdict(self):
+        keys = '101 pd ru cd 105pd hermione'.split()
+        values = [1, '2', 'a', [11, 12, 13], 5, 6]
+
+        input = zip(keys, values)
+        result = isopy.asdict(input)
+        assert type(result) is isopy.IsopyDict
+        self.check_creation(result, keys, values)
+
+        input = dict(zip(keys, values))
+        result = isopy.asdict(input)
+        assert type(result) is isopy.IsopyDict
+        self.check_creation(result, keys, values)
+
+        input = isopy.IsopyDict(zip(keys, values))
+        result = isopy.asdict(input)
+        assert result is input
+
+        result = isopy.asdict(input, 1)
+        assert result.default_value == 1
+        assert result is not input
+        assert type(result) is isopy.IsopyDict
+        self.check_creation(result, keys, values)
+
+        input = result
+        result = isopy.asdict(input, 1)
+        assert result is input
+
+        input = 'element.symbol_name'
+        result = isopy.asdict(input)
+        assert result is isopy.refval.element.symbol_name
+
+        keys = list(isopy.refval.element.symbol_name.keys())
+        values = list(isopy.refval.element.symbol_name.values())
+        result = isopy.asdict(input, 1)
+        assert result.default_value == 1
+        assert result is not input
+        assert type(result) is isopy.IsopyDict
+        self.check_creation(result, keys, values)
+
+        keys = '101 pd ru cd 105pd hermione'.split()
+        values = [1, 2, 3, 4, 5, 6]
+
+        input = isopy.RefValDict(zip(keys, values))
+        result = isopy.asdict(input)
+        assert result is input
+
+    def test_asrefval(self):
+        keys = '101 pd ru cd 105pd hermione'.split()
+        values = [1, 2, 3, 4, 5, 6]
+
+        input = zip(keys, values)
+        result = isopy.asrefval(input)
+        assert type(result) is isopy.RefValDict
+        self.check_creation_scalar(result, keys, values, 0, 1)
+
+        input = dict(zip(keys, values))
+        result = isopy.asrefval(input)
+        assert type(result) is isopy.RefValDict
+        self.check_creation_scalar(result, keys, values, 0, 1)
+
+        input = isopy.IsopyDict(zip(keys, values))
+        result = isopy.asrefval(input, 1)
+        assert result is not input
+        assert type(result) is isopy.RefValDict
+        self.check_creation_scalar(result, keys, values, 0, 1, 1)
+
+        input = isopy.RefValDict(zip(keys, values))
+        result = isopy.asrefval(input)
+        assert result is input
+
+        result = isopy.asrefval(input, 1)
+        assert result is not input
+        assert type(result) is isopy.RefValDict
+        self.check_creation_scalar(result, keys, values, 0, 1, 1)
+
+        input = result
+        result = isopy.asrefval(input, 1)
+        assert result is input
+
+        input = 'isotope.fraction'
+        result = isopy.asrefval(input)
+        assert result is isopy.refval.isotope.fraction
+
+        keys = list(isopy.refval.isotope.fraction.keys())
+        values = list(isopy.refval.isotope.fraction.values())
+        result = isopy.asrefval(input, 1)
+        assert result is not input
+        assert type(result) is isopy.RefValDict
+        self.check_creation_scalar(result, keys, values, 0, 1, 1)
 
 #TODO test table
 #TODO test changing dtype
@@ -4103,8 +4195,8 @@ class Test_ToTextMixin:
     def test_100_1_d(self):
         # size 100, 1-dim
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
-        d = a.to_scalardict()
-        assert type(d) is core.ScalarDict
+        d = a.to_refval()
+        assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim == a.ndim
@@ -4170,8 +4262,8 @@ class Test_ToTextMixin:
 
     def test_1_1_d(self):
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
-        d = a.to_scalardict()
-        assert type(d) is core.ScalarDict
+        d = a.to_refval()
+        assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim != a.ndim
@@ -4231,8 +4323,8 @@ class Test_ToTextMixin:
 
     def test_1_0_d(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
-        d = a.to_scalardict()
-        assert type(d) is core.ScalarDict
+        d = a.to_refval()
+        assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim == a.ndim
@@ -4264,16 +4356,16 @@ class Test_ToTextMixin:
     def test_scalardict_default_value(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
 
-        d = a.to_scalardict()
-        assert type(d) is core.ScalarDict
+        d = a.to_refval()
+        assert type(d) is core.RefValDict
         np.testing.assert_allclose(d.default_value, np.nan)
 
-        d = a.to_scalardict(1)
-        assert type(d) is core.ScalarDict
+        d = a.to_refval(1)
+        assert type(d) is core.RefValDict
         np.testing.assert_allclose(d.default_value, 1)
 
-        d = a.default(2).to_scalardict()
-        assert type(d) is core.ScalarDict
+        d = a.default(2).to_refval()
+        assert type(d) is core.RefValDict
         np.testing.assert_allclose(d.default_value, 2)
 
 

@@ -79,4 +79,9 @@ The following classes/functions can be used to create isopy dictionaries:
     :template: dict_template.rst
 
     IsopyDict
-    ScalarDict
+    RefValDict
+
+    :template: autosummary/function.rst
+
+    asdict
+    asrefval

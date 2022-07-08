@@ -9,14 +9,11 @@ import os
 ### Reference Values ###
 ########################
 
-def _load_RV_values(filename, datatype=None):
+def _load_RV_values(filename, keys_in_first = 'r'):
     filepath = os.path.join(os.path.dirname(__file__), 'referencedata', f'{filename}.csv')
-    data = io.read_csv(filepath, keys_in_first='r')
+    data = io.read_csv(filepath, keys_in_first=keys_in_first)
+    data = {key: value[0] for key, value in data.items()}
 
-    if datatype is not None:
-        data =  {key: datatype(value[0]) for key, value in data.items()}
-    else:
-        data = {key: value[0] for key, value in data.items()}
     return data
 
 # Assumes all default and reference values are properties
@@ -69,6 +66,7 @@ class RefValGroup:
             
         return defval + refval
 
+
 class mass(RefValGroup):
     @is_reference_value        
     @core.cached_property
@@ -84,10 +82,10 @@ class mass(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.mass.isotopes[40]
+        >>> isopy.to_refval.mass.isotopes[40]
         IsotopeKeyList('40Ar', '40K', '40Ca')
 
-        >>> isopy.refval.mass.isotopes.get(96)
+        >>> isopy.to_refval.mass.isotopes.get(96)
         IsotopeKeyList('96Zr', '96Mo', '96Ru')
         """
 
@@ -113,10 +111,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.isotopes['pd']
+        >>> isopy.to_refval.element.isotopes['pd']
         IsotopeKeyList('102Pd', '104Pd', '105Pd', '106Pd', '108Pd', '110Pd')
 
-        >>> isopy.refval.element.isotopes.get('ge')
+        >>> isopy.to_refval.element.isotopes.get('ge')
         IsotopeKeyList('70Ge', '72Ge', '73Ge', '74Ge', '76Ge')
         """
 
@@ -132,7 +130,7 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.all_symbols[:5] # first 5 element symbols
+        >>> isopy.to_refval.element.all_symbols[:5] # first 5 element symbols
         (ElementKeyString('H'), ElementKeyString('He'), ElementKeyString('Li'),
          ElementKeyString('Be'), ElementKeyString('B'))
         """
@@ -151,10 +149,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.symbol_name['pd']
+        >>> isopy.to_refval.element.symbol_name['pd']
         'Palladium'
 
-        >>> isopy.refval.element.symbol_name.get('ge')
+        >>> isopy.to_refval.element.symbol_name.get('ge')
         'Germanium'
         """
         data = {isopy.ElementKeyString(key, allow_reformatting=False): value for key, value in _load_RV_values('element_symbol_name').items()}
@@ -173,10 +171,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.symbol_name['Palladium']
+        >>> isopy.to_refval.element.symbol_name['Palladium']
         ElementKeyString('Pd')
 
-        >>> isopy.refval.element.symbol_name.get('Germanium')
+        >>> isopy.to_refval.element.symbol_name.get('Germanium')
         ElementKeyString('Ge')
         """
         return dict({name: symbol for symbol, name in self.symbol_name.items()}, readonly = True)
@@ -196,10 +194,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.atomic_weight['pd']
+        >>> isopy.to_refval.element.atomic_weight['pd']
         106.41532788648
 
-        >>> isopy.refval.element.atomic_weight.get('ge')
+        >>> isopy.to_refval.element.atomic_weight.get('ge')
         72.6295890304831
         """
         weights = {}
@@ -208,7 +206,7 @@ class element(RefValGroup):
             weights[element] = np.sum([self._parent.isotope.mass_W17.get(isotope) *
                                        self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
-        return core.ScalarDict(**weights, readonly=True, ratio_func=np.divide,
+        return core.RefValDict(**weights, readonly=True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, None))
         
     @is_reference_value
@@ -222,13 +220,13 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.atomic_number['pd']
+        >>> isopy.to_refval.element.atomic_number['pd']
         46
 
-        >>> isopy.refval.element.atomic_number.get('ge')
+        >>> isopy.to_refval.element.atomic_number.get('ge')
         32
         """
-        return core.IsopyDict(_load_RV_values('element_atomic_number', int), readonly = True)
+        return core.RefValDict(_load_RV_values('element_atomic_number'), readonly = True)
         
     @is_reference_value
     @core.cached_property
@@ -244,13 +242,13 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.element.atomic_number['pd']
+        >>> isopy.to_refval.element.atomic_number['pd']
         1.36
 
-        >>> isopy.refval.element.atomic_number.get('ge')
+        >>> isopy.to_refval.element.atomic_number.get('ge')
         32
         """
-        return core.ScalarDict(_load_RV_values('element_initial_solar_system_abundance_L09', np.float64),
+        return core.RefValDict(_load_RV_values('element_initial_solar_system_abundance_L09'),
                                default_value=np.nan, readonly = True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, None))
 
@@ -274,21 +272,21 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.mass['pd105']
+        >>> isopy.to_refval.isotope.mass['pd105']
         104.9050795
 
-        >>> isopy.refval.isotope.mass.get('ge76')
+        >>> isopy.to_refval.isotope.mass.get('ge76')
         75.92140273
 
-        >>> isopy.refval.isotope.mass.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.mass.get('pd108/pd105')
         1.0285859589859039
         """
-        if not self.__mass: self.__mass = self.mass_W17
+        if not self.__mass: self.__mass = self.mass_AME20
         return self.__mass
 
     @mass.setter
     def mass(self, value):
-        if not isinstance(value, core.ScalarDict):
+        if not isinstance(value, core.RefValDict):
             raise TypeError('attribute must be a scalar dictionary')
         self.__mass = value
     
@@ -306,13 +304,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.best_measurement_fraction_M16['pd105']
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16['pd105']
         0.2233
 
-        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('ge76')
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('ge76')
         0.07745
 
-        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
         1.1849529780564263
         """
         if not self.__fraction: self.__fraction = self.best_measurement_fraction_M16
@@ -320,7 +318,7 @@ class isotope(RefValGroup):
 
     @fraction.setter
     def fraction(self, value):
-        if not isinstance(value, core.ScalarDict):
+        if not isinstance(value, core.RefValDict):
             raise TypeError('attribute must be a dictionary')
         self.__fraction = value
     
@@ -338,17 +336,32 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.mass_W17['pd105']
+        >>> isopy.to_refval.isotope.mass_W17['pd105']
         104.9050795
 
-        >>> isopy.refval.isotope.mass_W17.get('ge76')
+        >>> isopy.to_refval.isotope.mass_W17.get('ge76')
         75.92140273
 
-        >>> isopy.refval.isotope.mass_W17.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.mass_W17.get('pd108/pd105')
         1.0285859589859039
         """
-        return core.ScalarDict(_load_RV_values('isotope_mass_W17', np.float64),
+        return core.RefValDict(_load_RV_values('isotope_mass_W17'),
                                default_value=np.nan, readonly = True, ratio_func=np.divide,
+                               molecule_funcs=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
+
+    @is_reference_value
+    @core.cached_property
+    def mass_AME20(self):
+        """
+        Dictionary containing isotope mass of each isotope from the `Atomic Mass Evaluation 2020 <https://www-nds.iaea.org/amdc/>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+
+        """
+        return core.RefValDict(_load_RV_values('isotope_mass_AME20', keys_in_first='c'),
+                               default_value=np.nan, readonly=True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
 
     @is_reference_value
@@ -363,16 +376,16 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.mass_number['pd105']
+        >>> isopy.to_refval.isotope.mass_number['pd105']
         105
 
-        >>> isopy.refval.isotope.mass_number.get('ge76')
+        >>> isopy.to_refval.isotope.mass_number.get('ge76')
         76
 
-        >>> isopy.refval.isotope.mass_number.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.mass_number.get('pd108/pd105')
         1.0285714285714285
         """
-        return core.ScalarDict({key: int(key.mass_number) for key in self.mass_W17},
+        return core.RefValDict({key: int(key.mass_number) for key in self.mass_W17},
                                default_value=np.nan, readonly=True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
     
@@ -390,16 +403,16 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.best_measurement_fraction_M16['pd105']
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16['pd105']
         0.2233
 
-        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('ge76')
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('ge76')
         0.07745
 
-        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
         1.1849529780564263
         """
-        return core.ScalarDict(_load_RV_values('isotope_best_measurement_fraction_M16', np.float64),
+        return core.RefValDict(_load_RV_values('isotope_best_measurement_fraction_M16'),
                                default_value=np.nan, readonly = True, ratio_func=np.divide,
                                molecule_funcs=(np.multiply, np.multiply, None))
         
@@ -417,16 +430,16 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.initial_solar_system_fraction_L09['pd105']
+        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09['pd105']
         0.2233
 
-        >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('ge76')
+        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09.get('ge76')
         0.0.07444
 
-        >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
         1.1849529780564263
         """
-        return core.ScalarDict(_load_RV_values('isotope_initial_solar_system_fraction_L09', np.float64),
+        return core.RefValDict(_load_RV_values('isotope_initial_solar_system_fraction_L09'),
                                default_value = np.nan, readonly = True, ratio_func=np.divide,
                                molecule_funcs=(np.multiply, np.multiply, None))
         
@@ -444,16 +457,16 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.3032
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('ge76')
         8.5
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         1.184036939313984
         """
-        return core.ScalarDict(_load_RV_values('isotope_initial_solar_system_abundance_L09', np.float64),
+        return core.RefValDict(_load_RV_values('isotope_initial_solar_system_abundance_L09'),
                                default_value = np.nan, readonly = True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, None))
 
@@ -476,20 +489,20 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.303688
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('ge76')
         8.5606
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         1.1849529780564263
         """
         element_abundance = isopy.refval.element.initial_solar_system_abundance_L09
         isotope_fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
         result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
 
-        return core.ScalarDict(result, default_value=np.nan, readonly=True, ratio_func=np.divide,
+        return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_func=np.divide,
                                molecule_funcs=(np.add, np.multiply, None))
 
     @is_reference_value
@@ -506,16 +519,16 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.157
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('mo95')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('mo95')
         0.696
 
-        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         4.751592356687898
         """
-        return core.ScalarDict(_load_RV_values('isotope_sprocess_fraction_B11', np.float64),
+        return core.RefValDict(_load_RV_values('isotope_sprocess_fraction_B11'),
                                ratio_func=np.divide, default_value=np.nan, readonly = True)
 
 class ReferenceValues:
