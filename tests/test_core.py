@@ -33,6 +33,10 @@ class Test_Flavour:
             assert flavour in isopy.asflavour(flavour)
             assert flavour in isopy.asflavour('any')
 
+        if flavour != 'any':
+            assert flavour == isopy.core.FLAVOURS[flavour]()
+            assert flavour in isopy.core.FLAVOURS[flavour]()
+
         assert isopy.asflavour('any') == 'any'
         assert isopy.asflavour('any') == 'mass|element|isotope|molecule|ratio|general'
         assert isopy.asflavour('mass|element|isotope|molecule|ratio|general') == 'any'
@@ -45,11 +49,86 @@ class Test_Flavour:
         assert isopy.asflavour('molecule[any]') == 'molecule'
         assert isopy.asflavour('molecule[element]') == 'molecule'
         assert isopy.asflavour('molecule[element]') != 'molecule[any]'
-        assert isopy.asflavour('molecule[element]') in isopy.asflavour('molecule')
-        assert isopy.asflavour('molecule[element]') in isopy.asflavour('molecule[any]')
-        assert isopy.asflavour('molecule[element]') in isopy.asflavour('molecule[element|isotope]')
-        assert isopy.asflavour('molecule[element]') not in isopy.asflavour('molecule[isotope]')
+        assert 'molecule[element]' in isopy.asflavour('molecule')
+        assert 'molecule[element]' in isopy.asflavour('molecule[any]')
+        assert 'molecule[element]' in isopy.asflavour('molecule[element|isotope]')
+        assert 'molecule[element]' not in isopy.asflavour('molecule[isotope]')
+        assert 'molecule[element, element]' not in isopy.asflavour('molecule[any]')
 
+        with pytest.raises(ValueError):
+            isopy.asflavour('isotope[mass, element]')
+
+        with pytest.raises(ValueError):
+            isopy.asflavour('molecule[element, isotope]')
+
+        with pytest.raises(ValueError):
+            isopy.asflavour('ratio[element, isotope, element]')
+
+    def test_creation2(self):
+        mass = isopy.keylist('101 105 111'.split())
+        element = isopy.keylist('ru pd cd'.split())
+        isotope = isopy.keylist('101ru 105pd 111cd'.split())
+        ratio = isopy.keylist('ru/pd pd/pd cd/pd'.split())
+        general = isopy.keylist('harry ron hermione'.split())
+        mixed = isopy.keylist('ru 105pd cd/pd'.split())
+
+        keys = (mass, element, isotope, ratio, general, mixed)
+        flavours = (core.MassFlavour(), core.ElementFlavour(), core.IsotopeFlavour(),
+                    core.RatioFlavour(numerator_flavour='element', denominator_flavour='element'),
+                    core.GeneralFlavour(), isopy.asflavour('element|isotope|ratio[element, element]'))
+        names = 'mass Element ISOTOPE RatiO[element] GENeral element|ISOTOPE|ratio[element,ELEMENT]'.split()
+
+        for i in range(6):
+            assert not flavours[i] == [i]
+            assert not keys[i].flavour == i
+
+            for j in range(6):
+                if i == j:
+                    assert keys[i].flavour == flavours[j]
+
+                    assert keys[i].flavour == flavours[j]
+                    assert keys[i].flavour == keys[j].flavour
+                    assert keys[i].flavour == names[j]
+
+                    assert names[i] == keys[j].flavour
+                else:
+                    assert keys[i].flavour != flavours[j]
+
+                    assert keys[i].flavour != flavours[j]
+                    assert keys[i].flavour != keys[j].flavour
+                    assert keys[i].flavour != names[j]
+
+                    assert names[i] != keys[j].flavour
+
+    def test_is_flavour(self):
+        key = isopy.keystring('ru')
+        keys = isopy.keylist('ru', 'pd')
+        array = isopy.ones(3, keys)
+
+        assert isopy.iskeystring(key, flavour='element')
+        assert not isopy.iskeylist(key, flavour='element')
+        assert not isopy.isarray(key, flavour='element')
+        assert not isopy.iskeystring(key, flavour='element|isotope')
+        assert isopy.iskeystring(key, flavour_in='element|isotope')
+        assert not isopy.iskeystring(key, flavour_in='mass|isotope')
+
+        assert not isopy.iskeystring(keys, flavour='element')
+        assert isopy.iskeylist(keys, flavour='element')
+        assert not isopy.isarray(keys, flavour='element')
+        assert not isopy.iskeylist(keys, flavour='element|isotope')
+        assert isopy.iskeylist(keys, flavour_in='element|isotope')
+        assert not isopy.iskeylist(keys, flavour_in='mass|isotope')
+
+        assert not isopy.iskeystring(array, flavour='element')
+        assert not isopy.iskeylist(array, flavour='element')
+        assert isopy.isarray(array, flavour='element')
+        assert not isopy.isarray(array, flavour='element|isotope')
+        assert isopy.isarray(array, flavour_in='element|isotope')
+        assert not isopy.isarray(array, flavour_in='mass|isotope')
+
+    def test_keystring(self):
+        general = isopy.asflavour('general')
+        assert isopy.iskeystring(general._keystring_('pd'), flavour='general')
 
 class Test_Exceptions:
     def test_KeyValueError(self):
@@ -4615,6 +4694,8 @@ class Test_Misc:
         key = isopy.keystring('pd')
         keylist =  isopy.keylist('ru pd cd'.split())
         array = isopy.ones(1, keylist)
+        d = isopy.asdict()
+        refval = isopy.asrefval()
 
         assert core.iskeystring(key.str()) is False
         assert core.iskeystring(key) is True
@@ -4625,46 +4706,19 @@ class Test_Misc:
         assert core.isarray(array.to_list()) is False
         assert core.isarray(array) is True
 
+        assert core.isdict(d.to_dict()) is False
+        assert core.isdict(d) is True
+        assert core.isdict(refval) is True
+
+        assert core.isrefval(refval.to_dict()) is False
+        assert core.isrefval(refval) is True
+        assert core.isrefval(d) is False
+
+
     def test_classname(self):
         keylist = isopy.keylist('101 105 111'.split())
         assert core.get_classname(keylist) == isopy.core.IsopyKeyList.__name__
         assert core.get_classname(isopy.core.IsopyKeyList) == isopy.core.IsopyKeyList.__name__
-
-    def test_flavour(self):
-        mass = isopy.keylist('101 105 111'.split())
-        element = isopy.keylist('ru pd cd'.split())
-        isotope = isopy.keylist('101ru 105pd 111cd'.split())
-        ratio = isopy.keylist('ru/pd pd/pd cd/pd'.split())
-        general = isopy.keylist('harry ron hermione'.split())
-        mixed = isopy.keylist('ru 105pd cd/pd'.split())
-
-        keys = (mass, element, isotope, ratio, general, mixed)
-        flavours = (core.MassFlavour(), core.ElementFlavour(), core.IsotopeFlavour(),
-                    core.RatioFlavour(numerator_flavour='element', denominator_flavour='element'), core.GeneralFlavour(), isopy.asflavour('element|isotope|ratio[element, element]'))
-        names = 'mass Element ISOTOPE RatiO[element] GENeral element|ISOTOPE|ratio[element,ELEMENT]'.split()
-
-        for i in range(6):
-            assert not flavours[i] == [i]
-            assert not keys[i].flavour == i
-
-            for j in range(6):
-                if i == j:
-                    assert keys[i].flavour == flavours[j]
-
-                    assert keys[i].flavour == flavours[j]
-                    assert keys[i].flavour == keys[j].flavour
-                    assert keys[i].flavour == names[j]
-
-                    assert names[i] == keys[j].flavour
-                else:
-                    assert keys[i].flavour != flavours[j]
-
-                    assert keys[i].flavour != flavours[j]
-                    assert keys[i].flavour != keys[j].flavour
-                    assert keys[i].flavour != names[j]
-
-                    assert names[i] != keys[j].flavour
-
 
     def test_extract_kwargs(self):
         kwargs = dict(Test_a = 'testa', b = 'b', Test_b = 'testb', a = 'a')
@@ -4689,6 +4743,60 @@ class Test_Misc:
         assert not isopy.core.NotGiven
         assert str(isopy.core.NotGiven) == 'N/A'
         assert repr(isopy.core.NotGiven) == 'N/A'
+
+    def test_renamed_kwarg(self):
+        def test(a=0, **_):
+            return a == 1
+
+        test2 = core.renamed_kwarg(b='a')(test)
+
+        assert not test()
+        assert test(1)
+        assert test(a=1)
+        assert not test(b=1)
+
+        assert not test2()
+        assert test2(1)
+        assert test2(a=1)
+        assert test2(b=1)
+
+        assert test2(a=1, b=0)
+
+        def func(*args, **kwargs):
+            return args, kwargs
+
+        func2 = core.renamed_kwarg(b='c')(func)
+        assert func(1, 2, a=3, c=4) == func2(1, 2, a=3, b=4)
+
+
+    def test_deprecated_function(self):
+        def func():
+            return 'success'
+
+        defunc = core.deprecrated_function('deprecated')(func)
+
+        assert func() == 'sucess'
+        assert defunc() == 'sucess'
+
+        def func(*args, **kwargs):
+            return args, kwargs
+
+        defunc = core.deprecrated_function('deprecated')(func)
+
+        assert func(1,2, b=3, c=4) == defunc(1,2, b=3, c=4)
+
+    def test_renamed_function(self):
+        def old(*args, **kwargs):
+            return 0, args, kwargs
+
+        def new(*args, **kwargs):
+            return 1, args, kwargs
+
+        old2 = core.renamed_function(new, a='b')(old)
+
+        assert old(1, 2, a = 3) != new(1, 2, b = 3)
+        assert old2(1, 2, a = 3) != new(1, 2, b = 3)
+
 
 
 

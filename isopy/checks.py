@@ -1,10 +1,8 @@
 import isopy
 
-def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, allow_list = False, allow_none=False):
+def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, allow_none=False):
     if allow_none and value is None:
         return value
-    if allow_list and isinstance(value, list):
-        raise NotImplementedError()
 
     for accepted_type in accepted_types:
         if isinstance(value, accepted_type):

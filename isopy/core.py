@@ -2092,7 +2092,7 @@ class IsopyKeyList(tuple):
         return obj
 
     def _repr_latex_(self):
-        return '$$\left[' + r', '.join([k.str("math") for k in self]) + r'\right]$$'
+        return r'$$\left[' + ', '.join([k.str("math") for k in self]) + r'\right]$$'
 
     def __repr__(self):
         return f"""{self.__class__.__name__}({", ".join([fr"'{str(k)}'" for k in self])}, flavour='{str(self.flavour)}')"""
