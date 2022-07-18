@@ -1,18 +1,4 @@
 import isopy
-def check_array(name, value, *flavours, allow_dict = False, allow_none = False):
-    if allow_dict:
-        value = check_type(name, value, isopy.IsopyArray, dict, allow_none=allow_none)
-    else:
-        value = check_type(name, value, isopy.IsopyArray, allow_none=allow_none)
-
-    if value is None or allow_dict or not flavours:
-        return value
-
-    for flavour in flavours:
-        if value.flavour == flavour:
-            return value
-
-    raise TypeError(f'parameter "{name}": array flavour "{value.flavour}" invalid.')
 
 def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, allow_list = False, allow_none=False):
     if allow_none and value is None:

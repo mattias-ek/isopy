@@ -82,19 +82,19 @@ class mass(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.mass.isotopes[40]
+        >>> isopy.refval.mass.isotopes[40]
         IsotopeKeyList('40Ar', '40K', '40Ca')
 
-        >>> isopy.to_refval.mass.isotopes.get(96)
+        >>> isopy.refval.mass.isotopes.get(96)
         IsotopeKeyList('96Zr', '96Mo', '96Ru')
         """
 
         fraction = isopy.refval.isotope.best_measurement_fraction_M16
         isotopes = {f'{mass}':
-                    isopy.IsotopeKeyList([k for k in fraction if k._filter(mass_number = {'key_eq': (mass,)})])
+                    isopy.askeylist([k for k in fraction if k._filter_(mass_number = {'key_eq': (mass,)})])
                     for mass in range(1, 239)}
         return core.IsopyDict(**{key: value for key, value in isotopes.items() if len(value) > 0},
-                               default_value=isopy.IsotopeKeyList(), readonly=True)
+                               default_value=isopy.askeylist(), readonly=True)
 
 class element(RefValGroup):
     @is_reference_value
@@ -111,16 +111,16 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.isotopes['pd']
+        >>> isopy.refval.element.isotopes['pd']
         IsotopeKeyList('102Pd', '104Pd', '105Pd', '106Pd', '108Pd', '110Pd')
 
-        >>> isopy.to_refval.element.isotopes.get('ge')
+        >>> isopy.refval.element.isotopes.get('ge')
         IsotopeKeyList('70Ge', '72Ge', '73Ge', '74Ge', '76Ge')
         """
 
         fraction = isopy.refval.isotope.best_measurement_fraction_M16
-        return core.IsopyDict(**{symbol: isopy.IsotopeKeyList([k for k in fraction if k._filter(element_symbol = {'key_eq': (symbol,)})])
-                               for symbol in self.all_symbols}, default_value=isopy.IsotopeKeyList(), readonly=True)
+        return core.IsopyDict(**{symbol: isopy.askeylist([k for k in fraction if k._filter_(element_symbol = {'key_eq': (symbol,)})])
+                               for symbol in self.all_symbols}, default_value=isopy.askeylist(), readonly=True)
     
     @is_reference_value
     @core.cached_property
@@ -130,7 +130,7 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.all_symbols[:5] # first 5 element symbols
+        >>> isopy.refval.element.all_symbols[:5] # first 5 element symbols
         (ElementKeyString('H'), ElementKeyString('He'), ElementKeyString('Li'),
          ElementKeyString('Be'), ElementKeyString('B'))
         """
@@ -149,14 +149,13 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.symbol_name['pd']
+        >>> isopy.refval.element.symbol_name['pd']
         'Palladium'
 
-        >>> isopy.to_refval.element.symbol_name.get('ge')
+        >>> isopy.refval.element.symbol_name.get('ge')
         'Germanium'
         """
-        data = {isopy.ElementKeyString(key, allow_reformatting=False): value for key, value in _load_RV_values('element_symbol_name').items()}
-        return core.IsopyDict(data, readonly = True)
+        return core.IsopyDict(_load_RV_values('element_symbol_name').items(), readonly = True)
         
     @is_reference_value
     @core.cached_property
@@ -171,10 +170,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.symbol_name['Palladium']
+        >>> isopy.refval.element.symbol_name['Palladium']
         ElementKeyString('Pd')
 
-        >>> isopy.to_refval.element.symbol_name.get('Germanium')
+        >>> isopy.refval.element.symbol_name.get('Germanium')
         ElementKeyString('Ge')
         """
         return dict({name: symbol for symbol, name in self.symbol_name.items()}, readonly = True)
@@ -194,10 +193,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.atomic_weight['pd']
+        >>> isopy.refval.element.atomic_weight['pd']
         106.41532788648
 
-        >>> isopy.to_refval.element.atomic_weight.get('ge')
+        >>> isopy.refval.element.atomic_weight.get('ge')
         72.6295890304831
         """
         weights = {}
@@ -220,10 +219,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.atomic_number['pd']
+        >>> isopy.refval.element.atomic_number['pd']
         46
 
-        >>> isopy.to_refval.element.atomic_number.get('ge')
+        >>> isopy.refval.element.atomic_number.get('ge')
         32
         """
         return core.RefValDict(_load_RV_values('element_atomic_number'), readonly = True)
@@ -242,10 +241,10 @@ class element(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.element.atomic_number['pd']
+        >>> isopy.refval.element.atomic_number['pd']
         1.36
 
-        >>> isopy.to_refval.element.atomic_number.get('ge')
+        >>> isopy.refval.element.atomic_number.get('ge')
         32
         """
         return core.RefValDict(_load_RV_values('element_initial_solar_system_abundance_L09'),
@@ -272,13 +271,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.mass['pd105']
+        >>> isopy.refval.isotope.mass['pd105']
         104.9050795
 
-        >>> isopy.to_refval.isotope.mass.get('ge76')
+        >>> isopy.refval.isotope.mass.get('ge76')
         75.92140273
 
-        >>> isopy.to_refval.isotope.mass.get('pd108/pd105')
+        >>> isopy.refval.isotope.mass.get('pd108/pd105')
         1.0285859589859039
         """
         if not self.__mass: self.__mass = self.mass_AME20
@@ -304,13 +303,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16['pd105']
+        >>> isopy.refval.isotope.best_measurement_fraction_M16['pd105']
         0.2233
 
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('ge76')
+        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('ge76')
         0.07745
 
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
+        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
         1.1849529780564263
         """
         if not self.__fraction: self.__fraction = self.best_measurement_fraction_M16
@@ -336,13 +335,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.mass_W17['pd105']
+        >>> isopy.refval.isotope.mass_W17['pd105']
         104.9050795
 
-        >>> isopy.to_refval.isotope.mass_W17.get('ge76')
+        >>> isopy.refval.isotope.mass_W17.get('ge76')
         75.92140273
 
-        >>> isopy.to_refval.isotope.mass_W17.get('pd108/pd105')
+        >>> isopy.refval.isotope.mass_W17.get('pd108/pd105')
         1.0285859589859039
         """
         return core.RefValDict(_load_RV_values('isotope_mass_W17'),
@@ -376,13 +375,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.mass_number['pd105']
+        >>> isopy.refval.isotope.mass_number['pd105']
         105
 
-        >>> isopy.to_refval.isotope.mass_number.get('ge76')
+        >>> isopy.refval.isotope.mass_number.get('ge76')
         76
 
-        >>> isopy.to_refval.isotope.mass_number.get('pd108/pd105')
+        >>> isopy.refval.isotope.mass_number.get('pd108/pd105')
         1.0285714285714285
         """
         return core.RefValDict({key: int(key.mass_number) for key in self.mass_W17},
@@ -403,13 +402,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16['pd105']
+        >>> isopy.refval.isotope.best_measurement_fraction_M16['pd105']
         0.2233
 
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('ge76')
+        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('ge76')
         0.07745
 
-        >>> isopy.to_refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
+        >>> isopy.refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
         1.1849529780564263
         """
         return core.RefValDict(_load_RV_values('isotope_best_measurement_fraction_M16'),
@@ -430,13 +429,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09['pd105']
+        >>> isopy.refval.isotope.initial_solar_system_fraction_L09['pd105']
         0.2233
 
-        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09.get('ge76')
+        >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('ge76')
         0.0.07444
 
-        >>> isopy.to_refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
+        >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
         1.1849529780564263
         """
         return core.RefValDict(_load_RV_values('isotope_initial_solar_system_fraction_L09'),
@@ -457,13 +456,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.3032
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
         8.5
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         1.184036939313984
         """
         return core.RefValDict(_load_RV_values('isotope_initial_solar_system_abundance_L09'),
@@ -489,13 +488,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.303688
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('ge76')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('ge76')
         8.5606
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         1.1849529780564263
         """
         element_abundance = isopy.refval.element.initial_solar_system_abundance_L09
@@ -519,13 +518,13 @@ class isotope(RefValGroup):
 
         Examples
         --------
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09['pd105']
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09['pd105']
         0.157
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('mo95')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('mo95')
         0.696
 
-        >>> isopy.to_refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
+        >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         4.751592356687898
         """
         return core.RefValDict(_load_RV_values('isotope_sprocess_fraction_B11'),

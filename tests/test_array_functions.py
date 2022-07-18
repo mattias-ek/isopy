@@ -533,7 +533,7 @@ class Test_ArrayFunctions:
 
     def dualinput_ad(self, func, a, d, ndim):
         keys = a.keys
-        ds = isopy.RefValDict(d)
+        ds = isopy.asrefval(d)
 
         result = func(a, d)
         assert isinstance(result, core.IsopyArray)
@@ -575,8 +575,8 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dd(self, func, d1, d2):
-        ds1 = isopy.RefValDict(d1)
-        ds2 = isopy.RefValDict(d2)
+        ds1 = isopy.asrefval(d1)
+        ds2 = isopy.asrefval(d2)
         keys = ds1.keys | ds2.keys
 
         with pytest.raises(TypeError):
@@ -639,8 +639,8 @@ class Test_ArrayFunctions:
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
-        ds1 = isopy.RefValDict(d1, default_value=1)
-        ds2 = isopy.RefValDict(d2, default_value=2)
+        ds1 = isopy.asrefval(d1, default_value=1)
+        ds2 = isopy.asrefval(d2, default_value=2)
         keys = ds1.keys | ds2.keys
 
         with pytest.raises(TypeError):
@@ -701,7 +701,7 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dv(self, func, d, v):
-        ds = isopy.RefValDict(d)
+        ds = isopy.asrefval(d)
         av = np.array(v)
         keys = ds.keys
 
@@ -987,11 +987,11 @@ class Test_ArrayFunctions:
         result = np.average(array, 0, weights)
         assert_array_equal_array(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
-        weights2 = isopy.RefValDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
@@ -1009,11 +1009,11 @@ class Test_ArrayFunctions:
         result = np.average(array, 1, weights)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.RefValDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
@@ -1039,11 +1039,11 @@ class Test_ArrayFunctions:
         result = np.average(array, None, weights)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.RefValDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 

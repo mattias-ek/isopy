@@ -186,13 +186,13 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
     for item in kwargs.items():
         input.append(item)
 
-    out_keys = isopy.IsotopeKeyList()
+    out_keys = isopy.askeylist()
     for key, val in input:
         if isinstance(key, core.IsopyArray):
             keys = key.keys()
         else:
             key = isopy.askeystring(key)
-            if key.flavour in ['element', 'isotope',  'molecule']:
+            if key.flavour in isopy.asflavour('element|isotope|molecule'):
                 keys = key.isotopes()
             else:
                 raise ValueError(f'Unknown input: {key} input must be an element or isotope key string')
@@ -518,7 +518,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
     None  , 3.12        , 0.16916     , 0.0034253   , 0.10006
     """
-    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+    #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
     extnorm_factor = isopy.checks.check_type('normalisation_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
     isotope_fractions = isopy.refval(isotope_fractions, isopy.RefValDict)
@@ -634,7 +634,7 @@ def calculate_mass_fractionation_factor(data, mf_ratio,
     --------
     remove_mass_fractionation
     """
-    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+    #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
     isotope_fractions = isopy.refval(isotope_fractions, isopy.RefValDict)
     isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
@@ -693,7 +693,7 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     --------
     isopy.tb.add_mass_fractionation
     """
-    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+    #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array], allow_none=True)
     isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
@@ -759,7 +759,7 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
     --------
     isopy.tb.add_mass_fractionation
     """
-    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+    #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
 
     fractionation_factor = isopy.checks.check_type('fractionation_factor', fractionation_factor, np.float64, np.ndarray,
                                                    coerce=True, coerce_into=[np.float64, np.array],allow_none=True)
@@ -779,7 +779,7 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
         return  data * (mass_array ** fractionation_factor)
 
 
-def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
+def find_isobaric_interferences(main, interferences=None):
     """
     Find isobaric interferences for all isotopes in *main* for each element in *interferences*.
 
@@ -828,22 +828,22 @@ def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
     {"Ba": IsotopeKeyList('138Ce')
     "La": IsotopeKeyList('138Ce')})
     """
-    main = isopy.askeylist(main).flatten(ignore_duplicates=True, flavour=('element', 'isotope', 'molecule'))
+    main = isopy.askeylist(main).flatten(ignore_duplicates=True)
 
-    if len({key.contains_flavours for key in main}) > 1:
+    if len(main.flavour) > 1:
         raise ValueError('All keys must be either element or isotope')
 
     if interferences is not None:
-        interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True, flavour=('element', 'isotope', 'molecule'))
+        interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True)
         # Create a list of all the possible isotopes
         interference_isotopes = interferences.isotopes
     else:
-        interference_isotopes = isopy.IsotopeKeyList()
+        interference_isotopes = isopy.askeylist()
 
 
-    if 'element' in main.contains_flavours:
+    if  main.flavour in isopy.asflavour('element|molecule[element]'):
         # Either ElementKeyList or a MoleculeKeyList with no isotopes
-        main_isotopes = isopy.IsotopeKeyList()
+        main_isotopes = isopy.keylist()
         for element in main:
             if element in interference_isotopes.element_symbols:
                 main_isotopes += interference_isotopes.filter(element_symbol_eq=element)
@@ -853,7 +853,7 @@ def find_isobaric_interferences(main, interferences=None) -> isopy.IsopyDict:
         main_isotopes = main
 
     if interferences is None:
-        interference_isotopes = isopy.IsotopeKeyList()
+        interference_isotopes = isopy.keylist()
         for mass in main_isotopes.mass_numbers:
             interference_isotopes += isopy.refval.mass.isotopes.get(mass)
 
@@ -933,7 +933,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
     """
 
-    data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
+    #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
 
     mf_factor = isopy.checks.check_type('mf_factor', mf_factor, np.float64, np.ndarray, coerce=True,
                                         coerce_into=[np.float64, np.array], allow_none=True)
@@ -960,7 +960,7 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
 
     for interference_element, correct_isotopes in isobaric_interferences.items():
         #If the key of the dictionary is an isotope use this isotope to make the correction
-        if isinstance(interference_element, isopy.IsotopeKeyString):
+        if isopy.iskeystring(interference_element, flavour='isotope'):
             if interference_element not in numer:
                 raise KeyError(f'isotope {interference_element} not in data')
             interference_isotope = interference_element

@@ -980,15 +980,15 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     if x is None:
         raise ValueError('x values could not be inferred from the y values')
 
-    if type(x) is isopy.RatioKeyList:
+    if isopy.iskeylist(x) and x.flavour in isopy.asflavour('ratio'):
         if x.common_denominator is None:
             raise ValueError(
                 'x values can only be inferred from a ratio key list with a common denominator')
         else:
             x = x.numerators
 
-    if type(x) is isopy.IsotopeKeyList:
-        x = x.mass_numbers
+    if isopy.iskeylist(x) and x.flavour in isopy.asflavour('isotope|molecule[isotope]'):
+        x = x.mz
 
     try:
         x = np.asarray(x, dtype=float)

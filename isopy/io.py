@@ -63,7 +63,10 @@ def rows_to_data(data, has_keys, keys_in_first):
                 elif f and len(data[0]) == 1:
                     keys_in_first = 'r'
                 elif f:
-                    raise ValueError('Unable to determine whether the first rows or columns contains the keys')
+                    # Both the first row and the first
+                    warnings.warn('Both the first row and the first column contain strings. Using first row as keys')
+                    keys_in_first = 'r'
+                    #raise ValueError('Unable to determine whether the first rows or columns contains the keys')
                 else:
                     # All values in the first row and the first column can be converted to float
                     has_keys = False
@@ -73,7 +76,9 @@ def rows_to_data(data, has_keys, keys_in_first):
                 keys_in_first = 'r'
             else:
                 # Both the first row and the first column contains at least one value that cant be converted to float
-                raise ValueError('Unable to determine whether the first rows or columns contains the keys')
+                warnings.warn('Both the first row and the first column contain strings. Using first row as keys')
+                keys_in_first = 'r'
+                #raise ValueError('Unable to determine whether the first rows or columns contains the keys')
 
         elif False not in c:
             # Only c contains string

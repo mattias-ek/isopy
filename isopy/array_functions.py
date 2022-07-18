@@ -438,7 +438,7 @@ def rstack(*arrays):
 
     result = [np.concatenate([a.get(key) for a in arrays]) for key in keys]
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
-    return keys.flavour.__view_array__(np.fromiter(zip(*result), dtype=dtype))
+    return keys._view_array_(np.fromiter(zip(*result), dtype=dtype))
 
 # TODO does this preserve dtype?
 def cstack(*arrays):
