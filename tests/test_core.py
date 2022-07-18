@@ -4694,8 +4694,8 @@ class Test_Misc:
         key = isopy.keystring('pd')
         keylist =  isopy.keylist('ru pd cd'.split())
         array = isopy.ones(1, keylist)
-        d = isopy.asdict()
-        refval = isopy.asrefval()
+        d = isopy.asdict({})
+        refval = isopy.asrefval({})
 
         assert core.iskeystring(key.str()) is False
         assert core.iskeystring(key) is True
@@ -4775,8 +4775,8 @@ class Test_Misc:
 
         defunc = core.deprecrated_function('deprecated')(func)
 
-        assert func() == 'sucess'
-        assert defunc() == 'sucess'
+        assert func() == 'success'
+        assert defunc() == 'success'
 
         def func(*args, **kwargs):
             return args, kwargs
