@@ -2254,8 +2254,8 @@ class Test_Dict:
         assert np.isnan(isopydict1.get('105pd/ru'))
         assert isopydict2.get('105pd/ru') == 10
 
-        isopydict1 = core.RefValDict(dictionary, ratio_func=np.divide)
-        isopydict2 = core.RefValDict(dictionary, default_value=10, ratio_func=np.divide)
+        isopydict1 = core.RefValDict(dictionary, ratio_function=np.divide)
+        isopydict2 = core.RefValDict(dictionary, default_value=10, ratio_function=np.divide)
 
         assert isopydict1.get('105pd/ru') == 5 / 3
         assert isopydict2.get('105pd/ru') == 5/3
@@ -2356,8 +2356,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = core.RefValDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, None))
-        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, None))
+        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions=(np.add, np.multiply, None))
+        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions=(np.add, np.multiply, None))
 
         assert scalardict1.get('RuPd') == 4
         assert scalardict2.get('RuPd') == 4
@@ -2374,8 +2374,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = core.RefValDict(zip(keys, values), molecule_funcs=(np.add, np.multiply, np.divide))
-        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_funcs=(np.add, np.multiply, np.divide))
+        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions=(np.add, np.multiply, np.divide))
+        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions=(np.add, np.multiply, np.divide))
 
         assert scalardict1.get('Pd++') == 1.5
         assert scalardict2.get('Pd++') == 1.5
@@ -2396,6 +2396,21 @@ class Test_Dict:
         assert scalardict2.get('Pd-') == -3
         assert np.isnan(scalardict1.get('Ge-'))
         assert scalardict2.get('Ge-') == -10
+
+    def test_scalardict_default_value(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        d = a.to_refval()
+        assert type(d) is core.RefValDict
+        np.testing.assert_allclose(d.default_value, np.nan)
+
+        d = a.to_refval(1)
+        assert type(d) is core.RefValDict
+        np.testing.assert_allclose(d.default_value, 1)
+
+        d = a.default(2).to_refval()
+        assert type(d) is core.RefValDict
+        np.testing.assert_allclose(d.default_value, 2)
 
     def test_copy(self):
         # IsopyDict
@@ -2459,7 +2474,7 @@ class Test_Dict:
         molecule_funcs=(np.add, np.divide, None)
 
         isopydict = core.RefValDict(dict(zip(keys, values)), default_value=666,
-                                     ratio_func=ratio_func, molecule_funcs=molecule_funcs)
+                                    ratio_function=ratio_func, molecule_functions=molecule_funcs)
         filtered = isopydict.copy(flavour_eq='element')
         assert type(filtered) is type(isopydict)
         assert filtered.default_value == 666
@@ -2517,88 +2532,6 @@ class Test_Dict:
         assert filtered._ratio_func == ratio_func
         for key in isopydict:
             assert filtered[key] == isopydict[key]
-
-    def test_to_array(self):
-        keys = 'ru cd 101ru 105pd 108pd 111cd'.split()
-        values = [1, 2, 3, 4, 5, 6]
-
-        subkeys1 = 'ru pd cd'.split()
-        subkeys2 = 'ru pd 108pd 111cd'.split()
-        subkeys3 = '101ru 105pd 108pd 111cd'.split()
-        subkeys4 = 'ru 108pd 111cd'.split()
-
-        dictionary = dict(zip(keys, values))
-        isodict1 = core.RefValDict(dictionary)
-        isodict2 = core.RefValDict(dictionary, default_value=0)
-
-        array1 = isodict1.to_array(subkeys1)
-        array2 = isodict2.to_array(subkeys1)
-        assert isinstance(array1, core.IsopyArray)
-        assert isinstance(array2, core.IsopyArray)
-        assert array1.flavour == 'element'
-        assert array2.flavour == 'element'
-        assert array1.ndim == 0
-        assert array2.ndim == 0
-        assert array1.keys == subkeys1
-        assert array2.keys == subkeys1
-        for key in subkeys1:
-            np.testing.assert_allclose(array1[key], isodict1.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
-
-        array1 = isodict1.to_array(subkeys2)
-        array2 = isodict2.to_array(subkeys2)
-        assert isinstance(array1, core.IsopyArray)
-        assert isinstance(array2, core.IsopyArray)
-        assert array1.flavour == 'element|isotope'
-        assert array2.flavour == 'element|isotope'
-        assert array1.ndim == 0
-        assert array2.ndim == 0
-        assert array1.keys == subkeys2
-        assert array2.keys == subkeys2
-        for key in subkeys2:
-            np.testing.assert_allclose(array1[key], isodict1.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
-
-        assert array1 == isodict1.asarray(subkeys2)
-        assert array2 == isodict2.asarray(subkeys2)
-
-        array1 = isodict1.to_array(flavour_eq ='isotope')
-        array2 = isodict2.to_array(flavour_eq ='isotope')
-        assert isinstance(array1, core.IsopyArray)
-        assert isinstance(array2, core.IsopyArray)
-        assert array1.flavour == 'isotope'
-        assert array2.flavour == 'isotope'
-        assert array1.ndim == 0
-        assert array2.ndim == 0
-        assert array1.keys == subkeys3
-        assert array2.keys == subkeys3
-        for key in subkeys3:
-            np.testing.assert_allclose(array1[key], isodict1.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
-
-        assert array1 == isodict1.asarray(flavour_eq ='isotope')
-        assert array2 == isodict2.asarray(flavour_eq ='isotope')
-
-        array1 = isodict1.to_array(key_eq=subkeys2)
-        array2 = isodict2.to_array(key_eq=subkeys2)
-        assert isinstance(array1, core.IsopyArray)
-        assert isinstance(array2, core.IsopyArray)
-        assert array1.flavour == 'element|isotope'
-        assert array2.flavour == 'element|isotope'
-        assert array1.ndim == 0
-        assert array2.ndim == 0
-        assert array1.keys == subkeys4
-        assert array2.keys == subkeys4
-        for key in subkeys4:
-            np.testing.assert_allclose(array1[key], isodict1.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key))
-            np.testing.assert_allclose(array2[key], isodict2.get(key, default=0))
-
-        assert array1 == isodict1.asarray(key_eq=subkeys2)
-        assert array2 == isodict2.asarray(key_eq=subkeys2)
 
     def test_asdict(self):
         keys = '101 pd ru cd 105pd hermione'.split()
@@ -4053,25 +3986,15 @@ class Test_Array:
         result = isopy.asanyarray(array, dtype=(np.float64, str))
         assert result.dtype == '<U1'
 
+# TODO t0 args
+class Test_ToTypeMixin:
+    def test_100_1_arv(self):
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
 
-class Test_ToTextMixin:
-    def test_100_1_a(self):
-        # size 100, 1-dim
-        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
-
-        assert core.hashstr(repr(a)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
-        assert core.hashstr(str(a)) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(a.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(a.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
-        assert core.hashstr(a.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
-
-        assert core.hashstr(a.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
-        assert core.hashstr(a.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
-        assert core.hashstr(a.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
-        assert core.hashstr(a.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
-        assert core.hashstr(a.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+        tovalue = a.to_array()
+        assert isopy.isarray(tovalue)
+        assert_array_equal_array(a, isopy.array(tovalue))
+        assert tovalue is not self
 
         tovalue = a.to_list()
         assert type(tovalue) is list
@@ -4096,28 +4019,25 @@ class Test_ToTextMixin:
         for key in a.keys:
             np.testing.assert_allclose(a[key][0], tovalue[str(key)])
 
-    def test_100_1_d(self):
-        # size 100, 1-dim
-        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
         d = a.to_refval()
+
         assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim == a.ndim
+        assert_array_equal_array(a, isopy.array(d))
 
-        #assert core.hashstr(repr(d)) == 'd89a1b8a6c7991d2a72c16734d347b0a'
-        #assert core.hashstr(str(d)) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(d.to_text()) == '8019204da3be1770ee071e75afd1dd0f'
-        assert core.hashstr(d.to_text(delimiter='; ,')) == '963d15b6daaa48a20df1e7f7b9cddb2f'
-        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '58c8b6aca285883da69dce6b8c417cc5'
-        assert core.hashstr(d.to_text(f='{:.2f}')) == '0eace892417529a0669b972f5d76a57f'
-        assert core.hashstr(d.to_text(nrows=5)) == '4d3e5af8172c01feed4a85a27e35152e'
+        tovalue = d.to_refval()
+        assert type(d) is core.RefValDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+        assert_array_equal_array(a, isopy.array(d))
+        assert tovalue is not d
 
-        assert core.hashstr(d.to_table()) == 'e6b2c553bfb85c6975b8f4f87b012dca'
-        assert core.hashstr(d.to_table(include_row=True)) == 'ea55dccb58e4b487bba26f104f03c7c9'
-        assert core.hashstr(d.to_table(include_row=True, include_dtype=True)) == '26a4b6e262f5a2d8192c76fb1d602f23'
-        assert core.hashstr(d.to_table(f='{:.2f}')) == '9359aa34f5c0291e29bb0e74ed116217'
-        assert core.hashstr(d.to_table(nrows=5)) == 'ba4df1706736977a4f26221614708114'
+        tovalue = d.to_array()
+        assert isinstance(tovalue, core.IsopyArray)
+        assert_array_equal_array(a, tovalue)
 
         tovalue = d.to_list()
         assert type(tovalue) is list
@@ -4136,16 +4056,13 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
-    def test_1_1_a(self):
+    def test_1_1_arv(self):
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
 
-        assert core.hashstr(repr(a)) == '309361dd9169fe6d0ffd8ec8be91eddd'
-        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '46832d224c9c15c09168ed7e3ee77faa'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        tovalue = a.to_array()
+        assert isopy.isarray(tovalue)
+        assert_array_equal_array(a, isopy.array(tovalue))
+        assert tovalue is not self
 
         tovalue = a.to_list()
         assert type(tovalue) is list
@@ -4164,33 +4081,35 @@ class Test_ToTextMixin:
         for key in a.keys:
             np.testing.assert_allclose(a[key], tovalue[str(key)])
 
-    def test_1_1_d(self):
-        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
         d = a.to_refval()
+
         assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim != a.ndim
         assert d.ndim == 0
+        assert_array_equal_array(a[0], isopy.array(d))
 
-        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        tovalue = d.to_refval()
+        assert type(d) is core.RefValDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == 0
+        assert_array_equal_array(a[0], isopy.array(d))
+        assert tovalue is not d
 
-        # assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
-        # assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
-        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        tovalue = d.to_array()
+        assert isinstance(tovalue, core.IsopyArray)
+        assert_array_equal_array(a[0], tovalue)
 
         tovalue = d.to_list()
         assert type(tovalue) is list
-        assert_array_equal_array(a, isopy.array(tovalue, d.keys))
+        assert_array_equal_array(a[0], isopy.array(tovalue, d.keys))
 
         tovalue = d.to_dict()
         assert type(tovalue) is dict
         assert False not in [type(k) is str for k in tovalue.keys()]
-        assert_array_equal_array(a, isopy.array(tovalue))
+        assert_array_equal_array(a[0], isopy.array(tovalue))
 
         tovalue = d.to_ndarray()
         assert type(tovalue) is np.ndarray
@@ -4198,17 +4117,13 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
-
-    def test_1_0_a(self):
+    def test_1_0_arv(self):
         a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
 
-        assert core.hashstr(repr(a)) == '395ea36d5e4c0bce9679de1146eae27c'
-        assert core.hashstr(str(a)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(a.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(a.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(a.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        tovalue = a.to_array()
+        assert isopy.isarray(tovalue)
+        assert_array_equal_array(a, isopy.array(tovalue))
+        assert tovalue is not self
 
         tovalue = a.to_list()
         assert type(tovalue) is list
@@ -4225,21 +4140,25 @@ class Test_ToTextMixin:
         for key in a.keys:
             np.testing.assert_allclose(a[key], tovalue[str(key)])
 
-    def test_1_0_d(self):
-        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
         d = a.to_refval()
+
         assert type(d) is core.RefValDict
         assert d.keys == a.keys
         assert d.size == a.size
         assert d.ndim == a.ndim
+        assert_array_equal_array(a, isopy.array(d))
 
-        #assert core.hashstr(repr(d)) == '395ea36d5e4c0bce9679de1146eae27c'
-        #assert core.hashstr(str(d)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(d.to_text()) == 'd3de30a8e60e6b9511b065c6bf795fa8'
-        assert core.hashstr(d.to_text(delimiter='; ,')) == '4cce754c47732294bd9e07e7acef7c1f'
-        assert core.hashstr(d.to_text(include_row=True, include_dtype=True)) == '44829ca7e7c20790950bc22b3cebb272'
-        assert core.hashstr(d.to_text(f='{:.2f}')) == 'da66d5829d65ef08f36b257435f3e9e1'
-        assert core.hashstr(d.to_text(nrows=5)) == 'd3de30a8e60e6b9511b065c6bf795fa8'
+        tovalue = d.to_refval()
+        assert type(d) is core.RefValDict
+        assert d.keys == a.keys
+        assert d.size == a.size
+        assert d.ndim == a.ndim
+        assert_array_equal_array(a, isopy.array(d))
+        assert tovalue is not d
+
+        tovalue = d.to_array()
+        assert isinstance(tovalue, core.IsopyArray)
+        assert_array_equal_array(a, tovalue)
 
         tovalue = d.to_list()
         assert type(tovalue) is list
@@ -4256,22 +4175,84 @@ class Test_ToTextMixin:
         for key in d.keys:
             np.testing.assert_allclose(d[key], tovalue[str(key)])
 
+    def test_100_1_text(self):
+        # size 100, 1-dim
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
 
-    def test_scalardict_default_value(self):
-        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        assert core.hashstr(repr(a)) == 'd1297c0ab2160d835dd9115cb4698af6'
+        assert core.hashstr(str(a)) == '7264aeeb1e20839092cce75234044e55'
+
+        assert core.hashstr(a.to_text()) == '0451d9277c83ef630c6259f011ac2568'
+        assert core.hashstr(a.to_text(delimiter=';')) == 'ba2d657e7f98fb6c0e8a8b20067a79a2'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '606f2bd9a6e2a4937950c0cacd31d3af'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == '76f4bc3e729e966f9453cccee4700819'
+        assert core.hashstr(a.to_text(nrows=5)) == '615e03805fdf9e7db81fafc7ee57415c'
+
+        assert core.hashstr(a.to_table()) == '69a4af752a3da68097fbf3acc06dfc8d'
+        assert core.hashstr(a.to_table(include_row=True)) == '17519b03e69577bfd2f69f4c5ea6bb30'
+        assert core.hashstr(a.to_table(include_row=True, include_dtype=True)) == '26158c5fa1571fba998532cc698604a8'
+        assert core.hashstr(a.to_table(f='{:.2f}')) == '000ad23d61f981e1ab563066bf3c0198'
+        assert core.hashstr(a.to_table(nrows=5)) == '4c0fb55070df8f2e231ca0cdc0eef829'
 
         d = a.to_refval()
-        assert type(d) is core.RefValDict
-        np.testing.assert_allclose(d.default_value, np.nan)
 
-        d = a.to_refval(1)
-        assert type(d) is core.RefValDict
-        np.testing.assert_allclose(d.default_value, 1)
+        assert core.hashstr(repr(d)) == '42cbd56684dc43b597349b4b428c0161'
+        assert core.hashstr(str(d)) == 'a09c58b3a35ad44f5f6424cd47ab7b0e'
 
-        d = a.default(2).to_refval()
-        assert type(d) is core.RefValDict
-        np.testing.assert_allclose(d.default_value, 2)
+        assert d.to_text() == a.to_text()
+        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
+        assert d.to_text(include_row=True, include_dtype=True) == a.to_text(include_row=True, include_dtype=True)
+        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
+        assert d.to_text(nrows=5) == a.to_text(nrows=5)
 
+        assert d.to_table() == a.to_table()
+        assert d.to_table(include_row=True) == a.to_table(include_row=True)
+        assert d.to_table(include_row=True, include_dtype=True) == a.to_table(include_row=True, include_dtype=True)
+        assert d.to_table(f='{:.2f}') == a.to_table(f='{:.2f}')
+        assert d.to_table(nrows=5) == a.to_table(nrows=5)
+
+    def test_1_1_text(self):
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == '43de8223ccb4400c31650ef555b1bb34'
+        assert core.hashstr(str(a)) == '791fe52cbaf7e414e7c6aaf3c5db9cb9'
+        assert core.hashstr(a.to_text()) == '08b99edb38dc3858cf9f416e0ad013e8'
+        assert core.hashstr(a.to_text(delimiter=';')) == '3e61107480e0fd83d0719413b6afbdee'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '118edd901c817aba7ea54e639e18be64'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'e69aca27df3578ca7fe7f7e1c0de6f3f'
+        assert core.hashstr(a.to_text(nrows=5)) == '08b99edb38dc3858cf9f416e0ad013e8'
+
+        d = a.to_refval()
+
+        assert core.hashstr(repr(d)) == 'ace7df450a04ec86d2da1f28e92fca6e'
+        assert core.hashstr(str(d)) == '28dfd2f6076b3b45528e68fda0bb77c2'
+        assert d.to_text() == a.to_text()
+        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
+        assert d.to_text(include_row=True, include_dtype=True) != a.to_text(include_row=True, include_dtype=True)
+        assert d.to_text(include_row=True, include_dtype=True) == a[0].to_text(include_row=True, include_dtype=True)
+        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
+        assert d.to_text(nrows=5) == a.to_text(nrows=5)
+
+    def test_1_0_text(self):
+        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+
+        assert core.hashstr(repr(a)) == 'a38422ea209d8a5680d304b9eaec68be'
+        assert core.hashstr(str(a)) == 'cbee74af121c2db6bf1851e4aa5de55e'
+        assert core.hashstr(a.to_text()) == '08b99edb38dc3858cf9f416e0ad013e8'
+        assert core.hashstr(a.to_text(delimiter=';')) == '3e61107480e0fd83d0719413b6afbdee'
+        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '7a8e57f120c00c49271814c5f82afb6c'
+        assert core.hashstr(a.to_text(f='{:.2f}')) == 'e69aca27df3578ca7fe7f7e1c0de6f3f'
+        assert core.hashstr(a.to_text(nrows=5)) == '08b99edb38dc3858cf9f416e0ad013e8'
+
+        d = a.to_refval()
+
+        assert core.hashstr(repr(d)) == 'ace7df450a04ec86d2da1f28e92fca6e'
+        assert core.hashstr(str(d)) == '28dfd2f6076b3b45528e68fda0bb77c2'
+        assert d.to_text() == a.to_text()
+        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
+        assert d.to_text(include_row=True, include_dtype=True) == a.to_text(include_row=True, include_dtype=True)
+        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
+        assert d.to_text(nrows=5) == a.to_text(nrows=5)
 
 class Test_EmptyArrays:
     def test_ones_zero_empty1(self):
@@ -4714,7 +4695,6 @@ class Test_Misc:
         assert core.isrefval(refval) is True
         assert core.isrefval(d) is False
 
-
     def test_classname(self):
         keylist = isopy.keylist('101 105 111'.split())
         assert core.get_classname(keylist) == isopy.core.IsopyKeyList.__name__
@@ -4796,17 +4776,4 @@ class Test_Misc:
 
         assert old(1, 2, a = 3) != new(1, 2, b = 3)
         assert old2(1, 2, a = 3) != new(1, 2, b = 3)
-
-
-
-
-
-
-
-
-
-
-
-
-
 

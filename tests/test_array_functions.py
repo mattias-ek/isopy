@@ -1181,70 +1181,70 @@ class Test_ArrayFunctions:
         array2 = isopy.random(100, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
 
         dict1 = array1.to_refval()
-        dict1.ratio_func = 'divide'
-        dict1.molecule_funcs = 'abundance'
+        dict1.ratio_function = 'divide'
+        dict1.molecule_functions = 'abundance'
         dict1.default_value = 1
 
-        assert dict1.ratio_func == np.divide
-        assert dict1.molecule_funcs == (np.add, np.multiply, None)
+        assert dict1.ratio_function == np.divide
+        assert dict1.molecule_functions == (np.add, np.multiply, None)
 
         dict2 = array2.to_refval()
-        dict2.ratio_func = np.add
-        dict2.molecule_funcs = 'mass'
+        dict2.ratio_function = np.add
+        dict2.molecule_functions = 'mass'
         dict2.default_value = 2
 
-        assert dict2.ratio_func == np.add
-        assert dict2.molecule_funcs[:2] == (np.add, np.multiply)
+        assert dict2.ratio_function == np.add
+        assert dict2.molecule_functions[:2] == (np.add, np.multiply)
 
         dict3 = array2.to_refval()
-        dict3.ratio_func = np.multiply
-        dict3.molecule_funcs = 'fraction'
+        dict3.ratio_function = np.multiply
+        dict3.molecule_functions = 'fraction'
         dict3.default_value = [i for i in range(100)]
 
-        assert dict3.ratio_func == np.multiply
-        assert dict3.molecule_funcs == (np.multiply, np.multiply, None)
+        assert dict3.ratio_function == np.multiply
+        assert dict3.molecule_functions == (np.multiply, np.multiply, None)
 
         # abs
         result = np.abs(dict1)
-        assert result.ratio_func == dict1.ratio_func
-        assert result.molecule_funcs == dict1.molecule_funcs
+        assert result.ratio_function == dict1.ratio_function
+        assert result.molecule_functions == dict1.molecule_functions
         assert np.all(result.default_value == dict1.default_value)
 
         result = np.abs(dict2)
-        assert result.ratio_func == dict2.ratio_func
-        assert result.molecule_funcs == dict2.molecule_funcs
+        assert result.ratio_function == dict2.ratio_function
+        assert result.molecule_functions == dict2.molecule_functions
         assert np.all(result.default_value == dict2.default_value)
 
         result = np.abs(dict3)
-        assert result.ratio_func == dict3.ratio_func
-        assert result.molecule_funcs == dict3.molecule_funcs
+        assert result.ratio_function == dict3.ratio_function
+        assert result.molecule_functions == dict3.molecule_functions
         assert np.all(result.default_value == dict3.default_value)
 
         # sum
         result = np.sum(dict1)
-        assert result.ratio_func == dict1.ratio_func
-        assert result.molecule_funcs == dict1.molecule_funcs
+        assert result.ratio_function == dict1.ratio_function
+        assert result.molecule_functions == dict1.molecule_functions
         assert np.all(result.default_value == dict1.default_value)
 
         result = np.sum(dict2)
-        assert result.ratio_func == dict2.ratio_func
-        assert result.molecule_funcs == dict2.molecule_funcs
+        assert result.ratio_function == dict2.ratio_function
+        assert result.molecule_functions == dict2.molecule_functions
         assert np.all(result.default_value == dict2.default_value[0])
 
         result = np.sum(dict3)
-        assert result.ratio_func == dict3.ratio_func
-        assert result.molecule_funcs == dict3.molecule_funcs
+        assert result.ratio_function == dict3.ratio_function
+        assert result.molecule_functions == dict3.molecule_functions
         assert np.isnan(result.default_value)
 
         #add
         result = np.add(dict1, dict2)
-        assert result.ratio_func is None
-        assert result.molecule_funcs is None
+        assert result.ratio_function is None
+        assert result.molecule_functions is None
         assert np.all(np.isnan(result.default_value))
 
         result = np.add(dict1, dict2.to_dict())
-        assert result.ratio_func == dict1.ratio_func
-        assert result.molecule_funcs == dict1.molecule_funcs
+        assert result.ratio_function == dict1.ratio_function
+        assert result.molecule_functions == dict1.molecule_functions
         assert np.all(result.default_value == dict1.default_value)
 
 def test_allowed_numpy_functions():
