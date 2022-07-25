@@ -1354,6 +1354,14 @@ class Test_IsopyList:
         for key in keylist:
             assert key._filter_(key_eq = [None]) is False
 
+        assert len(keylist.filter(invalid = 'a')) == 0
+
+        assert len(keylist.filter(invalid_eq = 'a')) == 0
+
+        assert len(keylist.filter(mass_gt = 'a')) == 0
+
+        assert len(keylist.filter(key_eq = [None])) == 0
+
     def test_add_subtract(self):
         # Add
         keylist = isopy.keylist('pd', 'cd')
@@ -3148,10 +3156,46 @@ class Test_Array:
             self.create_array(data_correct2, keys2, 1, data_dict, isotope_keys, ndim=1)
             self.create_array(data_correct2, keys2, 1, data_structured, isotope_keys, ndim=1)
 
+        # 1-dim input, n == 0
+        data_list = []
+        data_tuple = ()
+        data_array = np.array(data_list, dtype=np.float_)
+        data_correct2 = np.array([], dtype=[(str(keystring), np.float_) for keystring in keylist2])
+        for keys in all_keys:
+            keylist = isopy.keylist(keys)
+
+            data_dict = dict(zip(keys, [[], [], [], []]))
+            data_structured = np.array(data_list, dtype=[(str(key), np.float_) for key in keys])
+            data_correct = np.array(data_list, dtype=[(str(keystring), np.float_) for keystring in keylist])
+
+            self.create_array(data_correct, keys, 1, data_list, keys)
+            self.create_array(data_correct, keys, 1, data_list, data_structured.dtype)
+            self.create_array(data_correct, keys, 1, data_list, dtype=data_structured.dtype)
+            self.create_array(data_correct, keys, 1, data_tuple, keys)
+            self.create_array(data_correct, keys, 1, data_array, keys)
+            self.create_array(data_correct, keys, 1, data_dict)
+            self.create_array(data_correct, keys, 1, data_structured)
+
+            self.create_array(data_correct, keys, 1, data_list, keys, ndim=1)
+            self.create_array(data_correct, keys, 1, data_list, data_structured.dtype, ndim=1)
+            self.create_array(data_correct, keys, 1, data_list, dtype=data_structured.dtype, ndim=1)
+            self.create_array(data_correct, keys, 1, data_tuple, keys, ndim=1)
+            self.create_array(data_correct, keys, 1, data_array, keys, ndim=1)
+            self.create_array(data_correct, keys, 1, data_dict, ndim=1)
+            self.create_array(data_correct, keys, 1, data_structured, ndim=1)
+
+            # Overwrite keys in data
+            self.create_array(data_correct2, keys2, 1, data_dict, isotope_keys)
+            self.create_array(data_correct2, keys2, 1, data_structured, isotope_keys)
+            self.create_array(data_correct2, keys2, 1, data_dict, isotope_keys, ndim=1)
+            self.create_array(data_correct2, keys2, 1, data_structured, isotope_keys, ndim=1)
+
         # 1-dim input, n == 1
         data_list = [[1, 2, 3, 4]]
         data_tuple = [(1, 2, 3, 4)]
         data_array = np.array(data_list, dtype=np.float_)
+        data_correct2 = np.array(data_tuple, dtype=[(str(keystring), np.float_) for keystring in keylist2])
+
         for keys in all_keys:
             keylist = isopy.keylist(keys)
 
@@ -3320,8 +3364,6 @@ class Test_Array:
         else:
             assert result.nrows == result.size
             assert len(result) == result.size
-
-            assert isinstance(result[0], core.IsopyVoid)
 
         assert_array_equal_array(result, correct)
 

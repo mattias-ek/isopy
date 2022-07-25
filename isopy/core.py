@@ -2582,6 +2582,7 @@ class ToTextMixin:
         else:
             raise TypeError('IPython not installed')
 
+
 class ToTypeFileMixin:
     def to_list(self):
         """
@@ -3533,9 +3534,11 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
 
             else:
                 if dtype is None:
-                    if values.ndim == 0:
+                    if True:
+                        dtype = (values.dtype,)
+                    elif values.ndim == 0:
                         dtype = [(values.dtype,)]
-                    else:
+                    elif values.size > 1:
                         dtype = [(values.dtype,) for i in range(values.shape[-1])]
 
             values = values.tolist()
@@ -3568,6 +3571,7 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
             raise ValueError('Keys argument not given and keys not found in values')
         else:
             keys = askeylist(keys, allow_duplicates=False, flavour=flavour)
+            klen = len(keys)
 
         if isinstance(values, tuple):
             vlen = len(values)
@@ -3576,25 +3580,27 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
 
             if len(vlen) == 1:
                 vlen = vlen.pop()
+            elif len(vlen) == 0:
+                vlen = None
             else:
                 raise ValueError('All rows in values are not the same size')
 
-        if vlen is not None and vlen != len(keys):
+        if vlen is not None and vlen != klen:
             raise ValueError('size of values does not match the number of keys')
 
         if dtype is None:
             new_dtype = [(float64, None) for k in keys]
 
         elif isinstance(dtype, list) or (isinstance(dtype, np.dtype) and dtype.names is not None):
-            if len(dtype) != len(keys):
+            if len(dtype) != klen:
                 raise ValueError('number of dtypes given does not match number of keys')
             else:
-                new_dtype = [(dtype[i],) if not isinstance(dtype[i], tuple) else dtype[i] for i in range(vlen)]
+                new_dtype = [(dtype[i],) if not isinstance(dtype[i], tuple) else dtype[i] for i in range(klen)]
 
         elif isinstance(dtype, tuple):
-            new_dtype = [dtype for i in range(vlen)]
+            new_dtype = [dtype for i in range(klen)]
         else:
-            new_dtype = [(dtype,) for i in range(vlen)]
+            new_dtype = [(dtype,) for i in range(klen)]
 
         if len(values) == 0:
             colvalues = [[] for k in keys]
