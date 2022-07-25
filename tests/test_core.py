@@ -1349,7 +1349,7 @@ class Test_IsopyList:
             assert key._filter_(invalid_eq = None) is False
 
         for key in keylist:
-            assert key._filter_(mass_gt = 'a') is False
+            assert key._filter_(mass_number_gt = 'a') is False
 
         for key in keylist:
             assert key._filter_(key_eq = [None]) is False
@@ -1358,7 +1358,7 @@ class Test_IsopyList:
 
         assert len(keylist.filter(invalid_eq = 'a')) == 0
 
-        assert len(keylist.filter(mass_gt = 'a')) == 0
+        assert len(keylist.filter(mass_number_gt = 'a')) == 0
 
         assert len(keylist.filter(key_eq = [None])) == 0
 

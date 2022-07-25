@@ -728,7 +728,9 @@ class MassKeyString(IsopyKeyString):
             else:
                 raise KeyValueError(cls, string, 'Can only contain numerical characters')
 
-        return super(MassKeyString, cls).__new__(cls, string, flavour = MassFlavour())
+        key = super(MassKeyString, cls).__new__(cls, string, flavour = MassFlavour())
+        object.__setattr__(key, 'mass_number', key)
+        return key
 
     def __ge__(self, item):
         if isinstance(item, str):
