@@ -476,7 +476,7 @@ def cstack(*arrays):
     keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False)
 
     result = {}
-    size = max(size) * max(ndim) or None
+    size = max([s for s in size]) * max([d for d in ndim]) or None
     for a in arrays:
         for key in a.keys():
             result[key] = np.full(size, a.get(key))
