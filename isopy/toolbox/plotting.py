@@ -80,10 +80,6 @@ class RotatingList(list):
         self.next()
         return self[-1]
 
-    @core.renamed_function(current_next)
-    def cnext(self):
-        pass
-
     def previous(self):
         """Rotate the list to the left and return the new first item."""
         self.insert(0, self.pop(-1))
@@ -2151,7 +2147,6 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
 
     _plot_polygon(axes, coordinates, autoscale, **style)
 
-@core.renamed_kwarg(cmap = 'colors')
 @_update_figure_and_axes
 def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
                   colorbar=None, label = False, label_levels = None, filled = True, **kwargs):

@@ -9,7 +9,7 @@ import os
 ### Reference Values ###
 ########################
 
-def _load_RV_values(filename, keys_in_first = 'r'):
+def load_refval_values(filename, keys_in_first ='r'):
     filepath = os.path.join(os.path.dirname(__file__), 'referencedata', f'{filename}.csv')
     data = io.read_csv(filepath, keys_in_first=keys_in_first)
     data = {key: value[0] for key, value in data.items()}
@@ -21,35 +21,27 @@ def is_default_value(func):
     setattr(func.fget, '_defval', True)
     setattr(func.fget, '_descr', func.fget.__doc__.lstrip('\n').split('\n', 1)[0].strip())
     return func
-    
-def is_reference_value(func):
-    setattr(func.fget, '_refval', True)
-    setattr(func.fget, '_descr', func.fget.__doc__.lstrip('\n').split('\n', 1)[0].strip())
-    return func
+
 
 class RefValGroup:
     def __init__(self, parent):
         self._parent = parent
 
     def __repr__(self):
-        defval = []
-        refval = []
-        for name, item in self.__class__.__dict__.items():
-            if type(item) is property:
-                if getattr(item.fget, '_defval', False):
-                    defval.append(f'{name} - {item.fget._descr}')
-                if getattr(item.fget, '_refval', False):
-                    refval.append(f'{name} - {item.fget._descr}')
-        
-        string = ''
-        if defval:
-            string += 'This group contains the following default values:\n\t'
-            string += '\n\t'.join(defval)
-        if string: string += '\n\n'
-        string += 'This group contains the following reference values:\n\t'
-        string += '\n\t'.join(refval)
+        names = "', '".join(self.ls())
+        return f"isopy.refval.{self.__class__.__name__}(['{names}'])"
 
-        return string
+    def _repr_markdown_(self):
+        descriptions = []
+        for name in self.ls():
+            doc = self.__class__.__dict__[name].__doc__
+            if type(doc) is str:
+                doc = doc.split('\n\n', 1)[0].replace('\n', '').strip()
+                descriptions.append(f'* **{name}** - {doc}')
+            else:
+                descriptions.append(f'* **{name}** - No description available')
+        descriptions = '\n'.join(descriptions)
+        return f'**isopy.refval.{self.__class__.__name__}** contains the following reference values\n{descriptions}'
 
     def ls(self):
         """
@@ -61,18 +53,16 @@ class RefValGroup:
             if type(item) is property:
                 if getattr(item.fget, '_defval', False):
                     defval.append(name)
-                if getattr(item.fget, '_refval', False):
+                else:
                     refval.append(name)
             
         return defval + refval
 
-
 class mass(RefValGroup):
-    @is_reference_value        
     @core.cached_property
     def isotopes(self):
         """
-        Dictionary containing all naturally isotopes with a given mass number.
+        Dictionary containing all naturally occuring isotopes with a given mass number.
 
         The dictionary is constructed from the isotopes in
         :attr:`isotope.best_abundance_measurement_M16`.
@@ -97,7 +87,6 @@ class mass(RefValGroup):
                                default_value=isopy.askeylist(), readonly=True)
 
 class element(RefValGroup):
-    @is_reference_value
     @core.cached_property
     def isotopes(self):
         """
@@ -121,8 +110,7 @@ class element(RefValGroup):
         fraction = isopy.refval.isotope.best_measurement_fraction_M16
         return core.IsopyDict(**{symbol: isopy.askeylist([k for k in fraction if k._filter_(element_symbol = {'key_eq': (symbol,)})])
                                for symbol in self.all_symbols}, default_value=isopy.askeylist(), readonly=True)
-    
-    @is_reference_value
+
     @core.cached_property
     def all_symbols(self):
         """
@@ -135,8 +123,7 @@ class element(RefValGroup):
          ElementKeyString('Be'), ElementKeyString('B'))
         """
         return tuple(self.symbol_name.keys())
-    
-    @is_reference_value
+
     @core.cached_property
     def symbol_name(self):
         """
@@ -155,9 +142,8 @@ class element(RefValGroup):
         >>> isopy.refval.element.symbol_name.get('ge')
         'Germanium'
         """
-        return core.IsopyDict(_load_RV_values('element_symbol_name').items(), readonly = True)
-        
-    @is_reference_value
+        return core.IsopyDict(load_refval_values('element_symbol_name').items(), readonly = True)
+
     @core.cached_property
     def name_symbol(self):
         """
@@ -178,7 +164,6 @@ class element(RefValGroup):
         """
         return dict({name: symbol for symbol, name in self.symbol_name.items()}, readonly = True)
 
-    @is_reference_value
     @core.cached_property
     def atomic_weight(self):
         """
@@ -207,8 +192,7 @@ class element(RefValGroup):
                                        for isotope in isotopes])
         return core.RefValDict(**weights, readonly=True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, None))
-        
-    @is_reference_value
+
     @core.cached_property
     def atomic_number(self):
         """
@@ -225,9 +209,8 @@ class element(RefValGroup):
         >>> isopy.refval.element.atomic_number.get('ge')
         32
         """
-        return core.RefValDict(_load_RV_values('element_atomic_number'), readonly = True)
-        
-    @is_reference_value
+        return core.RefValDict(load_refval_values('element_atomic_number'), readonly = True)
+
     @core.cached_property
     def initial_solar_system_abundance_L09(self):
         """
@@ -247,7 +230,7 @@ class element(RefValGroup):
         >>> isopy.refval.element.atomic_number.get('ge')
         32
         """
-        return core.RefValDict(_load_RV_values('element_initial_solar_system_abundance_L09'),
+        return core.RefValDict(load_refval_values('element_initial_solar_system_abundance_L09'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, None))
 
@@ -320,8 +303,7 @@ class isotope(RefValGroup):
         if not isinstance(value, core.RefValDict):
             raise TypeError('attribute must be a dictionary')
         self.__fraction = value
-    
-    @is_reference_value
+
     @core.cached_property
     def mass_W17(self):
         """
@@ -344,11 +326,10 @@ class isotope(RefValGroup):
         >>> isopy.refval.isotope.mass_W17.get('pd108/pd105')
         1.0285859589859039
         """
-        return core.RefValDict(_load_RV_values('isotope_mass_W17'),
+        return core.RefValDict(load_refval_values('isotope_mass_W17'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
 
-    @is_reference_value
     @core.cached_property
     def mass_AME20(self):
         """
@@ -359,11 +340,10 @@ class isotope(RefValGroup):
         for absent keys.
 
         """
-        return core.RefValDict(_load_RV_values('isotope_mass_AME20', keys_in_first='c'),
+        return core.RefValDict(load_refval_values('isotope_mass_AME20', keys_in_first='c'),
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
 
-    @is_reference_value
     @core.cached_property
     def mass_number(self):
         """
@@ -387,8 +367,7 @@ class isotope(RefValGroup):
         return core.RefValDict({key: int(key.mass_number) for key in self.mass_W17},
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
-    
-    @is_reference_value
+
     @core.cached_property
     def best_measurement_fraction_M16(self):
         """
@@ -411,11 +390,10 @@ class isotope(RefValGroup):
         >>> isopy.refval.isotope.best_measurement_fraction_M16.get('pd108/pd105')
         1.1849529780564263
         """
-        return core.RefValDict(_load_RV_values('isotope_best_measurement_fraction_M16'),
+        return core.RefValDict(load_refval_values('isotope_best_measurement_fraction_M16'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
                                molecule_functions=(np.multiply, np.multiply, None))
-        
-    @is_reference_value
+
     @core.cached_property
     def initial_solar_system_fraction_L09(self):
         """
@@ -438,11 +416,10 @@ class isotope(RefValGroup):
         >>> isopy.refval.isotope.initial_solar_system_fraction_L09.get('pd108/pd105')
         1.1849529780564263
         """
-        return core.RefValDict(_load_RV_values('isotope_initial_solar_system_fraction_L09'),
+        return core.RefValDict(load_refval_values('isotope_initial_solar_system_fraction_L09'),
                                default_value = np.nan, readonly = True, ratio_function=np.divide,
                                molecule_functions=(np.multiply, np.multiply, None))
-        
-    @is_reference_value
+
     @core.cached_property
     def initial_solar_system_abundance_L09(self):
         """
@@ -465,11 +442,10 @@ class isotope(RefValGroup):
         >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         1.184036939313984
         """
-        return core.RefValDict(_load_RV_values('isotope_initial_solar_system_abundance_L09'),
+        return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_L09'),
                                default_value = np.nan, readonly = True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, None))
 
-    @is_reference_value
     @core.cached_property
     def initial_solar_system_abundance_L09b(self):
         """
@@ -504,7 +480,6 @@ class isotope(RefValGroup):
         return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, None))
 
-    @is_reference_value
     @core.cached_property
     def sprocess_fraction_B11(self):
         """
@@ -527,7 +502,7 @@ class isotope(RefValGroup):
         >>> isopy.refval.isotope.initial_solar_system_abundance_L09.get('pd108/pd105')
         4.751592356687898
         """
-        return core.RefValDict(_load_RV_values('isotope_sprocess_fraction_B11'),
+        return core.RefValDict(load_refval_values('isotope_sprocess_fraction_B11'),
                                ratio_function=np.divide, default_value=np.nan, readonly = True)
 
 class ReferenceValues:
@@ -536,17 +511,24 @@ class ReferenceValues:
         self.reset()
 
     def __repr__(self):
-        string = 'The following groups of reference values are avaliable:\n\n'
-        string += f'mass - {self.__class__.mass.fget.__doc__}\n'
-        string += f'element - {self.__class__.element.fget.__doc__}\n'
-        string += f'isotope - {self.__class__.isotope.fget.__doc__}'
-        return string
+        out = f"{self.__class__.__name__}("
+        space = ' ' * len(out)
+        mass = f"""mass=['{"', '".join(self.mass.ls())}']"""
+        element = f"""element=['{"', '".join(self.element.ls())}']"""
+        isotope = f"""isotope=['{"', '".join(self.isotope.ls())}']"""
+
+        return f'{out}{mass},\n{space}{element},\n{space}{isotope})'
+
+    def _repr_markdown_(self):
+        return f'{self.mass._repr_markdown_()}\n\n{self.element._repr_markdown_()}\n\n{self.isotope._repr_markdown_()}'
 
     def ls(self):
         names = []
         names += [f'mass.{n}' for n in self.mass.ls()]
         names += [f'element.{n}' for n in self.element.ls()]
         names += [f'isotope.{n}' for n in self.isotope.ls()]
+
+        return names
 
     def __call__(self, path_or_dict, datatype=dict):
         if type(path_or_dict) is str:

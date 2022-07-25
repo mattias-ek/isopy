@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import warnings
 import operator as op
+from scipy import stats
 
 def assert_array_equal_array(array1, array2, match_dtype=True):
     assert isinstance(array1, core.IsopyArray)
@@ -476,7 +477,6 @@ class Test_ArrayFunctions:
             with pytest.raises(ValueError):
                 self.dualinput_dv(func, dict7, value3)
 
-
     def dualinput_aa(self, func, a1, a2, ndim):
         keys = a1.keys | a2.keys
 
@@ -856,15 +856,15 @@ class Test_ArrayFunctions:
         np.testing.assert_allclose(isopy.nancount(data, axis=1), [3, 2])
 
     def test_keyminmax(self):
-        array = isopy.random(10, [3, 1, 5], 'ru pd cd'.split(), seed=46)
-        array['ru'][1] = 100
-        array['ru'][2] = -2
+        array = isopy.array(dict(ru=[2, 2, 6], pd=[-7,3,4], cd=[1,4,5]))
+
+        assert isopy.keymin(array) == 'ru'
+        assert isopy.keymin(array, np.min) == 'pd'
+        assert isopy.keymin(array, np.min, abs=True) == 'cd'
 
         assert isopy.keymax(array) == 'cd'
-        assert isopy.keymax(array, np.mean) == 'ru'
-
-        assert isopy.keymin(array) == 'pd'
-        assert isopy.keymin(array, np.min) == 'ru'
+        assert isopy.keymax(array, np.max) == 'ru'
+        assert isopy.keymax(array, np.max, abs=True) == 'pd'
 
     def test_where(self):
         data = [[1, 2, 3], [3, np.nan, 5], [6, 7, 8], [9, 10, np.nan]]
@@ -915,6 +915,16 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result1['ru'], result2['ru'])
             np.testing.assert_allclose(result1['cd'], result2['cd'])
             np.testing.assert_allclose(np.ones(4), result2['ag'])
+
+        # Should change the arrays in place
+        # These functions will also have out as a tuple that needs to be changed
+        array2 = np.add(array, 1)
+        np.subtract(array2, 1, out=array2)
+        assert_array_equal_array(array2, array)
+
+        array2 = np.add(array, 1)
+        array2 -= 1
+        assert_array_equal_array(array2, array)
 
     def test_special(self):
         # np.average, np.copyto
@@ -1268,3 +1278,7 @@ def test_allowed_numpy_functions():
         result = array_functions.approved_numpy_functions(delimiter=None)
         assert isinstance(result, list)
         assert False not in [isinstance(string, str) for string in result]
+
+def test_calculate_ci():
+    assert array_functions.calculate_ci(0.95) == stats.norm.ppf(0.975)
+    assert array_functions.calculate_ci(0.95, 5) == stats.t.ppf(0.975, 5)

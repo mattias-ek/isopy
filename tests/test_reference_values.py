@@ -183,20 +183,29 @@ class Test_Default_value:
 
 
 class Test_misc:
-    def test_repr(self):
-        # Just see that the function work
+    def test_repr_ls(self):
+        assert core.hashstr(repr(isopy.refval)) == '68eefd4131f4b68b75af16a8a32de926'
+        for group_name in isopy.refval.ls():
+            group, name = group_name.split('.', 1)
+            assert f'{group}=[' in repr(isopy.refval)
+            assert f"'{name}'" in repr(isopy.refval)
 
-        repr(isopy.refval)
-        repr(isopy.refval.mass)
-        repr(isopy.refval.element)
-        repr(isopy.refval.isotope)
+        assert core.hashstr(repr(isopy.refval.mass)) == '077a6698e15e06d8ede64777e09bf1af'
+        for name in isopy.refval.mass.ls():
+            assert name in repr(isopy.refval.mass)
 
-    def test_ls(self):
-        isopy.refval.ls()
+        assert core.hashstr(repr(isopy.refval.element)) == '3355b591291cd41afc869fddcdf8249b'
+        for name in isopy.refval.element.ls():
+            assert name in repr(isopy.refval.element)
 
-        isopy.refval.mass.ls()
-        isopy.refval.element.ls()
-        isopy.refval.isotope.ls()
+        assert core.hashstr(repr(isopy.refval.isotope)) == 'f3a50958e363e3d54f5058ea3bda7d2f'
+        for name in isopy.refval.isotope.ls():
+            assert name in repr(isopy.refval.isotope)
+
+        assert core.hashstr(isopy.refval._repr_markdown_()) == 'ac3af17c4ab187c3e1bf02ab612598e2'
+        assert core.hashstr(isopy.refval.mass._repr_markdown_()) == 'f90c29d0d9f3efe2a29870a092e68876'
+        assert core.hashstr(isopy.refval.element._repr_markdown_()) == '526d192ed8dc27262bebd65444b35e3a'
+        assert core.hashstr(isopy.refval.isotope._repr_markdown_()) == 'b8546288428c3a5b72517fd62007eaf4'
 
     def test_call_string(self):
         assert isopy.refval('mass.isotopes') is isopy.refval.mass.isotopes
@@ -213,7 +222,11 @@ class Test_misc:
 
         with pytest.raises(ValueError):
             # reference value does not exist
-            isopy.refval('isotopes.doesnt_exist')
+            isopy.refval('doesnt_exist.doesnt_exist')
+            
+        with pytest.raises(ValueError):
+            # reference value does not exist
+            isopy.refval('isotope.doesnt_exist')
 
     def test_call_dict(self):
         data = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])

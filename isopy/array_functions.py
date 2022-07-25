@@ -440,7 +440,6 @@ def rstack(*arrays):
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
     return keys._view_array_(np.fromiter(zip(*result), dtype=dtype))
 
-# TODO does this preserve dtype?
 def cstack(*arrays):
     """
     Stack the columns of multiple arrays.
@@ -483,7 +482,6 @@ def cstack(*arrays):
             result[key] = np.full(size, a.get(key))
 
     return core.array(result, keys)
-    return core.full(max(size) * max(ndim) or -1, result, keys, dtype=[v.dtype for v in result.values()])
 
 def concatenate(*arrays, axis=0):
     """
@@ -609,7 +607,7 @@ np_elementwise = [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.de
 np_cumulative = [np.cumprod, np.cumsum, np.nancumprod, np.nancumsum]
 np_reducing = [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
                np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.average,
-               np.std, np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, np.max, np.nanmax, np.min, np.nanmin,
+               np.std, np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, np.nanmax, np.nanmin,
                np.all, np.any]
 np_special = [np.copyto, np.average]
 np_dual = [np.add, np.subtract, np.divide, np.multiply, np.power]
@@ -621,6 +619,12 @@ for functions in [np_elementwise, np_cumulative, np_reducing, np_special, np_dua
         if func.__name__ not in __all__:
             __all__.append(func.__name__)
             globals()[func.__name__] = func
+        if func.__name__ == 'amin':
+            __all__.append('min')
+            globals()['min'] = func
+        if func.__name__ == 'amax':
+            __all__.append('max')
+            globals()['max'] = func
 
 def approved_numpy_functions(format ='name', delimiter =', '):
     """

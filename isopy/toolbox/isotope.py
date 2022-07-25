@@ -4,7 +4,6 @@ from isopy import core
 
 __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
            'calculate_mass_fractionation_factor', 'internal_normalisation',
-           'mass_independent_correction',
            'remove_isobaric_interferences', 'find_isobaric_interferences',
            'make_ms_array', 'make_ms_beams', 'make_ms_sample', 'johnson_nyquist_noise',
            'rDelta', 'inverse_rDelta',
@@ -579,16 +578,6 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
 
     # Return the corrected data
     return rat
-
-
-@core.add_preset(('ppt', 'permil'), normalisation_factor=1000)
-@core.add_preset('epsilon', normalisation_factor=1E4)
-@core.add_preset(('mu', 'ppm'), normalisation_factor=1E6)
-@core.renamed_function(internal_normalisation, normalisation_factor='extnorm_factor', normalisation_value='extnorm_value')
-def mass_independent_correction(data, mf_ratio,
-                           normalisation_value = None, normalisation_factor=None,
-                           isotope_fractions='isotope.fraction', isotope_masses='isotope.mass', mf_tol=1E-8):
-    pass
 
 def calculate_mass_fractionation_factor(data, mf_ratio,
                                         isotope_fractions='isotope.fraction', isotope_masses='isotope.mass'):

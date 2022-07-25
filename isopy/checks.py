@@ -1,5 +1,7 @@
 import isopy
 
+# This will be deprecated in favour of Ruthenium
+# But can stay until that package is ready
 def check_type(name, value, *accepted_types, coerce=False, coerce_into=None, allow_none=False):
     if allow_none and value is None:
         return value

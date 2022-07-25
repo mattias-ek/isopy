@@ -17,11 +17,6 @@ except:
     pandas = None
 
 try:
-    import tables
-except:
-    tables = None
-
-try:
     import IPython
 except:
     IPython = None
@@ -55,14 +50,13 @@ __all__ = ['iskeystring', 'iskeylist', 'isarray', 'isdict', 'isrefval',
 CACHE_MAXSIZE = 128
 CACHES_ENABLED = True
 
-def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
+def lru_cache(maxsize=128):
     """
-    decorator for functools.lru_cache but with the option to call the original function when an unhashable value
+    decorator for functools.lru_cache but will call the uncached function when an unhashable value
     is encountered.
-
     """
     def lru_cache_decorator(func):
-        cached = functools.lru_cache(maxsize, typed)(func)
+        cached = functools.lru_cache(maxsize)(func)
         uncached = func
         @functools.wraps(func)
         def lru_cache_wrapper(*args, **kwargs):
@@ -70,7 +64,7 @@ def lru_cache(maxsize=128, typed=False, ignore_unhashable=True):
                 try:
                     return cached(*args, **kwargs)
                 except TypeError as err:
-                    if ignore_unhashable is False or not startswith(str(err), 'unhashable'):
+                    if not startswith(str(err), 'unhashable'):
                         raise err
 
             return uncached(*args, **kwargs)
@@ -103,18 +97,22 @@ def remove_prefix(string, prefix):
 
 def get_module_name(item):
     name = getattr(item, '__name__', None)
-    if name is None: return str(item)
+    if name is None:
+        return str(item)
 
     module = getattr(item, '__module__', None)
     if module is not None:
-        if module == 'numpy': module = 'np'
+        if module == 'numpy':
+            module = 'np'
         name = f'{module}.{name}'
 
     return name
 
 def get_classname(thing):
-    if isinstance(thing, type): return thing.__name__
-    else: return thing.__class__.__name__
+    if isinstance(thing, type):
+        return thing.__name__
+    else:
+        return thing.__class__.__name__
 
 def append_preset_docstring(func):
     presets_rows = []
@@ -171,37 +169,6 @@ def extract_kwargs(kwargs, prefix, keep_prefix=False):
 
     return new_kwargs
 
-#TODO better error messages if unknown arguments or keywords are given
-def renamed_function(new_func, **renamed_args):
-    #decorate the old function which will forward the args and kwargs to the new function
-    #The old code will not be executed and can be deleted.
-    #Does not work with positional only arguments ('/' in signature)
-    def rename_function_old(old_func):
-        signature = inspect.signature(old_func)
-
-        @functools.wraps(old_func)
-        def wrapper(*args, **kwargs):
-            warnings.warn(f'This function/method has been renamed "{new_func.__name__}". Please update code',
-                          DeprecationWarning, stacklevel=2)
-
-            #Turn positional arguments into keywords that avoids problems if the
-            #Signarure of the new_function is different
-            bound = signature.bind(*args, **kwargs)
-            new_args = []
-            new_kwargs = {}
-            for arg, value in bound.arguments.items():
-                kind = signature.parameters[arg].kind
-                if kind is inspect.Parameter.VAR_KEYWORD:
-                    new_kwargs.update(value)
-                elif kind is inspect.Parameter.POSITIONAL_ONLY:
-                    new_args.append(value)
-                else:
-                    new_kwargs[renamed_args.get(arg, arg)] = value
-
-            return new_func(*new_args, **new_kwargs)
-        return wrapper
-    return rename_function_old
-
 def renamed_kwarg(**old_new_name):
     #decorator for functions/methods with renamed kwargs
     def renamed_kwarg_func(func):
@@ -249,6 +216,13 @@ class IsopyKeyFlavour:
             return False
 
         return self.__string__ == other_flavours or self.__flavour_name__ == str(other).lower()
+
+    def __add__(self, other):
+        return ListFlavour((self, other))
+
+    def __radd__(self, other):
+        # Order doesnt matter since its sorted
+        return self.__add__(other)
 
     def __contains__(self, other):
         try:
@@ -419,6 +393,8 @@ class ListFlavour:
         def parse_flavour(flavour):
             if isinstance(flavour, IsopyKeyFlavour):
                 return [flavour]
+            elif isinstance(flavour, cls):
+                return flavour._flavours
             elif type(flavour) is str:
                 # If there is more than one here it means they were seperated by a ,. Which
                 sout = cls._parse_string_(flavour.lower())
@@ -499,8 +475,7 @@ class ListFlavour:
         return out
 
     def __add__(self, other):
-        other = self.__class__(other)
-        return self.__class__(self._flavours + other._flavours)
+        return self.__class__((self, other))
 
     def __radd__(self, other):
         # Order doesnt matter since its sorted
@@ -818,8 +793,8 @@ class MassKeyString(IsopyKeyString):
 
     def _str_options_(self):
         return dict(m = str(self), key = str(self),
-                    math = fr'\mathrm{{{self}}}',
-                    latex = fr'$\mathrm{{{self}}}$')
+                    math = fr'{self}',
+                    latex = fr'${self}$')
 
 
 class ElementKeyString(IsopyKeyString):
@@ -1113,7 +1088,7 @@ class IsotopeKeyString(IsopyKeyString):
         options.update(element_options)
         options.update(dict(key = str(self),
                        math = fr'{{}}^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}',
-                       latex = fr'$^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}$'))
+                       latex = fr'${{}}^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}$'))
 
         product = list(itertools.product(mass_options.items(), element_options.items()))
         options.update({f'{mk}{ek}': f'{mv}{ev}' for (mk, mv), (ek, ev) in product})
@@ -1705,7 +1680,8 @@ class RatioKeyString(IsopyKeyString):
             dformat = format.get('dformat', None)
             format = format.get('format', None)
 
-        if format is None and nformat is None and dformat is None: return str(self)
+        if format is None and nformat is None and dformat is None:
+            return str(self)
 
         n = self.numerator.str(nformat)
         d = self.denominator.str(dformat)
@@ -1732,7 +1708,7 @@ class RatioKeyString(IsopyKeyString):
         if type(self.denominator) is RatioKeyString:
             dmath = fr'\left({dmath}\right)'
 
-        options['math'] = fr'\cfrac{{{nmath}}} {{{dmath}}}'
+        options['math'] = fr'\cfrac{{{nmath}}}{{{dmath}}}'
         options['latex'] = fr'${options["math"]}$'
         return options
 
@@ -1820,8 +1796,7 @@ class GeneralKeyString(IsopyKeyString):
     def _str_options_(self):
         return dict(key = str(self),
                     math = fr'\mathrm{{{self}}}',
-                    plt = fr'$\mathrm{{{self}}}$',
-                    tex = str(self))
+                    latex = fr'$\mathrm{{{self}}}$')
 
 
 def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
@@ -2053,7 +2028,7 @@ class IsopyKeyList(tuple):
 
     def _repr_latex_(self):
         if LATEX_REPR:
-            return r'$$\left[' + ', '.join([k.str("math") for k in self]) + r'\right]$$'
+            return fr'$${self.str("math")}$$'
         else:
             return None
 
@@ -2192,7 +2167,6 @@ class IsopyKeyList(tuple):
         view.keys = self
         return view
 
-
     def filter(self, key_eq= None, key_neq = None, **filters):
         """
         Returns a new key list containing the keys that satify **all** the filter arguments given.
@@ -2261,6 +2235,20 @@ class IsopyKeyList(tuple):
         Analogous to ``[key.str(format) for key in keylist]``
         """
         return [key.str(format) for key in self]
+
+    def str(self, format = None):
+        """
+        Return a string of the list formatted according to the format.
+        """
+        if format == 'math':
+            keys = ', '.join(self.strlist('math'))
+            return fr'\left[{keys}\right]'
+        elif format == 'latex':
+            keys = ', '.join(self.strlist('math'))
+            return fr'$\left[{keys}\right]$'
+        else:
+            keys = ', '.join(self.strlist(format))
+            return f'[{keys}]'
 
     def sorted(self):
         """
@@ -2425,8 +2413,19 @@ class ArrayFuncMixin:
 
         return call_array_function(func, *args, **kwargs)
 
+class ToTextMixin:
+    def __repr__(self):
+        return f'{self._description_()}\n{self.to_text(**ARRAY_REPR)}'
 
-class ToTypeMixin:
+    def __str__(self):
+        return f'{self._description_()}\n{self.to_text(**ARRAY_STR)}'
+
+    def _repr_markdown_(self):
+        if MARKDOWN_REPR:
+            return f'{self.to_table(**ARRAY_REPR)}\n\n{self._description_()}'
+        else:
+            return None
+
     # For IsopyArray and RefValDict
     def __to_text(self, delimiter=',', include_row = False, include_dtype=False,
                 nrows = None, row_names = None, **vformat):
@@ -2448,7 +2447,7 @@ class ToTypeMixin:
                 row_names = [rn for rn in row_names]
 
             if self.ndim == 0:
-                sdict['(row)'] = ['None']
+                sdict['(row)'] = row_names[:1]
             else:
                 sdict['(row)'] = row_names
 
@@ -2477,10 +2476,10 @@ class ToTypeMixin:
         for title, values in sdict.items():
             sdict2[f' {title} '] = [f' {v} ' for v in values]
 
-        flen = {}
-        for k in sdict2.keys():
-            flen[k] = max([len(x) for x in sdict2[k]])
-            if len(k) >= flen[k]: flen[k] = len(k)
+        flen = {k: len(k) for k in sdict2.keys()}
+        if self.size > 0:
+            for k in sdict2.keys():
+                flen[k] = max([flen[k], max([len(x) for x in sdict2[k]])])
 
         return flen, sdict2, nrows
 
@@ -2546,10 +2545,7 @@ class ToTypeMixin:
 
         lines = []
         for k in flen.keys():
-            if k == '(row)':
-                lines.append('-' * flen[k])
-            else:
-                lines.append('-' * (flen[k]-1) + ':')
+            lines.append('-' * (flen[k]-1) + ':')
 
 
         return '{}\n{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
@@ -2589,6 +2585,7 @@ class ToTypeMixin:
         else:
             raise TypeError('IPython not installed')
 
+class ToTypeFileMixin:
     def to_list(self):
         """
         Convert the dictionary to a list.
@@ -2649,9 +2646,16 @@ class ToTypeMixin:
             view = a.view(ndarray)
         return view.copy()
 
+    def to_dataframe(self):
+        if pandas is not None:
+            if self.ndim == 0:
+                index = [0]
+            else:
+                index = None
+            return pandas.DataFrame({key.str(): value for key, value in self.items()}, copy=True, index=index)
+        else:
+            raise TypeError('Pandas not installed')
 
-class ToFromFileMixin:
-    # For IsopyArray and RefValDict
     def to_csv(self, filename, comments = None, keys_in_first='r',
               dialect = 'excel', comment_symbol = '#'):
         """
@@ -2725,119 +2729,6 @@ class ToFromFileMixin:
         isopy.write_clipboard(self, comments=comments,  keys_in_first=keys_in_first,
                         dialect=dialect, comment_symbol=comment_symbol)
 
-    def to_dataframe(self):
-        """
-        Convert the array/dictionary to a pandas dataframe
-        """
-        if pandas is not None:
-            return pandas.DataFrame(self)
-        else:
-            raise TypeError('Pandas is not installed')
-
-    # FROM functions
-    @classmethod
-    def from_csv(cls, filename, comment_symbol ='#', keys_in_first=None, encoding = None, dialect = None, **kwargs):
-        """
-        Convert the data in csv file to IsopyArray/RefValDict.
-
-        Parameters
-        ----------
-        filename : str, bytes, StringIO, BytesIO
-            Path for file to be opened. Alternatively a file like byte string can be supplied.
-            Also accepts file like objects.
-        has_keys : bool, None
-            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
-            always returned. If None it will return a nested list of all values in the first row and column
-            can be converted to/is a float.
-        keys_in_first : {'c', 'r', None}
-            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
-            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
-            is not False an exception will be raised if it cant determine where the keys are.
-        comment_symbol : str, Default = '#'
-            Rows starting with this string will be ignored.
-        encoding : str
-            Encoding of the file. If None the encoding will be guessed from the file.
-        dialect
-            Dialect of the csv file. If None the dialect will be guessed from the file.
-        **kwargs
-            Arguments pass when initialing the array/dictionary.
-        """
-        data = isopy.read_csv(filename, comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
-                                  encoding=encoding, dialect=dialect)
-        return cls(data, **kwargs)
-
-    @classmethod
-    def from_xlsx(cls, filename, sheetname, keys_in_first=None,
-                  comment_symbol='#', start_at='A1', **kwargs):
-        """
-        Convert data in excel worksheet to IsopyArray/RefValDict
-        Parameters
-        ----------
-        filename : str, bytes, BytesIO
-            Path for file to be opened. Also accepts file like objects.
-        sheetname : str, int, Optional
-            To load data from a single sheet in the workbook pass either the name of the sheet or
-            the position of the sheet. If nothing is specified all the data for all sheets in the
-            workbook is returned.
-        has_keys : bool, None
-            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
-            always returned. If None it will return a nested list of all values in the first row and column
-            can be converted to/is a float.
-        keys_in_first : {'c', 'r', None}
-            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
-            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
-            is not False an exception will be raised if it cant determine where the keys are.
-        comment_symbol : str, Default = '#'
-            Rows starting with this string will be ignored.
-        start_at : str, (int, int)
-            Start scanning at this cell. Can either be a excel style cell reference or a (row, column) tuple of integers.
-        **kwargs
-            Arguments pass when initialing the array/dictionary.
-        """
-        data = isopy.read_xlsx(filename, sheetname, has_keys=True, keys_in_first=keys_in_first,
-                               comment_symbol=comment_symbol, start_at=start_at)
-        return cls(data, **kwargs)
-
-    @classmethod
-    def from_clipboard(cls, comment_symbol ='#', keys_in_first=None, dialect = None, **kwargs):
-        """
-        Convert clipboard data to IsopyArray/RefValDict.
-
-        Parameters
-        ----------
-        comment_symbol : str, Default = '#'
-            Rows starting with this string will be ignored.
-        has_keys : bool, None
-            If True or *keys_in_first* is not None a dictionary will always be returned. If False an nexted list is
-            always returned. If None it will return a nested list of all values in the first row and column
-            can be converted to/is a float.
-        keys_in_first : {'c', 'r', None}
-            Where the keys are found. Give 'r' if the keys are found in the first row and 'c' if the
-            keys are in first column. If None it will analyse the data to determine where the keys are. If *has_keys*
-            is not False an exception will be raised if it cant determine where the keys are.
-        dialect
-            Dialect of the values in the clipboard. If None the dialect will be guessed from the values.
-        **kwargs
-            Arguments pass when initialing the array/dictionary.
-        """
-        data = isopy.read_clipboard(comment_symbol=comment_symbol, has_keys=True, keys_in_first=keys_in_first,
-                                    dialect=dialect)
-        return cls(data, **kwargs)
-
-    @classmethod
-    def from_dataframe(cls, dataframe, **kwargs):
-        """
-        Convert a pandas dataframe to IsopyArray/RefValDict.
-
-        Parameters
-        ----------
-        dataframe
-            Pandas dataframe to be converted
-        **kwargs
-            Arguments pass when initialing the array/dictionary.
-        """
-        return cls(dataframe, **kwargs)
-
 
 class UFuncMixin:
     @functools.wraps(np.ndarray.all)
@@ -2891,16 +2782,15 @@ class UFuncMixin:
 ############
 ### Dict ###
 ############
-NAMED_RATIO_FUNCTION = dict(divide=np.divide, NotGiven=None)
+NAMED_RATIO_FUNCTION = dict(divide=np.divide)
 NAMED_MOLECULE_FUNCTIONS = dict(abundance=(np.add, np.multiply, None),
                                 fraction=(np.multiply, np.multiply, None),
-                                mass=(np.add, np.multiply, lambda v, c: np.multiply(v, np.abs(c))),
-                                NotGiven=None)
+                                mass=(np.add, np.multiply, lambda v, c: np.divide(v, np.abs(c))))
 
 def inv_named_function(value, named_function):
     for name, func in named_function.items():
-        if value == func:
-            return name
+        if value == func or value is func:
+            return f"'{name}'"
     return value
 
 def readonly_method(func):
@@ -2963,10 +2853,10 @@ class IsopyDict(dict):
     """
 
     def __repr__(self):
-        descr = f"{self.__class__.__name__}(readonly={self.readonly}, key_flavour='{self.key_flavour}',"
+        descr = f"{self.__class__.__name__}(readonly={self.readonly}, key_flavour='{self.key_flavour}'"
         if self.__default__ is not NotGiven:
-            descr = f'{descr} default_value={self.__default__},'
-        return f'{descr}\n{super(IsopyDict, self).__repr__()})'
+            descr = f'{descr}, default_value={self.__default__}'
+        return f'{descr})\n{super(IsopyDict, self).__repr__()}'
 
     def __init__(self, *args, default_value = NotGiven, readonly =False, key_flavour = 'any', **kwargs):
         super(IsopyDict, self).__init__()
@@ -3051,11 +2941,6 @@ class IsopyDict(dict):
     @property
     def key_flavour(self):
         return self._key_flavour
-
-    @property
-    def keylist(self):
-        warnings.warn('This attribute has been deprecated. Use keys directly')
-        return self.keys
 
     @readonly_method
     def update(self, other):
@@ -3183,7 +3068,7 @@ class IsopyDict(dict):
         return {str(key): self[key] for key in self.keys}
 
 
-class RefValDict(ArrayFuncMixin, ToTypeMixin, ToFromFileMixin, IsopyDict):
+class RefValDict(ArrayFuncMixin, ToTypeFileMixin, ToTextMixin, IsopyDict):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
@@ -3258,25 +3143,16 @@ class RefValDict(ArrayFuncMixin, ToTypeMixin, ToFromFileMixin, IsopyDict):
 
     """
 
-    def __repr__(self):
+    def _description_(self):
         descr = f"{self.__class__.__name__}({self.size}, readonly={self.readonly}, key_flavour='{self.key_flavour}'"
         descr = f'{descr}, ratio_function={inv_named_function(self._ratio_func, NAMED_RATIO_FUNCTION)}'
         descr = f'{descr}, molecule_functions={inv_named_function(self._molecule_funcs, NAMED_MOLECULE_FUNCTIONS)}'
-        descr = f'{descr}, default_value={self.__default__})'
-        return f'{descr}\n{self.to_text(**ARRAY_REPR)}'
-
-    def __str__(self):
-        descr = f"{self.__class__.__name__}({self.size}, readonly={self.readonly}, key_flavour='{self.key_flavour}'"
-        descr = f'{descr}, ratio_function={inv_named_function(self._ratio_func, NAMED_RATIO_FUNCTION)}'
-        descr = f'{descr}, molecule_functions={inv_named_function(self._molecule_funcs, NAMED_MOLECULE_FUNCTIONS)}'
-        descr = f'{descr}, default_value={self.__default__})'
-        return f'{descr}\n{self.to_text(**ARRAY_STR)}'
-
-    def _repr_markdown_(self):
-        if MARKDOWN_REPR:
-            return f'{self.to_table()}\n\n**RefValDict**'
+        if self.ndim == 0 or False in [np.array_equal(self.__default__[0], dv, equal_nan=True) for dv in self.__default__]:
+            default_value = self.__default__
         else:
-            return None
+            default_value = self.__default__[0]
+        descr = f'{descr}, default_value={default_value})'
+        return descr
 
     def __init__(self, *args: dict, default_value=nan,
                  readonly= False, key_flavour = 'any', ratio_function = None,
@@ -3289,11 +3165,12 @@ class RefValDict(ArrayFuncMixin, ToTypeMixin, ToFromFileMixin, IsopyDict):
         if molecule_functions is NotGiven:
             molecule_functions = None
 
+        self._readonly = False
         self._size = 1
         self._ndim = 0
 
-        self._ratio_func = ratio_function
-        self._molecule_funcs = molecule_functions
+        self.ratio_function = ratio_function
+        self.molecule_functions = molecule_functions
 
         super(RefValDict, self).__init__(*args, default_value=default_value,
                                          readonly=readonly,
@@ -3307,7 +3184,7 @@ class RefValDict(ArrayFuncMixin, ToTypeMixin, ToFromFileMixin, IsopyDict):
         elif isinstance(key, (int, slice)):
             data = {k: v[key] for k, v in self.items()}
             return self._copy(data, self.__default__[key])
-        elif isinstance(key, (list,tuple)):
+        elif isinstance(key, (list, tuple)):
             if len(key) == 0:
                 return self.copy(key_eq=[])
             elif False not in {isinstance(k, str) for k in key}:
@@ -3503,8 +3380,8 @@ class RefValDict(ArrayFuncMixin, ToTypeMixin, ToFromFileMixin, IsopyDict):
             raise ValueError('molecule_functions must be None or a tuple of callable items')
 
 
-
 ScalarDict = RefValDict # For legacy reasons
+
 def isdict(item, key_flavour=NotGiven, default_value=NotGiven):
     """
     Returns ``True`` if *item* is an isopy dict or refval dict otherwise returns ``False``.
@@ -3537,7 +3414,6 @@ def isrefval(item, key_flavour=NotGiven, default_value=NotGiven, ratio_function=
             return False
 
     if default_value is not NotGiven:
-        default_value = np.asarray(default_value)
         try:
             default_value = item._make_value(default_value, 'default_value', False)
         except:
@@ -3547,11 +3423,13 @@ def isrefval(item, key_flavour=NotGiven, default_value=NotGiven, ratio_function=
                 return False
 
     if ratio_function is not NotGiven:
-        if item._ratio_func != NAMED_RATIO_FUNCTION.get(ratio_function, ratio_function):
+        if (item._ratio_func is not ratio_function and
+                item._ratio_func != NAMED_RATIO_FUNCTION.get(ratio_function, ratio_function)):
             return False
 
     if molecule_functions is not NotGiven:
-        if item._molecule_funcs != NAMED_MOLECULE_FUNCTIONS.get(ratio_function, ratio_function):
+        if (item._molecule_funcs is not molecule_functions and
+                item._molecule_funcs != NAMED_MOLECULE_FUNCTIONS.get(molecule_functions, molecule_functions)):
             return False
 
     return True
@@ -3593,7 +3471,7 @@ def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function
 #############
 ### Array ###
 #############
-class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
+class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
     """
     An array where data is stored rows and columns of isopy key strings.
 
@@ -3648,9 +3526,6 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
         if pandas is not None and isinstance(values, pandas.DataFrame):
             values = values.to_records(index=False)
 
-        if tables is not None and isinstance(values, tables.Table):
-            values = values.read()
-
         if isinstance(values, (ndarray, void)):
             if values.dtype.names is not None:
                 if keys is None:
@@ -3669,8 +3544,8 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
             values = values.tolist()
 
         if isinstance(values, (list, tuple)):
-            if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
-                for v in values].count(True) == len(values):
+            if False not in [(type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0))
+                            for v in values]:
                 values = [tuple(v) for v in values]
             else:
                 values = tuple(values)
@@ -3687,10 +3562,6 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
             if [type(v) is list or type(v) is tuple or (isinstance(v, np.ndarray) and v.ndim > 0)
                 for v in values].count(True) == len(values):
                 values = list(zip(*values))
-
-        elif isinstance(values, tuple):
-            # Leave as is
-            pass
 
         else:
             raise ValueError(f'unable to convert values with type "{type(values)}" to IsopyArray')
@@ -3709,19 +3580,20 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
             except:
                 raise
             if len(vlen) == 0:
-                raise ValueError('Cannot create an empty array')
-            if len(vlen) != 1:
+                vlen = None
+            elif len(vlen) == 1:
+                vlen = vlen.pop()
+            else:
                 raise ValueError('All rows in values are not the same size')
-            vlen = vlen.pop()
 
-        if vlen != len(keys):
-            raise ValueError('size of keys does not match size of values')
+        if vlen is not None and vlen != len(keys):
+            raise ValueError('size of values does not match the number of keys')
 
         if dtype is None:
             new_dtype = [(float64, None) for k in keys]
 
         elif isinstance(dtype, list) or (isinstance(dtype, np.dtype) and dtype.names is not None):
-            if len(dtype) != vlen:
+            if len(dtype) != len(keys):
                 raise ValueError('number of dtypes given does not match number of keys')
             else:
                 new_dtype = [(dtype[i],) if not isinstance(dtype[i], tuple) else dtype[i] for i in range(vlen)]
@@ -3732,7 +3604,9 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
             new_dtype = [(dtype,) for i in range(vlen)]
 
         if type(values) is tuple:
-            colvalues = list(values)
+            colvalues = values
+        elif values == []:
+            colvalues = [[] for k in keys]
         else:
             colvalues = list(zip(*values))
 
@@ -3765,23 +3639,8 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
 
         return keys._view_array_(out)
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.nrows}, " \
-               f"flavour='{self.flavour}', " \
-               f"default_value={self.__default__})" \
-               f"\n{self.to_text(**ARRAY_REPR)}"
-
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.nrows}, " \
-               f"flavour='{self.flavour}', " \
-               f"default_value={self.__default__})" \
-               f"\n{self.to_text(**ARRAY_STR)}"
-
-    def _repr_markdown_(self):
-        if MARKDOWN_REPR:
-            return self.to_table(include_row=True)
-        else:
-            return None
+    def _description_(self):
+        return f"{self.__class__.__name__}({self.nrows}, flavour='{self.flavour}', default_value={self.__default__})"
 
     def __eq__(self, other):
         other = np.asanyarray(other)
@@ -3852,12 +3711,12 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeMixin, ToFromFileMixin):
 
         if rowi is None:
             return a
-        elif rowi == []:
-            return np.array([]) #Isopy array cannot contain 0 rows
+        elif isinstance(rowi, IsopyArray):
+            raise IndexError('Isopy arrays can only be used as an index when setting arrays')
         elif isinstance(a, IsopyArray):
             return a.keys._view_array_(super(IsopyArray, a).__getitem__(rowi))
         else:
-            return a.keys._view_array_(a[rowi])
+            return a[rowi]
 
     def __setitem__(self, index, value):
         keyi, rowi = self._parse_index_(index)
@@ -4087,22 +3946,6 @@ class IsopyNdarray(IsopyArray, ndarray):
 class IsopyVoid(IsopyArray, void):
     pass
 
-class ValErr:
-    def __init__(self, value, error):
-        self.value = value
-        self.error = error
-
-    def __iter__(self):
-        return iter((self.value, self.error))
-
-    def __getitem__(self, item):
-        pass
-
-    def get(self, key, default):
-        pass
-
-    def __len__(self):
-        pass
 
 
 def isarray(item, *, flavour = None, flavour_in = None) -> bool:

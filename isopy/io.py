@@ -15,8 +15,10 @@ import io
 import numpy as np
 
 
-__all__ = ['read_exp', 'read_csv', 'write_csv', 'read_xlsx', 'write_xlsx', 'read_clipboard', 'write_clipboard',
-           'array_from_csv', 'array_from_xlsx', 'array_from_clipboard']
+__all__ = ['read_exp',
+           'read_csv', 'write_csv',
+           'read_xlsx', 'write_xlsx',
+           'read_clipboard', 'write_clipboard']
 
 import isopy.checks
 
@@ -694,30 +696,3 @@ def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_
                 value = '#N/A'
             if value is not None and value != '':
                 worksheet.cell(start_r + ri, start_c + ci).value = value
-
-################
-### to array ###
-################
-@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
-def array_from_csv(filename, *, dtype=None, ndim=None, **read_csv_kwargs):
-    """
-    Returns an array of values from a csv file.
-    """
-    data = read_csv(filename, **read_csv_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
-
-@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
-def array_from_xlsx(filename, sheetname, *, dtype=None, ndim=None, **read_xlsx_kwargs):
-    """
-    Returns an array of values from *sheet_name* in a xlsx file.
-    """
-    data = read_xlsx(filename, sheetname, **read_xlsx_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)
-
-@core.deprecrated_function('This function has been deprecated in favour of isopy.array')
-def array_from_clipboard(*, dtype=None, ndim=None, **read_clipboard_kwargs):
-    """
-    Returns an array of values from the clipboard.
-    """
-    data = read_clipboard(**read_clipboard_kwargs)
-    return isopy.asanyarray(data, dtype=dtype, ndim=ndim)

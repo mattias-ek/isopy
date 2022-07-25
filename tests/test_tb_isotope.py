@@ -436,27 +436,6 @@ class Test_MassIndependentCorrection:
         for key in corrected.keys:
             np.testing.assert_allclose(corrected[key], correct[key])
 
-        # mass independent correction
-        if type(factor) is str:
-            func = getattr(isopy.tb.mass_independent_correction, factor)
-            factor2 = None
-        else:
-            factor2 = factor
-            func = isopy.tb.mass_independent_correction
-
-        kwargs = {}
-        if factor2 is not None: kwargs['normalisation_factor'] = factor2
-        if mass_ref is not None: kwargs['isotope_masses'] = mass_ref
-        if fraction_ref is not None: kwargs['isotope_fractions'] = fraction_ref
-        if norm_val is not None: kwargs['normalisation_value'] = norm_val
-
-        corrected = func(data, mb_ratio, **kwargs)
-        assert corrected.keys == correct.keys - mb_ratio
-        assert corrected.size == correct.size
-        assert corrected.ndim == correct.ndim
-        for key in corrected.keys:
-            np.testing.assert_allclose(corrected[key], correct[key])
-
 
 class Test_IsobaricInterferences:
     def test_one(self):
