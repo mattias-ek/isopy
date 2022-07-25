@@ -15,7 +15,8 @@ __all__ += 'sd2 sd3 sd95 sd99 nansd2 nansd3 nansd95 nansd99'.split()
 __all__ += 'se2 se3 se95 se99 nanse2 nanse3 nanse95 nanse99'.split()
 __all__ += 'mad2 mad3 mad95 mad99 nanmad2 nanmad3 nanmad95 nanmad99'.split()
 
-
+_min = min
+_max = max
 def calculate_ci(ci, df=None):
     if df is None:
         return stats.norm.ppf(0.5 + ci / 2)
@@ -476,7 +477,7 @@ def cstack(*arrays):
     keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False)
 
     result = {}
-    size = max([s for s in size]) * max([d for d in ndim]) or None
+    size = _max(size) * _max(ndim) or None
     for a in arrays:
         for key in a.keys():
             result[key] = np.full(size, a.get(key))
