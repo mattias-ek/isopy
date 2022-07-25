@@ -551,7 +551,7 @@ class KeyTypeError(KeyParseError, TypeError):
     def __str__(self):
         return f'{get_classname(self.cls)}: cannot convert {type(self.obj)} into \'str\''
 
-
+KEY_COMPARISONS = ('eq', 'neq', 'lt', 'gt', 'le', 'ge')
 class IsopyKeyString(str):
     def __repr__(self):
         return f"{self.__class__.__name__}('{self}')"
@@ -1614,7 +1614,7 @@ class RatioKeyString(IsopyKeyString):
             else:
                 break
         else:
-            raise KeyValueError('Limit of nested ratios reached')
+            raise KeyValueError(cls, string, 'Limit of nested ratios reached')
 
         string = f'{numer}{divider}{denom}'
 
@@ -1914,12 +1914,9 @@ def _split_filter(prefix, filters):
     out = {}
     if prefix[-1] != '_': prefix = f'{prefix}_'
     for key in tuple(filters.keys()):
-        if key == prefix[:-1]:
-            #avoids getting errors
-            out['key_eq'] = filters.pop(prefix[:-1])
-        elif startswith(key, prefix): #.startswith(prefix):
+        if startswith(key, prefix): #.startswith(prefix):
             parsed_key = remove_prefix(key, prefix)
-            if parsed_key in ('eq', 'neq', 'lt', 'le', 'ge', 'gt'):
+            if parsed_key in KEY_COMPARISONS:
                 parsed_key = f'key_{parsed_key}'
             out[parsed_key] = filters.pop(key)
 
@@ -3575,13 +3572,9 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
         if isinstance(values, tuple):
             vlen = len(values)
         else:
-            try:
-                vlen = {len(v) for v in values}
-            except:
-                raise
-            if len(vlen) == 0:
-                vlen = None
-            elif len(vlen) == 1:
+            vlen = {len(v) for v in values}
+
+            if len(vlen) == 1:
                 vlen = vlen.pop()
             else:
                 raise ValueError('All rows in values are not the same size')
@@ -3603,10 +3596,10 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
         else:
             new_dtype = [(dtype,) for i in range(vlen)]
 
-        if type(values) is tuple:
-            colvalues = values
-        elif values == []:
+        if len(values) == 0:
             colvalues = [[] for k in keys]
+        elif type(values) is tuple:
+            colvalues = values
         else:
             colvalues = list(zip(*values))
 
@@ -3697,7 +3690,7 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
                 return keyi[0], rowi[1]
 
             else:
-                raise IndexError('')
+                raise IndexError('too many indices for array')
 
         return None, index
 
