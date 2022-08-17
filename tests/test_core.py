@@ -5184,18 +5184,18 @@ class Test_ToMixin:
 
         text = a.tabulate('markdown', include_objinfo = True)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'ee587ddab5baecd9eca1cd836441e2f0'
-        assert core.hashstr(text._repr_markdown_()) == 'ee587ddab5baecd9eca1cd836441e2f0'
+        assert core.hashstr(text) == '8b9df21a9c83437c743b8b7feaf74a34'
+        assert core.hashstr(text._repr_markdown_()) == '8b9df21a9c83437c743b8b7feaf74a34'
 
         text = a.tabulate('latex')
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '6c239aa9c3b223dbbced18e58ec31773'
-        assert core.hashstr(text._repr_latex_()) == '6c239aa9c3b223dbbced18e58ec31773'
+        assert core.hashstr(text) == '8b8273158a3e6bbe08c4521543c9d02f'
+        assert core.hashstr(text._repr_latex_()) == '8b8273158a3e6bbe08c4521543c9d02f'
 
         text = a.tabulate('latex', include_objinfo = True)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '8b8273158a3e6bbe08c4521543c9d02f'
-        assert core.hashstr(text._repr_latex_()) == '8b8273158a3e6bbe08c4521543c9d02f'
+        assert core.hashstr(text) == '0725d5994f115314c09daf16f3c07b69'
+        assert core.hashstr(text._repr_latex_()) == '0725d5994f115314c09daf16f3c07b69'
 
         text = a.tabulate('html')
         assert type(text) is core.TableStr

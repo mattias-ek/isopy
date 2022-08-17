@@ -2896,7 +2896,7 @@ class IsopyDict(dict):
         self._readonly = False
         self.default_value = default_value
         if key_flavour is NotGiven:
-            if len(*args) == 1 and isinstance(args[0], IsopyArray):
+            if len(args) == 1 and isinstance(args[0], IsopyDict):
                 key_flavour = args[0]._key_flavour
             else:
                 key_flavour = 'any'
