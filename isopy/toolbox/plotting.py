@@ -371,7 +371,7 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
     Returns
     -------
     subplots : dict
-        A dictionary containing the freshly created subplots.
+        A dictionary containing the newly created subplots.
 
     Examples
     --------

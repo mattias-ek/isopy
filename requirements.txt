@@ -6,3 +6,4 @@ scipy>=1.6
 chardet>=4
 pandas>=1.4
 ipython>=8
+tabulate>=0.8

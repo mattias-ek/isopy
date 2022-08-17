@@ -408,7 +408,7 @@ def arrayfunc(func, *inputs, keys=None, **kwargs):
     """
     return core.call_array_function(func, *inputs, keys=keys, **kwargs)
 
-def rstack(*arrays):
+def rstack(*arrays, sort_keys=False):
     """
     Stack the rows of multiple arrays.
 
@@ -430,7 +430,8 @@ def rstack(*arrays):
     """
     arrays = [core.asanyarray(a) for a in arrays]
 
-    keys = core.keylist(*(a.dtype.names for a in arrays if isinstance(a, core.IsopyArray)), ignore_duplicates=True)
+    keys = core.keylist(*(a.dtype.names for a in arrays if isinstance(a, core.IsopyArray)),
+                        ignore_duplicates=True, sort=sort_keys)
     arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
     for i, a in enumerate(arrays):
@@ -441,7 +442,7 @@ def rstack(*arrays):
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
     return keys._view_array_(np.fromiter(zip(*result), dtype=dtype))
 
-def cstack(*arrays):
+def cstack(*arrays, sort_keys=False):
     """
     Stack the columns of multiple arrays.
 
@@ -474,15 +475,16 @@ def cstack(*arrays):
     if len(ndim) != 1:
         arrays = [array.reshape(1) if array.ndim == 0 else array for array in arrays]
 
-    keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False)
+    keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False, sort=sort_keys)
 
     result = {}
     size = _max(size) * _max(ndim) or None
-    for a in arrays:
-        for key in a.keys():
-            result[key] = np.full(size, a.get(key))
+    for key in keys:
+        for a in arrays:
+            if key in a.keys():
+                result[key] = np.full(size, a.get(key))
 
-    return core.array(result, keys)
+    return core.array(result)
 
 def concatenate(*arrays, axis=0):
     """

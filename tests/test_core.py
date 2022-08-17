@@ -640,10 +640,10 @@ class Test_IsopyKeyString:
         key = core.ElementKeyString('Pd')
         assert key._repr_latex_() == f'${key.str("latex")}$'
 
-        core.LATEX_REPR = False
+        core.IPYTHON_REPR = False
         assert key._repr_latex_() is None
 
-        core.LATEX_REPR = True
+        core.IPYTHON_REPR = True
 
     def test_charge(self):
         assert core.GeneralKeyString('Hermione++') == 'Hermione++'
@@ -956,6 +956,33 @@ class Test_IsopyList:
             assert mixed_list != correct
 
         return correct_list
+
+    def test_creation2(self):
+        keys1 = 'ru cd pd'
+        keys2 = keys1.split()
+
+        assert isopy.keylist(keys1) == keys1
+        assert isopy.keylist(keys1) == keys2
+        assert isopy.askeylist(keys1) == keys1
+        assert isopy.askeylist(keys1) == keys2
+
+        key = isopy.keystring(keys1)
+        assert isopy.iskeystring(key, flavour='general')
+
+        keylist = isopy.keylist(key)
+        assert len(keylist) == 1
+        assert keylist[0] == key
+        assert keylist != keys1
+
+        keylist = isopy.askeylist(key)
+        assert len(keylist) == 1
+        assert keylist[0] == key
+        assert keylist != keys1
+
+        keylist1 = isopy.keylist(keys1, sort=False)
+        keylist2 = isopy.keylist(keys1, sort=True)
+        assert keylist1 != keylist2
+        assert keylist1.sorted() == keylist2
 
     def test_compare(self):
         mass = self.compare('mass',
@@ -1569,9 +1596,9 @@ class Test_IsopyList:
         assert keys.str('latex') == fr'$\left[{keystr}\right]$'
 
         assert keys._repr_latex_() == fr'$$\left[{keystr}\right]$$'
-        core.LATEX_REPR = False
+        core.IPYTHON_REPR = False
         assert keys._repr_latex_() is None
-        core.LATEX_REPR = True
+        core.IPYTHON_REPR = True
 
     def test_flatten(self):
         element = isopy.keylist('ru pd pd cd'.split())
@@ -3488,17 +3515,17 @@ class Test_Array:
 
         array2 = ratio.deratio()
         assert array2.flavour == 'element'
-        assert array2.keys == 'ru cd pd'.split()
+        assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
-        array2 = ratio.deratio(100)
+        array2 = ratio.deratio(100, sort_keys=True)
         assert array2.flavour == 'element'
-        assert array2.keys == 'ru cd pd'.split()
+        assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'] * 100)
 
-        array2 = ratio.deratio(array['pd'])
+        array2 = ratio.deratio(array['pd'], sort_keys = False)
         assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
@@ -3513,11 +3540,11 @@ class Test_Array:
 
         array2 = ratio.deratio()
         assert array2.flavour == 'element'
-        assert array2.keys == 'ru cd pd'.split()
+        assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
-        array2 = ratio.deratio(100)
+        array2 = ratio.deratio(100, sort_keys=False)
         assert array2.flavour == 'element'
         assert array2.keys == 'ru cd pd'.split()
         for key in array2.keys:
@@ -3525,7 +3552,7 @@ class Test_Array:
 
         array2 = ratio.deratio(array['pd'])
         assert array2.flavour == 'element'
-        assert array2.keys == 'ru cd pd'.split()
+        assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key])
 
@@ -3542,13 +3569,13 @@ class Test_Array:
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'])
 
-        array2 = ratio.deratio(100)
+        array2 = ratio.deratio(100, sort_keys=True)
         assert array2.flavour == 'element'
         assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
             np.testing.assert_allclose(array2[key], array[key] / array['pd'] * 100)
 
-        array2 = ratio.deratio(array['pd'])
+        array2 = ratio.deratio(array['pd'], sort_keys=False)
         assert array2.flavour == 'element'
         assert array2.keys == 'ru pd cd'.split()
         for key in array2.keys:
@@ -5113,129 +5140,173 @@ class Test_ToMixin:
 
     def test_100_1_text(self):
         # size 100, 1-dim
-        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46)
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46, dtype = [np.float64, np.float64, np.int8])
 
-        assert core.hashstr(repr(a)) == 'd1297c0ab2160d835dd9115cb4698af6'
-        assert core.hashstr(str(a)) == '7264aeeb1e20839092cce75234044e55'
+        text = repr(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'f08e2d4e1b6b92a1ab185e1bcd67ccab'
+        assert core.hashstr(text._repr_html_()) == 'c3c446a2f8c29d6199009ea31338414d'
 
-        assert core.hashstr(a.to_text()) == '0451d9277c83ef630c6259f011ac2568'
-        assert core.hashstr(a.to_text(delimiter=';')) == 'ba2d657e7f98fb6c0e8a8b20067a79a2'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '606f2bd9a6e2a4937950c0cacd31d3af'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == '76f4bc3e729e966f9453cccee4700819'
-        assert core.hashstr(a.to_text(nrows=5)) == '615e03805fdf9e7db81fafc7ee57415c'
-        assert core.hashstr(a.to_text(row_names = [f'row {i+1}' for i in range(20)])) == '9934eeedadaaafc26191630266ecbd18'
+        text = str(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '515bb1377d76b86258c7117042f91ce7'
+        assert core.hashstr(text._repr_html_()) == '51e4811855a932a400c9183b9dbf8697'
 
-        assert core.hashstr(a.to_table()) == '69a4af752a3da68097fbf3acc06dfc8d'
-        assert core.hashstr(a.to_table(include_row=True)) == '17519b03e69577bfd2f69f4c5ea6bb30'
-        assert core.hashstr(a.to_table(include_row=True, include_dtype=True)) == '26158c5fa1571fba998532cc698604a8'
-        assert core.hashstr(a.to_table(f='{:.2f}')) == '000ad23d61f981e1ab563066bf3c0198'
-        assert core.hashstr(a.to_table(nrows=5)) == '4c0fb55070df8f2e231ca0cdc0eef829'
-        assert core.hashstr(a.to_table(row_names = [f'row {i+1}' for i in range(20)])) == 'd7fe41247a3bc31463c1da39b62e36a6'
+        text = a.tabulate()
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '515bb1377d76b86258c7117042f91ce7'
+        assert core.hashstr(text._repr_html_()) == '51e4811855a932a400c9183b9dbf8697'
 
-        assert a[0]._description_() == "IsopyVoid(-1, flavour='element', default_value=nan)"
-        repr1, repr2 = repr(a).split('\n', 1)
-        assert repr1 == a._description_()
-        assert repr2 == a.to_text(**core.ARRAY_REPR)
+        text = a.tabulate(include_row = True, include_dtype=True, nrows=12)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '673c2ede15379813eef450deb6c5349d'
+        assert core.hashstr(text._repr_html_()) == '51988f1ae44a86b0b6db3289555e6b60'
 
-        repr1, repr2 = str(a).split('\n', 1)
-        assert repr1 == a._description_()
-        assert repr2 == a.to_text(**core.ARRAY_STR)
+        text = a.tabulate(row_names = [f'row {i+1}' for i in range(20)], floatfmt='.2f', intfmt='.1f')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '116d4ba627131b1c14a4e6ef9f930334'
+        assert core.hashstr(text._repr_html_()) == '1b0f1f343650001cc61a8b54cccc5d45'
+
+        text = a.tabulate(row_names=[f'row {i + 1}' for i in range(20)], nrows = 12,
+                          floatfmt='f{:.2f}', intfmt='i{:.1f}')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '0144869d470752578acd85316a292d39'
+        assert core.hashstr(text._repr_html_()) == '5ce0d4860254e5d7d542b0599474fefe'
+
+        text = a.tabulate('simple')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '515bb1377d76b86258c7117042f91ce7'
+
+        text = a.tabulate('markdown')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '6d23aa941a8d3ca6261472ed6b7ed77e'
+        assert core.hashstr(text._repr_markdown_()) == '6d23aa941a8d3ca6261472ed6b7ed77e'
+
+        text = a.tabulate('markdown', include_objinfo = True)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'ee587ddab5baecd9eca1cd836441e2f0'
+        assert core.hashstr(text._repr_markdown_()) == 'ee587ddab5baecd9eca1cd836441e2f0'
+
+        text = a.tabulate('latex')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '6c239aa9c3b223dbbced18e58ec31773'
+        assert core.hashstr(text._repr_latex_()) == '6c239aa9c3b223dbbced18e58ec31773'
+
+        text = a.tabulate('latex', include_objinfo = True)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '8b8273158a3e6bbe08c4521543c9d02f'
+        assert core.hashstr(text._repr_latex_()) == '8b8273158a3e6bbe08c4521543c9d02f'
+
+        text = a.tabulate('html')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '150b21727d750ecbfb7aca491c51ec1c'
+        assert core.hashstr(text._repr_html_()) == '150b21727d750ecbfb7aca491c51ec1c'
 
         with pytest.raises(ValueError):
-            a.to_text(row_names=[f'row {i + 1}' for i in range(100)])
+            a.tabulate(row_names=[f'row {i + 1}' for i in range(100)])
 
         with pytest.raises(ValueError):
-            a.to_table(row_names='row 0')
+            a.tabulate(row_names='row 0')
 
-        assert type(a.display_table()) is IPython.core.display.Markdown
-        isopy.core.IPython = None
-        with pytest.raises(TypeError):
-            a.display_table()
-        isopy.core.IPython = IPython
-
+        # As it used the same function we do not need to redo all the tests
         d = a.to_refval()
 
-        assert core.hashstr(repr(d)) == 'acc06c962fb4713a3b4c5d5e621b3d7e'
-        assert core.hashstr(str(d)) == 'fb34048bafafeb154874d3d6ba35c507'
+        text = repr(d)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '840ff21a7dcaf298d8c209f4428573dd'
+        assert core.hashstr(text._repr_html_()) == 'd6bd042e8230f8e9ecbd55fff7da31ea'
 
-        assert d.to_text() == a.to_text()
-        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
-        assert d.to_text(include_row=True, include_dtype=True) == a.to_text(include_row=True, include_dtype=True)
-        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
-        assert d.to_text(nrows=5) == a.to_text(nrows=5)
-        assert d.to_text(row_names = [f'row {i+1}' for i in range(20)]) == a.to_text(row_names = [f'row {i+1}' for i in range(20)])
-
-        assert d.to_table() == a.to_table()
-        assert d.to_table(include_row=True) == a.to_table(include_row=True)
-        assert d.to_table(include_row=True, include_dtype=True) == a.to_table(include_row=True, include_dtype=True)
-        assert d.to_table(f='{:.2f}') == a.to_table(f='{:.2f}')
-        assert d.to_table(nrows=5) == a.to_table(nrows=5)
-        assert d.to_table(row_names = [f'row {i+1}' for i in range(20)]) == a.to_table(row_names = [f'row {i+1}' for i in range(20)])
-
-        repr1, repr2 = repr(d).split('\n', 1)
-        assert repr1 == d._description_()
-        assert repr2 == d.to_text(**core.ARRAY_REPR)
-
-        repr1, repr2 = str(d).split('\n', 1)
-        assert repr1 == d._description_()
-        assert repr2 == d.to_text(**core.ARRAY_STR)
-
-        with pytest.raises(ValueError):
-            d.to_text(row_names=[f'row {i + 1}' for i in range(100)])
-
-        with pytest.raises(ValueError):
-            d.to_table(row_names='row 0')
+        text = str(d)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'ca6ca962a113a357cafed7b01cef5f4f'
+        assert core.hashstr(text._repr_html_()) == '7959300b42c5ba87937ea1e340a6e407'
 
     def test_1_1_text(self):
-        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype = [np.float64, np.float64, np.int8])
 
-        assert core.hashstr(repr(a)) == '43de8223ccb4400c31650ef555b1bb34'
-        assert core.hashstr(str(a)) == '791fe52cbaf7e414e7c6aaf3c5db9cb9'
-        assert core.hashstr(a.to_text()) == '08b99edb38dc3858cf9f416e0ad013e8'
-        assert core.hashstr(a.to_text(delimiter=';')) == '3e61107480e0fd83d0719413b6afbdee'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '118edd901c817aba7ea54e639e18be64'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == 'e69aca27df3578ca7fe7f7e1c0de6f3f'
-        assert core.hashstr(a.to_text(nrows=5)) == '08b99edb38dc3858cf9f416e0ad013e8'
-        assert core.hashstr(a.to_text(row_names=[f'row {i + 1}' for i in range(1)])) == '322e689c77237994894227198d09aca1'
-        assert core.hashstr(a.to_text(row_names='row 1')) == '322e689c77237994894227198d09aca1'
+        text = repr(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'e2558ec357026193cba3ba1748aea17d'
+        assert core.hashstr(text._repr_html_()) == 'a3dc3e70930e0ddd2d1540cad4e5fb0a'
 
-        d = a.to_refval()
+        text = str(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'c113fc01aba641e1a1485e94fc09861b'
+        assert core.hashstr(text._repr_html_()) == '16c2aa034c77fe9b2007fcd05c8bded5'
 
-        assert core.hashstr(repr(d)) == '332c1a389c60726b4135a9f95e8d7fee'
-        assert core.hashstr(str(d)) == '3bea16f3c58f8685e8665c1e5b5ad870'
-        assert d.to_text() == a.to_text()
-        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
-        assert d.to_text(include_row=True, include_dtype=True) != a.to_text(include_row=True, include_dtype=True)
-        assert d.to_text(include_row=True, include_dtype=True) == a[0].to_text(include_row=True, include_dtype=True)
-        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
-        assert d.to_text(nrows=5) == a.to_text(nrows=5)
-        assert d.to_text(row_names=[f'row {i + 1}' for i in range(1)]) == a.to_text(row_names = [f'row {i+1}' for i in range(1)])
-        assert d.to_text(row_names='row 1') == a.to_text(row_names='row 1')
+        text = a.tabulate(row_names=[f'row 1'])
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'cfa7f16e7e4509733ed67a239ade6ed8'
+        assert core.hashstr(text._repr_html_()) == '53d16bb09f898508d89b61cf82450774'
+
+        text = a.tabulate(row_names=f'row 1')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'cfa7f16e7e4509733ed67a239ade6ed8'
+        assert core.hashstr(text._repr_html_()) == '53d16bb09f898508d89b61cf82450774'
 
     def test_1_0_text(self):
-        a = isopy.random(None, (1, 0.1), 'ru pd cd'.split(), seed=46)
+        a = isopy.random(-1, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype=[np.float64, np.float64, np.int8])
+        assert a.ndim == 0
 
-        assert core.hashstr(repr(a)) == 'a38422ea209d8a5680d304b9eaec68be'
-        assert core.hashstr(str(a)) == 'cbee74af121c2db6bf1851e4aa5de55e'
-        assert core.hashstr(a.to_text()) == '08b99edb38dc3858cf9f416e0ad013e8'
-        assert core.hashstr(a.to_text(delimiter=';')) == '3e61107480e0fd83d0719413b6afbdee'
-        assert core.hashstr(a.to_text(include_row=True, include_dtype=True)) == '7a8e57f120c00c49271814c5f82afb6c'
-        assert core.hashstr(a.to_text(f='{:.2f}')) == 'e69aca27df3578ca7fe7f7e1c0de6f3f'
-        assert core.hashstr(a.to_text(nrows=5)) == '08b99edb38dc3858cf9f416e0ad013e8'
-        assert core.hashstr(a.to_text(row_names=[f'row {i + 1}' for i in range(1)])) == '322e689c77237994894227198d09aca1'
-        assert core.hashstr(a.to_text(row_names='row 1')) == '322e689c77237994894227198d09aca1'
+        text = repr(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '9551a394f43d2f25b6f546fe02f17513'
+        assert core.hashstr(text._repr_html_()) == '4ec7e9c2bd1b2dcc4914037531306e1a'
+
+        text = str(a)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'c113fc01aba641e1a1485e94fc09861b'
+        assert core.hashstr(text._repr_html_()) == '16c2aa034c77fe9b2007fcd05c8bded5'
+
+        text = a.tabulate(row_names=[f'row 1'])
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'cfa7f16e7e4509733ed67a239ade6ed8'
+        assert core.hashstr(text._repr_html_()) == '53d16bb09f898508d89b61cf82450774'
+
+        text = a.tabulate(row_names=f'row 1')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'cfa7f16e7e4509733ed67a239ade6ed8'
+        assert core.hashstr(text._repr_html_()) == '53d16bb09f898508d89b61cf82450774'
 
         d = a.to_refval()
 
-        assert core.hashstr(repr(d)) == '332c1a389c60726b4135a9f95e8d7fee'
-        assert core.hashstr(str(d)) == '3bea16f3c58f8685e8665c1e5b5ad870'
-        assert d.to_text() == a.to_text()
-        assert d.to_text(delimiter=';') == a.to_text(delimiter=';')
-        assert d.to_text(include_row=True, include_dtype=True) == a.to_text(include_row=True, include_dtype=True)
-        assert d.to_text(f='{:.2f}') == a.to_text(f='{:.2f}')
-        assert d.to_text(nrows=5) == a.to_text(nrows=5)
-        assert d.to_text(row_names=[f'row {i + 1}' for i in range(1)]) == a.to_text(row_names=[f'row {i + 1}' for i in range(1)])
-        assert d.to_text(row_names='row 1') == a.to_text(row_names='row 1')
+        text = repr(d)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'f610340cba0297c396c5c1c3364ce769'
+        assert core.hashstr(text._repr_html_()) == 'dcdcbe279bf51aa89362abdecf04ec7c'
+
+        text = str(d)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'd1b7f665f88324a955271fd97468797b'
+        assert core.hashstr(text._repr_html_()) == '60580bb64dd21619c2f4cea1bb19b5aa'
+
+        a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype=[np.float64, np.float64, np.int8])
+        a0 = a[0]
+
+        text = repr(a0)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '91e8c59630b8fda494955dc547fbf163'
+        assert core.hashstr(text._repr_html_()) == '773b2663db153948bb8b567cdaa7f454'
+
+        text = str(a0)
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'c113fc01aba641e1a1485e94fc09861b'
+        assert core.hashstr(text._repr_html_()) == '16c2aa034c77fe9b2007fcd05c8bded5'
+
+    def test_tablestr(self):
+        a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype=[np.float64, np.float64, np.int8])
+
+        text = str(a)
+        assert type(text) is core.TableStr
+        assert isinstance(text, str)
+        assert str(text) == text
+        assert repr(text) == text
+        assert hash(text) == hash(str(text))
+
+        copy = text.copy()
+        assert copy is text
+        assert copy == pyperclip.paste()
+
 
     def test_description(self):
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
@@ -5269,24 +5340,31 @@ class Test_ToMixin:
                                      "ratio_function=<ufunc 'add'>, molecule_functions='mass', "
                                      f"default_value=nan)")
 
-    def test_repr_markdown(self):
+    def test_repr_html(self):
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
-        repr1, repr2 = a._repr_markdown_().rsplit('\n\n',1)
-        assert repr1 == a.to_table(**isopy.core.ARRAY_REPR)
-        assert repr2 == a._description_()
-
         d = a.to_refval()
-        repr1, repr2 = d._repr_markdown_().rsplit('\n\n', 1)
-        assert repr1 == d.to_table(**isopy.core.ARRAY_REPR)
-        assert repr2 == d._description_()
+        
+        assert isopy.core.IPYTHON_REPR is True
+        
+        text = repr(a)
+        assert text._repr_html_() == text._html
+        assert a._repr_html_() == text._html
 
-        assert isopy.core.MARKDOWN_REPR is True
-        isopy.core.MARKDOWN_REPR = False
+        text = repr(d)
+        assert text._repr_html_() == text._html
+        assert d._repr_html_() == text._html
+        
+        isopy.core.IPYTHON_REPR = False
 
-        assert a._repr_markdown_() is None
-        assert d._repr_markdown_() is None
+        text = repr(a)
+        assert text._repr_html_() is None
+        assert a._repr_html_() is None
 
-        isopy.core.MARKDOWN_REPR = True
+        text = repr(d)
+        assert d._repr_html_() is None
+        assert text._repr_html_() is None
+
+        isopy.core.IPYTHON_REPR = True
 
 
 class Test_EmptyArrays:

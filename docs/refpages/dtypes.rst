@@ -2,18 +2,19 @@ Data types
 **********
 .. currentmodule:: isopy
 
-Documented here are the custom data types implemented by isopy and functions for creating them.
+Documented here are the differnet data types implemented by isopy and functions for creating them.
 
 Key strings
 -----------
-See the tutorial for an introduction to key string. The following
-classes/functions can be used to create isopy key strings:
+The following classes/functions can be used to create isopy key strings:
 
 .. autosummary::
     :toctree: Strings
+    :template: autosummary/function.rst
 
     keystring
     askeystring
+    iskeystring
 
     :template: string_template.rst
 
@@ -25,63 +26,57 @@ classes/functions can be used to create isopy key strings:
 
 Key lists
 ---------
-See the tutorial for an introduction to key lists. The following
-classes/functions can be used to create isopy key lists:
+The following classes/functions can be used to create isopy key lists:
 
 .. autosummary::
     :toctree: Lists
+    :template: autosummary/function.rst
 
     keylist
     askeylist
+    iskeylist
 
     :template: list_template.rst
 
-    MassKeyList
-    ElementKeyList
-    IsotopeKeyList
-    RatioKeyList
-    GeneralKeyList
-    MixedKeyList
+    IsopyKeyList
 
 
 Isopy arrays
 ------------
-See the tutorial for an introduction to isopy arrays. The following
-classes/functions can be used to create isopy arrays:
+The following classes/functions can be used to create isopy arrays:
 
 .. autosummary::
     :toctree: Arrays
-    :template: array_template.rst
-
-    IsopyArray
-
     :template: autosummary/function.rst
 
     array
     asarray
     asanyarray
-    array_from_csv
-    array_from_xlsx
-    array_from_clipboard
+    isarray
     empty
     zeros
     ones
     full
     random
 
+    :template: array_template.rst
+
+    IsopyArray
+
 Isopy dictionaries
 ------------------
-See the tutorial for an introduction to isopy dictionaries.
 The following classes/functions can be used to create isopy dictionaries:
 
 .. autosummary::
     :toctree: Dicts
+    :template: autosummary/function.rst
+
+    asdict
+    asrefval
+    isdict
+    isrefval
     :template: dict_template.rst
 
     IsopyDict
     RefValDict
 
-    :template: autosummary/function.rst
-
-    asdict
-    asrefval

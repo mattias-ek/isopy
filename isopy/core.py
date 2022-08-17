@@ -9,6 +9,7 @@ import warnings
 import collections.abc as abc
 import io
 import operator
+from tabulate import tabulate as tabulate_
 
 #optional imports
 try:
@@ -33,10 +34,9 @@ class NotGivenType:
 
 NotGiven = NotGivenType()
 
-ARRAY_REPR = dict(include_row=True, include_dtype=True, nrows=10, f='{:.5g}')
-ARRAY_STR = dict(include_row=False, include_dtype=False)
-LATEX_REPR = True
-MARKDOWN_REPR = True
+ARRAY_REPR = dict(include_row=True, include_dtype=True, nrows=10, floatfmt='.5f', include_objinfo = True)
+ARRAY_STR = dict()
+IPYTHON_REPR = True
 
 
 __all__ = ['iskeystring', 'iskeylist', 'isarray', 'isdict', 'isrefval',
@@ -557,7 +557,7 @@ class IsopyKeyString(str):
         return f"{self.__class__.__name__}('{self}')"
 
     def _repr_latex_(self):
-        if LATEX_REPR:
+        if IPYTHON_REPR:
             return fr'$${self.str("math")}$$'
         else:
             return None
@@ -1930,8 +1930,10 @@ def combine_keys_func(func):
         keys = tuple()
 
         for arg in args:
-            if isinstance(arg, str):
-                keys += (arg,)
+            if type(arg) is str:
+                keys += tuple(arg.strip().split())
+            elif isinstance(arg, IsopyKeyString):
+                keys += (arg, )
             elif type(arg) is IsopyKeyList:
                 keys += tuple(arg)
             elif isinstance(arg, np.dtype) and arg.names is not None:
@@ -2013,7 +2015,7 @@ class IsopyKeyList(tuple):
         The common demoninator of all ratio key strings in the sequence.
         ``None`` if there is no common denominator or the list contains non-ratio keys.
     """
-    def __new__(cls, keys, flavour, ignore_duplicates = False, allow_duplicates = True):
+    def __new__(cls, keys, flavour, ignore_duplicates = False, allow_duplicates = True, sort = False):
         if ignore_duplicates:
             keys = list(dict.fromkeys(keys).keys())
         elif not allow_duplicates and (len(set(keys)) != len(keys)):
@@ -2021,12 +2023,15 @@ class IsopyKeyList(tuple):
 
         flavour = asflavour(tuple(k.flavour for k in keys))
 
+        if sort:
+            keys = sorted(keys, key= lambda k: k._sortkey_())
+
         obj = super(IsopyKeyList, cls).__new__(cls, keys)
         obj.flavour = flavour
         return obj
 
     def _repr_latex_(self):
-        if LATEX_REPR:
+        if IPYTHON_REPR:
             return fr'$${self.str("math")}$$'
         else:
             return None
@@ -2316,10 +2321,9 @@ def iskeylist(item, *, flavour=None, flavour_in=None) -> bool:
     else:
         return isinstance(item, IsopyKeyList)
 
-
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, flavour ='any'):
+def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, sort = False, flavour ='any'):
     """
     Returns a key list with the highest priority flavour compatible with each key string.
 
@@ -2337,6 +2341,8 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
     allow_reformatting : bool, Default = True
         If ``True`` the string can be reformatted to get the correct format. If ``False`` only strings that already
         have the correct format are considered.
+    sort : bool
+        If ``True`` the keys in will be sorted
     flavour
         The possible flavour(s) of key strings in the key list.
 
@@ -2349,11 +2355,11 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
     keys = [keystring(k, flavour=flavour, allow_reformatting=allow_reformatting) for k in keys[0]]
 
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
-                       allow_duplicates=allow_duplicates)
+                       allow_duplicates=allow_duplicates, sort=sort)
 
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, flavour ='any'):
+def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, sort=False, flavour ='any'):
     """
     Returns a key list preserving the flavour of each key string if it has a valid flavour.
 
@@ -2374,6 +2380,8 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
     allow_reformatting : bool, Default = True
         If ``True`` the string can be reformatted to get the correct format. If ``False`` only strings that already
         have the correct format are considered.
+    sort : bool
+        If ``True`` the keys in will be sorted
     flavour
         The possible flavour(s) of key strings in the key list.
 
@@ -2386,7 +2394,7 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
     keys = [askeystring(k, allow_reformatting=allow_reformatting, flavour=flavour) for k in keys[0]]
 
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
-                        allow_duplicates=allow_duplicates)
+                        allow_duplicates=allow_duplicates, sort=sort)
 
 ###################################
 ### Mixins for Array and RefVal ###
@@ -2412,30 +2420,114 @@ class ArrayFuncMixin:
 
         return call_array_function(func, *args, **kwargs)
 
-class ToTextMixin:
+
+class TableStr(str):
+    def __new__(cls, string, *, latex=None, markdown=None, html=None):
+        cls._latex = latex
+        cls._markdown = markdown
+        cls._html = html
+        cls._string = string
+
+        return super(TableStr, cls).__new__(cls, string)
+
     def __repr__(self):
-        return f'{self._description_()}\n{self.to_text(**ARRAY_REPR)}'
+        return self._string
 
     def __str__(self):
-        return f'{self._description_()}\n{self.to_text(**ARRAY_STR)}'
+        return self._string
+
+    def _repr_latex_(self):
+        return self._latex if IPYTHON_REPR else None
 
     def _repr_markdown_(self):
-        if MARKDOWN_REPR:
-            return f'{self.to_table(**ARRAY_REPR)}\n\n{self._description_()}'
+        return self._markdown if IPYTHON_REPR else None
+
+    def _repr_html_(self):
+        return self._html if IPYTHON_REPR else None
+
+    def copy(self):
+        # Copy table to the clipboard
+        pyperclip.copy(self._string)
+        return self
+
+
+class TabulateMixin:
+    def tabulate(self, tablefmt='default', *,
+                 include_row = False,
+                 row_names = None,
+                 nrows=None,
+                 include_dtype = False,
+                 include_objinfo = False,
+                 keyfmt = None,
+                 floatfmt = None,
+                 intfmt = None):
+        """
+        Turn the contents of the array/dictionary to a table.
+
+        Uses `tabulate <https://github.com/astanin/python-tabulate#table-format>`_ to turn the object
+        into a table. Markdown, Latex and HTML table formats will render in jupyter notebooks. The
+        default table style will render as HTML in jupyter notebooks but the text itself uses the
+        "simple" table format.
+
+
+        Parameters
+        ----------
+        tablefmt : str
+            Format of the table. See the `tabulate documentation <https://github.com/astanin/python-tabulate#table-format>`_.
+            for a list of option.
+        include_row : bool
+            If ``True`` a column with the row number will be included in the table.
+        row_names
+            The name for each row in the table. Will replace the row number in the row column. If given
+            the row column is always included regardless of the value given for *include_row*.
+        nrows : int | None
+            The maximum number of rows shown in the table. If the number of rows exceeds *nrows*
+            rows in the middle of the table will be omitted and replaced with a single row of ``...``.
+        include_dtype : bool | None
+            If ``True`` then the dtype of each column will be included in the column title.
+        include_objinfo : bool | None
+            If ``True`` then the object info will be included at the end of the table.
+        keyfmt : str | None
+            The format used for the column titles.
+        floatfmt : str | None
+            The format for float values in the table, e.g. ``".2f"`` for 2 decimal places.
+        intfmt : str | None
+            The format for integer values in the table.
+
+        Returns
+        -------
+        TableStr
+            A subclass of str that will render the table in jupyter notebooks if the
+            table format is markdown, latex or html. Contains one custom method ``.copy()`` that will
+            copy the text to the clipboard.
+        """
+
+        if tablefmt == 'markdown':
+            tablefmt = 'pipe'
+
+        if tablefmt == 'default':
+            tablefmt = 'simple'
+            html_repr = True
         else:
-            return None
+            html_repr = False
 
-    # For IsopyArray and RefValDict
-    def __to_text(self, delimiter=',', include_row = False, include_dtype=False,
-                nrows = None, row_names = None, **vformat):
+        if floatfmt is None:
+            floatfmt = '{}'
+        elif '{' not in floatfmt:
+            floatfmt = '{:' + floatfmt + '}'
 
-        sdict = {}
+        if intfmt is None:
+            intfmt = '{}'
+        elif '{' not in intfmt:
+            intfmt = '{:' + intfmt + '}'
+
+        kwargs = dict(disable_numparse=True, headers = 'keys')
+
+        colalign = []
+        table = {}
         if include_row or row_names is not None:
             if row_names is None:
-                if self.ndim == 0:
-                    row_names = ['None']
-                else:
-                    row_names = [str(i) for i in range(self.size)]
+                row_names = [str(i) for i in range(self.size)] if self.ndim == 1 else ['None']
 
             elif isinstance(row_names, str):
                 row_names = [row_names]
@@ -2445,144 +2537,83 @@ class ToTextMixin:
             else:
                 row_names = [rn for rn in row_names]
 
-            if self.ndim == 0:
-                sdict['(row)'] = row_names[:1]
-            else:
-                sdict['(row)'] = row_names
+            colalign.append('left')
+            table['(row)'] = row_names
 
         for k in self.keys():
-            val = self[k]
-            if include_dtype:
-                title = f'{k} ({val.dtype.kind}{val.dtype.itemsize})'
+            dtype = self[k].dtype
+            title = f'{k.str(keyfmt)} ({dtype.kind}{dtype.itemsize})' if include_dtype else f'{k.str(keyfmt)}'
+            val = self[k].tolist() if self.ndim == 1 else [self[k].tolist()]
+
+            if dtype.kind == 'f':
+                colalign.append('right')
+                val = [floatfmt.format(v) for v in val]
+            elif dtype.kind == 'i' or dtype.kind == 'u':
+                colalign.append('right')
+                val = [intfmt.format(v) for v in val]
             else:
-                title = f'{k}'
-            if val.ndim == 0:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k])]
-            else:
-                sdict[title] = [vformat.get(val.dtype.kind, '{}').format(self[k][i]) for i in
-                                range(self.size)]
+                colalign.append('left')
+
+            table[title] = val
 
         if nrows is not None and nrows > 2 and nrows < self.size:
             first = nrows // 2
             last = self.size - (nrows // 2 + nrows % 2)
-            for title, values in sdict.items():
-                sdict[title] = values[:first] + ['...'] + values[last:]
-            nrows += 1
+            for title, values in table.items():
+                table[title] = values[:first] + ['...'] + values[last:]
+
+        string = tabulate_(table, tablefmt = tablefmt, colalign = colalign, **kwargs)
+
+        if tablefmt in ['pipe', 'github']:
+            if include_objinfo:
+                string = f'{string}\n\n{self._description_("**", "**")}'
+
+            return TableStr(string, markdown = string)
+
+        elif tablefmt in ['html', 'usesafehtml']:
+            if include_objinfo:
+                string = f'{string}\n{self._description_("<b>", "</b>")}'
+
+            return TableStr(string, html = string)
+
+        elif tablefmt in ['latex', 'latex_raw', 'latex_booktabs', 'latex_longtable']:
+            if include_objinfo:
+                descr = self._description_(r"\textbf{", "}")
+                string = f'{string}\n\n{descr}'
+
+            return TableStr(string, latex = string)
+
         else:
-            nrows = self.size
+            if include_objinfo:
+                string = f'{string}\n\n{self._description_()}'
 
-        sdict2 = {}
-        for title, values in sdict.items():
-            sdict2[f' {title} '] = [f' {v} ' for v in values]
+            if html_repr:
+                html_kwargs = dict(tablefmt = 'html',
+                                   include_row = include_row,
+                                   row_names=row_names,
+                                   nrows = nrows,
+                                   include_dtype=include_dtype,
+                                   include_objinfo = include_objinfo,
+                                   keyfmt = 'latex',
+                                   floatfmt = floatfmt,
+                                   intfmt = intfmt)
 
-        flen = {k: len(k) for k in sdict2.keys()}
-        if self.size > 0:
-            for k in sdict2.keys():
-                flen[k] = max([flen[k], max([len(x) for x in sdict2[k]])])
+                html_string = self.tabulate(**html_kwargs)._html
+                return TableStr(string, html = html_string)
+            else:
+                return TableStr(string)
 
-        return flen, sdict2, nrows
+    def __repr__(self):
+        return self.tabulate(**ARRAY_REPR)
 
-    def to_text(self, delimiter=',', include_row = False, include_dtype=False,
-                nrows = None, row_names = None, **vformat):
-        """
-        Convert the array/dictionary to a text string.
+    def __str__(self):
+        return self.tabulate(**ARRAY_STR)
 
-        Parameters
-        ----------
-        delimiter : str, Default = ','
-            String used to separate columns in each row.
-        include_row : bool, Default = False
-            If ``True`` a column containing the row index is included. *None* Is given as the
-            row index for 0-dimensional arrays.
-        include_dtype : bool, Default = False
-            If ``True`` the column data type is included in the first row next to the column name.
-        nrows : int, Optional
-            The number of rows to show.
-        row_names
-            A list of the name for each row in the table. If not given the index of the row will be used.
-        vformat : str, Optional
-            Format string for different kinds of data. The key denoted the data kind. Common data
-            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-        """
-        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, row_names, **vformat)
-
-        return '{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
-                                   '\n'.join('{}'.format(delimiter.join('{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
-                                             for i in range(nrows)))
-
-    def to_table(self, include_row = False, include_dtype=False,
-                nrows = None, row_names = None, **vformat):
-        """
-        Convert the array/dictionary to a markdown table text string.
-
-        Parameters
-        ----------
-        include_row : bool, Default = False
-            If ``True`` a column containing the row index is included. *None* Is given as the
-            row index for 0-dimensional arrays.
-        include_dtype : bool, Default = False
-            If ``True`` the column data type is included in the first row next to the column name.
-        nrows : int, Optional
-            The number of rows to show.
-        row_names
-            A list of the name for each row in the table. If not given the index of the row will be used.
-        vformat : str, Optional
-            Format string for different kinds of data. The key denoted the data kind. Common data
-            kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-            Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-            Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-            is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-        """
-
-        delimiter = '|'
-
-        flen, sdict, nrows = self.__to_text(delimiter, include_row, include_dtype, nrows, row_names, **vformat)
-        flen = {k: f if f > 4 else 4 for k, f in flen.items()}
-
-        lines = []
-        for k in flen.keys():
-            lines.append('-' * (flen[k]-1) + ':')
-
-
-        return '{}\n{}\n{}'.format(delimiter.join(['{:<{}}'.format(k, flen[k]) for k in sdict.keys()]),
-                                   delimiter.join(lines),
-                               '\n'.join('{}'.format(delimiter.join(
-                                   '{:<{}}'.format(sdict[k][i], flen[k]) for k in sdict.keys()))
-                                         for i in range(nrows)))
-
-    def display_table(self, include_row = False, include_dtype=False,
-                nrows = None, row_names = None, **vformat):
-        """
-       Convert the array/dictionary to a IPython markdown table. This will render
-       a table in an IPython console or a Jupyter cell.
-
-       An exception is raised if IPython is not installed.
-
-       Parameters
-       ----------
-       include_row : bool, Default = False
-           If ``True`` a column containing the row index is included. *None* Is given as the
-           row index for 0-dimensional arrays.
-       include_dtype : bool, Default = False
-           If ``True`` the column data type is included in the first row next to the column name.
-       nrows : int, Optional
-           The number of rows to show.
-       row_names
-            A list of the name for each row in the table. If not given the index of the row will be used.
-       vformat : str, Optional
-           Format string for different kinds of data. The key denoted the data kind. Common data
-           kind strings ara ``"f"`` for floats, ``"i"`` for integers and ``"S"`` for strings.
-           Dictionary containing a format string for different kinds of data.  Most common ``"f"``.
-           Default format string for each data type is ``'{}'``. A list of all avaliable data kinds
-           is avaliable `here <https://numpy.org/doc/stable/reference/arrays.interface.html>`_.
-       """
-        if IPython is not None:
-            return IPython.display.Markdown(self.to_table(include_row, include_dtype, nrows, row_names, **vformat))
+    def _repr_html_(self):
+        if IPYTHON_REPR:
+            return self.tabulate(tablefmt ='html', keyfmt = 'latex', **ARRAY_REPR)
         else:
-            raise TypeError('IPython not installed')
+            return None
 
 
 class ToTypeFileMixin:
@@ -2611,13 +2642,15 @@ class ToTypeFileMixin:
         If key filters are specified then only the items that pass these filters are included in
         the returned array.
         """
-        if key_filters:
-            keys = self.keys.filter(keys, **key_filters)
-
-        if keys is not None:
-            d = {k: self.get(k, default=default) for k in askeylist(keys)}
+        if keys is None:
+            keys = self.keys
         else:
-            d = {k: v for k, v in self.items()}
+            keys = askeylist(keys)
+
+        if key_filters:
+            keys = keys.filter(**key_filters)
+
+        d = {k: self.get(k, default=default) for k in keys}
 
         return array(d)
 
@@ -2863,7 +2896,10 @@ class IsopyDict(dict):
         self._readonly = False
         self.default_value = default_value
         if key_flavour is NotGiven:
-            key_flavour = 'any'
+            if len(*args) == 1 and isinstance(args[0], IsopyArray):
+                key_flavour = args[0]._key_flavour
+            else:
+                key_flavour = 'any'
         self._key_flavour = asflavour(key_flavour)
 
         for arg in args:
@@ -3068,7 +3104,7 @@ class IsopyDict(dict):
         return {str(key): self[key] for key in self.keys}
 
 
-class RefValDict(ArrayFuncMixin, ToTypeFileMixin, ToTextMixin, IsopyDict):
+class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
     """
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
@@ -3143,8 +3179,8 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, ToTextMixin, IsopyDict):
 
     """
 
-    def _description_(self):
-        descr = f"{self.__class__.__name__}({self.size}, readonly={self.readonly}, key_flavour='{self.key_flavour}'"
+    def _description_(self, boldstart = '', boldend = ''):
+        descr = f"{boldstart}{self.__class__.__name__}{boldend}({self.size}, readonly={self.readonly}, key_flavour='{self.key_flavour}'"
         descr = f'{descr}, ratio_function={inv_named_function(self._ratio_func, NAMED_RATIO_FUNCTION)}'
         descr = f'{descr}, molecule_functions={inv_named_function(self._molecule_funcs, NAMED_MOLECULE_FUNCTIONS)}'
         if self.ndim == 0 or False in [np.array_equal(self.__default__[0], dv, equal_nan=True) for dv in self.__default__]:
@@ -3157,13 +3193,21 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, ToTextMixin, IsopyDict):
     def __init__(self, *args: dict, default_value=nan,
                  readonly= False, key_flavour = 'any', ratio_function = None,
                  molecule_functions = None, **kwargs):
-        
-        if default_value is NotGiven:
-            default_value = np.nan
-        if ratio_function is NotGiven:
-            ratio_function = None
-        if molecule_functions is NotGiven:
-            molecule_functions = None
+
+        if len(args) == 1 and type(args[0]) is RefValDict:
+            if default_value is NotGiven:
+                default_value = args[0].default_value
+            if ratio_function is NotGiven:
+                ratio_function = args[0].ratio_function
+            if molecule_functions is NotGiven:
+                molecule_functions = args[0].molecule_functions
+        else:
+            if default_value is NotGiven:
+                default_value = nan
+            if ratio_function is NotGiven:
+                ratio_function = None
+            if molecule_functions is NotGiven:
+                molecule_functions = None
 
         self._readonly = False
         self._size = 1
@@ -3242,7 +3286,7 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, ToTextMixin, IsopyDict):
         try:
             value = np.array(value, dtype=np.float64, ndmin=1)
         except Exception as err:
-            raise ValueError(f'Key "{key}": Unable to convert value(s) to float') from err
+            raise ValueError(f'Key "{key}": Unable to convert value(s) {value} to float') from err
 
         if value.size == 0:
             raise ValueError(f'Key "{key}": Value has size 0')
@@ -3461,7 +3505,7 @@ def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function
         d = isopy.refval(d)
 
     if isopy.isrefval(d, key_flavour=key_flavour, default_value=default_value,
-                      ratio_function=ratio_function,molecule_functions=molecule_functions):
+                      ratio_function=ratio_function, molecule_functions=molecule_functions):
         return d
     else:
         return RefValDict(d, default_value = default_value, key_flavour = key_flavour,
@@ -3471,7 +3515,7 @@ def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function
 #############
 ### Array ###
 #############
-class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
+class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, TabulateMixin):
     """
     An array where data is stored rows and columns of isopy key strings.
 
@@ -3640,8 +3684,8 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
 
         return keys._view_array_(out)
 
-    def _description_(self):
-        return f"{self.__class__.__name__}({self.nrows}, flavour='{self.flavour}', default_value={self.__default__})"
+    def _description_(self, boldstart = '', boldend = ''):
+        return f"{boldstart}{self.__class__.__name__}{boldend}({self.nrows}, flavour='{self.flavour}', default_value={self.__default__})"
 
     def __eq__(self, other):
         other = np.asanyarray(other)
@@ -3848,7 +3892,7 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
 
         return IsopyArray(self[keys] / self[denominator], keys=keys/denominator, flavour='ratio')
 
-    def deratio(self, denominator_value=1):
+    def deratio(self, denominator_value=1, sort_keys=True):
         """
         Return a array with the numerators and the common denominator as columns. Values for the
         numerators will be copied from the original array and the entire array will be multiplied by
@@ -3867,7 +3911,7 @@ class IsopyArray(ArrayFuncMixin, UFuncMixin, ToTypeFileMixin, ToTextMixin):
 
         out = IsopyArray(self, numerators, flavour=numerators.flavour)
         if denominator not in out.keys():
-            out = isopy.cstack(out, ones(self.nrows, denominator))
+            out = isopy.cstack(out, ones(self.nrows, denominator), sort_keys=sort_keys)
         return out * denominator_value
 
     def normalise(self, value = 1, key = None):
@@ -3946,7 +3990,6 @@ class IsopyNdarray(IsopyArray, ndarray):
 
 class IsopyVoid(IsopyArray, void):
     pass
-
 
 
 def isarray(item, *, flavour = None, flavour_in = None) -> bool:

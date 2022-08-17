@@ -519,9 +519,9 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     """
     #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
-    extnorm_factor = isopy.checks.check_type('normalisation_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
-    isotope_fractions = isopy.refval(isotope_fractions, isopy.RefValDict)
-    isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
+    extnorm_factor = isopy.checks.check_type('extnorm_factor', extnorm_factor, np.float64, str, coerce=True, allow_none=True)
+    isotope_fractions = isopy.asrefval(isotope_fractions, ratio_function='divide')
+    isotope_masses = isopy.asrefval(isotope_masses, ratio_function='divide')
 
     # Convert the data into a ratio array
     if data.flavour == 'ratio':
@@ -1142,9 +1142,9 @@ def _combine_reference_values(values):
         out.append(v)
 
     if len(out) == 1:
-        return isopy.RefValDict(out[0])
+        return isopy.RefValDict(out[0], ratio_function='divide')
     else:
-        return isopy.RefValDict(np.mean(isopy.concatenate(*out)))
+        return isopy.RefValDict(np.mean(isopy.rstack(*out)), ratio_function='divide')
 
 @core.append_preset_docstring
 @core.add_preset('sd', cval=np.mean, pmval=isopy.sd)

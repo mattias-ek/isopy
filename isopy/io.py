@@ -325,14 +325,14 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
     # Loop over the remaining rows
     for i, row in enumerate(itertools.chain([first_row], reader)):
         row = [r.strip() for r in row]
+        if len(row) > 0:
+            if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol:
+                # Stop reading data if we find this string at the beginning of a row
+                break
 
-        if termination_symbol is not None and row[0][:len(termination_symbol)] == termination_symbol:
-            # Stop reading data if we find this string at the beginning of a row
-            break
-
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
-            # Row is a comment, ignore
-            continue
+            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
+                # Row is a comment, ignore
+                continue
 
         data.append([])
         if dlen is None:
