@@ -265,10 +265,10 @@ class LinregressResult:
 
     def label(self, sigfig=5):
         label = 'y='
-        label = f'{label}({toolbox.plotting._format_sigfig(self.slope, sigfig, self.slope_se)}'
-        label = f'{label}±{toolbox.plotting._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
-        label = f'{label} + ({toolbox.plotting._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
-        label = f'{label}±{toolbox.plotting._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
+        label = f'{label}({toolbox.plot._format_sigfig(self.slope, sigfig, self.slope_se)}'
+        label = f'{label}±{toolbox.plot._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
+        label = f'{label} + ({toolbox.plot._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
+        label = f'{label}±{toolbox.plot._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
         return label
 
 class YorkregressResult(LinregressResult):
@@ -296,10 +296,10 @@ class YorkregressResult(LinregressResult):
 
     def label(self, sigfig=5):
         label = 'y='
-        label = f'{label}({toolbox.plotting._format_sigfig(self.slope, sigfig, self.slope_se)}'
-        label = f'{label}±{toolbox.plotting._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
-        label = f'{label} + ({toolbox.plotting._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
-        label = f'{label}±{toolbox.plotting._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
+        label = f'{label}({toolbox.plot._format_sigfig(self.slope, sigfig, self.slope_se)}'
+        label = f'{label}±{toolbox.plot._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
+        label = f'{label} + ({toolbox.plot._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
+        label = f'{label}±{toolbox.plot._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
         label = f'{label}, msdw={self.msdw:.2f}'
         return label
 

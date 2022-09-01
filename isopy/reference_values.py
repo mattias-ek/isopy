@@ -35,11 +35,9 @@ class RefValGroup:
         descriptions = []
         for name in self.ls():
             doc = self.__class__.__dict__[name].__doc__
-            if type(doc) is str:
-                doc = doc.split('\n\n', 1)[0].replace('\n', '').strip()
-                descriptions.append(f'* **{name}** - {doc}')
-            else:
-                descriptions.append(f'* **{name}** - No description available')
+            doc = doc.split('\n\n', 1)[0].replace('\n', '').strip()
+            descriptions.append(f'* **{name}** - {doc}')
+
         descriptions = '\n'.join(descriptions)
         return f'**isopy.refval.{self.__class__.__name__}** contains the following reference values\n{descriptions}'
 
@@ -478,6 +476,55 @@ class isotope(RefValGroup):
         result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
 
         return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               molecule_functions=(np.add, np.multiply, None))
+
+    @core.cached_property
+    def present_solar_system_fraction_AG89(self):
+        """
+        Dictionary containing the isotope fraction of the present solar system composition from Anders & Grevesse 1989.
+
+        Reference: `Anders & Grevesse (1989) <https://doi.org/10.1016/0016-7037(89)90286-X>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+        """
+        return core.RefValDict(load_refval_values('isotope_present_solar_system_fraction_AG89'),
+                               default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               molecule_functions=(np.multiply, np.multiply, None))
+
+    @core.cached_property
+    def initial_solar_system_abundance_AG89(self):
+        """
+        Dictionary containing the isotope abundance of the initial solar system abundance from Anders & Grevesse 1989.
+
+        Data normalised such that normalized to N(Si) = 10^6 atoms.
+
+        Reference: `Anders & Grevesse (1989) <https://doi.org/10.1016/0016-7037(89)90286-X>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+        """
+        return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_AG89'),
+                               default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               molecule_functions=(np.add, np.multiply, None))
+
+    @core.cached_property
+    def present_solar_system_abundance_AG89(self):
+        """
+        Dictionary containing the isotope abundance of the present solar system abundance from Anders & Grevesse 1989.
+
+        Data normalised such that normalized to N(Si) = 10^6 atoms.
+
+        Reference: `Anders & Grevesse (1989) <https://doi.org/10.1016/0016-7037(89)90286-X>`_.
+
+        The ``get()`` method of this dictionary will automatically calculate the ratio of two
+        isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
+        for absent keys.
+        """
+        return core.RefValDict(load_refval_values('isotope_present_solar_system_abundance_AG89'),
+                               default_value=np.nan, readonly=True, ratio_function=np.divide,
                                molecule_functions=(np.add, np.multiply, None))
 
     @core.cached_property

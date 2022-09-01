@@ -790,11 +790,11 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, true)
 
         result = isopy.add(a1, d2, 0)
-        true = a1.default(0) + a2.to_refval(0)
+        true = a1.default(0) + a2.to_refval(default_value = 0)
         assert_array_equal_array(result, true)
 
         result = isopy.add(a1, d2, (0, 1))
-        true = a1.default(0) + a2.to_refval(1)
+        true = a1.default(0) + a2.to_refval(default_value = 1)
         assert_array_equal_array(result, true)
 
         # d a
@@ -803,11 +803,11 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, true)
 
         result = isopy.add(d1, a2, 0)
-        true = a1.to_refval(0) + a2.default(0)
+        true = a1.to_refval(default_value = 0) + a2.default(0)
         assert_array_equal_array(result, true)
 
         result = isopy.add(d1, a2, (0, 1))
-        true = a1.to_refval(0) + a2.default(1)
+        true = a1.to_refval(default_value = 0) + a2.default(1)
         assert_array_equal_array(result, true)
 
         # a ds
@@ -1169,7 +1169,7 @@ class Test_ArrayFunctions:
         with pytest.raises(np.AxisError):
             result = isopy.concatenate(array1, array2, array3, axis=2)
 
-    def test_cocatenate_2(self):
+    def test_concatenate_2(self):
         array1 = isopy.ones(2) * 4
         array2 = isopy.ones(2) * 5
         array1 = array1.reshape((1, -1))
@@ -1184,6 +1184,21 @@ class Test_ArrayFunctions:
         result = isopy.concatenate(array1, array2, axis=1)
         assert not isinstance(result, core.IsopyArray)
         np.testing.assert_allclose(result, true)
+
+    def test_concatenate3(self):
+        # Make sure keys are kept the same
+
+        a = isopy.array(a=1, b=2, flavour='general')
+        b = isopy.array(a=11, b=12)
+        assert a.keys() != b.keys()
+
+        c = isopy.rstack(a, b)
+        assert c.ncols == 4
+
+        c = isopy.cstack(a, b)
+        assert c.ncols == 4
+
+
 
     def test_refval_inheritance(self):
         keys = 'ru pd cd'.split()

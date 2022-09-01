@@ -430,7 +430,7 @@ def rstack(*arrays, sort_keys=False):
     """
     arrays = [core.asanyarray(a) for a in arrays]
 
-    keys = core.keylist(*(a.dtype.names for a in arrays if isinstance(a, core.IsopyArray)),
+    keys = core.askeylist(*(a.keys for a in arrays if isinstance(a, core.IsopyArray)),
                         ignore_duplicates=True, sort=sort_keys)
     arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
@@ -475,7 +475,7 @@ def cstack(*arrays, sort_keys=False):
     if len(ndim) != 1:
         arrays = [array.reshape(1) if array.ndim == 0 else array for array in arrays]
 
-    keys = core.keylist(*(a.keys for a in arrays), allow_duplicates=False, sort=sort_keys)
+    keys = core.askeylist(*(a.keys for a in arrays), allow_duplicates=False, sort=sort_keys)
 
     result = {}
     size = _max(size) * _max(ndim) or None

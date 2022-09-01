@@ -213,12 +213,12 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
             keys = key.element_symbol.isotopes
             keys = keys.filter(mz_eq=mz_keys)
 
-            array = isotope_fractions.get(keys)
+            array = isotope_fractions.to_array(keys)
             #array = isopy.array(keys.fractions(isotope_fractions=isotope_fractions), keys)
 
         if mf_factor is not None:
             array = add_mass_fractionation(array, mf_factor, isotope_masses=isotope_masses)
-            array = array.normalise(np.sum(isotope_fractions.get(keys), axis=None))
+            array = array.normalise(np.sum(isotope_fractions.to_array(keys), axis=None))
 
         array = array * val
 
@@ -413,7 +413,7 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
         spike = isopy.asarray(spike)
 
         spsum = np.sum(spike, axis=1)
-        smpsum = np.sum(ms_array.copy(key_eq=spike.keys()), axis = 1)
+        smpsum = np.sum(ms_array.to_array(key_eq=spike.keys()), axis = 1)
 
         spike = spike / spsum * smpsum
         spike = spike * spike_fraction
@@ -564,7 +564,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
         rat2 = rat
 
     #Remove the isotopes on interfering elements and the mass bias ratio
-    rat = rat2.copy(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol, key_neq=mf_ratio)
+    rat = rat2.to_array(numerator_element_symbol_eq=mf_ratio.numerator.element_symbol, key_neq=mf_ratio)
 
     #Correct for mass fractionation
     rat = remove_mass_fractionation(rat, beta, isotope_masses=isotope_masses)
@@ -694,9 +694,9 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
         if data.flavour == 'isotope':
             if denom is None:
                 denom = isopy.keymax(data)
-            mass_array = isopy.array(isotope_masses.get(data.keys / denom), data.keys)
+            mass_array = isopy.array(isotope_masses.to_array(data.keys / denom), data.keys)
         else:
-            mass_array = isopy.array(isotope_masses.get(data.keys), data.keys)
+            mass_array = isotope_masses.to_array(data.keys)
 
         return data / (mass_array ** fractionation_factor)
 
@@ -761,9 +761,9 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
         if data.flavour == 'isotope':
             if denom is None:
                 denom = isopy.keymax(data)
-            mass_array = isopy.array(isotope_masses.get(data.keys / denom), keys=data.keys)
+            mass_array = isopy.array(isotope_masses.to_array(data.keys / denom), keys=data.keys)
         else:
-            mass_array = isopy.array(isotope_masses.get(data.keys), data.keys)
+            mass_array = isotope_masses.to_array(data.keys)
 
         return  data * (mass_array ** fractionation_factor)
 
@@ -958,13 +958,13 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
         #If the key is an element key string use the isotope of that element in the array that has the largest signal.
         else:
             if data.flavour == 'ratio':
-                interference_isotope = isopy.keymax(data.copy(numerator_element_symbol_eq=interference_element))
+                interference_isotope = isopy.keymax(data.filter(numerator_element_symbol_eq=interference_element))
                 interference_isotope = interference_isotope.numerator
             else:
-                interference_isotope = isopy.keymax(data.copy(element_symbol_eq=interference_element))
+                interference_isotope = isopy.keymax(data.filter(element_symbol_eq=interference_element))
 
         # Get the abundances of all isotopes of the interfering element
-        inf_data = isotope_fractions.get(interference_isotope.element_symbol.isotopes)
+        inf_data = isotope_fractions.to_array(interference_isotope.element_symbol.isotopes)
 
         # Turn into a ratio relative to interference isotope
         inf_data = inf_data.ratio(interference_isotope, remove_denominator=False)

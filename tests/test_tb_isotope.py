@@ -220,7 +220,7 @@ class Test_MassIndependentCorrection:
                 cd *= fractionated['111cd'] * (mass_ref.get(f'cd{key.mass_number}/cd111', 0) ** mf_factor)
                 fractionated[key] += cd
 
-        correct1 = data.copy(element_symbol = 'pd').ratio('105pd')
+        correct1 = data.filter(element_symbol = 'pd').ratio('105pd')
         correct2 = (correct1 / fraction_ref - 1)
         correct3 = (correct1 / fraction_ref - 1) * 10_000
 
@@ -252,7 +252,7 @@ class Test_MassIndependentCorrection:
                             mass_ref.get(f'cd{key.mass_number}/cd111', 0) ** mf_factor)
                 fractionated[key] += cd
 
-        correct1 = data.copy(element_symbol='pd').ratio('105pd')
+        correct1 = data.filter(element_symbol='pd').ratio('105pd')
         correct2 = (correct1 / fraction_ref - 1)
         correct3 = (correct1 / fraction_ref - 1) * 10_000
 
@@ -276,7 +276,7 @@ class Test_MassIndependentCorrection:
         fractionated = data.copy()
         fractionated = isopy.tb.add_mass_fractionation(fractionated, mf_factor)
 
-        correct1 = data.copy(element_symbol='pd').ratio('105pd')
+        correct1 = data.filter(element_symbol='pd').ratio('105pd')
         correct2 = (correct1 / fraction_ref - 1)
         correct3 = correct2 * 1000
         correct4 = correct2 * 10_000
@@ -298,7 +298,7 @@ class Test_MassIndependentCorrection:
         std1 = std1 * fraction_ref
         rstd1 = std1.ratio('pd105')
 
-        correct1 = data.copy(element_symbol='pd').ratio('105pd')
+        correct1 = data.filter(element_symbol='pd').ratio('105pd')
         correct2 = (correct1 / np.mean(rstd1) - 1)
         correct3 = correct2 * 1000
         correct4 = correct2 * 10_000
@@ -340,7 +340,7 @@ class Test_MassIndependentCorrection:
         std2 = std2 * fraction_ref
         rstd2 = std2.ratio('pd105')
 
-        correct1 = data.copy(element_symbol='pd').ratio('105pd')
+        correct1 = data.filter(element_symbol='pd').ratio('105pd')
         correct2 = (correct1 / (np.mean(rstd1)/2 + np.mean(rstd2)/2) - 1)
         correct3 = correct2 * 1000
         correct4 = correct2 * 10_000
@@ -398,7 +398,7 @@ class Test_MassIndependentCorrection:
         fractionated = data.copy()
         fractionated = isopy.tb.add_mass_fractionation(fractionated, mf_factor, isotope_masses=mass_ref)
 
-        correct1 = data.copy(element_symbol='pd').ratio('105pd')
+        correct1 = data.filter(element_symbol='pd').ratio('105pd')
         correct2 = (correct1 / fraction_ref - 1)
         correct3 = correct2 * 1000
         correct4 = correct2 * 10_000
