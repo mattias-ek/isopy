@@ -3059,11 +3059,12 @@ class IsopyDict(dict):
         try:
             key = askeystring(key, flavour=self._key_flavour_)
         except KeyParseError:
-            key = None
+            pass
+        else:
+            if key in self:
+                return super(IsopyDict, self).pop(key)
 
-        if key in self:
-            return super(IsopyDict, self).pop(key)
-        elif default is not NotGiven:
+        if default is not NotGiven:
             return default
         else:
             raise ValueError('No default value given')

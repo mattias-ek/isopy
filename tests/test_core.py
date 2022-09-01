@@ -2161,6 +2161,8 @@ class Test_Dict:
         with pytest.raises(ValueError):
             value = isopydict.pop('107ag')
 
+        assert isopydict.pop(None, 0) == 0
+
         # set default
         value = isopydict.setdefault('ru')
         assert value == 'a'
@@ -2351,6 +2353,20 @@ class Test_Dict:
         assert isopydict1.get('137Ba', 666) == 666
         assert isopydict2.get('137Ba', 666) == 666
 
+        a = core.IsopyDict(dict(ru=1, pd=2, cd=3), key_flavour='element')
+
+        np.testing.assert_equal(a.get('101ru', 10), 10)
+
+        b = isopy.array(dict(rh=10, pd=20, cd=30))
+        np.testing.assert_array_equal(a.get('rh', b), b['rh'])
+        np.testing.assert_array_equal(a.get('pd', b), a['pd'])
+
+        b = b.to_refval(ratio_function='divide')
+
+        np.testing.assert_array_equal(a.get('rh', b), b['rh'])
+        np.testing.assert_array_equal(a.get('pd', b), a['pd'])
+        np.testing.assert_array_equal(a.get('rh/pd', b), b['rh'] / b['pd'])
+
     def test_get_refval(self):
         keys = '101 pd ru cd 105pd hermione'.split()
         values = [1, 2, 3, 4, 5, 6]
@@ -2397,9 +2413,10 @@ class Test_Dict:
             with pytest.raises(ValueError):
                 isopydict1.get(key, [1, 2])
 
-        a = isopy.array([1, 2, 3], 'ru pd cd').to_refval()
+        a = core.RefValDict(dict(ru=1, pd=2, cd=3), key_flavour='element')
+        assert type(a) is core.RefValDict
 
-        np.testing.assert_equal(a.get(3.14, 10), 10)
+        np.testing.assert_equal(a.get('101ru', 10), 10)
 
         get = a.get('rh', 10)
         assert get.dtype == np.float64
@@ -2416,8 +2433,6 @@ class Test_Dict:
         np.testing.assert_array_equal(a.get('rh', b), b['rh'])
         np.testing.assert_array_equal(a.get('pd', b), a['pd'])
         np.testing.assert_array_equal(a.get('rh/pd', b), b['rh'] / b['pd'])
-
-
 
     def test_getitem_refval(self):
         d = isopy.asrefval(dict(ru=[1,2,3,4], pd=[11, 12,13,14], cd=[21,22,23,24]))
