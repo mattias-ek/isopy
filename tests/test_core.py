@@ -4143,11 +4143,15 @@ class Test_Array:
         v = a1[0]
         a = isopy.array(dict(ru=1, pd=11, cd=21))
 
-        with pytest.raises(IndexError):
-            a[0] = 10
+        a[0] = 10
+        assert np.array_equal(a['ru'], 10)
+        assert np.array_equal(a['pd'], 10)
+        assert np.array_equal(a['cd'], 10)
 
-        with pytest.raises(IndexError):
-            v[0] = 10
+        v[0] = 1
+        assert np.array_equal(v['ru'], 1)
+        assert np.array_equal(v['pd'], 1)
+        assert np.array_equal(v['cd'], 1)
 
         with pytest.raises(IndexError):
             a[0, 2] = 10
@@ -4166,6 +4170,10 @@ class Test_Array:
 
         with pytest.raises(IndexError):
             v[[0, 2]] = 10
+
+        a1 = isopy.array(dict(ru=[1], pd=[11], cd=[21]))
+        v = a1[0]
+        a = isopy.array(dict(ru=1, pd=11, cd=21))
 
         assert np.array_equal(a['ru'], 1)
         assert np.array_equal(a['pd'], 11)
@@ -4370,12 +4378,12 @@ class Test_Array:
         assert np.array_equal(v['pd'], 17)
         assert np.array_equal(v['cd'], 21)
 
-        a[['pd'], :] = d
+        a[['pd'], 0] = d
         assert np.array_equal(a['ru'], 1)
         assert np.array_equal(a['pd'], 18)
         assert np.array_equal(a['cd'], 21)
 
-        v[['pd'], :] = d
+        v[['pd'], 0] = d
         assert np.array_equal(v['ru'], 1)
         assert np.array_equal(v['pd'], 18)
         assert np.array_equal(v['cd'], 21)

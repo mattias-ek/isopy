@@ -4,8 +4,8 @@ Toolbox
 The isopy toolbox contains an number of useful functions for processing and evaluating
 geochemical data. You can access the toolbox through the ``isopy.tb`` namespace.
 
-Isotope Data Processing
-=======================
+Isotope Geochemistry
+====================
 The following functions are useful for processing isotopic data.
 
 .. currentmodule:: isopy.tb

@@ -340,9 +340,14 @@ def _update_figure_and_axes(func):
 @core.add_preset('v', grid = (-1, 1))
 @core.add_preset('h', grid = (1, -1))
 @_update_figure_and_axes
-def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, **kwargs):
+def create_subplots(figure, subplots, grid = None, *,
+                    row_height = None, column_width = None,
+                    legend = None, legend_ratio = None,
+                    constrained_layout=True, height_ratios = None, width_ratios=None,  **kwargs):
     """
     Create subplots for a figure.
+
+    Use None instead of a name to create an empty space.
 
     Parameters
     ----------
@@ -350,16 +355,35 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
         A matplotlib Figure object or any object
         with a ``.gcf()`` method that returns a matplotlib Figure object, Such as a matplotlib
         pyplot instance.
-    subplots : str, list
+    subplots : list, int
         A nested list of subplot names. A visual layout of how you want your subplots
-        to be arranged labeled as strings. *subplots* can be a 1-demensional list of grid is specified.
+        to be arranged labeled as strings. *subplots* can be a 1-dimensional list if grid is specified. ``None`` will
+        create an empty space. An integer of the number of subplots can be given if grid is specified. Each axes will be
+        names ``ax<i>`` e.g. ``[["ax0", "ax1"], ["ax2", "ax3"]]`` . A tuple can be passed for twinned axes as
+        (name, [name_twinx], [name_twiny]).
     grid : tuple[int, int]
         If supplied then subplots will be arranged into grid with this shape. One dimension can
         be -1 and it wil be calculated based on the size of *subplots* and the other given
         dimension. Required that *subplots* is a one dimensional sequence.
-    constraned_layout : bool
+    row_height
+        The height of each row in final figure. If *height_ratios* is given then the height of each row is
+        *row_height* multiplied by the height ratio.
+    row_height
+        The width of each column in final figure. If *width_ratios* is given then the width of each column is
+        *column_width* multiplied by the width ratio.
+    legend : {"n", "e", "s", "w"}, None
+        Creates an additional row/column for the legend at the position indicated. This
+        subplot is given the name "legend" in the output.
+    legend_ratio
+        The relative size of the legend. If *height_ratios* or *width_ratios* has not been given then the
+        value for other each row/column is assumed to be 1.
+    constrained_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure. Advised to avoid
         overlapping axis labels.
+    height_ratios
+        A list of the relative height for each row.
+    width_ratios
+        A list of the relative width of each column.
     kwargs
         Prefix kwargs to be passed along witht he creation of each subplot with ``subplot_``.
         Kwargs to be passed to the GridSpec should be prefixed ``gridspec_``. See matplotlib docs
@@ -410,6 +434,10 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
     update_figure(figure, constrained_layout=constrained_layout)
     subplot_kw = core.extract_kwargs(kwargs, 'subplot')
     gridspec_kw = core.extract_kwargs(kwargs, 'gridspec')
+    if height_ratios:
+        gridspec_kw['height_ratios'] = height_ratios
+    if width_ratios:
+        gridspec_kw['width_ratios'] = width_ratios
     if type(subplots) is int:
         subplots = [f'ax{i}' for i in range(subplots)]
 
@@ -430,21 +458,99 @@ def create_subplots(figure, subplots, grid = None, *, constrained_layout=True, *
             grid_row = []
             for c in range(ncols):
                 try:
-                    grid_row.append(subplots[r*ncols + c])
+                    axname = subplots[r*ncols + c]
                 except:
-                    grid_row.append(empty_sentinel)
+                    axname = empty_sentinel
+
+
+                grid_row.append(axname)
+
             grid.append(grid_row)
         subplots = grid
+
+    nrows = len(subplots)
+    ncols = len(subplots[0])
+
+    axtwinx = {}
+    axtwiny = {}
+    for r in range(nrows):
+        for c in range(ncols):
+            axname = subplots[r][c]
+            if axname != empty_sentinel:
+                twinx, twiny = None, None
+                if type(axname) is tuple:
+                    if len(axname) == 1:
+                        axname = axname[0]
+                    elif len(axname) == 2:
+                        axname, twinx = axname
+                    elif len(axname) == 3:
+                        axname, twinx, twiny = axname
+                    else:
+                        raise ValueError('Invalid tuple')
+
+                axname = str(axname)
+                if twinx is not empty_sentinel:
+                    axtwinx[axname] = str(twinx)
+
+                if twiny is not empty_sentinel:
+                    axtwiny[axname] = str(twiny)
+
+                subplots[r][c] = axname
+
+    if legend is not None:
+        if legend == 'n':
+            subplots.insert(0, ['legend' for i in range(ncols)])
+            if legend_ratio is not None:
+                ratios = gridspec_kw.pop('height_ratios', [1 for i in range(nrows)])
+                gridspec_kw['height_ratios'] = [legend_ratio] + ratios
+            nrows += 1
+        elif legend == 's':
+            subplots.append(['legend' for i in range(ncols)])
+            if legend_ratio is not None:
+                ratios = gridspec_kw.pop('height_ratios', [1 for i in range(nrows)])
+                gridspec_kw['height_ratios'] = ratios + [legend_ratio]
+            nrows += 1
+        elif legend == 'e':
+            for row in subplots:
+                row.append('legend')
+            if legend_ratio is not None:
+                ratios = gridspec_kw.pop('width_ratios', [1 for i in range(ncols)])
+                gridspec_kw['width_ratios'] = ratios + [legend_ratio]
+            ncols += 1
+        elif legend == 'w':
+            for row in subplots:
+                row.insert(0, 'legend')
+            if legend_ratio is not None:
+                ratios = gridspec_kw.pop('width_ratios', [1 for i in range(ncols)])
+                gridspec_kw['width_ratios'] = [legend_ratio] + ratios
+            ncols += 1
+
+    if row_height is not None:
+        ratios = gridspec_kw.get('height_ratios', [1 for i in range(nrows)])
+        height = sum([row_height * r for r in ratios])
+        update_figure(figure, height=height)
+
+    if column_width is not None:
+        ratios = gridspec_kw.get('column_widths', [1 for i in range(ncols)])
+        width = sum([column_width * r for r in ratios])
+        update_figure(figure, width=width)
 
     axes = figure.subplot_mosaic(subplots, empty_sentinel=empty_sentinel,
                                  gridspec_kw=gridspec_kw, subplot_kw=subplot_kw)
 
-    #Make sure that no key strings are used.
-    out = {}
-    for key, ax in axes.items():
-        ax.set_label(str(key))
-        out[str(key)] = ax
+    out = SubplotDict()
+    for label, ax in axes.items():
+        ax.set_label(label) # Is this already done?
+        out[label] = ax
+        if label in axtwinx:
+            out[axtwinx[label]] = ax.twinx()
+        if label in axtwiny:
+            out[axtwiny[label]] = ax.twiny()
     return out
+
+class SubplotDict(dict):
+    def __getattr__(self, item):
+        return self.__getitem__(item)
 
 @_update_figure_and_axes
 def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars = True, newlines=None, **kwargs):

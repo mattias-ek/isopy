@@ -2,11 +2,11 @@ Data types
 **********
 .. currentmodule:: isopy
 
-Documented here are the differnet data types implemented by isopy and functions for creating them.
+Documented here are the different data types implemented by isopy and functions for creating them.
 
 Key strings
 -----------
-The following classes/functions can be used to create isopy key strings:
+
 
 .. autosummary::
     :toctree: Strings
@@ -26,7 +26,7 @@ The following classes/functions can be used to create isopy key strings:
 
 Key lists
 ---------
-The following classes/functions can be used to create isopy key lists:
+
 
 .. autosummary::
     :toctree: Lists
@@ -43,7 +43,7 @@ The following classes/functions can be used to create isopy key lists:
 
 Isopy arrays
 ------------
-The following classes/functions can be used to create isopy arrays:
+
 
 .. autosummary::
     :toctree: Arrays
@@ -65,7 +65,7 @@ The following classes/functions can be used to create isopy arrays:
 
 Isopy dictionaries
 ------------------
-The following classes/functions can be used to create isopy dictionaries:
+
 
 .. autosummary::
     :toctree: Dicts

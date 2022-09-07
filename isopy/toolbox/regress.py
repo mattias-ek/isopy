@@ -56,7 +56,7 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
     Uncertainties on the slope and intercept are given as standard errors. Based on the formulas from `York et al. (2004)
     American Journal of Physics 72, 367 <https://doi.org/10.1119/1.1632486>`_.
 
-    If *err_ci* or *err_zscore* are given it assumes the uncertainties represent 1 SD/SE. If neither
+    If neither *err_ci* or *err_zscore* are given it assumes the uncertainties represent 1 SD/SE. If neither
     *result_ci* or *result_zscore* are giuen the *err_ci*/*err_zscore* is also used for the
     uncertainty on the slope and intercept.
 

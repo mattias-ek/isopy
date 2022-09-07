@@ -72,18 +72,24 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     --------
     >>> isopy.tb.johnson_nyquist_noise(10) * 1000 #in millivolts
     0.13883808575503015
-    >>> isopy.tb.johnson_nyquist_noise(10, 1E10) * 1000
+    >>> isopy.tb.johnson_nyquist_noise(10, 1E10) * 1000 # 1E10 resistor
     0.14528174343845432
 
     >>> array = isopy.tb.make_ms_array('pd')
     >>> array = array * (10 / array['106pd']) #10v on the largest isotope
     >>> isopy.tb.johnson_nyquist_noise(array) * 1000 #in millivolts
-    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.03025 , 0.08932 , 0.12565 , 0.13884 , 0.13663 , 0.09156
+    (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.03025       0.08932       0.12565       0.13884       0.13663       0.09156
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> resistors = dict(pd102=1E13, pd106=1E10) #1E11 is used for missing keys
     >>> isopy.tb.johnson_nyquist_noise(array, resistors) * 1000
-    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.02672 , 0.08932 , 0.12565 , 0.14528 , 0.13663 , 0.09156
+    (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.02672       0.08932       0.12565       0.14528       0.13663       0.09156
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
     """
 
     voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsopyArray, np.ndarray, np.float64, coerce=True,
@@ -146,24 +152,39 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
     Examples
     --------
     >>> isopy.tb.make_ms_array('pd')
-    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.01020 , 0.11140 , 0.22330 , 0.27330 , 0.26460 , 0.11720
+    (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.01020       0.11140       0.22330       0.27330       0.26460       0.11720
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', ru101=0.1)
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.01706 , 0.04175 , 0.13002 , 0.22330 , 0.27330 , 0.26460 , 0.11720
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.01706       0.04175       0.13002       0.22330       0.27330       0.26460       0.11720
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', ru101=0.1, ru99=0) #99Ru doesnt contribute anything to the array but gets a contribution from 101Ru.
-    (row) , 99Ru    , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd
-    None  , 0.01276 , 0.01706 , 0.04175 , 0.13002 , 0.22330 , 0.27330 , 0.26460 , 0.11720
+    (row)      99Ru (f8)    101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  -----------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None         0.01276       0.01706       0.04175       0.13002       0.22330       0.27330       0.26460       0.11720
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', 'cd')
-    102Pd  , 104Pd  , 105Pd  , 106Pd   , 108Pd  , 110Pd   , 111Cd   , 112Cd   , 113Cd   , 114Cd   , 116Cd
-    0.0102 , 0.1114 , 0.2233 , 0.28579 , 0.2735 , 0.24205 , 0.12804 , 0.24117 , 0.12225 , 0.28729 , 0.07501
+    (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)    112Cd (f8)    113Cd (f8)    114Cd (f8)    116Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.01020       0.11140       0.22330       0.28579       0.27350       0.24205       0.12804       0.24117       0.12225       0.28729       0.07501
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', cd=1) #Same as example above
-    (row) , 102Pd   , 104Pd   , 105Pd   , 106Pd   , 108Pd   , 110Pd   , 111Cd   , 112Cd   , 113Cd   , 114Cd   , 116Cd
-    None  , 0.01020 , 0.11140 , 0.22330 , 0.28579 , 0.27350 , 0.24205 , 0.12804 , 0.24117 , 0.12225 , 0.28729 , 0.07501
+    (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)    112Cd (f8)    113Cd (f8)    114Cd (f8)    116Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.01020       0.11140       0.22330       0.28579       0.27350       0.24205       0.12804       0.24117       0.12225       0.28729       0.07501
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     See Also
     --------
@@ -281,19 +302,22 @@ def make_ms_beams(*args, mf_factor=None, fixed_voltage = 10, fixed_key = isopy.k
 
     Examples
     --------
-    >>> isopy.tb.make_ms_beams('pd', ru101=0.01).pprint(nrows=10)
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd    , 108Pd   , 110Pd
-    0     , 0.06243 , 0.48869 , 4.14431 , 8.17035 , 9.99984  , 9.68171 , 4.28824
-    1     , 0.06241 , 0.48865 , 4.14423 , 8.17033 , 9.99990  , 9.68189 , 4.28823
-    2     , 0.06245 , 0.48872 , 4.14423 , 8.17058 , 9.99992  , 9.68178 , 4.28837
-    3     , 0.06241 , 0.48868 , 4.14430 , 8.17042 , 10.00005 , 9.68161 , 4.28839
-    4     , 0.06240 , 0.48870 , 4.14417 , 8.17053 , 10.00018 , 9.68180 , 4.28834
-    ...   , ...     , ...     , ...     , ...     , ...      , ...     , ...
-    95    , 0.06244 , 0.48866 , 4.14432 , 8.17056 , 10.00010 , 9.68187 , 4.28827
-    96    , 0.06243 , 0.48870 , 4.14410 , 8.17044 , 10.00014 , 9.68184 , 4.28848
-    97    , 0.06238 , 0.48867 , 4.14404 , 8.17048 , 9.99992  , 9.68159 , 4.28840
-    98    , 0.06245 , 0.48871 , 4.14434 , 8.17031 , 9.99998  , 9.68169 , 4.28829
-    99    , 0.06243 , 0.48863 , 4.14438 , 8.17047 , 10.00003 , 9.68145 , 4.28832
+    >>> isopy.tb.make_ms_beams('pd', ru101=0.01)
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    0             0.06239       0.48870       4.14431       8.17054       9.99988       9.68156       4.28856
+    1             0.06241       0.48866       4.14418       8.17052      10.00002       9.68148       4.28846
+    2             0.06244       0.48865       4.14416       8.17049       9.99998       9.68170       4.28839
+    3             0.06241       0.48866       4.14424       8.17060       9.99996       9.68172       4.28826
+    4             0.06240       0.48867       4.14432       8.17043      10.00002       9.68168       4.28830
+                   ...           ...           ...           ...           ...           ...           ...
+    95            0.06244       0.48868       4.14397       8.17066      10.00006       9.68180       4.28820
+    96            0.06243       0.48868       4.14439       8.17048      10.00007       9.68168       4.28838
+    97            0.06243       0.48863       4.14421       8.17031      10.00014       9.68160       4.28837
+    98            0.06237       0.48867       4.14419       8.17038       9.99999       9.68159       4.28828
+    99            0.06241       0.48864       4.14425       8.17037      10.00001       9.68175       4.28839
+
+    IsopyNdarray(100, flavour='isotope', default_value=nan)
 
     See Also
     --------
@@ -387,19 +411,22 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
 
     Examples
     --------
-    >>> isopy.tb.make_ms_sample('pd', ru101=0.01, cd111=0.001, fnat = 0.1, fins=-1.6).pprint(nrows=10)
-    (row) , 101Ru   , 102Pd   , 104Pd   , 105Pd   , 106Pd    , 108Pd   , 110Pd   , 111Cd
-    0     , 0.06343 , 0.51076 , 4.26008 , 8.28716 , 9.99964  , 9.41352 , 4.06078 , 0.00468
-    1     , 0.06340 , 0.51082 , 4.26016 , 8.28714 , 10.00006 , 9.41351 , 4.06064 , 0.00466
-    2     , 0.06340 , 0.51083 , 4.26006 , 8.28692 , 9.99981  , 9.41356 , 4.06047 , 0.00470
-    3     , 0.06339 , 0.51079 , 4.26018 , 8.28711 , 10.00002 , 9.41349 , 4.06073 , 0.00471
-    4     , 0.06341 , 0.51087 , 4.26022 , 8.28713 , 9.99986  , 9.41357 , 4.06062 , 0.00465
-    ...   , ...     , ...     , ...     , ...     , ...      , ...     , ...     , ...
-    95    , 0.06341 , 0.51080 , 4.26010 , 8.28729 , 9.99992  , 9.41332 , 4.06070 , 0.00465
-    96    , 0.06339 , 0.51082 , 4.25994 , 8.28712 , 10.00012 , 9.41364 , 4.06071 , 0.00467
-    97    , 0.06339 , 0.51083 , 4.26012 , 8.28728 , 9.99976  , 9.41363 , 4.06069 , 0.00468
-    98    , 0.06341 , 0.51078 , 4.26010 , 8.28700 , 9.99994  , 9.41348 , 4.06065 , 0.00469
-    99    , 0.06339 , 0.51082 , 4.26010 , 8.28705 , 9.99997  , 9.41386 , 4.06072 , 0.00468
+    >>> isopy.tb.make_ms_sample('pd', ru101=0.01, cd111=0.001, fnat = 0.1, fins=-1.6)
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    0             0.49399       1.29459       4.70717       8.28435      10.00013       9.41279       4.09031       0.03591
+    1             0.49401       1.29462       4.70724       8.28425      10.00002       9.41281       4.09014       0.03593
+    2             0.49401       1.29459       4.70734       8.28425       9.99998       9.41288       4.09025       0.03594
+    3             0.49404       1.29462       4.70733       8.28416      10.00019       9.41271       4.09034       0.03592
+    4             0.49396       1.29463       4.70736       8.28428      10.00011       9.41278       4.09022       0.03591
+                   ...           ...           ...           ...           ...           ...           ...           ...
+    95            0.49395       1.29455       4.70720       8.28435       9.99995       9.41284       4.09020       0.03592
+    96            0.49404       1.29467       4.70718       8.28439      10.00013       9.41264       4.09039       0.03592
+    97            0.49405       1.29465       4.70730       8.28448       9.99992       9.41271       4.09031       0.03591
+    98            0.49394       1.29459       4.70733       8.28431      10.00006       9.41278       4.09040       0.03592
+    99            0.49397       1.29457       4.70732       8.28445       9.99980       9.41286       4.09026       0.03592
+
+    IsopyNdarray(100, flavour='isotope', default_value=nan)
 
 
     See Also
@@ -505,17 +532,29 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     --------
     >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1, mf_factor=0.1).normalise(10, isopy.keymax)
     >>> array
-    (row) , 101Ru   , 102Pd  , 104Pd  , 105Pd  , 106Pd , 108Pd  , 110Pd  , 111Cd
-    None  , 0.62089 , 1.5195 , 4.7296 , 8.1258 , 10    , 9.6882 , 4.7396 , 0.46692
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.62089       1.51955       4.72959       8.12576      10.00000       9.68819       4.73963       0.46692
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd')
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
-    None  , 0.045678    , 0.49888     , 1.2239      , 0.52485
-    >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd') / isopy.to_refval.isotope.fraction
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
-    None  , 1           , 1           , 1           , 1
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------
+    None                0.04568             0.49888             1.22391             0.52485
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
+    >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd') / isopy.refval.isotope.fraction
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------
+    None                1.00000             1.00000             1.00000             1.00000
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd', interference_correction=False, extnorm_factor=1)
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 110Pd/105Pd
-    None  , 3.12        , 0.16916     , 0.0034253   , 0.10006
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------
+    None                3.11997             0.16916             0.00343             0.10006
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     """
     #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
     mf_ratio = isopy.checks.check_type('mf_ratio', mf_ratio, isopy.core.RatioKeyString, coerce=True)
@@ -669,12 +708,18 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     --------
     >>> array = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.04568     , 0.49888     , 1.22391     , 1.18495     , 0.52485
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.04568             0.49888             1.22391             1.18495             0.52485
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> array = isopy.tb.remove_mass_fractionation(array, 0.15)
     >>> array
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.04588     , 0.49960     , 1.22218     , 1.17995     , 0.52120
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.04588             0.49960             1.22218             1.17995             0.52120
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
     -0.1500000000000046
 
@@ -734,13 +779,18 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
     --------
     >>> array = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.04568     , 0.49888     , 1.22391     , 1.18495     , 0.52485
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.04568             0.49888             1.22391             1.18495             0.52485
 
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> array = isopy.tb.add_mass_fractionation(array, 0.1)
     >>> array
-    102Pd/105Pd         , 104Pd/105Pd         , 106Pd/105Pd        , 108Pd/105Pd       , 110Pd/105Pd
-    0.04554614408342225 , 0.49840232023288333 , 1.2250738795847462 , 1.188297479483829 , 0.5273039811481615
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.04555             0.49840             1.22507             1.18830             0.52730
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
     0.09999999999999679
 
@@ -891,35 +941,51 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     --------
     >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1)
     >>> array
-    (row) , 101Ru   , 102Pd    , 104Pd   , 105Pd  , 106Pd   , 108Pd   , 110Pd   , 111Cd
-    None  , 0.01706 , 0.041752 , 0.13002 , 0.2233 , 0.27455 , 0.26549 , 0.12968 , 0.012804
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.01706       0.04175       0.13002       0.22330       0.27455       0.26549       0.12968       0.01280
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
     >>> interferences
-    IsopyDict(default_value = (), readonly = False,
-    {"Ru": IsotopeKeyList('102Pd', '104Pd')
-    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+    IsopyDict(readonly=False, key_flavour='any', default_value=())
+    {ElementKeyString('Ru'): IsopyKeyList('102Pd', '104Pd', flavour='isotope'), ElementKeyString('Cd'): IsopyKeyList('106Pd', '108Pd', '110Pd', flavour='isotope')}
     >>> isopy.tb.remove_isobaric_interferences(array, interferences)
-    (row) , 101Ru , 102Pd  , 104Pd  , 105Pd  , 106Pd  , 108Pd  , 110Pd  , 111Cd
-    None  , 0     , 0.0102 , 0.1114 , 0.2233 , 0.2733 , 0.2646 , 0.1172 , 0
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.00000       0.01020       0.11140       0.22330       0.27330       0.26460       0.11720       0.00000
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0)
-    (row) , 101Ru , 102Pd  , 104Pd  , 105Pd  , 106Pd  , 108Pd  , 110Pd  , 111Cd
-    None  , 0     , 0.0102 , 0.1114 , 0.2233 , 0.2733 , 0.2646 , 0.1172 , 0
+    (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
+    -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
+    None          0.00000       0.01020       0.11140       0.22330       0.27330       0.26460       0.11720       0.00000
+
+    IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1).ratio('106pd')
     >>> array
-    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
-    None  , 0.062138    , 0.15207     , 0.47358     , 0.81333     , 0.967       , 0.47236     , 0.046636
+    (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.06214             0.15207             0.47358             0.81333             0.96700             0.47236             0.04664
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
     >>> interferences
-    IsopyDict(default_value = (), readonly = False,
-    {"Ru": IsotopeKeyList('102Pd', '104Pd')
-    "Cd": IsotopeKeyList('106Pd', '108Pd', '110Pd')})
+    IsopyDict(readonly=False, key_flavour='any', default_value=())
+    {ElementKeyString('Ru'): IsopyKeyList('102Pd', '104Pd', flavour='isotope'), ElementKeyString('Cd'): IsopyKeyList('106Pd', '108Pd', '110Pd', flavour='isotope')}
     >>> isopy.tb.remove_isobaric_interferences(array, interferences)
-    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
-    None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
+    (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.00000             0.03732             0.40761             0.81705             0.96817             0.42883             0.00000
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0).ratio('106pd')
-    (row) , 101Ru/106Pd , 102Pd/106Pd , 104Pd/106Pd , 105Pd/106Pd , 108Pd/106Pd , 110Pd/106Pd , 111Cd/106Pd
-    None  , 0           , 0.037322    , 0.40761     , 0.81705     , 0.96817     , 0.42883     , 0
+    (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
+    None                0.00000             0.03732             0.40761             0.81705             0.96817             0.42883             0.00000
+
+    IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     """
 
     #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
@@ -1019,27 +1085,57 @@ def rDelta(data, reference_data, factor=1, deviations=1):
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.make_ms_sample('pd', fins=1, fixed_voltage=0.1).ratio('105pd')
-    >>> norm = isopy.tb.rDelta(array, ref)
-    >>> norm
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    0     , -28.60967   , -9.54006    , 9.50745     , 28.57674    , 47.70528
-    1     , -28.76605   , -9.52060    , 9.53867     , 28.61274    , 47.69063
-    2     , -28.73309   , -9.56115    , 9.51017     , 28.57170    , 47.63513
-    3     , -28.53972   , -9.60582    , 9.48726     , 28.57055    , 47.60977
-    4     , -28.69282   , -9.59705    , 9.50470     , 28.55289    , 47.65280
-    ...   , ...         , ...         , ...         , ...         , ...
-    95    , -28.50008   , -9.60504    , 9.52317     , 28.56964    , 47.66661
-    96    , -28.64389   , -9.47620    , 9.52398     , 28.59006    , 47.70599
-    97    , -28.64383   , -9.55584    , 9.48523     , 28.58221    , 47.67802
-    98    , -28.64546   , -9.53501    , 9.52313     , 28.59109    , 47.66902
-    99    , -28.67808   , -9.52044    , 9.51687     , 28.57950    , 47.62100
+    >>> isopy.tb.rDelta(array, ref)
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    0                  -0.03424            -0.00985             0.00929             0.02838             0.04719
+    1                  -0.03133            -0.00905             0.00956             0.02905             0.04813
+    2                  -0.02188            -0.00911             0.00908             0.02869             0.04882
+    3                  -0.02505            -0.00954             0.00946             0.02845             0.04779
+    4                  -0.02477            -0.00964             0.00937             0.02881             0.04688
+                         ...                 ...                 ...                 ...                 ...
+    95                 -0.02539            -0.00981             0.00991             0.02870             0.04741
+    96                 -0.03228            -0.00967             0.00965             0.02834             0.04753
+    97                 -0.02951            -0.01016             0.00947             0.02935             0.04818
+    98                 -0.02557            -0.00915             0.00982             0.02870             0.04775
+    99                 -0.02639            -0.00938             0.00919             0.02882             0.04825
 
-    >>> isopy.tb.rDelta(isopy.sd2(array), ref, factor=1000, deviations=True)
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
-    >>> isopy.sd2(norm)
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    None  , 0.17452     , 0.05670     , 0.03890     , 0.03899     , 0.04946
+    IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
+
+    >>> isopy.tb.rDelta(array, ref, factor=1E4)
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    0                -342.37270           -98.49275            92.90093           283.76418           471.91203
+    1                -313.33018           -90.46715            95.64488           290.54236           481.25233
+    2                -218.81828           -91.11607            90.79193           286.86373           488.23901
+    3                -250.54618           -95.42314            94.63710           284.45763           477.88220
+    4                -247.71363           -96.39945            93.69597           288.07581           468.76867
+                         ...                 ...                 ...                 ...                 ...
+    95               -253.86651           -98.10488            99.10170           287.04024           474.05514
+    96               -322.77188           -96.65319            96.45140           283.40338           475.31330
+    97               -295.11884          -101.55413            94.69753           293.47311           481.82985
+    98               -255.68137           -91.53948            98.16303           286.97835           477.46565
+    99               -263.94694           -93.75097            91.94048           288.19007           482.45473
+
+    IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
+
+    >>> isopy.tb.rDelta.epsilon(array, ref) # preset where factor = 1E4
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    0                -342.37270           -98.49275            92.90093           283.76418           471.91203
+    1                -313.33018           -90.46715            95.64488           290.54236           481.25233
+    2                -218.81828           -91.11607            90.79193           286.86373           488.23901
+    3                -250.54618           -95.42314            94.63710           284.45763           477.88220
+    4                -247.71363           -96.39945            93.69597           288.07581           468.76867
+                         ...                 ...                 ...                 ...                 ...
+    95               -253.86651           -98.10488            99.10170           287.04024           474.05514
+    96               -322.77188           -96.65319            96.45140           283.40338           475.31330
+    97               -295.11884          -101.55413            94.69753           293.47311           481.82985
+    98               -255.68137           -91.53948            98.16303           286.97835           477.46565
+    99               -263.94694           -93.75097            91.94048           288.19007           482.45473
+
+    IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
+
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
     factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
@@ -1083,34 +1179,39 @@ def inverse_rDelta(data, reference_data, factor=1, deviations=1):
     --------
     >>> ref = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.make_ms_sample('pd', fins=1).ratio('105pd')
-    >>> norm = isopy.toolbox.isotope.rDelta(array, ref, 1000)
-    >>> denorm = isopy.tb.inverse_rDelta(norm, ref, 1000)
-    >>> denorm
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    0     , 0.04437     , 0.49412     , 1.23554     , 1.21881     , 0.54985
-    1     , 0.04437     , 0.49413     , 1.23556     , 1.21882     , 0.54986
-    2     , 0.04437     , 0.49412     , 1.23558     , 1.21887     , 0.54988
-    3     , 0.04438     , 0.49413     , 1.23560     , 1.21887     , 0.54988
-    4     , 0.04437     , 0.49413     , 1.23553     , 1.21879     , 0.54985
-    ...   , ...         , ...         , ...         , ...         , ...
-    95    , 0.04436     , 0.49415     , 1.23562     , 1.21883     , 0.54989
-    96    , 0.04438     , 0.49412     , 1.23558     , 1.21884     , 0.54988
-    97    , 0.04437     , 0.49412     , 1.23555     , 1.21888     , 0.54986
-    98    , 0.04437     , 0.49411     , 1.23557     , 1.21880     , 0.54986
-    99    , 0.04438     , 0.49410     , 1.23558     , 1.21884     , 0.54987
-    >>> denorm/array
-    (row) , 102Pd/105Pd , 104Pd/105Pd , 106Pd/105Pd , 108Pd/105Pd , 110Pd/105Pd
-    0     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    1     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    2     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    3     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    4     , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    ...   , ...         , ...         , ...         , ...         , ...
-    95    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    96    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    97    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    98    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
-    99    , 1.00000     , 1.00000     , 1.00000     , 1.00000     , 1.00000
+    >>> norm = isopy.toolbox.isotope.rDelta(array, ref, 1E4)
+    >>> isopy.tb.inverse_rDelta(norm, ref, 1E4)
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    0                   0.04438             0.49412             1.23557             1.21884             0.54989
+    1                   0.04438             0.49413             1.23560             1.21887             0.54989
+    2                   0.04437             0.49410             1.23555             1.21879             0.54988
+    3                   0.04437             0.49412             1.23555             1.21880             0.54989
+    4                   0.04437             0.49410             1.23551             1.21880             0.54987
+                         ...                 ...                 ...                 ...                 ...
+    95                  0.04437             0.49411             1.23557             1.21882             0.54988
+    96                  0.04437             0.49411             1.23557             1.21883             0.54988
+    97                  0.04437             0.49413             1.23557             1.21886             0.54986
+    98                  0.04437             0.49413             1.23555             1.21883             0.54987
+    99                  0.04438             0.49413             1.23559             1.21884             0.54988
+
+    IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
+    >>> isopy.tb.inverse_rDelta.epsilon(norm, ref) / array
+    (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
+    -------  ------------------  ------------------  ------------------  ------------------  ------------------
+    0                   1.00000             1.00000             1.00000             1.00000             1.00000
+    1                   1.00000             1.00000             1.00000             1.00000             1.00000
+    2                   1.00000             1.00000             1.00000             1.00000             1.00000
+    3                   1.00000             1.00000             1.00000             1.00000             1.00000
+    4                   1.00000             1.00000             1.00000             1.00000             1.00000
+                         ...                 ...                 ...                 ...                 ...
+    95                  1.00000             1.00000             1.00000             1.00000             1.00000
+    96                  1.00000             1.00000             1.00000             1.00000             1.00000
+    97                  1.00000             1.00000             1.00000             1.00000             1.00000
+    98                  1.00000             1.00000             1.00000             1.00000             1.00000
+    99                  1.00000             1.00000             1.00000             1.00000             1.00000
+
+    IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
     factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
@@ -1180,53 +1281,6 @@ def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=
         ``np.any(outliers, axis)`` is returned.
     invert : bool
         If ``True`` the output is inverted.
-
-    Examples
-    --------
-    >>> array = isopy.tb.make_ms_sample('pd', integrations=10)
-    >>> array['pd102'][:2] *= 2
-    >>> array['pd110'][-1] *= 2
-    >>> isopy.tb.find_outliers(array)
-    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd
-    0     , True  , False , True  , False , False , False
-    1     , True  , False , False , False , False , False
-    2     , False , False , False , False , False , False
-    3     , False , False , False , False , False , False
-    4     , False , False , False , False , False , False
-    5     , False , False , False , False , False , False
-    6     , False , False , False , False , False , False
-    7     , False , False , False , False , False , False
-    8     , False , False , False , False , False , False
-    9     , False , False , False , False , False , True
-
-    >>> isopy.tb.find_outliers(array, axis=1)
-    array([ True,  True, False, False, False, False, False, False, False, True])
-
-    >>> isopy.tb.find_outliers(array, np.mean, isopy.sd2)
-    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd
-    0     , False , False , True  , False , False , False
-    1     , False , False , False , False , False , False
-    2     , False , False , False , False , False , False
-    3     , False , False , False , False , False , False
-    4     , False , False , False , False , False , False
-    5     , False , False , False , False , False , False
-    6     , False , False , False , False , False , False
-    7     , False , False , False , False , False , False
-    8     , False , False , False , False , False , False
-    9     , False , False , False , False , False , True
-
-    >>> isopy.tb.find_outliers(array, np.mean(array), isopy.sd2(array))
-    (row) , 102Pd , 104Pd , 105Pd , 106Pd , 108Pd , 110Pd
-    0     , False , False , True  , False , False , False
-    1     , False , False , False , False , False , False
-    2     , False , False , False , False , False , False
-    3     , False , False , False , False , False , False
-    4     , False , False , False , False , False , False
-    5     , False , False , False , False , False , False
-    6     , False , False , False , False , False , False
-    7     , False , False , False , False , False , False
-    8     , False , False , False , False , False , False
-    9     , False , False , False , False , False , True
     """
     axis = isopy.checks.check_type('axis', axis, int, allow_none=True)
 

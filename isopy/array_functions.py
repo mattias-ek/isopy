@@ -50,16 +50,25 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.sd(array)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 0.60553 , 1.41745
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    0.60553    1.41745
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.sd(array, axis=1)
     array([       nan, 2.35867194, 1.28970281, 3.17962262])
     >>> isopy.sd2(array) #same as sd(array, zscore=2)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 1.21106 , 2.83490
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    1.21106    2.83490
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.sd95(array) #same as sd(array, ci=0.95)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 1.9271 , 4.511
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    1.92707    4.51096
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
     --------
@@ -98,16 +107,25 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.nansd(array)
-    (row) , Ru      , Pd      , Cd
-    None  , 0.55678 , 0.60553 , 1.41745
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.55678    0.60553    1.41745
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nansd(array, axis=1)
     array([2.12132034, 2.35867194, 1.28970281, 3.17962262])
     >>> isopy.nansd2(array) #same as nansd(array, zscore=2)
-    (row) , Ru      , Pd      , Cd
-    None  , 1.11355 , 1.21106 , 2.83490
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       1.11355    1.21106    2.83490
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nansd95(array) #same as nansd(array, ci=0.95)
-    (row) , Ru      , Pd      , Cd
-    None  , 2.3956 , 1.9271 , 4.511
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       2.39562    1.92707    4.51096
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
     --------
@@ -148,16 +166,25 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.se(array)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 0.30277 , 0.70873
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    0.30277    0.70873
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.se(array, axis=1)
     array([       nan, 1.36177988, 0.74461026, 1.83575598])
     >>> isopy.se2(array) #same as se(array, zscore=2)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 0.60553 , 1.41745
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    0.60553    1.41745
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.se95(array) #same as se(array, ci=0.95)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 0.96353 , 2.2555
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    0.96353    2.25548
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
     --------
@@ -196,19 +223,29 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.nanse(array)
-    (row) , Ru      , Pd      , Cd
-    None  , 0.32146 , 0.30277 , 0.70873
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.32146    0.30277    0.70873
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanse(array, axis=1) #returns a masked array
     masked_array(data=[1.4999999999999996, 1.3617798810543664,
                    0.7446102634562892, 1.835755975068582],
              mask=[False, False, False, False],
        fill_value=1e+20)
     >>> isopy.nanse2(array) #same as nanse(array, zscore=2)
-    (row) , Ru      , Pd      , Cd
-    None  , 0.64291 , 0.60553 , 1.41745
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.64291    0.60553    1.41745
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanse95(array) #same as nanse(array, ci=0.95)
-    (row) , Ru      , Pd      , Cd
-    None  , 1.3831 , 0.96353 , 2.2555
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       1.38311    0.96353    2.25548
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
 
     See Also
     --------
@@ -249,16 +286,26 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.mad(array)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 0.66717 , 1.03782
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    0.66717    1.03782
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.mad(array, axis=1)
     array([       nan, 2.96520444, 1.03782155, 3.55824532])
     >>> isopy.mad2(array) #same as mad(array, zscore=2)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 1.33434 , 2.07564
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    1.33434    2.07564
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.mad95(array) #same as mad(array, ci=0.95)
-    (row) , Ru  , Pd      , Cd
-    None  , nan , 2.1232 , 3.3028
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None           nan    2.12324    3.30281
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
 
     See Also
     --------
@@ -298,16 +345,25 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.nanmad(array)
-    (row) , Ru      , Pd      , Cd
-    None  , 0.59304 , 0.66717 , 1.03782
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.59304    0.66717    1.03782
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanmad(array, axis=1)
     array([2.22390333, 2.96520444, 1.03782155, 3.55824532])
     >>> isopy.nanmad2(array) #same as nanmad(array, zscore=2)
-    (row) , Ru      , Pd      , Cd
-    None  , 1.18608 , 1.33434 , 2.07564
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       1.18608    1.33434    2.07564
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanmad95(array) #same as nanmad(array, ci=0.95)
-    (row) , Ru      , Pd      , Cd
-    None  , 2.5516 , 2.1232 , 3.3028
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       2.55165    2.12324    3.30281
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
     --------
@@ -341,10 +397,13 @@ def nancount(a, axis=None): #, where = core.NotGiven):
                             pd = [3.1, 3.8, 2.9, 4.2],
                             cd = [6.1, 5.8, 4.7, 8.1])
     >>> isopy.nancount(array)
-    (row) , Ru      , Pd      , Cd
-    None  , 3.00000 , 4.00000 , 4.00000
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       3.00000    4.00000    4.00000
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nancount(array, axis=1)
-    array([2, 3, 3, 3], dtype=int64)
+    array([2, 3, 3, 3])
     """
     #if where is not core.NotGiven:
     #    a = a[where]
@@ -397,14 +456,19 @@ def arrayfunc(func, *inputs, keys=None, **kwargs):
 
     Examples
     --------
-    >>> isopy.arrayfunc(scipy.stats.sem, array)
-    (row) , Ru      , Pd      , Cd
-    None  , 0.09129 , 0.09430 , 0.09021
-
     >>> array = isopy.random(100, keys=('ru', 'pd', 'cd')
     >>> isopy.arrayfunc(np.std, array, keys=('ru', 'cd'))
-    (row) , Ru      , Cd
-    None  , 0.90836 , 0.89753
+    (row)      Ru (f8)    Cd (f8)
+    -------  ---------  ---------
+    None       1.12864    0.97975
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    >>> isopy.arrayfunc(scipy.stats.sem, array)
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.11343    0.10972    0.09847
+
+    IsopyNdarray(-1, flavour='element', default_value=nan)
     """
     return core.call_array_function(func, *inputs, keys=keys, **kwargs)
 
@@ -424,6 +488,30 @@ def rstack(*arrays, sort_keys=False):
     IsopyArray
         Array containing all the row data and all the columns keys found in *arrays*.
 
+    Examples
+    --------
+    >>> a = isopy.array(ru = 1, pd = 3, cd = 5)
+    >>> b = isopy.array(rh = [2, 22], pd = [3, 33], ag = [4, 44])
+    >>> isopy.rstack(a, b, 100)
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)    Rh (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------  ---------
+    0          1.00000    3.00000    5.00000        nan        nan
+    1              nan    3.00000        nan    2.00000    4.00000
+    2              nan   33.00000        nan   22.00000   44.00000
+    3        100.00000  100.00000  100.00000  100.00000  100.00000
+
+    IsopyNdarray(2, flavour='element', default_value=nan)
+    >>> isopy.rstack(a.default(0), b.default([0.1, 0.2]), [100, 200], sort_keys = True)
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
+    -------  ---------  ---------  ---------  ---------  ---------
+    0          1.00000    0.00000    3.00000    0.00000    5.00000
+    1          0.10000    2.00000    3.00000    4.00000    0.10000
+    2          0.20000   22.00000   33.00000   44.00000    0.20000
+    3        100.00000  100.00000  100.00000  100.00000  100.00000
+    4        200.00000  200.00000  200.00000  200.00000  200.00000
+
+    IsopyNdarray(4, flavour='element', default_value=nan)
+
     See Also
     --------
     rstack, cstack
@@ -432,13 +520,13 @@ def rstack(*arrays, sort_keys=False):
 
     keys = core.askeylist(*(a.keys for a in arrays if isinstance(a, core.IsopyArray)),
                         ignore_duplicates=True, sort=sort_keys)
-    arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
+    #arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
     for i, a in enumerate(arrays):
         if not isinstance(a, core.IsopyArray):
             arrays[i] = core.full(a.size, a, keys)
 
-    result = [np.concatenate([a.get(key) for a in arrays]) for key in keys]
+    result = [np.concatenate([a.get(key).reshape(1) if a.ndim == 0 else a.get(key) for a in arrays]) for key in keys]
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
     return keys._view_array_(np.fromiter(zip(*result), dtype=dtype))
 
@@ -461,6 +549,25 @@ def cstack(*arrays, sort_keys=False):
     -------
     IsopyArray
         Array containing all the row data and all the columns keys found in *arrays*.
+
+    Examples
+    --------
+    >>> a = isopy.array(ru = 1, pd = 3, cd = 5)
+    >>> b = isopy.array(rh = [2, 22],  ag = [4, 44])
+    >>> isopy.cstack(a, b)
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)    Rh (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------  ---------
+    0          1.00000    3.00000    5.00000    2.00000    4.00000
+    1          1.00000    3.00000    5.00000   22.00000   44.00000
+
+    IsopyNdarray(2, flavour='element', default_value=nan)
+    >>> isopy.cstack(a, b, sort_keys=True)
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
+    -------  ---------  ---------  ---------  ---------  ---------
+    0          1.00000    2.00000    3.00000    4.00000    5.00000
+    1          1.00000   22.00000    3.00000   44.00000    5.00000
+
+    IsopyNdarray(2, flavour='element', default_value=nan)
 
     See Also
     --------
