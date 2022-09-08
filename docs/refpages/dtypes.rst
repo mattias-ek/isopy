@@ -35,9 +35,7 @@ Key lists
     keylist
     askeylist
     iskeylist
-
     :template: list_template.rst
-
     IsopyKeyList
 
 
@@ -58,9 +56,7 @@ Isopy arrays
     ones
     full
     random
-
     :template: array_template.rst
-
     IsopyArray
 
 Isopy dictionaries
@@ -76,7 +72,6 @@ Isopy dictionaries
     isdict
     isrefval
     :template: dict_template.rst
-
     IsopyDict
     RefValDict
 

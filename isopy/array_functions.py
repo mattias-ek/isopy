@@ -499,7 +499,7 @@ def rstack(*arrays, sort_keys=False):
     1              nan    3.00000        nan    2.00000    4.00000
     2              nan   33.00000        nan   22.00000   44.00000
     3        100.00000  100.00000  100.00000  100.00000  100.00000
-
+    \n
     IsopyNdarray(2, flavour='element', default_value=nan)
     >>> isopy.rstack(a.default(0), b.default([0.1, 0.2]), [100, 200], sort_keys = True)
     (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
@@ -559,7 +559,7 @@ def cstack(*arrays, sort_keys=False):
     -------  ---------  ---------  ---------  ---------  ---------
     0          1.00000    3.00000    5.00000    2.00000    4.00000
     1          1.00000    3.00000    5.00000   22.00000   44.00000
-
+    |
     IsopyNdarray(2, flavour='element', default_value=nan)
     >>> isopy.cstack(a, b, sort_keys=True)
     (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
