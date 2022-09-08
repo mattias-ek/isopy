@@ -28,6 +28,9 @@ The following isopy array functions require that at least one isopy array as inp
     keymax
     keymin
     arrayfunc
+    rstack
+    cstack
+    concatenate
 
 .. rubric:: Numpy functions
 
