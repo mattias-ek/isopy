@@ -461,13 +461,14 @@ def arrayfunc(func, *inputs, keys=None, **kwargs):
     (row)      Ru (f8)    Cd (f8)
     -------  ---------  ---------
     None       1.12864    0.97975
-
+    |
     IsopyNdarray(-1, flavour='element', default_value=nan)
+
     >>> isopy.arrayfunc(scipy.stats.sem, array)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.11343    0.10972    0.09847
-
+    \n
     IsopyNdarray(-1, flavour='element', default_value=nan)
     """
     return core.call_array_function(func, *inputs, keys=keys, **kwargs)
