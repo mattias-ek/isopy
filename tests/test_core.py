@@ -903,6 +903,13 @@ class Test_IsopyList:
                 assert k in correct_list
 
         array = isopy.array([i for i in range(len(correct))], correct)
+        same_list = isopy.keylist(array)
+        assert len(same_list) == len(correct)
+        assert same_list == correct
+        assert same_list == correct_list
+        assert same_list.flavour == flavour
+
+        array = isopy.array([i for i in range(len(correct))], correct)
         same_list = isopy.keylist(array.dtype)
         assert len(same_list) == len(correct)
         assert same_list == correct
@@ -2366,6 +2373,67 @@ class Test_Dict:
         np.testing.assert_array_equal(a.get('rh', b), b['rh'])
         np.testing.assert_array_equal(a.get('pd', b), a['pd'])
         np.testing.assert_array_equal(a.get('rh/pd', b), b['rh'] / b['pd'])
+
+    def test_index(self):
+        keys = '101 pd ru cd 105pd hermione'.split()
+        values = [1, 2, 3, 4, 5, 6]
+
+        dictionary = dict(zip(keys, values))
+        isopydict1 = core.RefValDict(dictionary)
+        isopydict2 = core.RefValDict(dictionary, default_value=10)
+
+        row = isopydict1[0]
+        assert row.ndim == 0
+        assert row.size == 1
+        assert row.keys == keys
+        np.testing.assert_equal(row.default_value, isopydict1.default_value)
+        for key in row.keys:
+            np.testing.assert_equal(row[key], isopydict1[key])
+
+        row = isopydict2[:]
+        assert row.ndim == 0
+        assert row.size == 1
+        assert row.keys == keys
+        np.testing.assert_equal(row.default_value, isopydict2.default_value)
+        for key in row.keys:
+            np.testing.assert_equal(row[key], isopydict2[key])
+
+        with pytest.raises(IndexError):
+            isopydict1[1]
+
+        with pytest.raises(IndexError):
+            isopydict2[:1]
+
+        keys = '101 pd ru cd 105pd hermione'.split()
+        values = [[1, 11], [2, 22], [3, 33], [4, 44], [5, 55], [6, 66]]
+
+        dictionary = dict(zip(keys, values))
+        isopydict1 = core.RefValDict(dictionary)
+        isopydict2 = core.RefValDict(dictionary, default_value=[10, 100])
+
+        row = isopydict1[0]
+        assert row.ndim == 0
+        assert row.size == 1
+        assert row.keys == keys
+        np.testing.assert_equal(row.default_value, isopydict1.default_value)
+        for key in row.keys:
+            np.testing.assert_equal(row[key], isopydict1[key][0])
+
+        row = isopydict2[:]
+        assert row.ndim == 1
+        assert row.size == 2
+        assert row.keys == keys
+        np.testing.assert_equal(row.default_value, isopydict2.default_value)
+        for key in row.keys:
+            np.testing.assert_equal(row[key], isopydict2[key])
+
+        row = isopydict2[:1]
+        assert row.ndim == 0
+        assert row.size == 1
+        assert row.keys == keys
+        np.testing.assert_equal(row.default_value, isopydict2.default_value[0])
+        for key in row.keys:
+            np.testing.assert_equal(row[key], isopydict2[key][0])
 
     def test_get_refval(self):
         keys = '101 pd ru cd 105pd hermione'.split()

@@ -2984,14 +2984,6 @@ class IsopyDict(dict):
         key = askeystring(key, flavour=self._key_flavour_)
         return super(IsopyDict, self).__getitem__(key)
 
-    def filter(self, **key_filters):
-        """
-        Returns a copy of the dictionary containing the keys that satisfy the *key_filters*.
-        """
-        keys = self.keys.filter(**key_filters)
-        data = {key: self[key] for key in keys}
-        return self._copy(data, self.__default__)
-
     @property
     def keys(self):
         return askeylist(super(IsopyDict, self).keys(), flavour=self._key_flavour_)

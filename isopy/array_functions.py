@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.lib.function_base import array_function_dispatch
+#from numpy.lib.function_base import array_function_dispatch
 from scipy import stats
 import functools
 
@@ -93,9 +93,6 @@ def arrayfunc(func, *inputs, keys=None, **kwargs):
 
     return core.call_array_function(func, *inputs, keys=keys, key_filters=key_filters, **kwargs)
 
-
-def _sd_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where=None):
-    return (a,)
 
 #@array_function_dispatch(_sd_dispatcher)
 @arrayfunc_wrapper
@@ -205,9 +202,6 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
         return result * zscore
 
     return result
-
-def _se_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where = None):
-    return (a,)
 
 #@array_function_dispatch(_se_dispatcher)
 @arrayfunc_wrapper
@@ -322,9 +316,6 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     return result
 
-def _mad_dispatcher(a, axis=None, scale=None, *, ci = None, zscore=None): #, where = None):
-    return (a,)
-
 #@array_function_dispatch(_mad_dispatcher)
 @arrayfunc_wrapper
 def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = core.NotGiven):
@@ -436,9 +427,6 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
         return result * zscore
 
     return result
-
-def _count_dispatcher(a, axis=None): #, where = None):
-    return (a,)
 
 #@array_function_dispatch(_count_dispatcher)
 @arrayfunc_wrapper
