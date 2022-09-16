@@ -11,9 +11,6 @@ This will also install libraries that isopy depend on such as
 `numpy <https://numpy.org/>`_, `scipy <https://www.scipy.org/>`_
 and `matplotlib <https://matplotlib.org/>`_.
 
-Upgrading isopy
----------------
-
 To upgrade to the newest version of isopy use the ``--upgrade`` flag:
 
 .. code-block:: bash

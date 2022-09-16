@@ -331,7 +331,9 @@ class isotope(RefValGroup):
     @core.cached_property
     def mass_AME20(self):
         """
-        Dictionary containing isotope mass of each isotope from the `Atomic Mass Evaluation 2020 <https://www-nds.iaea.org/amdc/>`_.
+        Dictionary containing isotope mass of each isotope from the 2020 Atomic Mass Evaluation.
+
+        Reference: `Atomic Mass Evaluation 2020 <https://www-nds.iaea.org/amdc/>`_.
 
         The ``get()`` method of this dictionary will automatically calculate the ratio of two
         isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``

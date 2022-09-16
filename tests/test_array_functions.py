@@ -478,7 +478,7 @@ class Test_ArrayFunctions:
                 self.dualinput_dv(func, dict7, value3)
 
     def dualinput_aa(self, func, a1, a2, ndim):
-        keys = a1.keys | a2.keys
+        keys = (a1.keys | a2.keys).sorted()
 
         result = func(a1, a2)
         assert isinstance(result, core.IsopyArray)
@@ -577,7 +577,7 @@ class Test_ArrayFunctions:
     def dualinput_dd(self, func, d1, d2):
         ds1 = isopy.asrefval(d1)
         ds2 = isopy.asrefval(d2)
-        keys = ds1.keys | ds2.keys
+        keys = (ds1.keys | ds2.keys).sorted()
 
         with pytest.raises(TypeError):
             func(d1, d2) # At least one dictionaries must be a scalar dict
@@ -641,7 +641,7 @@ class Test_ArrayFunctions:
 
         ds1 = isopy.asrefval(d1, default_value=1)
         ds2 = isopy.asrefval(d2, default_value=2)
-        keys = ds1.keys | ds2.keys
+        keys = (ds1.keys | ds2.keys).sorted()
 
         with pytest.raises(TypeError):
             func(d1, d2)  # At least one dictionaries must be a scalar dict
@@ -760,85 +760,78 @@ class Test_ArrayFunctions:
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
-    def test_deprecated_dualinput(self):
+    def test_isopy_dualinput(self):
         keys1 = 'ru pd cd'.split()
         keys2 = 'pd ag cd'.split()
 
         a1 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=1)
         a2 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
-        d1 = a1.to_dict()
-        d2 = a2.to_dict()
-        ds1 = a1.to_refval()
         ds2 = a2.to_refval()
 
-        # a, a
-        result = isopy.add(a1, a2)
-        true = a1 + a2
-        assert_array_equal_array(result, true)
+        keys = 'ru cd ag'.split()
+        keys_s1 = 'ru ag cd'.split()
+        keys_s2 = 'ru cd'.split()
 
-        result = isopy.add(a1, a2, 0)
-        true = a1.default(0) + a2.default(0)
-        assert_array_equal_array(result, true)
 
-        result = isopy.add(a1, a2, (0,1))
-        true = a1.default(0) + a2.default(1)
-        assert_array_equal_array(result, true)
+        for func, operator in [(isopy.add, op.add),
+                               (isopy.subtract, op.sub),
+                               (isopy.multiply, op.mul),
+                               (isopy.divide, op.truediv),
+                               (isopy.power, op.pow)]:
+            # a, a
+            true = operator(a1, a2)
+            result = func(a1, a2)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == true.keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        # a, d
-        result = isopy.add(a1, d2)
-        true = a1 + a2.to_refval()
-        assert_array_equal_array(result, true)
+            result = func(a1, a2, keys = keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(a1, d2, 0)
-        true = a1.default(0) + a2.to_refval(default_value = 0)
-        assert_array_equal_array(result, true)
+            result = func(a1, a2, key_eq=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys_s1
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(a1, d2, (0, 1))
-        true = a1.default(0) + a2.to_refval(default_value = 1)
-        assert_array_equal_array(result, true)
+            # a ds
+            result = func(a1, ds2)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == a1.keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        # d a
-        result = isopy.add(d1, a2)
-        true = a1.to_refval() + a2
-        assert_array_equal_array(result, true)
+            result = func(a1, ds2, keys=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(d1, a2, 0)
-        true = a1.to_refval(default_value = 0) + a2.default(0)
-        assert_array_equal_array(result, true)
+            result = func(a1, ds2, key_eq=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys_s2
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(d1, a2, (0, 1))
-        true = a1.to_refval(default_value = 0) + a2.default(1)
-        assert_array_equal_array(result, true)
+            # v v
+            true = operator(2.0, 3.0)
+            result = func(2.0, 3.0)
+            assert type(result) == np.float64
+            np.testing.assert_equal(result, true)
 
-        # a ds
-        result = isopy.add(a1, ds2)
-        true = a1 + ds2
-        assert_array_equal_array(result, true)
+            result = func(2.0, 3.0, keys=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true)
 
-        result = isopy.add(a1, ds2, 0)
-        true = a1.default(0) + ds2
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(a1, ds2, (0, 1))
-        true = a1.default(0) + ds2
-        assert_array_equal_array(result, true)
-
-        # ds a
-        result = isopy.add(ds1, a2)
-        true = ds1 + a2
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(ds1, a2, 0)
-        true = ds1 + a2.default(0)
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(ds1, a2, (0, 1))
-        true = ds1 + a2.default(1)
-        assert_array_equal_array(result, true)
-
-        # keys
-        result = isopy.add(a1, ds2, keys=('ru', 'cd'))
-        assert result.keys == ('ru', 'cd')
+            result = func(2.0, 3.0, keys_eq=keys)
+            assert type(result) == np.float64
+            np.testing.assert_equal(result, true)
 
     def test_count_finite(self):
         array = isopy.array([[1, 2, 3], [4, np.nan, 6]], 'ru pd cd'.split())
@@ -1075,7 +1068,7 @@ class Test_ArrayFunctions:
             if func not in tested:
                 raise ValueError(f'special function {func.__name__} not tested')
 
-    def test_concatenate_1(self):
+    def test_rstack(self):
         # Axis = 0
 
         array1 = isopy.ones(2, 'ru pd cd'.split())
@@ -1122,6 +1115,29 @@ class Test_ArrayFunctions:
             true = np.concatenate((array1.get(key), [np.nan], array3.get(key)))
             np.testing.assert_allclose(result[key], true)
 
+        a = isopy.array(a=1, b=2, flavour='general')
+        b = isopy.array(a=11, b=12)
+        assert a.keys() != b.keys()
+
+        c = isopy.rstack(a, b)
+        assert c.ncols == 4
+
+        a = isopy.ones(None, 'ru pd')
+        b = isopy.ones(1, 'pd cd') * 2
+
+        c = isopy.rstack(a, b)
+        assert c.keys == 'ru pd cd'
+        np.testing.assert_allclose(c['ru'], [1, np.nan])
+        np.testing.assert_allclose(c['pd'], [1, 2])
+        np.testing.assert_allclose(c['cd'], [np.nan, 2])
+
+        c = isopy.rstack(a.default(10), b.default(20))
+        assert c.keys == 'ru pd cd'
+        np.testing.assert_allclose(c['ru'], [1, 20])
+        np.testing.assert_allclose(c['pd'], [1, 2])
+        np.testing.assert_allclose(c['cd'], [10, 2])
+
+    def test_cstack(self):
         # Axis = 1
         array1 = isopy.ones(2, 'ru pd cd'.split())
         array2 = isopy.ones(-1, 'rh ag'.split()) * 2
@@ -1169,7 +1185,14 @@ class Test_ArrayFunctions:
         with pytest.raises(np.AxisError):
             result = isopy.concatenate(array1, array2, array3, axis=2)
 
-    def test_concatenate_2(self):
+        a = isopy.array(a=1, b=2, flavour='general')
+        b = isopy.array(a=11, b=12)
+        assert a.keys() != b.keys()
+
+        c = isopy.cstack(a, b)
+        assert c.ncols == 4
+
+    def test_concatenate(self):
         array1 = isopy.ones(2) * 4
         array2 = isopy.ones(2) * 5
         array1 = array1.reshape((1, -1))
@@ -1184,20 +1207,6 @@ class Test_ArrayFunctions:
         result = isopy.concatenate(array1, array2, axis=1)
         assert not isinstance(result, core.IsopyArray)
         np.testing.assert_allclose(result, true)
-
-    def test_concatenate3(self):
-        # Make sure keys are kept the same
-
-        a = isopy.array(a=1, b=2, flavour='general')
-        b = isopy.array(a=11, b=12)
-        assert a.keys() != b.keys()
-
-        c = isopy.rstack(a, b)
-        assert c.ncols == 4
-
-        c = isopy.cstack(a, b)
-        assert c.ncols == 4
-
 
 
     def test_refval_inheritance(self):
@@ -1268,9 +1277,219 @@ class Test_ArrayFunctions:
         assert np.all(np.isnan(result.default_value))
 
         result = np.add(dict1, dict2.to_dict())
-        assert result.ratio_function == dict1.ratio_function
-        assert result.molecule_functions == dict1.molecule_functions
-        assert np.all(result.default_value == dict1.default_value)
+        assert result.ratio_function is None
+        assert result.molecule_functions is None
+        assert np.all(np.isnan(result.default_value))
+
+class Test_OutliersLimits:
+    def test_limits(self):
+        data = isopy.random(100, (1,1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd2 = isopy.sd2(data)
+
+        upper = isopy.upper_limit(data)
+        assert upper == median + mad3
+
+        upper = isopy.upper_limit(data, np.mean, isopy.sd2)
+        assert upper == mean + sd2
+
+        upper = isopy.upper_limit.sd2(data)
+        assert upper == mean + sd2
+
+        upper = isopy.upper_limit(data, 1, isopy.sd2)
+        assert upper == 1 + sd2
+
+        upper = isopy.upper_limit(data, np.mean, 1)
+        assert upper == mean + 1
+
+        upper = isopy.upper_limit(data, 1, 1)
+        assert upper == 2
+
+        lower = isopy.lower_limit(data)
+        assert lower == median - mad3
+
+        lower = isopy.lower_limit.sd2(data)
+        assert lower == mean - sd2
+
+        lower = isopy.lower_limit(data, np.mean, isopy.sd2)
+        assert lower == mean - sd2
+
+        lower = isopy.lower_limit(data, 1, isopy.sd2)
+        assert lower == 1 - sd2
+
+        lower = isopy.lower_limit(data, np.mean, 1)
+        assert lower == mean - 1
+
+        lower = isopy.lower_limit(data, 1, 1)
+        assert lower == 0
+
+    def test_is_outliers1(self):
+        #axis = 0
+        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd = isopy.sd(data)
+
+        median_outliers = (data > (median + mad3)) + (data < (median - mad3))
+        mean_outliers = (data > (mean + sd)) + (data < (mean - sd))
+        mean_outliers1 = (data > (1 + sd)) + (data < (1 - sd))
+        mean_outliers2 = (data > (mean + 1)) + (data < (mean - 1))
+        mean_outliers3 = (data > (1 + 1)) + (data < (1 - 1))
+
+        outliers = isopy.is_outlier(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], median_outliers[key])
+
+        outliers = isopy.is_outlier(data, np.mean, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.is_outlier.sd(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.is_outlier(data, 1, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
+
+        outliers = isopy.is_outlier(data, np.mean, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
+
+        outliers = isopy.is_outlier(data, 1, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
+
+        # invert
+        median_outliers = np.invert(median_outliers)
+        mean_outliers = np.invert(mean_outliers)
+        mean_outliers1 = np.invert(mean_outliers1)
+        mean_outliers2 = np.invert(mean_outliers2)
+        mean_outliers3 = np.invert(mean_outliers3)
+
+        outliers = isopy.not_outlier(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], median_outliers[key])
+
+        outliers = isopy.not_outlier(data, np.mean, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.not_outlier.sd(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.not_outlier(data, 1, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
+
+        outliers = isopy.not_outlier(data, np.mean, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
+
+        outliers = isopy.not_outlier(data, 1, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
+
+    def test_find_outliers2(self):
+        # axis = 0
+        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd = isopy.sd2(data)
+
+        median_outliers = np.any((data > (median + mad3)) + (data < (median - mad3)), axis=1)
+        mean_outliers = np.any((data > (mean + sd)) + (data < (mean - sd)), axis=1)
+        mean_outliers1 = np.any((data > (1 + sd)) + (data < (1 - sd)), axis=1)
+        mean_outliers2 = np.any((data > (mean + 1)) + (data < (mean - 1)), axis=1)
+        mean_outliers3 = np.any((data > (1 + 1)) + (data < (1 - 1)), axis=1)
+
+        outliers = isopy.is_outlier(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, median_outliers)
+
+        outliers = isopy.is_outlier(data, np.mean, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.is_outlier.sd2(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.is_outlier(data, 1, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers1)
+
+        outliers = isopy.is_outlier(data, np.mean, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers2)
+
+        outliers = isopy.is_outlier(data, 1, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers3)
+
+        # invert
+
+        median_outliers = np.invert(median_outliers)
+        mean_outliers = np.invert(mean_outliers)
+        mean_outliers1 = np.invert(mean_outliers1)
+        mean_outliers2 = np.invert(mean_outliers2)
+        mean_outliers3 = np.invert(mean_outliers3)
+
+        outliers = isopy.not_outlier(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, median_outliers)
+
+        outliers = isopy.not_outlier(data, np.mean, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.not_outlier.sd2(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.not_outlier(data, 1, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers1)
+
+        outliers = isopy.not_outlier(data, np.mean, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers2)
+
+        outliers = isopy.not_outlier(data, 1, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers3)
 
 def test_allowed_numpy_functions():
         # These are non-vital so just make sure they return a string

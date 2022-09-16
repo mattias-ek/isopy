@@ -2,6 +2,8 @@ import numpy as np
 from numpy.lib.function_base import array_function_dispatch
 from scipy import stats
 import functools
+
+import isopy
 from . import core
 import warnings
 
@@ -9,6 +11,7 @@ __all__ = ['sd', 'nansd', 'se', 'nanse', 'mad', 'nanmad', 'nancount',
            'rstack', 'cstack', 'concatenate',
            'arrayfunc', 'keymax', 'keymin',
            'add', 'subtract', 'power', 'multiply', 'divide',
+           'is_outlier', 'not_outlier', 'upper_limit', 'lower_limit',
            'approved_numpy_functions']
 
 __all__ += 'sd2 sd3 sd95 sd99 nansd2 nansd3 nansd95 nansd99'.split()
@@ -23,13 +26,79 @@ def calculate_ci(ci, df=None):
     else:
         return stats.t.ppf(0.5 + ci / 2, df)
 
-##########################
-### Dispatch functions ###
-##########################
+def arrayfunc_wrapper(func):
+    @functools.wraps(func)
+    def call_arrayfunc(*args, **kwargs):
+        return arrayfunc(func, *args, **kwargs)
+    return call_arrayfunc
+
+def arrayfunc(func, *inputs, keys=None, **kwargs):
+    """
+    arrayfunc(func, *inputs : isopy_array, dict, keys=None : keystring_like, Optional, **kwargs) -> IsopyArray
+    arrayfunc(func, *inputs : isopy_array, scalar, keys=None : keystring_like, Optional, **kwargs) -> IsopyArray
+    arrayfunc(func, *inputs : isopy_array, keys=None : keystring_like, Optional, **kwargs) -> IsopyArray
+    arrayfunc(func, *inputs : dict, scalar, keys=None : keystring_like, Optional, **kwargs) -> RefValDict
+    arrayfunc(func, *inputs : dict, keys=None : keystring_like, Optional, **kwargs) -> RefValDict
+    arrayfunc(func, *inputs : scalar, keys=None : keystring_like, **kwargs) -> IsopyArray
+    arrayfunc(func, *inputs : scalar, **kwargs) -> scalar
+
+    Call a function *func* on each column in the *inputs*.
+
+    If the input consists of isopy arrays and dictionaries then the returned array will only contain the keys of
+    the arrays.
+
+    If the input consists of more than one isopy array the returned array will contain the keys of both arrays in
+    sorted order.
+
+    If *kwargs* contain any key filters these will be applied the input values before the function is computed.
+
+    Parameters
+    ----------
+    func
+        a function to be applied the to input.
+    *inputs
+        The input for the function.
+    keys
+        If given the returned output will contain these keys, irregardless of the keys of the input.
+    **kwargs:
+        Key word arguments to be used with *func*. If *kwargs* contain any key filters these will be applied
+        the input values before the function is computed.
+
+    Examples
+    --------
+    >>> array = isopy.random(100, keys=('ru', 'pd', 'cd')
+    >>> isopy.arrayfunc(np.std, array, keys=('ru', 'cd'))
+    (row)      Ru (f8)    Cd (f8)
+    -------  ---------  ---------
+    None       1.12864    0.97975
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> isopy.arrayfunc(np.std, array, keys_eq=('ru', 'cd'))
+    (row)      Ru (f8)    Cd (f8)
+    -------  ---------  ---------
+    None       1.12864    0.97975
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> isopy.arrayfunc(np.add, 2, 3, keys=('ru', 'cd'))
+    (row)      Ru (f8)    Cd (f8)
+    -------  ---------  ---------
+    None       5.00000    5.00000
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    if kwargs:
+        key_filters = {key: kwargs.pop(key) for key in tuple(kwargs.keys()) if
+                       key.rsplit('_')[-1] in core.KEY_COMPARISONS}
+    else:
+        key_filters = None
+
+    return core.call_array_function(func, *inputs, keys=keys, key_filters=key_filters, **kwargs)
+
+
 def _sd_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where=None):
     return (a,)
 
-@array_function_dispatch(_sd_dispatcher)
+#@array_function_dispatch(_sd_dispatcher)
+@arrayfunc_wrapper
 def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom.
@@ -53,7 +122,6 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    0.60553    1.41745
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.sd(array, axis=1)
     array([       nan, 2.35867194, 1.28970281, 3.17962262])
@@ -61,13 +129,11 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    1.21106    2.83490
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.sd95(array) #same as sd(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    1.92707    4.51096
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
@@ -85,7 +151,8 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     return result
 
 
-@array_function_dispatch(_sd_dispatcher)
+#@array_function_dispatch(_sd_dispatcher)
+@arrayfunc_wrapper
 def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom, while ignoring NaNs.
@@ -110,7 +177,6 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.55678    0.60553    1.41745
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nansd(array, axis=1)
     array([2.12132034, 2.35867194, 1.28970281, 3.17962262])
@@ -118,13 +184,11 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       1.11355    1.21106    2.83490
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nansd95(array) #same as nansd(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       2.39562    1.92707    4.51096
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
@@ -145,7 +209,8 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
 def _se_dispatcher(a, axis=None, *, ci = None, zscore=None): #, where = None):
     return (a,)
 
-@array_function_dispatch(_se_dispatcher)
+#@array_function_dispatch(_se_dispatcher)
+@arrayfunc_wrapper
 def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom.
@@ -169,7 +234,6 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    0.30277    0.70873
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.se(array, axis=1)
     array([       nan, 1.36177988, 0.74461026, 1.83575598])
@@ -177,13 +241,11 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    0.60553    1.41745
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.se95(array) #same as se(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    0.96353    2.25548
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
@@ -201,7 +263,8 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     return result
 
-@array_function_dispatch(_se_dispatcher)
+#@array_function_dispatch(_se_dispatcher)
+@arrayfunc_wrapper
 def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom, while ignoring
@@ -226,7 +289,6 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.32146    0.30277    0.70873
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanse(array, axis=1) #returns a masked array
     masked_array(data=[1.4999999999999996, 1.3617798810543664,
@@ -237,13 +299,11 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.64291    0.60553    1.41745
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanse95(array) #same as nanse(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       1.38311    0.96353    2.25548
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
 
@@ -265,7 +325,8 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 def _mad_dispatcher(a, axis=None, scale=None, *, ci = None, zscore=None): #, where = None):
     return (a,)
 
-@array_function_dispatch(_mad_dispatcher)
+#@array_function_dispatch(_mad_dispatcher)
+@arrayfunc_wrapper
 def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = core.NotGiven):
     """
     Compute the median absolute deviation of the data along the given axis.
@@ -289,7 +350,6 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    0.66717    1.03782
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.mad(array, axis=1)
     array([       nan, 2.96520444, 1.03782155, 3.55824532])
@@ -297,13 +357,11 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    1.33434    2.07564
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.mad95(array) #same as mad(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None           nan    2.12324    3.30281
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
 
@@ -324,7 +382,8 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
     # result is not always an array
     return result
 
-@array_function_dispatch(_mad_dispatcher)
+#@array_function_dispatch(_mad_dispatcher)
+@arrayfunc_wrapper
 def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the median absolute deviation along the specified axis, while ignoring NaNs.
@@ -348,7 +407,6 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.59304    0.66717    1.03782
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanmad(array, axis=1)
     array([2.22390333, 2.96520444, 1.03782155, 3.55824532])
@@ -356,13 +414,11 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       1.18608    1.33434    2.07564
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nanmad95(array) #same as nanmad(array, ci=0.95)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       2.55165    2.12324    3.30281
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     See Also
@@ -384,7 +440,8 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
 def _count_dispatcher(a, axis=None): #, where = None):
     return (a,)
 
-@array_function_dispatch(_count_dispatcher)
+#@array_function_dispatch(_count_dispatcher)
+@arrayfunc_wrapper
 def nancount(a, axis=None): #, where = core.NotGiven):
     """
     Count all values in array that are not NaN or Inf along the specified axis.
@@ -400,14 +457,13 @@ def nancount(a, axis=None): #, where = core.NotGiven):
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       3.00000    4.00000    4.00000
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     >>> isopy.nancount(array, axis=1)
     array([2, 3, 3, 3])
     """
     #if where is not core.NotGiven:
     #    a = a[where]
-
+    print(a, axis)
     return np.count_nonzero(np.isfinite(a), axis=axis)
 
 for func in [sd, nansd, se, nanse, mad, nanmad, nancount]:
@@ -442,36 +498,9 @@ nanmad3 = core.partial_func(nanmad, 'nanmad3', zscore=3)
 nanmad95 = core.partial_func(nanmad, 'nanmad95', ci=0.95)
 nanmad99 = core.partial_func(nanmad, 'nanmad99', ci=0.99)
 
-#####################################
-### Functions without dispatchers ###
-#####################################
-def arrayfunc(func, *inputs, keys=None, **kwargs):
-    """
-    Call a function *func* on each column in the *inputs*.
-
-    Useful for functions that does not support the numpy __array_function__ interface, e.g. scipy functions.
-
-    If *keys* are given then the operation if only performed for those
-    keys.
-
-    Examples
-    --------
-    >>> array = isopy.random(100, keys=('ru', 'pd', 'cd')
-    >>> isopy.arrayfunc(np.std, array, keys=('ru', 'cd'))
-    (row)      Ru (f8)    Cd (f8)
-    -------  ---------  ---------
-    None       1.12864    0.97975
-
-    IsopyNdarray(-1, flavour='element', default_value=nan)
-
-    >>> isopy.arrayfunc(scipy.stats.sem, array)
-    (row)      Ru (f8)    Pd (f8)    Cd (f8)
-    -------  ---------  ---------  ---------
-    None       0.11343    0.10972    0.09847
-    \
-    IsopyNdarray(-1, flavour='element', default_value=nan)
-    """
-    return core.call_array_function(func, *inputs, keys=keys, **kwargs)
+######################
+### Non-arrayfuncs ###
+######################
 
 def rstack(*arrays, sort_keys=False):
     """
@@ -500,7 +529,6 @@ def rstack(*arrays, sort_keys=False):
     1              nan    3.00000        nan    2.00000    4.00000
     2              nan   33.00000        nan   22.00000   44.00000
     3        100.00000  100.00000  100.00000  100.00000  100.00000
-    \n
     IsopyNdarray(2, flavour='element', default_value=nan)
     >>> isopy.rstack(a.default(0), b.default([0.1, 0.2]), [100, 200], sort_keys = True)
     (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
@@ -510,7 +538,6 @@ def rstack(*arrays, sort_keys=False):
     2          0.20000   22.00000   33.00000   44.00000    0.20000
     3        100.00000  100.00000  100.00000  100.00000  100.00000
     4        200.00000  200.00000  200.00000  200.00000  200.00000
-
     IsopyNdarray(4, flavour='element', default_value=nan)
 
     See Also
@@ -560,14 +587,12 @@ def cstack(*arrays, sort_keys=False):
     -------  ---------  ---------  ---------  ---------  ---------
     0          1.00000    3.00000    5.00000    2.00000    4.00000
     1          1.00000    3.00000    5.00000   22.00000   44.00000
-    |
     IsopyNdarray(2, flavour='element', default_value=nan)
     >>> isopy.cstack(a, b, sort_keys=True)
     (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)    Cd (f8)
     -------  ---------  ---------  ---------  ---------  ---------
     0          1.00000    2.00000    3.00000    4.00000    5.00000
     1          1.00000   22.00000    3.00000   44.00000    5.00000
-
     IsopyNdarray(2, flavour='element', default_value=nan)
 
     See Also
@@ -629,33 +654,354 @@ def concatenate(*arrays, axis=0):
     else:
         raise np.AxisError(axis, 1, 'concatenate only accepts axis values of 0 or 1')
 
-# TODO dont deprecate. Inlude error propagation
-def dual_arrayfunc(func):
-    # With the new array.default() feature these functions are not necessary any more. In the future
-    # the numpy functions will be used directly.
-    def func_wrapper(a1, a2, default_value=None, keys=None):
-        if default_value is not None:
-            if type(default_value) is not tuple:
-                default_value = (default_value, default_value)
+def add(a1, a2, *, keys = None, **kwargs):
+    """
+    Compute ``a1 + a2``.
 
-            if isinstance(a1, core.IsopyArray):
-                a1 = a1.default(default_value[0])
-            elif isinstance(a1, dict) and type(a1) is not core.RefValDict:
-                a1 = core.RefValDict(a1, default_value = default_value[0])
+    Same as calling ``arrayfunc(np.add, *args, keys=keys, **kwargs)``. See :func:`arrayfunc` for a more
+    detailed description on the workings of this function.
 
-            if isinstance(a2, core.IsopyArray):
-                a2 = a2.default(default_value[1])
-            elif isinstance(a2, dict) and type(a2) is not core.RefValDict:
-                a2 = core.RefValDict(a2, default_value = default_value[1])
+    Parameters
+    ----------
+    a1, a2 : array_like, numpy_array_like
+        Both inputs must have the same shape or at least one of the inputs must have a size of 1.
+    keys
+        If given then the this will be the keys of the returned array/dictionary.
+    kwargs
+        Can either be a valid kwargs for the numpy function or a key filter. If key filters are given
+        then only the columns with matching keys will be used to compute the result.
 
-        return arrayfunc(func, a1, a2, keys=keys)
-    return func_wrapper
+    Examples
+    --------
+    >>> a1 = isopy.array(ru = 1, pd = 3, ag = 4)
+    >>> a2 = isopy.array(ru = 1, rh=2, pd=3)
+    >>> isopy.add(a1, a2) # same as: a1 + a2
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------
+    None       2.00000        nan    6.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
 
-add = dual_arrayfunc(np.add)
-subtract = dual_arrayfunc(np.subtract)
-multiply = dual_arrayfunc(np.multiply)
-divide = dual_arrayfunc(np.divide)
-power = dual_arrayfunc(np.power)
+    >>> d2 = a2.to_refval()
+    >>> isopy.add(a1, d2) # same as: a1 + d2
+    (row)      Ru (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------
+    None       2.00000    6.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> isopy.add(1, 2, keys='ru pd cd')
+    (row)      Ru (i8)    Pd (i8)    Cd (i8)
+    -------  ---------  ---------  ---------
+    None             3          3          3
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    return arrayfunc(np.add, a1, a2, keys=keys, **kwargs)
+
+def subtract(a1, a2, *, keys = None, **kwargs):
+    """
+    Compute ``a1 - a2``.
+
+    Same as calling ``arrayfunc(np.add, *args, keys=keys, **kwargs)``. See :func:`arrayfunc` for a more
+    detailed description on the workings of this function.
+
+    Parameters
+    ----------
+    a1, a2 : array_like, numpy_array_like
+        Both inputs must have the same shape or at least one of the inputs must have a size of 1.
+    keys
+        If given then the this will be the keys or the returned array.
+    kwargs
+        Can either be a valid kwargs for the numpy function or a key filter. If key filters are given
+        then only the columns with matching keys will be used to compute the result.
+
+    Examples
+    --------
+    >>> a1 = isopy.array(ru = 1, pd = 3, ag = 4)
+    >>> a2 = isopy.array(ru = 1, rh=2, pd=3)
+    >>> isopy.subtract(a1, a2) # same as: a1 - a2
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------
+    None       0.00000        nan    0.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> d2 = a2.to_refval()
+    >>> isopy.subtract(a1, d2) # same as: a1 - d2
+    (row)      Ru (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------
+    None       0.00000    0.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> isopy.subtract(1, 2, keys='ru pd cd')
+    (row)      Ru (i8)    Pd (i8)    Cd (i8)
+    -------  ---------  ---------  ---------
+    None            -1         -1         -1
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    return arrayfunc(np.subtract, a1, a2, keys=keys, **kwargs)
+
+def multiply(a1, a2, *, keys = None, **kwargs):
+    """
+    Compute ``a1 * a2``.
+
+    Same as calling ``arrayfunc(np.add, *args, keys=keys, **kwargs)``. See :func:`arrayfunc` for a more
+    detailed description on the workings of this function.
+
+    Parameters
+    ----------
+    a1, a2 : array_like, numpy_array_like
+        Both inputs must have the same shape or at least one of the inputs must have a size of 1.
+    keys
+        If given then the this will be the keys or the returned array.
+    kwargs
+        Can either be a valid kwargs for the numpy function or a key filter. If key filters are given
+        then only the columns with matching keys will be used to compute the result.
+
+    Examples
+    --------
+    >>> a1 = isopy.array(ru = 1, pd = 3, ag = 4)
+    >>> a2 = isopy.array(ru = 1, rh=2, pd=3)
+    >>> isopy.multiply(a1, a2) # same as: a1 * a2
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------
+    None       1.00000        nan    9.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> d2 = a2.to_refval()
+    >>> isopy.multiply(a1, d2) # same as: a1 * d2
+    (row)      Ru (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------
+    None       1.00000    9.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> isopy.multiply(1, 2, keys='ru pd cd')
+    (row)      Ru (i8)    Pd (i8)    Cd (i8)
+    -------  ---------  ---------  ---------
+    None             2          2          2
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    return arrayfunc(np.multiply, a1, a2, keys=keys, **kwargs)
+
+def divide(a1, a2, *, keys = None, **kwargs):
+    """
+    Compute ``a1 / a2``.
+
+    Same as calling ``arrayfunc(np.add, *args, keys=keys, **kwargs)``. See :func:`arrayfunc` for a more
+    detailed description on the workings of this function.
+
+    Parameters
+    ----------
+    a1, a2 : array_like, numpy_array_like
+        Both inputs must have the same shape or at least one of the inputs must have a size of 1.
+    keys
+        If given then the this will be the keys or the returned array.
+    kwargs
+        Can either be a valid kwargs for the numpy function or a key filter. If key filters are given
+        then only the columns with matching keys will be used to compute the result.
+
+    Examples
+    --------
+    >>> a1 = isopy.array(ru = 1, pd = 3, ag = 4)
+    >>> a2 = isopy.array(ru = 1, rh=2, pd=3)
+    >>> isopy.divide(a1, a2) # same as: a1 / a2
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------
+    None       1.00000        nan    1.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> d2 = a2.to_refval()
+    >>> isopy.divide(a1, d2) # same as: a1 / d2
+    (row)      Ru (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------
+    None       1.00000    1.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+
+    >>> isopy.divide(1, 2, keys='ru pd cd')
+    (row)      Ru (f8)    Pd (f8)    Cd (f8)
+    -------  ---------  ---------  ---------
+    None       0.50000    0.50000    0.50000
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    return arrayfunc(np.divide, a1, a2, keys=keys, **kwargs)
+
+def power(a1, a2, *, keys = None, **kwargs):
+    """
+    Compute ``a1 ** a2``.
+
+    Same as calling ``arrayfunc(np.add, *args, keys=keys, **kwargs)``. See :func:`arrayfunc` for a more
+    detailed description on the workings of this function.
+
+    Parameters
+    ----------
+    a1, a2 : array_like, numpy_array_like
+        Both inputs must have the same shape or at least one of the inputs must have a size of 1.
+    keys
+        If given then the this will be the keys or the returned array.
+    kwargs
+        Can either be a valid kwargs for the numpy function or a key filter. If key filters are given
+        then only the columns with matching keys will be used to compute the result.
+
+    Examples
+    --------
+    >>> a1 = isopy.array(ru = 1, pd = 3, ag = 4)
+    >>> a2 = isopy.array(ru = 1, rh=2, pd=3)
+    >>> isopy.power(a1, a2) # same as: a1 ** a2
+    (row)      Ru (f8)    Rh (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------  ---------
+    None       1.00000        nan   27.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+    >>> d2 = a2.to_refval()
+    >>> isopy.power(a1, d2) # same as: a1 ** d2
+    (row)      Ru (f8)    Pd (f8)    Ag (f8)
+    -------  ---------  ---------  ---------
+    None       1.00000   27.00000        nan
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+
+
+
+    >>> isopy.power(1, 2, keys='ru pd cd')
+    (row)      Ru (i8)    Pd (i8)    Cd (i8)
+    -------  ---------  ---------  ---------
+    None             1          1          1
+    IsopyNdarray(-1, flavour='element', default_value=nan)
+    """
+    return arrayfunc(np.power, a1, a2, keys=keys, **kwargs)
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=sd)
+@core.add_preset('sd2', cval=np.mean, pmval=sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=sd3)
+@core.add_preset('se', cval=np.mean, pmval=se)
+@core.add_preset('se2', cval=np.mean, pmval=se2)
+@core.add_preset('se3', cval=np.mean, pmval=se3)
+@core.add_preset('mad', cval=np.median, pmval=mad)
+@core.add_preset('mad2', cval=np.median, pmval=mad2)
+@core.add_preset('mad3', cval=np.median, pmval=mad3)
+def is_outlier(data, cval = np.median, pmval=mad3, axis = None):
+    """
+    Mark all the outliers in the data as ``True`` and the rest as ``False``.
+
+    Parameters
+    ----------
+    data : isopy_array_like
+        The outliers will be calculated for each column in *data*.
+    cval : scalar, Callable
+        Either the center value or a function that returns the center
+        value when called with *data*.
+    pmval : scalar, Callable
+        Either the uncertainty value or a function that returns the
+        uncertainty when called with *data*.
+    axis : {0, 1}, Optional
+        If not given then an array with each individual outlier marked is returned. Otherwise
+        ``np.any(outliers, axis)`` is returned.
+    """
+    if callable(cval):
+        cval = cval(data)
+    if callable(pmval):
+        pmval = pmval(data)
+    pmval = np.abs(pmval)
+
+    outliers = (data > (cval + pmval)) + (data < (cval - pmval))
+
+    if axis is not None:
+        outliers = np.any(outliers, axis=axis)
+
+    return outliers
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=sd)
+@core.add_preset('sd2', cval=np.mean, pmval=sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=sd3)
+@core.add_preset('se', cval=np.mean, pmval=se)
+@core.add_preset('se2', cval=np.mean, pmval=se2)
+@core.add_preset('se3', cval=np.mean, pmval=se3)
+@core.add_preset('mad', cval=np.median, pmval=mad)
+@core.add_preset('mad2', cval=np.median, pmval=mad2)
+@core.add_preset('mad3', cval=np.median, pmval=mad3)
+def not_outlier(data, cval = np.median, pmval=mad3, axis = None):
+    """
+    Mark all the outliers in the data as ``False`` and the rest as ``True``.
+
+    The inverted value of :func:`is_outlier`.
+
+    Parameters
+    ----------
+    data : isopy_array_like
+        The outliers will be calculated for each column in *data*.
+    cval : scalar, Callable
+        Either the center value or a function that returns the center
+        value when called with *data*.
+    pmval : scalar, Callable
+        Either the uncertainty value or a function that returns the
+        uncertainty when called with *data*.
+    axis : {0, 1}, Optional
+        If not given then an array with each individual outlier marked is returned. Otherwise
+        ``np.any(outliers, axis)`` is returned.
+    """
+    outliers = is_outlier(data, cval, pmval, axis)
+    return np.invert(outliers)
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=sd)
+@core.add_preset('sd2', cval=np.mean, pmval=sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=sd3)
+@core.add_preset('se', cval=np.mean, pmval=se)
+@core.add_preset('se2', cval=np.mean, pmval=se2)
+@core.add_preset('se3', cval=np.mean, pmval=se3)
+@core.add_preset('mad', cval=np.median, pmval=mad)
+@core.add_preset('mad2', cval=np.median, pmval=mad2)
+@core.add_preset('mad3', cval=np.median, pmval=mad3)
+def upper_limit(data, cval=np.median, pmval=mad3):
+    """
+    Calculate the upper limit of the uncertainty on *data* as ``cval + pmval``.
+
+    Parameters
+    ----------
+    data
+        The data on which the limit will be calculated
+    cval
+        The centre value. Can either be a scalar value or a function that returns the centre value.
+    pmval
+        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
+    """
+    if callable(cval):
+        cval = cval(data)
+    if callable(pmval):
+        pmval = pmval(data)
+    pmval = np.abs(pmval)
+
+    return cval + pmval
+
+@core.append_preset_docstring
+@core.add_preset('sd', cval=np.mean, pmval=sd)
+@core.add_preset('sd2', cval=np.mean, pmval=sd2)
+@core.add_preset('sd3', cval=np.mean, pmval=sd3)
+@core.add_preset('se', cval=np.mean, pmval=se)
+@core.add_preset('se2', cval=np.mean, pmval=se2)
+@core.add_preset('se3', cval=np.mean, pmval=se3)
+@core.add_preset('mad', cval=np.median, pmval=mad)
+@core.add_preset('mad2', cval=np.median, pmval=mad2)
+@core.add_preset('mad3', cval=np.median, pmval=mad3)
+def lower_limit(data, cval=np.median, pmval=mad3):
+    """
+    Calculate the lower limit of the uncertainty on *data* as ``cval + pmval``.
+
+    Parameters
+    ----------
+    data
+        The data on which the limit will be calculated
+    cval
+        The centre value. Can either be a scalar value or a function that returns the centre value.
+    pmval
+        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
+    """
+    if callable(cval):
+        cval = cval(data)
+    if callable(pmval):
+        pmval = pmval(data)
+    pmval = np.abs(pmval)
+
+    return cval - pmval
 
 @core.append_preset_docstring
 @core.add_preset('abs', abs = True)
@@ -717,7 +1063,7 @@ np_elementwise = [np.sin, np.cos, np.tan, np.arcsin, np.arccos, np.arctan, np.de
                   np.absolute, np.abs]
 np_cumulative = [np.cumprod, np.cumsum, np.nancumprod, np.nancumsum]
 np_reducing = [np.prod, np.sum, np.nanprod, np.nansum, np.cumprod, np.cumsum, np.nancumprod, np.nancumsum,
-               np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean, np.average,
+               np.amin, np.amax, np.nanmin, np.nanmax, np.ptp, np.median, np.average, np.mean,
                np.std, np.var, np.nanmedian, np.nanmean, np.nanstd, np.nanvar, np.nanmax, np.nanmin,
                np.all, np.any]
 np_special = [np.copyto, np.average]
@@ -726,16 +1072,20 @@ np_dual = [np.add, np.subtract, np.divide, np.multiply, np.power]
 
 for functions in [np_elementwise, np_cumulative, np_reducing, np_special, np_dual]:
     for func in functions:
+        new_func = arrayfunc_wrapper(func)
         core.APPROVED_FUNCTIONS.append(func)
         if func.__name__ not in __all__:
             __all__.append(func.__name__)
-            globals()[func.__name__] = func
+            globals()[func.__name__] = new_func
         if func.__name__ == 'amin':
             __all__.append('min')
-            globals()['min'] = func
+            globals()['min'] = new_func
         if func.__name__ == 'amax':
             __all__.append('max')
-            globals()['max'] = func
+            globals()['max'] = new_func
+        if func.__name__ == 'absolute':
+            __all__.append('abs')
+            globals()['abs'] = new_func
 
 def approved_numpy_functions(format ='name', delimiter =', '):
     """

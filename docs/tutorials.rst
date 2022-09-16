@@ -1,4 +1,8 @@
 Tutorials
 *********
 
-The tutorials page is currently under construction.
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials
+
+   Arrays and Reference Values <tutorials/part1_arrays>

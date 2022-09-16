@@ -34,35 +34,54 @@ __version__ = version('isopy')
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    #'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
-    'nbsphinx',
-    'sphinx_copybutton']
+    'myst_nb',
+    'sphinx_copybutton',
+    'sphinx.ext.intersphinx']
 #    'sphinx_autodoc_typehints']
 
-autosummary_generate = True
-autosummary_generate_overwrite = True
+nb_execution_mode = 'off'
+myst_enable_extensions = ["dollarmath", "amsmath"]
+myst_update_mathjax=False
+myst_mathjax_classes = 'tex2jax_process|mathjax_process|math|output_area|pre|table|thead|th|*text_html'
+myst_dmath_double_inline = True
+#nb_kernel_rgx_aliases = {'conda-env-main-py': 'conda-env-main'}
+mathjax3_config = {
+  'tex': {
+    'inlineMath': [['$', '$'], ['\\(', '\\)']]
+  }}
+
+
+
+#autosummary_generate = True
+#autosummary_generate_overwrite = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autodoc_typehints = "description"
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'numpy': ('https://numpy.org/doc/stable/', None),
+                       'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+                       'matplotlib': ('https://matplotlib.org/stable/', None)}
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+#source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
 
 # General information about the project.
 project = 'isopy'
-copyright = '2021, Mattias Ek'
+copyright = '2022, Mattias Ek'
 author = 'Mattias Ek'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -30,7 +30,7 @@ def test_mass_fractionation1():
     assert c_unfractionated2.keys == unfractionated.keys
     assert c_unfractionated2.size == unfractionated.size
 
-    c_mf_factor2 = isopy.tb.calculate_mass_fractionation_factor(c_fractionated1, '108pd/105pd')
+    c_mf_factor2 = isopy.tb.mass_fractionation_factor(c_fractionated1, '108pd/105pd')
     np.testing.assert_allclose(c_mf_factor2, mf_factor)
 
     for key in unfractionated.keys:
@@ -66,7 +66,7 @@ def test_mass_fractionation1():
     assert c_unfractionated2.keys == unfractionated.keys
     assert c_unfractionated2.size == unfractionated.size
 
-    c_mf_factor2 = isopy.tb.calculate_mass_fractionation_factor(c_fractionated1, '108pd/105pd',
+    c_mf_factor2 = isopy.tb.mass_fractionation_factor(c_fractionated1, '108pd/105pd',
                                                                 isotope_masses=mass_ref, isotope_fractions=fraction_ref)
     np.testing.assert_allclose(c_mf_factor2, mf_factor)
 
@@ -101,7 +101,7 @@ def test_mass_fractionation2():
     assert c_unfractionated2.keys == unfractionated.keys
     assert c_unfractionated2.size == unfractionated.size
 
-    c_mf_factor2 = isopy.tb.calculate_mass_fractionation_factor(c_fractionated2, '108pd/105pd')
+    c_mf_factor2 = isopy.tb.mass_fractionation_factor(c_fractionated2, '108pd/105pd')
     np.testing.assert_allclose(c_mf_factor2, mf_factor)
 
     for key in unfractionated.keys:
@@ -130,7 +130,7 @@ def test_mass_fractionation2():
     assert c_unfractionated2.keys == unfractionated.keys
     assert c_unfractionated2.size == unfractionated.size
 
-    c_mf_factor2 = isopy.tb.calculate_mass_fractionation_factor(c_fractionated2, '108pd/105pd',
+    c_mf_factor2 = isopy.tb.mass_fractionation_factor(c_fractionated2, '108pd/105pd',
                                                                 isotope_masses=mass_ref, isotope_fractions=fraction_ref)
     np.testing.assert_allclose(c_mf_factor2, mf_factor)
 
@@ -926,217 +926,6 @@ class Test_rDelta():
         assert calculated.ndim == correct.ndim
         for key in calculated.keys:
             np.testing.assert_allclose(calculated[key], correct[key])
-
-
-class Test_OutliersLimits:
-    def test_limits(self):
-        data = isopy.random(100, (1,1), keys=isopy.refval.element.isotopes['pd'])
-
-        median = np.median(data)
-        mean = np.mean(data)
-        mad3 = isopy.mad3(data)
-        sd2 = isopy.sd2(data)
-
-        upper = isopy.tb.upper_limit(data)
-        assert upper == median + mad3
-
-        upper = isopy.tb.upper_limit(data, np.mean, isopy.sd2)
-        assert upper == mean + sd2
-
-        upper = isopy.tb.upper_limit.sd2(data)
-        assert upper == mean + sd2
-
-        upper = isopy.tb.upper_limit(data, 1, isopy.sd2)
-        assert upper == 1 + sd2
-
-        upper = isopy.tb.upper_limit(data, np.mean, 1)
-        assert upper == mean + 1
-
-        upper = isopy.tb.upper_limit(data, 1, 1)
-        assert upper == 2
-
-        lower = isopy.tb.lower_limit(data)
-        assert lower == median - mad3
-
-        lower = isopy.tb.lower_limit.sd2(data)
-        assert lower == mean - sd2
-
-        lower = isopy.tb.lower_limit(data, np.mean, isopy.sd2)
-        assert lower == mean - sd2
-
-        lower = isopy.tb.lower_limit(data, 1, isopy.sd2)
-        assert lower == 1 - sd2
-
-        lower = isopy.tb.lower_limit(data, np.mean, 1)
-        assert lower == mean - 1
-
-        lower = isopy.tb.lower_limit(data, 1, 1)
-        assert lower == 0
-
-    def test_find_outliers1(self):
-        #axis = 0
-        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
-
-        median = np.median(data)
-        mean = np.mean(data)
-        mad3 = isopy.mad3(data)
-        sd = isopy.sd(data)
-
-        median_outliers = (data > (median + mad3)) + (data < (median - mad3))
-        mean_outliers = (data > (mean + sd)) + (data < (mean - sd))
-        mean_outliers1 = (data > (1 + sd)) + (data < (1 - sd))
-        mean_outliers2 = (data > (mean + 1)) + (data < (mean - 1))
-        mean_outliers3 = (data > (1 + 1)) + (data < (1 - 1))
-
-        outliers = isopy.tb.find_outliers(data)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], median_outliers[key])
-
-        outliers = isopy.tb.find_outliers(data, np.mean, isopy.sd)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers[key])
-
-        outliers = isopy.tb.find_outliers.sd(data)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers[key])
-
-        outliers = isopy.tb.find_outliers(data, 1, isopy.sd)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
-
-        outliers = isopy.tb.find_outliers(data, np.mean, 1)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
-
-        outliers = isopy.tb.find_outliers(data, 1, 1)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
-
-        # invert
-        median_outliers = np.invert(median_outliers)
-        mean_outliers = np.invert(mean_outliers)
-        mean_outliers1 = np.invert(mean_outliers1)
-        mean_outliers2 = np.invert(mean_outliers2)
-        mean_outliers3 = np.invert(mean_outliers3)
-
-        outliers = isopy.tb.find_outliers(data, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], median_outliers[key])
-
-        outliers = isopy.tb.find_outliers(data, np.mean, isopy.sd, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers[key])
-
-        outliers = isopy.tb.find_outliers.sd(data, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers[key])
-
-        outliers = isopy.tb.find_outliers(data, 1, isopy.sd, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
-
-        outliers = isopy.tb.find_outliers(data, np.mean, 1, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
-
-        outliers = isopy.tb.find_outliers(data, 1, 1, invert=True)
-        assert outliers.keys == data.keys
-        assert outliers.size == data.size
-        for key in outliers.keys:
-            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
-
-    def test_find_outliers2(self):
-        # axis = 0
-        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
-
-        median = np.median(data)
-        mean = np.mean(data)
-        mad3 = isopy.mad3(data)
-        sd = isopy.sd2(data)
-
-        median_outliers = np.any((data > (median + mad3)) + (data < (median - mad3)), axis=1)
-        mean_outliers = np.any((data > (mean + sd)) + (data < (mean - sd)), axis=1)
-        mean_outliers1 = np.any((data > (1 + sd)) + (data < (1 - sd)), axis=1)
-        mean_outliers2 = np.any((data > (mean + 1)) + (data < (mean - 1)), axis=1)
-        mean_outliers3 = np.any((data > (1 + 1)) + (data < (1 - 1)), axis=1)
-
-        outliers = isopy.tb.find_outliers(data, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, median_outliers)
-
-        outliers = isopy.tb.find_outliers(data, np.mean, isopy.sd2, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers)
-
-        outliers = isopy.tb.find_outliers.sd2(data, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers)
-
-        outliers = isopy.tb.find_outliers(data, 1, isopy.sd2, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers1)
-
-        outliers = isopy.tb.find_outliers(data, np.mean, 1, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers2)
-
-        outliers = isopy.tb.find_outliers(data, 1, 1, axis=1)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers3)
-
-        # invert
-
-        median_outliers = np.invert(median_outliers)
-        mean_outliers = np.invert(mean_outliers)
-        mean_outliers1 = np.invert(mean_outliers1)
-        mean_outliers2 = np.invert(mean_outliers2)
-        mean_outliers3 = np.invert(mean_outliers3)
-
-        outliers = isopy.tb.find_outliers(data, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, median_outliers)
-
-        outliers = isopy.tb.find_outliers(data, np.mean, isopy.sd2, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers)
-
-        outliers = isopy.tb.find_outliers.sd2(data, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers)
-
-        outliers = isopy.tb.find_outliers(data, 1, isopy.sd2, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers1)
-
-        outliers = isopy.tb.find_outliers(data, np.mean, 1, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers2)
-
-        outliers = isopy.tb.find_outliers(data, 1, 1, axis=1, invert=True)
-        assert len(outliers) == data.size
-        np.testing.assert_allclose(outliers, mean_outliers3)
 
 
 class Test_Make:

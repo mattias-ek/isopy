@@ -202,10 +202,10 @@ class Test_misc:
         for name in isopy.refval.isotope.ls():
             assert name in repr(isopy.refval.isotope)
 
-        assert core.hashstr(isopy.refval._repr_markdown_()) == '58524ff047550928919ca4ba2c51b005'
+        assert core.hashstr(isopy.refval._repr_markdown_()) == '5f5a200e889b543b68a7938b3e30a35e'
         assert core.hashstr(isopy.refval.mass._repr_markdown_()) == 'f90c29d0d9f3efe2a29870a092e68876'
         assert core.hashstr(isopy.refval.element._repr_markdown_()) == '526d192ed8dc27262bebd65444b35e3a'
-        assert core.hashstr(isopy.refval.isotope._repr_markdown_()) == 'fb714ca828eec0caf6aeb58034afc27e'
+        assert core.hashstr(isopy.refval.isotope._repr_markdown_()) == 'f43b9a96532bc5586bdc10fe279541e7'
 
     def test_call_string(self):
         assert isopy.refval('mass.isotopes') is isopy.refval.mass.isotopes

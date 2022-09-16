@@ -5167,7 +5167,7 @@ class Test_ToMixin:
 
         text = repr(a)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'f08e2d4e1b6b92a1ab185e1bcd67ccab'
+        assert core.hashstr(text) == 'fc675acb96bc689d1858e474a3aa9482'
         assert core.hashstr(text._repr_html_()) == 'c3c446a2f8c29d6199009ea31338414d'
 
         text = str(a)
@@ -5236,7 +5236,7 @@ class Test_ToMixin:
 
         text = repr(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '840ff21a7dcaf298d8c209f4428573dd'
+        assert core.hashstr(text) == '93380e8bd348b98d29a9a9d5fa28a5e2'
         assert core.hashstr(text._repr_html_()) == 'd6bd042e8230f8e9ecbd55fff7da31ea'
 
         text = str(d)
@@ -5249,7 +5249,7 @@ class Test_ToMixin:
 
         text = repr(a)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'e2558ec357026193cba3ba1748aea17d'
+        assert core.hashstr(text) == '296739ff607d12ee6eb1a68cd11bc98d'
         assert core.hashstr(text._repr_html_()) == 'a3dc3e70930e0ddd2d1540cad4e5fb0a'
 
         text = str(a)
@@ -5273,7 +5273,7 @@ class Test_ToMixin:
 
         text = repr(a)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '9551a394f43d2f25b6f546fe02f17513'
+        assert core.hashstr(text) == '6fbd77821ad90fd29d3879636bc9ee99'
         assert core.hashstr(text._repr_html_()) == '4ec7e9c2bd1b2dcc4914037531306e1a'
 
         text = str(a)
@@ -5295,7 +5295,7 @@ class Test_ToMixin:
 
         text = repr(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'f610340cba0297c396c5c1c3364ce769'
+        assert core.hashstr(text) == '93a285fd104c52d5e32239e70d04c7e4'
         assert core.hashstr(text._repr_html_()) == 'dcdcbe279bf51aa89362abdecf04ec7c'
 
         text = str(d)
@@ -5308,7 +5308,7 @@ class Test_ToMixin:
 
         text = repr(a0)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '91e8c59630b8fda494955dc547fbf163'
+        assert core.hashstr(text) == '83965745cb5e706177f4626716926fea'
         assert core.hashstr(text._repr_html_()) == '773b2663db153948bb8b567cdaa7f454'
 
         text = str(a0)
@@ -5854,8 +5854,8 @@ class Test_Misc:
 
     def test_notgiven(self):
         assert not isopy.core.NotGiven
-        assert str(isopy.core.NotGiven) == 'N/A'
-        assert repr(isopy.core.NotGiven) == 'N/A'
+        assert str(isopy.core.NotGiven) == 'Optional'
+        assert repr(isopy.core.NotGiven) == 'Optional'
 
     def test_renamed_kwarg(self):
         """

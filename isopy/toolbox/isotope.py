@@ -3,11 +3,10 @@ import isopy as isopy
 from isopy import core
 
 __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
-           'calculate_mass_fractionation_factor', 'internal_normalisation',
+           'mass_fractionation_factor', 'internal_normalisation',
            'remove_isobaric_interferences', 'find_isobaric_interferences',
            'make_ms_array', 'make_ms_beams', 'make_ms_sample', 'johnson_nyquist_noise',
-           'rDelta', 'inverse_rDelta',
-           'find_outliers', 'upper_limit', 'lower_limit']
+           'rDelta', 'inverse_rDelta']
 
 import isopy.checks
 import isopy.core
@@ -81,14 +80,12 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.03025       0.08932       0.12565       0.13884       0.13663       0.09156
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> resistors = dict(pd102=1E13, pd106=1E10) #1E11 is used for missing keys
     >>> isopy.tb.johnson_nyquist_noise(array, resistors) * 1000
     (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.02672       0.08932       0.12565       0.14528       0.13663       0.09156
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     """
 
@@ -155,35 +152,30 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
     (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.01020       0.11140       0.22330       0.27330       0.26460       0.11720
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', ru101=0.1)
     (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.01706       0.04175       0.13002       0.22330       0.27330       0.26460       0.11720
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', ru101=0.1, ru99=0) #99Ru doesnt contribute anything to the array but gets a contribution from 101Ru.
     (row)      99Ru (f8)    101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
     -------  -----------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None         0.01276       0.01706       0.04175       0.13002       0.22330       0.27330       0.26460       0.11720
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', 'cd')
     (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)    112Cd (f8)    113Cd (f8)    114Cd (f8)    116Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.01020       0.11140       0.22330       0.28579       0.27350       0.24205       0.12804       0.24117       0.12225       0.28729       0.07501
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> isopy.tb.make_ms_array('pd', cd=1) #Same as example above
     (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)    112Cd (f8)    113Cd (f8)    114Cd (f8)    116Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.01020       0.11140       0.22330       0.28579       0.27350       0.24205       0.12804       0.24117       0.12225       0.28729       0.07501
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     See Also
@@ -316,7 +308,6 @@ def make_ms_beams(*args, mf_factor=None, fixed_voltage = 10, fixed_key = isopy.k
     97            0.06243       0.48863       4.14421       8.17031      10.00014       9.68160       4.28837
     98            0.06237       0.48867       4.14419       8.17038       9.99999       9.68159       4.28828
     99            0.06241       0.48864       4.14425       8.17037      10.00001       9.68175       4.28839
-
     IsopyNdarray(100, flavour='isotope', default_value=nan)
 
     See Also
@@ -425,7 +416,6 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
     97            0.49405       1.29465       4.70730       8.28448       9.99992       9.41271       4.09031       0.03591
     98            0.49394       1.29459       4.70733       8.28431      10.00006       9.41278       4.09040       0.03592
     99            0.49397       1.29457       4.70732       8.28445       9.99980       9.41286       4.09026       0.03592
-
     IsopyNdarray(100, flavour='isotope', default_value=nan)
 
 
@@ -460,16 +450,16 @@ def make_ms_sample(ms_array, *, fnat = None, fins = None, fixed_voltage = 10, fi
 
         blank = blank.normalise(blank_fixed_voltage, blank_fixed_key)
         if fixed_key is None:
-            sum = isopy.arrayfunc(isopy.subtract, ms_array, blank.default(0), keys=ms_array.keys).sum(axis=None)
+            sum = isopy.subtract(ms_array, blank.default(0), keys=ms_array.keys).sum(axis=None)
             ms_array = ms_array.normalise(sum, None)
         elif isinstance(fixed_key, (str, list, tuple)):
-            sum = isopy.arrayfunc(isopy.subtract, ms_array.default(0), blank, keys=fixed_key).sum(axis=None)
+            sum = isopy.subtract(ms_array.default(0), blank, keys=fixed_key).sum(axis=None)
             ms_array = ms_array.normalise(sum, fixed_key)
         else:
-            sum = isopy.arrayfunc(isopy.subtract, ms_array, blank.default(0), keys=fixed_key(ms_array)).sum(axis=None)
+            sum = isopy.subtract(ms_array, blank.default(0), keys=fixed_key(ms_array)).sum(axis=None)
             ms_array = ms_array.normalise(sum, fixed_key(ms_array))
 
-        ms_array = isopy.arrayfunc(isopy.add, ms_array, blank.default(0), keys=ms_array.keys)
+        ms_array = isopy.add(ms_array, blank.default(0), keys=ms_array.keys)
 
     ms_array = make_ms_beams(ms_array, fixed_voltage=None, integrations=integrations,
                              integration_time=integration_time, random_seed=random_seed,
@@ -535,25 +525,21 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.62089       1.51955       4.72959       8.12576      10.00000       9.68819       4.73963       0.46692
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd')
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------
     None                0.04568             0.49888             1.22391             0.52485
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd') / isopy.refval.isotope.fraction
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------
     None                1.00000             1.00000             1.00000             1.00000
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.internal_normalisation(array, '108Pd/105Pd', interference_correction=False, extnorm_factor=1)
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------
     None                3.11997             0.16916             0.00343             0.10006
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     """
     #data = isopy.checks.check_array('data', data, 'isotope', 'ratio')
@@ -580,7 +566,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
         isobaric_interferences = {}
 
     #Find the initial mass fractionation
-    beta = calculate_mass_fractionation_factor(rat, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
+    beta = mass_fractionation_factor(rat, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
     if isobaric_interferences:
         #Do a combined mass fractionation and isobaric interference correction.
@@ -593,7 +579,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
                                                  beta, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
             # Calculate the mass fractionation.
-            beta = calculate_mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
+            beta = mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
 
             if np.all(np.abs(beta - prev_beta) < mf_tol):
                 break #Beta value has converged so no need for more iterations.
@@ -618,8 +604,8 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
     # Return the corrected data
     return rat
 
-def calculate_mass_fractionation_factor(data, mf_ratio,
-                                        isotope_fractions='isotope.fraction', isotope_masses='isotope.mass'):
+def mass_fractionation_factor(data, mf_ratio,
+                              isotope_fractions='isotope.fraction', isotope_masses='isotope.mass'):
     """
     Calculate the mass fractionation factor for a given ratio in *data*.
 
@@ -650,12 +636,12 @@ def calculate_mass_fractionation_factor(data, mf_ratio,
     --------
     >>> array = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.add_mass_fractionation(array, 0.1)
-    >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
+    >>> isopy.tb.mass_fractionation_factor(array, '108pd/105pd')
     0.09999999999999679
 
     >>> array = isopy.tb.make_ms_array('pd').ratio('105pd')
     >>> array = isopy.tb.remove_mass_fractionation(array, 0.15)
-    >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
+    >>> isopy.tb.mass_fractionation_factor(array, '108pd/105pd')
     -0.1500000000000046
 
     See Also
@@ -711,16 +697,14 @@ def remove_mass_fractionation(data, fractionation_factor, denom = None, isotope_
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.04568             0.49888             1.22391             1.18495             0.52485
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> array = isopy.tb.remove_mass_fractionation(array, 0.15)
     >>> array
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.04588             0.49960             1.22218             1.17995             0.52120
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
-    >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
+    >>> isopy.tb.mass_fractionation_factor(array, '108pd/105pd')
     -0.1500000000000046
 
     See Also
@@ -782,16 +766,14 @@ def add_mass_fractionation(data, fractionation_factor, denom=None, isotope_masse
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.04568             0.49888             1.22391             1.18495             0.52485
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> array = isopy.tb.add_mass_fractionation(array, 0.1)
     >>> array
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.04555             0.49840             1.22507             1.18830             0.52730
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
-    >>> isopy.tb.calculate_mass_fractionation_factor(array, '108pd/105pd')
+    >>> isopy.tb.mass_fractionation_factor(array, '108pd/105pd')
     0.09999999999999679
 
     See Also
@@ -944,7 +926,6 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.01706       0.04175       0.13002       0.22330       0.27455       0.26549       0.12968       0.01280
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
     >>> interferences
@@ -954,13 +935,11 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.00000       0.01020       0.11140       0.22330       0.27330       0.26460       0.11720       0.00000
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0)
     (row)      101Ru (f8)    102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)    111Cd (f8)
     -------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------
     None          0.00000       0.01020       0.11140       0.22330       0.27330       0.26460       0.11720       0.00000
-
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
 
     >>> array = isopy.tb.make_ms_array('pd', ru101 = 0.1, cd111 = 0.1).ratio('106pd')
@@ -968,7 +947,6 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.06214             0.15207             0.47358             0.81333             0.96700             0.47236             0.04664
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> interferences = isopy.tb.find_isobaric_interferences('pd', array)
     >>> interferences
@@ -978,13 +956,11 @@ def remove_isobaric_interferences(data, isobaric_interferences, mf_factor=None,
     (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.00000             0.03732             0.40761             0.81705             0.96817             0.42883             0.00000
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.make_ms_array('pd', ru101 = 0, cd111 = 0).ratio('106pd')
     (row)      101Ru/106Pd (f8)    102Pd/106Pd (f8)    104Pd/106Pd (f8)    105Pd/106Pd (f8)    108Pd/106Pd (f8)    110Pd/106Pd (f8)    111Cd/106Pd (f8)
     -------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------  ------------------
     None                0.00000             0.03732             0.40761             0.81705             0.96817             0.42883             0.00000
-
     IsopyNdarray(-1, flavour='ratio[isotope, isotope]', default_value=nan)
     """
 
@@ -1099,7 +1075,6 @@ def rDelta(data, reference_data, factor=1, deviations=1):
     97                 -0.02951            -0.01016             0.00947             0.02935             0.04818
     98                 -0.02557            -0.00915             0.00982             0.02870             0.04775
     99                 -0.02639            -0.00938             0.00919             0.02882             0.04825
-
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
 
     >>> isopy.tb.rDelta(array, ref, factor=1E4)
@@ -1116,7 +1091,6 @@ def rDelta(data, reference_data, factor=1, deviations=1):
     97               -295.11884          -101.55413            94.69753           293.47311           481.82985
     98               -255.68137           -91.53948            98.16303           286.97835           477.46565
     99               -263.94694           -93.75097            91.94048           288.19007           482.45473
-
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
 
     >>> isopy.tb.rDelta.epsilon(array, ref) # preset where factor = 1E4
@@ -1133,7 +1107,6 @@ def rDelta(data, reference_data, factor=1, deviations=1):
     97               -295.11884          -101.55413            94.69753           293.47311           481.82985
     98               -255.68137           -91.53948            98.16303           286.97835           477.46565
     99               -263.94694           -93.75097            91.94048           288.19007           482.45473
-
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
 
     """
@@ -1194,7 +1167,6 @@ def inverse_rDelta(data, reference_data, factor=1, deviations=1):
     97                  0.04437             0.49413             1.23557             1.21886             0.54986
     98                  0.04437             0.49413             1.23555             1.21883             0.54987
     99                  0.04438             0.49413             1.23559             1.21884             0.54988
-
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
     >>> isopy.tb.inverse_rDelta.epsilon(norm, ref) / array
     (row)      102Pd/105Pd (f8)    104Pd/105Pd (f8)    106Pd/105Pd (f8)    108Pd/105Pd (f8)    110Pd/105Pd (f8)
@@ -1210,7 +1182,6 @@ def inverse_rDelta(data, reference_data, factor=1, deviations=1):
     97                  1.00000             1.00000             1.00000             1.00000             1.00000
     98                  1.00000             1.00000             1.00000             1.00000             1.00000
     99                  1.00000             1.00000             1.00000             1.00000             1.00000
-
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
     """
     data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
@@ -1246,119 +1217,3 @@ def _combine_reference_values(values):
         return isopy.RefValDict(out[0], ratio_function='divide')
     else:
         return isopy.RefValDict(np.mean(isopy.rstack(*out)), ratio_function='divide')
-
-@core.append_preset_docstring
-@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
-@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
-@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
-@core.add_preset('se', cval=np.mean, pmval=isopy.se)
-@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
-@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
-@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
-@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
-@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
-def find_outliers(data, cval = np.median, pmval=isopy.mad3, axis = None, invert=False):
-    """
-    Find all outliers in data.
-
-    If *invert* is ``False`` the result will be an array where outliers
-    are marked with ``True`` and everything else ``False``. If *invert*
-    is ``True`` the result is inverted so outliers are marked with
-    ``False``.
-
-    Parameters
-    ----------
-    data : isopy_array_like
-        The outliers will be calculated for each column in *data*.
-    cval : scalar, Callable
-        Either the center value or a function that returns the center
-        value when called with *data*.
-    pmval : scalar, Callable
-        Either the uncertainty value or a function that returns the
-        uncertainty when called with *data*.
-    axis : {0, 1}, Optional
-        If not given then an array with each individual outlier marked is returned. Otherwise
-        ``np.any(outliers, axis)`` is returned.
-    invert : bool
-        If ``True`` the output is inverted.
-    """
-    axis = isopy.checks.check_type('axis', axis, int, allow_none=True)
-
-    if callable(cval):
-        cval = cval(data)
-    if callable(pmval):
-        pmval = pmval(data)
-    pmval = np.abs(pmval)
-
-    outliers = (data > (cval + pmval)) + (data < (cval - pmval))
-
-    if axis is not None:
-        outliers = np.any(outliers, axis=axis)
-
-    if invert:
-        outliers = np.invert(outliers)
-
-    return outliers
-
-@core.append_preset_docstring
-@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
-@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
-@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
-@core.add_preset('se', cval=np.mean, pmval=isopy.se)
-@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
-@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
-@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
-@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
-@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
-def upper_limit(data, cval=np.median, pmval=isopy.mad3):
-    """
-    Calculate the upper limit of the uncertainty on *data* as ``cval + pmval``.
-
-
-    Parameters
-    ----------
-    data
-        The data on which the limit will be calculated
-    cval
-        The centre value. Can either be a scalar value or a function that returns the centre value.
-    pmval
-        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
-    """
-    if callable(cval):
-        cval = cval(data)
-    if callable(pmval):
-        pmval = pmval(data)
-    pmval = np.abs(pmval)
-
-    return cval + pmval
-
-@core.append_preset_docstring
-@core.add_preset('sd', cval=np.mean, pmval=isopy.sd)
-@core.add_preset('sd2', cval=np.mean, pmval=isopy.sd2)
-@core.add_preset('sd3', cval=np.mean, pmval=isopy.sd3)
-@core.add_preset('se', cval=np.mean, pmval=isopy.se)
-@core.add_preset('se2', cval=np.mean, pmval=isopy.se2)
-@core.add_preset('se3', cval=np.mean, pmval=isopy.se3)
-@core.add_preset('mad', cval=np.median, pmval=isopy.mad)
-@core.add_preset('mad2', cval=np.median, pmval=isopy.mad2)
-@core.add_preset('mad3', cval=np.median, pmval=isopy.mad3)
-def lower_limit(data, cval=np.median, pmval=isopy.mad3):
-    """
-    Calculate the lower limit of the uncertainty on *data* as ``cval + pmval``.
-
-    Parameters
-    ----------
-    data
-        The data on which the limit will be calculated
-    cval
-        The centre value. Can either be a scalar value or a function that returns the centre value.
-    pmval
-        The uncertainty around *cval*. Can either be a scalar value or a function that returns the uncertainty.
-    """
-    if callable(cval):
-        cval = cval(data)
-    if callable(pmval):
-        pmval = pmval(data)
-    pmval = np.abs(pmval)
-
-    return cval - pmval

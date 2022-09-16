@@ -116,7 +116,7 @@ class Markers(RotatingList):
     >>>     markers.next()
     >>> plt.show()
 
-    .. figure:: Markers.png
+    .. figure:: plots/Markers.png
             :alt: output of the example above
             :align: center
     """
@@ -143,7 +143,7 @@ class Colors(RotatingList):
     >>>     colors.next()
     >>> plt.show()
 
-    .. figure:: Colors.png
+    .. figure:: plots/Colors.png
             :alt: output of the example above
             :align: center
     """
@@ -224,7 +224,7 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
     >>> plt.show()
 
-    .. figure:: update_figure1.png
+    .. figure:: plots/update_figure1.png
             :alt: output of the example above
             :align: center
 
@@ -232,7 +232,7 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
                      figure_size=(10, 2), figure_facecolor='orange')
     >>> plt.savefig('update_figure2.png')
 
-    .. figure:: update_figure2.png
+    .. figure:: plots/update_figure2.png
             :alt: output of the example above
             :align: center
 
@@ -279,7 +279,7 @@ def update_axes(axes, *, legend=None, **kwargs):
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
     >>> plt.show()
 
-    .. figure:: update_axes1.png
+    .. figure:: plots/update_axes1.png
             :alt: output of the example above
             :align: center
 
@@ -288,7 +288,7 @@ def update_axes(axes, *, legend=None, **kwargs):
                             axes_ylabel='This is the y-axis')
     >>> plt.show()
 
-    .. figure:: update_axes2.png
+    .. figure:: plots/update_axes2.png
             :alt: output of the example above
             :align: center
     """
@@ -404,7 +404,7 @@ def create_subplots(figure, subplots, grid = None, *,
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
-    .. figure:: create_subplots1.png
+    .. figure:: plots/create_subplots1.png
             :alt: output of the example above
             :align: center
 
@@ -414,7 +414,7 @@ def create_subplots(figure, subplots, grid = None, *,
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
-    .. figure:: create_subplots2.png
+    .. figure:: plots/create_subplots2.png
         :alt: output of the example above
         :align: center
 
@@ -424,7 +424,7 @@ def create_subplots(figure, subplots, grid = None, *,
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
 
-    .. figure:: create_subplots3.png
+    .. figure:: plots/create_subplots3.png
             :alt: output of the example above
             :align: center
     """
@@ -594,7 +594,7 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars 
     >>> isopy.tb.create_legend(axes['right'], axes['left'])
     >>> plt.show()
 
-    .. figure:: create_legend1.png
+    .. figure:: plots/create_legend1.png
             :alt: output of the example above
             :align: center
 
@@ -606,7 +606,7 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars 
     >>> isopy.tb.create_legend(axes['legend'], axes, hide_axis=True)
     >>> plt.show()
 
-    .. figure:: create_legend2.png
+    .. figure:: plots/create_legend2.png
             :alt: output of the example above
             :align: center
     """
@@ -698,7 +698,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     >>> isopy.tb.plot_scatter(plt, x, y)
     >>> plt.show()
 
-    .. figure:: plot_scatter1.png
+    .. figure:: plots/plot_scatter1.png
             :alt: output of the example above
             :align: center
 
@@ -709,7 +709,7 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york1', color='red', marker='s')
     >>> plt.show()
 
-    .. figure:: plot_scatter2.png
+    .. figure:: plots/plot_scatter2.png
         :alt: output of the example above
         :align: center
     """
@@ -837,7 +837,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_regression(plt, regression)
     >>> plt.show()
 
-    .. figure:: plot_regression1.png
+    .. figure:: plots/plot_regression1.png
             :alt: output of the example above
             :align: center
 
@@ -849,7 +849,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_regression(plt, regression, color='red', xlim=(-1, 1))
     >>> plt.show()
 
-    .. figure:: plot_regression2.png
+    .. figure:: plots/plot_regression2.png
             :alt: output of the example above
             :align: center
 
@@ -862,7 +862,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_regression(plt, regression)
     >>> plt.show()
 
-    .. figure:: plot_regression3.png
+    .. figure:: plots/plot_regression3.png
             :alt: output of the example above
             :align: center
 
@@ -874,7 +874,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
     >>> plt.show()
 
-    .. figure:: plot_regression4.png
+    .. figure:: plots/plot_regression4.png
             :alt: output of the example above
             :align: center
     """
@@ -1034,7 +1034,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     >>> isopy.tb.plot_spider(plt, array) #Will plot the fraction of each Pd isotope
     >>> plt.show()
 
-    .. figure:: plot_spider1.png
+    .. figure:: plots/plot_spider1.png
         :alt: output of the example above
         :align: center
 
@@ -1045,7 +1045,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 1}) #Adds a one for the denominator
     >>> plt.show()
 
-    .. figure:: plot_spider2.png
+    .. figure:: plots/plot_spider2.png
         :alt: output of the example above
         :align: center
 
@@ -1056,7 +1056,7 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     >>> isopy.tb.plot_spider(subplots['right'], values, xscatter=0.15) #Much clearer
     >>> plt.show()
 
-    .. figure:: plot_spider3.png
+    .. figure:: plots/plot_spider3.png
         :alt: output of the example above
         :align: center
     """
@@ -1306,7 +1306,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
-    .. figure:: plot_vstack1.png
+    .. figure:: plots/plot_vstack1.png
         :alt: output of the example above
         :align: center
 
@@ -1318,7 +1318,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
-    .. figure:: plot_vstack2.png
+    .. figure:: plots/plot_vstack2.png
         :alt: output of the example above
         :align: center
 
@@ -1332,7 +1332,7 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_vstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
 
-    .. figure:: plot_vstack3.png
+    .. figure:: plots/plot_vstack3.png
         :alt: output of the example above
         :align: center
 
@@ -1476,7 +1476,7 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
-    .. figure:: plot_hstack1.png
+    .. figure:: plots/plot_hstack1.png
         :alt: output of the example above
         :align: center
 
@@ -1488,7 +1488,7 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
 
-    .. figure:: plot_hstack2.png
+    .. figure:: plots/plot_hstack2.png
         :alt: output of the example above
         :align: center
 
@@ -1501,7 +1501,7 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_hstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
 
-    .. figure:: plot_hstack3.png
+    .. figure:: plots/plot_hstack3.png
         :alt: output of the example above
         :align: center
 
@@ -1825,7 +1825,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_hcompare(plt)
     >>> plt.show()
 
-    .. figure:: plot_hcompare1.png
+    .. figure:: plots/plot_hcompare1.png
         :alt: output of the example above
         :align: center
 
@@ -1836,7 +1836,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_hcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
 
-    .. figure:: plot_hcompare2.png
+    .. figure:: plots/plot_hcompare2.png
         :alt: output of the example above
         :align: center
 
@@ -1851,7 +1851,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             axes.set_ylabel(f'pmunit="{unit}"')
     >>> plt.show()
 
-    .. figure:: plot_hcompare3.png
+    .. figure:: plots/plot_hcompare3.png
         :alt: output of the example above
         :align: center
 
@@ -1863,7 +1863,7 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_hcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
 
-    .. figure:: plot_hcompare4.png
+    .. figure:: plots/plot_hcompare4.png
         :alt: output of the example above
         :align: center
     """
@@ -1977,7 +1977,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_vcompare(plt)
     >>> plt.show()
 
-    .. figure:: plot_vcompare1.png
+    .. figure:: plots/plot_vcompare1.png
         :alt: output of the example above
         :align: center
 
@@ -1989,7 +1989,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_vcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
 
-    .. figure:: plot_vcompare2.png
+    .. figure:: plots/plot_vcompare2.png
             :alt: output of the example above
             :align: center
 
@@ -2004,7 +2004,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             axes.set_xlabel(f'pmunit="{unit}"')
     >>> plt.show()
 
-    .. figure:: plot_vcompare3.png
+    .. figure:: plots/plot_vcompare3.png
             :alt: output of the example above
             :align: center
 
@@ -2016,7 +2016,7 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_vcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
 
-    .. figure:: plot_vcompare4.png
+    .. figure:: plots/plot_vcompare4.png
             :alt: output of the example above
             :align: center
     """
@@ -2308,7 +2308,7 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
     >>> plt.show()
 
 
-    .. figure:: plot_contours1.png
+    .. figure:: plots/plot_contours1.png
         :alt: output of the example above
         :align: center
 
@@ -2322,7 +2322,7 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
     >>> isopy.tb.plot_contours(plt, *dsgrid.xyz(), zmin= 0, zmax=0.01, **axes_labels)
     >>> plt.show()
 
-    .. figure:: plot_contours2.png
+    .. figure:: plots/plot_contours2.png
         :alt: output of the example above
         :align: center
 

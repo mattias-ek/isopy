@@ -27,7 +27,7 @@ from numpy import ndarray, nan, float64, void
 
 class NotGivenType:
     def __repr__(self):
-        return 'N/A'
+        return 'Optional' # So that it looks like a None in the docs
 
     def __bool__(self):
         return False
@@ -152,6 +152,7 @@ def partial_func(func, name = None, doc = None, /, **func_kwargs):
     new_func = functools.partial(func, **func_kwargs)
     new_func.__name__ = name or func.__name__
     new_func.__doc__ = doc or func.__doc__
+    new_func.__repr__ = lambda: f'<function {new_func.__name__}>'
     return new_func
 
 def startswith(string, prefix):
@@ -577,6 +578,13 @@ class KeyFlavourError(KeyParseError, TypeError):
 
 KEY_COMPARISONS = ('eq', 'neq', 'lt', 'gt', 'le', 'ge')
 class IsopyKeyString(str):
+    """
+    Key strings should be created using :py:func:`isopy.keystring` and :py:func:`isopy.askeystring` functions and not
+    by invoking the key string objects directly.
+
+    Key strings are a subclass of :class:`str` and therefore contains all the method that a :class:`str` does.
+    Unless specifically noted below these methods will return a :class:`str` rather than a key string.
+    """
     def __repr__(self):
         return f"{self.__class__.__name__}('{self}')"
 
@@ -631,17 +639,6 @@ class IsopyKeyString(str):
         return str(self)
 
     def str(self, format = None):
-        """
-        Return a ``str`` object of the key string.
-
-        the optional *format* can either be a string matching one of the format options or a
-        string which can be formatted using the format options as key words.
-
-        Format options are:
-        * ``"m"`` and ``"key"`` - Same as ``str(keystring)``
-        * ``"math"`` -  Key string formatted for latex math mode.
-        * ""`latex`"" - Same as above but including $ $ math deliminators.
-        """
         if format is None: return str(self)
         options = self._str_options_()
 
@@ -688,11 +685,9 @@ class IsopyKeyString(str):
 
 class MassKeyString(IsopyKeyString):
     """
-    String representation of a mass number.
+    MassKeyString()
 
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`MassKeyString`.
+    String representation of a mass number.
 
     Attributes
     ----------
@@ -815,13 +810,11 @@ class MassKeyString(IsopyKeyString):
 
 class ElementKeyString(IsopyKeyString):
     """
+    ElementKeyString()
+
     A string representation of an element symbol limited to two letters.
 
     The first letter is in upper case and subsequent letters are in lower case.
-
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`ElementKeyString`.
 
     Attributes
     ----------
@@ -927,11 +920,9 @@ class ElementKeyString(IsopyKeyString):
 
 class IsotopeKeyString(IsopyKeyString):
     """
-    A string representation of an isotope consisting of a mass number followed by an element symbol.
+    IsotopeKeyString()
 
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`IsotopeKeyString`.
+    A string representation of an isotope consisting of a mass number followed by an element symbol.
 
     Attributes
     ----------
@@ -1093,6 +1084,8 @@ class IsotopeKeyString(IsopyKeyString):
 
 class MoleculeKeyString(IsopyKeyString):
     """
+    MoleculeKeyString()
+
     A string representation of an molecue consisting of a element and/or isotope key strings.
 
     Mass numbers must be before the element symbols. Any number after the element symbol is
@@ -1102,11 +1095,6 @@ class MoleculeKeyString(IsopyKeyString):
 
     Molecule keys strings with more than one component is enclosed in square brackets.
     Isotope molecules are enclosed in square brackets if there is more than one component in the molecule.
-
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`MoleculeKeyString`.
-
 
     Attributes
     ----------
@@ -1475,15 +1463,13 @@ class MoleculeKeyString(IsopyKeyString):
 
 class RatioKeyString(IsopyKeyString):
     """
+    RatioKeyString()
+
     A string representation of a ratio of two key strings.
 
     A string must consist of a numerator and denominator seperated by "/". The numerator and denominator
     key strings can be of different flavours. Nested ratios can be created using a combination of
-     "/", "//", "///" etc upto a maximum of 9 nested ratios.
-
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`RatioKeyString`.
+    "/", "//", "///" etc upto a maximum of 9 nested ratios.
 
     Attributes
     ----------
@@ -1665,13 +1651,11 @@ class RatioKeyString(IsopyKeyString):
 
 class GeneralKeyString(IsopyKeyString):
     """
+    GeneralKeyString()
+
     A general key string that can hold any string value.
 
     No formatting is applied to the string.
-
-    Inherits from :class:`str` and therefore contains all the method that a :class:`str` does.
-    Unless specifically noted below these methods will return a :class:`str` rather than a
-    :class:`GeneralKeyString`.
 
     Attributes
     ----------
@@ -1738,11 +1722,29 @@ class GeneralKeyString(IsopyKeyString):
 
 def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
     """
-    Returns ``True`` if *item* is a key string otherwise returns ``False``.
+    Returns ``True`` if the supplied string is an key string otherwise returns ``False``.
 
-    If *flavour* is given then `True`` is returned if the flavour of *item* is equal to *flavour*.
+    Parameters
+    ----------
+    item
+        The string to be verified.
+    flavour :  flavour_like, Optional
+        If given then ``True`` is returned if the flavour of *item* is equal to *flavour*.
+    flavour_in : flavour_like Optional
+        If given then then ``True`` is returned if the flavour of *item* is found in *flavour_in*.
 
-    If *flavour_in* is given then `True`` is returned if the flavour of *item* is found in *flavour_in*.
+    Examples
+    --------
+    >>> isopy.iskeystring('Pd')
+    False
+
+    >>> key = isopy.keystring('pd')
+    >>> isopy.iskeystring(key)
+    True
+    >>> isopy.iskeystring(key, flavour='isotope')
+    False
+    >>> isopy.iskeystring(key, flavour_in='element|isotope')
+    True
     """
     if flavour is not None:
         return isinstance(item, IsopyKeyString) and item.flavour == asflavour(flavour)
@@ -1765,6 +1767,18 @@ def keystring(key, *, allow_reformatting=True, flavour='any'):
         has the correct format is considered.
     flavour
         The possible flavour(s) of the key string.
+
+    Examples
+    --------
+    >>> isopy.keystring('pd')
+    ElementKeyString('Pd')
+    >>> isopy.keystring('pd', allow_reformatting=False)
+    GeneralKeyString('pd')
+
+    >>> key = isopy.keystring('pd', flavour = 'general'); key
+    GeneralKeyString('pd')
+    >>>  isopy.keystring(key) # The element flavour has a higher priority
+    ElementKeyString('Pd')
 
     Returns
     -------
@@ -1798,6 +1812,18 @@ def askeystring(key, *, allow_reformatting=True, flavour ='any'):
         has the correct format is considered.
     flavour
         The possible flavour(s) of the key string.
+
+    Examples
+    --------
+    >>> isopy.askeystring('pd')
+    ElementKeyString('Pd')
+    >>> isopy.askeystring('pd', allow_reformatting=False)
+    GeneralKeyString('pd')
+
+    >>> key = isopy.askeystring('pd', flavour = 'general'); key
+    GeneralKeyString('pd')
+    >>>  isopy.askeystring(key) # Preserves the flavour
+    GeneralKeyString('pd')
 
     Returns
     -------
@@ -1878,6 +1904,8 @@ def combine_keys_func(func):
                 keys += (arg, )
             elif type(arg) is IsopyKeyList:
                 keys += tuple(arg)
+            elif isinstance(arg, IsopyArray):
+                keys += arg.keys
             elif isinstance(arg, np.dtype) and arg.names is not None:
                 keys += tuple(name for name in arg.names)
             elif isinstance(arg, ndarray) and arg.dtype.names is not None:
@@ -1931,14 +1959,12 @@ def filter_keys(item, keys, key_filters):
 
     return keys
 
+# Key lists can be created using :py:func:`isopy.keylist()` and :py:func:`isopy.askeylist()`.
 class IsopyKeyList(tuple):
     """
+    IsopyKeyList()
+
     A sequence of key strings.
-
-    Key lists can be created using ``keylist`` and ``askeylist``.
-
-    Is a subclass of tuple and contains all the methods that a normal tuple does unless otherwise noted.
-    Only methods that behave differently from a normal tuple are documented below.
 
     Attributes
     ----------
@@ -2268,10 +2294,29 @@ def iskeylist(item, *, flavour=None, flavour_in=None) -> bool:
     """
     Returns ``True`` if *item* is a key string list otherwise returns ``False``.
 
-    If *flavour* is given then `True`` is returned if the flavour of *item* is equal to *flavour*.
+    Parameters
+    ----------
+    item
+        A sequence of strings to be verified.
+    flavour :  flavour_like, Optional
+        If given then ``True`` is returned if the flavour of *item* is equal to *flavour*.
+    flavour_in : flavour_like Optional
+        If given then then ``True`` is returned if the flavour of *item* is found in *flavour_in*.
 
-    If *flavour_in* is given then `True`` is returned if the flavour of *item* is found in *flavour_in*.
+    Examples
+    --------
+    >>> isopy.iskeylist(['Ru', 'Pd', 'Cd'])
+    False
+
+    >>> keys = isopy.keylist('ru pd cd')
+    >>> isopy.iskeylist(keys)
+    True
+    >>> isopy.iskeylist(keys, flavour='element|isotope')
+    False
+    >>> isopy.iskeylist(keys, flavour_in='element|isotope')
+    True
     """
+
     if flavour is not None:
         return isinstance(item, IsopyKeyList) and item.flavour == asflavour(flavour)
     elif flavour_in is not None:
@@ -2286,7 +2331,9 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
     Returns a key list with the highest priority flavour compatible with each key string.
 
     *keys* can consist of single strings, sequences of strings, dictionaries, isopy arrays and numpy arrays.
-    For dictionaries and arrays the keys or dtype.name values are used as keys.
+    For dictionaries and arrays the keys or dtype.name values are used as keys. Strings containing whitespace will
+    be split into multiple strings. This only applied to strings given directly as a key,
+    not for string contained within other object.
 
     Parameters
     ----------
@@ -2303,6 +2350,23 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
         If ``True`` the keys in will be sorted
     flavour
         The possible flavour(s) of key strings in the key list.
+
+    Examples
+    --------
+    >>> isopy.keylist(['ru', 'pd', 'cd'])
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> isopy.keylist('ru pd cd') # Split into multiple keys
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> isopy.keylist(['ru pd cd']) # Strings in other objects are left as is
+    IsopyKeyList('ru pd cd', flavour='general')
+
+    >>> d = dict(ru=1, pd=2, cd=3)
+    >>> isopy.keylist(d)
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> a = isopy.array(d, flavour = 'general')
+    >>> isopy.keylist(a)
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+
 
     Returns
     -------
@@ -2343,6 +2407,22 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
     flavour
         The possible flavour(s) of key strings in the key list.
 
+    Examples
+    --------
+    >>> isopy.askeylist(['ru', 'pd', 'cd'])
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> isopy.askeylist('ru pd cd') # Split into multiple keys
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> isopy.askeylist(['ru pd cd']) # Strings in other objects are left as is
+    IsopyKeyList('ru pd cd', flavour='general')
+
+    >>> d = dict(ru=1, pd=2, cd=3)
+    >>> isopy.askeylist(d)
+    IsopyKeyList('Ru', 'Pd', 'Cd', flavour='element')
+    >>> a = isopy.array(d, flavour = 'general')
+    >>> isopy.askeylist(a)
+    IsopyKeyList('ru', 'pd', 'cd', flavour='general')
+
     Returns
     -------
     IsopyKeyList
@@ -2357,42 +2437,24 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
 ###################################
 ### Mixins for Array and RefVal ###
 ###################################
-def call_func(func, module):
-    def wrapper(self, *args, **kwargs):
-        """
-        Calls ``{module}.{name}`` with the array/dictionary as the first argument followed by the args and kwargs.
+def cls_arrayfunc_wrapper(func, name = None):
+    if name is None: name = func.__name__
 
-        If key filters are given then the function is called on the filtered array/dictionary. Any kwarg not in the
-        signature of the function is assumed to be a key filter
-        """
-        a = self
-        if kwargs:
-            parameters, nin = function_signature(func)
-            if parameters:
-                key_filters = {key: kwargs.pop(key) for key in tuple(kwargs.keys()) if key not in parameters}
-            else:
-                key_filters = None
+    def call_arrayfunc(self, *args, **kwargs):
+        return isopy.arrayfunc(func, self, *args, **kwargs)
 
-            if key_filters:
-                a = a.filter(**key_filters)
+    call_arrayfunc.__name__ = name
+    return call_arrayfunc
 
-        return func(a, *args, **kwargs)
-
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = wrapper.__doc__.format(name=func.__name__, module=module)
-    return wrapper
-
-# TODO include all functions?
-# Include isopy functions ?
 def add_array_functions(cls):
     # These are the ones included with ndarrays
     for func in [np.all, np.any, np.cumprod, np.cumsum,
                  np.mean, np.prod, np.ptp, np.std, np.sum, np.var]:
-        setattr(cls, func.__name__, call_func(func, 'numpy'))
+        setattr(cls, func.__name__, cls_arrayfunc_wrapper(func))
 
     # these functions are aliases for amin and amax
-    setattr(cls, 'min', call_func(np.min, 'numpy'))
-    setattr(cls, 'max', call_func(np.max, 'numpy'))
+    setattr(cls, 'min', cls_arrayfunc_wrapper(np.min, 'min'))
+    setattr(cls, 'max', cls_arrayfunc_wrapper(np.max, 'max'))
 
     return cls
 
@@ -2417,6 +2479,8 @@ class ArrayFuncMixin:
             warnings.warn(f"The functionality of {func.__name__} has not been tested with isopy arrays.")
 
         return call_array_function(func, *args, **kwargs)
+
+
 
 
 class TableStr(str):
@@ -2587,7 +2651,7 @@ class TabulateMixin:
 
         else:
             if include_objinfo:
-                string = f'{string}\n\n{self._description_()}'
+                string = f'{string}\n{self._description_()}'
 
             if html_repr:
                 html_kwargs = dict(tablefmt = 'html',
@@ -2820,10 +2884,9 @@ def readonly_method(func):
 
 class IsopyDict(dict):
     """
-    Dictionary where each value is stored by a isopy keystring key.
+    IsopyDict()
 
-    Behaves just like, and contains all the methods, that a normal dictionary does unless otherwise
-    noted. Only methods that behave differently from a normal dictionary are documented below.
+    Dictionary where each value is stored by a isopy keystring key.
 
     Parameters
     ----------
@@ -2931,27 +2994,14 @@ class IsopyDict(dict):
 
     @property
     def keys(self):
-        """
-        Return a key list with the keys in the dictionary
-        """
         return askeylist(super(IsopyDict, self).keys(), flavour=self._key_flavour_)
 
     @property
     def readonly(self) -> bool:
-        """
-        ``True`` if the dictionary cannot be edited otherwise ``False``.
-
-        This attribute is **not** inherited by derivative dictionaries.
-        """
         return self._readonly_
 
     @property
     def default_value(self):
-        """
-        The default value, if given, for keys not present in the dictionary using the ``get()`` method.
-
-        This attribute in inherited by derivative dictionaries.
-        """
         return self.__default__
 
     @default_value.setter
@@ -2986,7 +3036,7 @@ class IsopyDict(dict):
     def pop(self, key, default=NotGiven):
         """
         If *key* is in the dictionary, remove it and return its value, else return *default*. If
-        *default* is not given the default value of hte dictionary is used.
+        *default* is not given the default value of the dictionary is used.
 
         A TypeError is raised if the dictionary is readonly.
         """
@@ -3099,12 +3149,11 @@ class IsopyDict(dict):
 
 class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
     """
+    RefValDict()
+
     Dictionary where each value is stored as an array of floats by a isopy keystring key.
 
     Each value in the dictionary has the same ndim and size. If the dictionary has a size of 1 ndim will always be 0.
-
-    Behaves just like, and contains all the methods, that a normal dictionary does unless otherwise
-    noted. Only methods that behave differently from a normal dictionary are documented below.
 
     Parameters
     ----------
@@ -3378,16 +3427,10 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
 
     @property
     def ndim(self):
-        """
-        The number of dimensions for each item in the dictionary.
-        """
         return self._ndim
 
     @property
     def size(self):
-        """
-        The number of values for each item in the dictionary.
-        """
         return self._size
 
     @property
@@ -3521,12 +3564,9 @@ def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function
 #############
 class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
     """
-    An array where data is stored rows and columns of isopy key strings.
+    IsopyArray()
 
-    This is a custom subclass of a `structured numpy array <https://docs.scipy.org/doc/numpy/user/basics.rec.html>`_
-    and therefore contains all the methods and attributes that a normal numpy ndarray does. However, these
-    may **not** work as expected and caution is advised when using attributes/methods not described below or in the
-    tutorial.
+    An array where data is stored rows and columns of isopy key strings.
 
     Parameters
     ----------
@@ -3827,6 +3867,10 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         else:
             return self.size
 
+    @property
+    def datatypes(self):
+        return tuple(self.dtype[i] for i in range(len(self.dtype.names)))
+
     def values(self):
         """
         Returns a tuple containing the column values for each key in the array
@@ -3949,31 +3993,26 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
         -------  ------------  ------------  ------------  ------------  ------------  ------------
         None          0.01020       0.11140       0.22330       0.27330       0.26460       0.11720
-
         IsopyNdarray(-1, flavour='isotope', default_value=nan)
         >>> array.normalise(10)
         (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
         -------  ------------  ------------  ------------  ------------  ------------  ------------
         None          0.10200       1.11400       2.23300       2.73300       2.64600       1.17200
-
         IsopyNdarray(-1, flavour='isotope', default_value=nan)
         >>> array.normalise(1, 'pd102')
         (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
         -------  ------------  ------------  ------------  ------------  ------------  ------------
         None          1.00000      10.92157      21.89216      26.79412      25.94118      11.49020
-
         IsopyNdarray(-1, flavour='isotope', default_value=nan)
         >>> array.normalise(10, ['pd106', 'pd108'])
         (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
         -------  ------------  ------------  ------------  ------------  ------------  ------------
         None          0.18963       2.07102       4.15133       5.08087       4.91913       2.17884
-
         IsopyNdarray(-1, flavour='isotope', default_value=nan)
         >>> array.normalise(10, isopy.keymax)
         (row)      102Pd (f8)    104Pd (f8)    105Pd (f8)    106Pd (f8)    108Pd (f8)    110Pd (f8)
         -------  ------------  ------------  ------------  ------------  ------------  ------------
         None          0.37322       4.07611       8.17051      10.00000       9.68167       4.28833
-
         IsopyNdarray(-1, flavour='isotope', default_value=nan)
         """
         if key is None:
@@ -4008,13 +4047,11 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         (row)      Ru (f8)    Pd (f8)    Cd (f8)
         -------  ---------  ---------  ---------
         None      21.00000        nan   13.00000
-
         IsopyNdarray(-1, flavour='element', default_value=nan)
         >>> a1 + a2.default(0) # a2 has a temporary default value of 0
         (row)      Ru (f8)    Pd (f8)    Cd (f8)
         -------  ---------  ---------  ---------
         None      21.00000    2.00000   13.00000
-
         IsopyNdarray(-1, flavour='element', default_value=nan)
         """
         temp_view = self.keys._view_array_(self)
@@ -4347,21 +4384,17 @@ def random(rows, random_args = None, keys=None, *, distribution='normal', seed=N
     97        -0.34908    0.39324   -1.46929
     98        -0.47520    0.39947   -0.16034
     99         0.32749    0.53820   -0.23848
-
     IsopyNdarray(100, flavour='element', default_value=nan)
-
     >>> isopy.mean(array)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None      -0.04493    0.07397   -0.06447
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     >>> isopy.sd(array)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       1.06521    1.03131    1.03173
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     >>> array = isopy.random(100, [(0, 1), (1, 0.1), (-1, 10)], keys=('ru', 'pd', 'cd'))
@@ -4379,21 +4412,17 @@ def random(rows, random_args = None, keys=None, *, distribution='normal', seed=N
     97        -0.22307    1.03733    9.68606
     98         0.24518    1.04231   -4.08202
     99        -0.75468    0.92260    0.70036
-
     IsopyNdarray(100, flavour='element', default_value=nan)
-
     >>> np.mean(array)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None      -0.04996    0.99352   -1.02721
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
 
     >>> isopy.sd(array)
     (row)      Ru (f8)    Pd (f8)    Cd (f8)
     -------  ---------  ---------  ---------
     None       0.85324    0.09870    8.70021
-
     IsopyNdarray(-1, flavour='element', default_value=nan)
     """
     array = empty(rows, keys=keys, ndim=ndim, dtype=dtype, flavour = flavour)
@@ -4535,18 +4564,10 @@ class KeylessValue:
     def get(self, *_):
         return self.value
 
-@functools.lru_cache(maxsize=CACHE_MAXSIZE)
-def find_keys(*keys):
-    new_keys = keys[0]
-    for key in keys[1:]:
-        new_keys = new_keys | key
-
-    return new_keys
-
 # Simplify to that there is one where we know there is only one input and one where we know there is
 # More than two inputs and this one for unknown cases.
 # This is for functions that dont have a return value
-def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
+def call_array_function(func, *inputs, axis=NotGiven, keys=None, key_filters = None, **kwargs):
     """
     Used to call numpy ufuncs/functions on isopy arrays and/or scalar dicts.
 
@@ -4583,9 +4604,6 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
         present in the input. If 1 or None the function is called once with all isopy arrays in
         inputs and kwargs turned into lists. If axis is 1 or None no axis argument is passed to the
         function.
-    default_value : int, float, default = np.nan
-        Default value used for a column if it is not present in an array. If a scalar is given
-        it will be used to represent the value for every row in the column.
     **kwargs
         Keyword arguments to be supplied to the function. Keyword arguments that are isopy arrays or
         dicts will behave the same as those in inputs but will not be used to .
@@ -4602,6 +4620,7 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
 
     # Try to sort input from optional arguments.
     fargs, nin = function_signature(func)
+
     if fargs and len(inputs) != nin:
         kwargs.update(zip(fargs, inputs))
         try:
@@ -4613,62 +4632,80 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
                 f'"{func.__name__}" expects {nin} input arguments but only got {len(inputs)}')
 
     if fargs and 'axis' in fargs:
+        axis_kwarg = True
         if 'axis' in kwargs:
-            axis = kwargs.pop('axis')
-        if axis == 0:
-            kwargs['axis'] = None
+            axis = kwargs['axis']
+    else:
+        axis_kwarg = False
+
+    if axis is NotGiven:
+        axis = 0
+    else:
+        kwargs['axis'] = axis
 
     new_inputs = []
-    new_keys_a = []
-    new_keys_d = []
+    a_input = []
     d_input = []
     for i, arg in enumerate(inputs):
         if isinstance(arg, IsopyArray):
             new_inputs.append(arg)
-            new_keys_a.append(arg.keys())
+            a_input.append(arg)
+
         elif isinstance(arg, ndarray) and len(arg.dtype) > 1:
             new_inputs.append(asarray(arg))
-            new_keys_a.append(new_inputs[-1].keys())
+            a_input.append(new_inputs[-1])
+
         elif isinstance(arg, RefValDict):
-            d_input.append(arg)
             new_inputs.append(arg)
-            new_keys_d.append(arg.keys())
+            d_input.append(arg)
+
         elif isinstance(arg, dict):
             new_inputs.append(RefValDict(arg))
-            new_keys_d.append(new_inputs[-1].keys())
+            d_input.append(new_inputs[-1])
+
         else:
             new_inputs.append(KeylessValue(np.asarray(arg)))
 
-    if keys is None:
-        if len(new_keys_a) != 0:
-            new_keys = find_keys(*new_keys_a)
-        elif len(new_keys_d) != 0:
-            new_keys = find_keys(*new_keys_d)
-        else:
-            return func(*inputs, **kwargs)
-    else:
-        new_keys = isopy.askeylist(keys)
+    if keys:
+        return_array = True
+        keys = askeylist(keys)
+
+    if a_input:
+        return_array = True
+        if not keys:
+            keys = askeylist(*(input.keys for input in a_input), sort=(len(a_input)>1), ignore_duplicates=True)
+    elif d_input:
+        return_array = False
+        if not keys:
+            keys = askeylist(*(input.keys for input in d_input), sort=(len(d_input)>1), ignore_duplicates=True)
+    elif not keys:
+        return func(*inputs, **kwargs)
+
+    if key_filters:
+        keys = keys.filter(**key_filters)
 
     if axis == 0:
+        if axis_kwarg:
+            kwargs['axis'] = None
         out = kwargs.get('out', None)
         keykwargs = {kwk: kwargs.pop(kwk) for kwk, kwv in tuple(kwargs.items())
                                 if isinstance(kwv, (IsopyArray, IsopyDict))}
 
         result = [func(*(input.get(key) for input in new_inputs), **kwargs,
-                       **{k: v.get(key) for k, v in keykwargs.items()}) for key in new_keys]
+                       **{k: v.get(key) for k, v in keykwargs.items()}) for key in keys]
 
         #There is no return from the function so dont return an array
         if False not in [r is None for r in result]:
             return None
 
         if out is None:
-            if len(new_keys_a) != 0:
-                dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(new_keys)]
+            if return_array:
+                dtype = [(str(key), getattr(result[i], 'dtype', float64)) for i, key in enumerate(keys)]
                 if getattr(result[0], 'ndim', 0) == 0:
                     out = np.array(tuple(result), dtype=dtype)
                 else:
                     out = np.fromiter(zip(*result), dtype=dtype)
-                return new_keys._view_array_(out)
+                return keys._view_array_(out)
             else:
                 if len(d_input) == 1:
                     dv = d_input[0].default_value
@@ -4678,23 +4715,23 @@ def call_array_function(func, *inputs, axis=0, keys=None, **kwargs):
                         else:
                             dv = np.nan
                     # The return dictionary inherits the properties of the original dictionary
-                    return d_input[0]._copy(zip(new_keys, result), dv)
+                    return d_input[0]._copy(zip(keys, result), dv)
                 else:
-                    return RefValDict(zip(new_keys, result))
+                    return RefValDict(zip(keys, result))
         else:
             return out
 
     else:
         for kwk, kwv in list(kwargs.items()):
             if isinstance(kwv, (IsopyArray, IsopyDict)):
-                kwargs[kwk] = np.transpose([kwv.get(key) for key in new_keys])
+                kwargs[kwk] = np.transpose([kwv.get(key) for key in keys])
 
-        new_inputs = [np.transpose([input.get(key) for key in new_keys]) if
+        new_inputs = [np.transpose([input.get(key) for key in keys]) if
                       not isinstance(input, KeylessValue) else input.get() for input in new_inputs]
 
-        if len(nd :={inp.ndim for inp in new_inputs}) == 1 and nd.pop() == 1:
+        if axis == 1 and len(nd :={inp.ndim for inp in new_inputs}) == 1 and nd.pop() == 1:
             #So that 0-dimensional arrays get do not raise axis out of bounds error
-            axis = 0
+            kwargs['axis'] = 0
 
-        return func(*new_inputs, axis = axis, **kwargs)
+        return func(*new_inputs, **kwargs)
 

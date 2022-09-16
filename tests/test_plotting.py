@@ -215,7 +215,7 @@ def test_plot_vstack3():
     array = isopy.random(100, -0.5, keys, seed=46)
     mean = np.mean(array);
     sd = isopy.sd(array)
-    outliers = isopy.tb.find_outliers(array, mean, sd)
+    outliers = isopy.is_outlier(array, mean, sd)
     isopy.tb.create_subplots(plt, keys.sorted(), (1, -1))
     isopy.tb.plot_vstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     return plt
@@ -247,7 +247,7 @@ def test_plot_hstack3():
     array = isopy.random(100, -0.5, keys, seed=46)
     mean = np.mean(array);
     sd = isopy.sd(array)
-    outliers = isopy.tb.find_outliers(array, mean, sd)
+    outliers = isopy.is_outlier(array, mean, sd)
     isopy.tb.create_subplots(plt, keys.sorted(), (-1, 1))
     isopy.tb.plot_hstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     return plt
