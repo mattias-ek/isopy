@@ -2,6 +2,6 @@ isopy
 ipython
 ipykernel
 pandoc
-nbsphinx
+myst-nb
 sphinx_autodoc_typehints
 sphinx-copybutton

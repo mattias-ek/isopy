@@ -113,7 +113,7 @@ def test_plot_scatter2():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york', color='red', marker='s')
     return plt
 
@@ -143,7 +143,7 @@ def test_plot_regression3():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr)
     isopy.tb.plot_regression(plt, regression)
@@ -155,7 +155,7 @@ def test_plot_regression4():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr, color='red')
     isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
@@ -183,7 +183,7 @@ def test_plot_spider3():
     plt.close(); plt.clf()
     subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     values = {100: [1, 1, -1], 101.5: [0, 0, 0], 103: [-1, 1, -1]}  # keys can be floats
-    isopy.array(values)
+
     isopy.tb.plot_spider(subplots['left'], values)  # Impossible to tell the rows apart
     isopy.tb.plot_spider(subplots['right'], values, xscatter=0.15)  # Much clearer
     return plt
@@ -215,7 +215,7 @@ def test_plot_vstack3():
     array = isopy.random(100, -0.5, keys, seed=46)
     mean = np.mean(array);
     sd = isopy.sd(array)
-    outliers = isopy.tb.find_outliers(array, mean, sd)
+    outliers = isopy.is_outlier(array, mean, sd)
     isopy.tb.create_subplots(plt, keys.sorted(), (1, -1))
     isopy.tb.plot_vstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     return plt
@@ -247,7 +247,7 @@ def test_plot_hstack3():
     array = isopy.random(100, -0.5, keys, seed=46)
     mean = np.mean(array);
     sd = isopy.sd(array)
-    outliers = isopy.tb.find_outliers(array, mean, sd)
+    outliers = isopy.is_outlier(array, mean, sd)
     isopy.tb.create_subplots(plt, keys.sorted(), (-1, 1))
     isopy.tb.plot_hstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     return plt

@@ -1,6 +1,0 @@
-﻿element.initial\_solar\_system\_abundance\_L09
-==============================================
-
-.. currentmodule:: isopy.reference_values
-
-.. autoattribute:: element.initial_solar_system_abundance_L09
