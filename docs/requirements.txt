@@ -1,7 +1,0 @@
-isopy
-ipython
-ipykernel
-pandoc
-nbsphinx
-sphinx_autodoc_typehints
-sphinx-copybutton
