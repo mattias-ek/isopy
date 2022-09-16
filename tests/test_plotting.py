@@ -113,7 +113,7 @@ def test_plot_scatter2():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york', color='red', marker='s')
     return plt
 
@@ -143,7 +143,7 @@ def test_plot_regression3():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr)
     isopy.tb.plot_regression(plt, regression)
@@ -155,7 +155,7 @@ def test_plot_regression4():
     x = isopy.random(20, seed=46)
     y = x * 3 + isopy.random(20, seed=47)
     xerr = 0.2
-    yerr = isopy.random(20, seed=48)
+    yerr = np.abs(isopy.random(20, seed=48))
     regression = isopy.tb.yorkregress(x, y, xerr, yerr)
     isopy.tb.plot_scatter(plt, x, y, xerr, yerr, color='red')
     isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
