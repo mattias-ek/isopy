@@ -354,18 +354,18 @@ def ds_inversion(measured, spike, standard=None, isotope_masses='isotope.mass', 
         Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
         function will be performed on each attribute and a new *DSResult* object returned.
     """
-    measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
+    #measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
 
-    spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict = True)
+    #spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict = True)
 
-    inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
-                                             isopy.RatioKeyList, coerce=True, allow_none=True)
+    inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.core.IsopyKeyList, allow_none=True)
     if standard is None:
         standard = isopy.refval.isotope.fraction
     else:
-        standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
+        pass
+        #standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
 
-    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
 
     numerators, denominator, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
 
@@ -380,12 +380,12 @@ def ds_inversion(measured, spike, standard=None, isotope_masses='isotope.mass', 
     else:
         T = np.array([spike.get(key) for key in inversion_keys])
 
-    if isinstance(standard, isopy.IsopyArray) and standard.flavour == 'isotope':
+    if isopy.isarray(standard) and standard.flavour == 'isotope':
         n = np.array([standard.get(numer) / standard.get(denominator) for numer in numerators])
     else:
         n = np.array([standard.get(key) for key in inversion_keys])
 
-    if isinstance(isotope_masses, isopy.IsopyArray) and isotope_masses.flavour == 'isotope':
+    if isopy.isarray(isotope_masses) and isotope_masses.flavour == 'isotope':
         P = np.array([isotope_masses.get(numer) / isotope_masses.get(denominator) for numer in numerators])
     else:
         P = np.array([isotope_masses.get(key) for key in inversion_keys])
@@ -467,20 +467,20 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
         Array functions, e.g. ``np.mean`` and ``isopy.sd`` can be used on this object. The
         function will be performed on each attribute and a new *DSResult* object returned.
     """
-    measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
+    #measured = isopy.checks.check_array('measured', measured, 'isotope', 'ratio')
 
-    spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict=True)
+    #spike = isopy.checks.check_array('spike', spike, 'isotope', 'ratio', allow_dict=True)
 
-    inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.IsotopeKeyList,
-                                             isopy.RatioKeyList, coerce=True, allow_none=True)
+    inversion_keys = isopy.checks.check_type('inversion_keys', inversion_keys, isopy.core.IsopyKeyList, allow_none=True)
 
-    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
-    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.RefValDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
 
     if standard is None:
         standard = isotope_fractions
     else:
-        standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
+        pass
+        #standard = isopy.checks.check_array('standard', standard, 'isotope', 'ratio', allow_dict = True)
 
     # If inversion keys are not given they are inferred from the spike
     numer, denom, inversion_keys = _deduce_inversion_keys(spike, inversion_keys)
@@ -558,7 +558,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
                 return numer, denom, inversion_keys
     else:
         inversion_keys = isopy.askeylist(inversion_keys)
-        if isinstance(inversion_keys, isopy.IsotopeKeyList):
+        if inversion_keys.flavour == 'isotope':
             if len(inversion_keys) != 4:
                 raise ValueError(f'got {len(inversion_keys)} inversion isotope keys instead of 4')
             elif spike.flavour == 'isotope':
@@ -574,7 +574,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
                 inversion_keys = numer / denom
                 return numer, denom, inversion_keys
 
-        elif isinstance(inversion_keys, isopy.RatioKeyList):
+        elif inversion_keys.flavour == 'ratio[isotope,isotope]':
             if len(inversion_keys) != 3:
                 raise ValueError(f'got {len(inversion_keys)} inversion ratio keys instead of 3')
             elif inversion_keys.common_denominator is None:
@@ -717,8 +717,8 @@ def ds_grid(standard, spike1, spike2=None, inversion_keys=None, n=19, *,
 
         * ``xz(yval=0.5, zeval=isopy.sd, zattr='solutions.fnat')`` - Returns ``input.doublespike_fraction`` and a 1-dimensional array of ``zeval(getattr(grid_result, zattr))`` at *yval*.
     """
-    isotope_fractions = isopy.refval(isotope_fractions, isopy.ScalarDict)
-    isotope_masses = isopy.refval(isotope_masses, isopy.ScalarDict)
+    isotope_fractions = isopy.refval(isotope_fractions, isopy.RefValDict)
+    isotope_masses = isopy.refval(isotope_masses, isopy.RefValDict)
 
     numer, denom, inversion_keys = _deduce_inversion_keys(spike1, inversion_keys)
 

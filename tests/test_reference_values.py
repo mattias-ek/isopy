@@ -41,7 +41,7 @@ class Test_Reference_Value:
         assert isopy.refval.element.name_symbol.get('Germanium') == 'Ge'
 
     def test_element_atomic_weight(self):
-        assert type(isopy.refval.element.atomic_weight) is isopy.ScalarDict
+        assert type(isopy.refval.element.atomic_weight) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.element.atomic_weight['pd'], 106.41532788648)
         np.testing.assert_allclose(isopy.refval.element.atomic_weight.get('ge'), 72.6295890304831)
@@ -50,7 +50,7 @@ class Test_Reference_Value:
         filename = 'element_atomic_number.csv'
         valid_hash = ['dd448ec495daa9c09ab0507507808b24','71ddcf788ab22ad8e130c282775e41d8']
         assert self.hash_file(filename) in valid_hash
-        assert type(isopy.refval.element.atomic_number) is isopy.IsopyDict
+        assert type(isopy.refval.element.atomic_number) is isopy.RefValDict
 
         assert isopy.refval.element.atomic_number['pd'] == 46
         assert isopy.refval.element.atomic_number.get('ge') == 32
@@ -59,7 +59,7 @@ class Test_Reference_Value:
         filename = 'element_initial_solar_system_abundance_L09.csv'
         valid_hash = 'e7b750542204ca5fb6515273f87f8d0b'
         assert self.hash_file(filename) == valid_hash
-        assert type(isopy.refval.element.initial_solar_system_abundance_L09) is isopy.ScalarDict
+        assert type(isopy.refval.element.initial_solar_system_abundance_L09) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.element.initial_solar_system_abundance_L09['pd'], 1.36)
         np.testing.assert_allclose(isopy.refval.element.initial_solar_system_abundance_L09.get('ge'), 115.0)
@@ -69,14 +69,14 @@ class Test_Reference_Value:
         filename = 'isotope_mass_W17.csv'
         valid_hash = ['2e754cd8f5edec16e7afe2eedc5dbcb5', '457605e1208eb35b043d16b4514a53b3']
         assert self.hash_file(filename) in valid_hash
-        assert type(isopy.refval.isotope.mass_W17) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.mass_W17) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.mass_W17['105pd'], 104.9050795)
         np.testing.assert_allclose(isopy.refval.isotope.mass_W17.get('76Ge'), 75.92140273)
         np.testing.assert_allclose(isopy.refval.isotope.mass_W17.get('108pd/105pd'), 1.0285859589859039)
 
     def test_isotope_mass_number(self):
-        assert type(isopy.refval.isotope.mass_number) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.mass_number) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.mass_number['105pd'], 105)
         np.testing.assert_allclose(isopy.refval.isotope.mass_number.get('76Ge'), 76)
@@ -86,7 +86,7 @@ class Test_Reference_Value:
         filename = 'isotope_best_measurement_fraction_M16.csv'
         valid_hash = '8a44595631a4ed269691f17b3d689fc0'
         assert self.hash_file(filename) == valid_hash
-        assert type(isopy.refval.isotope.best_measurement_fraction_M16) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.best_measurement_fraction_M16) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.best_measurement_fraction_M16['105pd'], 0.2233)
         np.testing.assert_allclose(isopy.refval.isotope.best_measurement_fraction_M16.get('76Ge'), 0.07745)
@@ -96,7 +96,7 @@ class Test_Reference_Value:
         filename = 'isotope_initial_solar_system_fraction_L09.csv'
         valid_hash = '5c36d889eca012eeb04949e74ad49158'
         assert self.hash_file(filename) == valid_hash
-        assert type(isopy.refval.isotope.initial_solar_system_fraction_L09) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.initial_solar_system_fraction_L09) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_fraction_L09['105pd'], 0.2233)
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_fraction_L09.get('76Ge'), 0.07444)
@@ -106,14 +106,14 @@ class Test_Reference_Value:
         filename = 'isotope_initial_solar_system_abundance_L09.csv'
         valid_hash = 'c77eccd80ccebe83a486ca282092c8a7'
         assert self.hash_file(filename) == valid_hash
-        assert type(isopy.refval.isotope.initial_solar_system_abundance_L09) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.initial_solar_system_abundance_L09) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_abundance_L09['105pd'], 0.3032)
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_abundance_L09.get('76Ge'), 8.5)
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_abundance_L09.get('108pd/105pd'), 1.184036939313984)
 
     def test_isotope_initial_solar_system_abundance_L09b(self):
-        assert type(isopy.refval.isotope.initial_solar_system_abundance_L09) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.initial_solar_system_abundance_L09) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_abundance_L09b['105pd'], 0.303688)
         np.testing.assert_allclose(isopy.refval.isotope.initial_solar_system_abundance_L09b.get('76Ge'), 8.5606)
@@ -123,7 +123,7 @@ class Test_Reference_Value:
         filename = 'isotope_sprocess_fraction_B11.csv'
         valid_hash = '3b926ab45f85e6ff815da2907368dff8'
         assert self.hash_file(filename) == valid_hash
-        assert type(isopy.refval.isotope.sprocess_fraction_B11) is isopy.ScalarDict
+        assert type(isopy.refval.isotope.sprocess_fraction_B11) is isopy.RefValDict
 
         np.testing.assert_allclose(isopy.refval.isotope.sprocess_fraction_B11['105pd'], 0.157)
         np.testing.assert_allclose(isopy.refval.isotope.sprocess_fraction_B11.get('mo95'), 0.696)
@@ -133,13 +133,13 @@ class Test_Reference_Value:
 class Test_Default_value:
     def test_isotope_mass(self):
         try:
-            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
+            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_AME20
 
             isopy.refval.isotope.mass = isopy.refval.isotope.mass_number
             assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_number
 
             isopy.refval.reset()
-            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_W17
+            assert isopy.refval.isotope.mass is isopy.refval.isotope.mass_AME20
 
             alt = {str(key): key.mass_number for key in isopy.refval.element.isotopes['pd']}
             with pytest.raises(TypeError):
@@ -149,7 +149,7 @@ class Test_Default_value:
             with pytest.raises(TypeError):
                 isopy.refval.isotope.mass = alt
 
-            alt = isopy.ScalarDict(alt)
+            alt = isopy.RefValDict(alt)
             isopy.refval.isotope.mass = alt
             assert isopy.refval.isotope.mass is alt
         finally:
@@ -174,7 +174,7 @@ class Test_Default_value:
             with pytest.raises(TypeError):
                 isopy.refval.isotope.fraction = alt
 
-            alt = isopy.ScalarDict(alt)
+            alt = isopy.RefValDict(alt)
             isopy.refval.isotope.fraction = alt
             assert isopy.refval.isotope.fraction is alt
         finally:
@@ -183,20 +183,29 @@ class Test_Default_value:
 
 
 class Test_misc:
-    def test_repr(self):
-        # Just see that the function work
+    def test_repr_ls(self):
+        assert core.hashstr(repr(isopy.refval)) == '7865f8ba5e8d3310d5fa4421b55e43b9'
+        for group_name in isopy.refval.ls():
+            group, name = group_name.split('.', 1)
+            assert f'{group}=[' in repr(isopy.refval)
+            assert f"'{name}'" in repr(isopy.refval)
 
-        repr(isopy.refval)
-        repr(isopy.refval.mass)
-        repr(isopy.refval.element)
-        repr(isopy.refval.isotope)
+        assert core.hashstr(repr(isopy.refval.mass)) == '077a6698e15e06d8ede64777e09bf1af'
+        for name in isopy.refval.mass.ls():
+            assert name in repr(isopy.refval.mass)
 
-    def test_ls(self):
-        isopy.refval.ls()
+        assert core.hashstr(repr(isopy.refval.element)) == '3355b591291cd41afc869fddcdf8249b'
+        for name in isopy.refval.element.ls():
+            assert name in repr(isopy.refval.element)
 
-        isopy.refval.mass.ls()
-        isopy.refval.element.ls()
-        isopy.refval.isotope.ls()
+        assert core.hashstr(repr(isopy.refval.isotope)) == '6b004ab522a53624d9a8f422c31e1b0d'
+        for name in isopy.refval.isotope.ls():
+            assert name in repr(isopy.refval.isotope)
+
+        assert core.hashstr(isopy.refval._repr_markdown_()) == '5f5a200e889b543b68a7938b3e30a35e'
+        assert core.hashstr(isopy.refval.mass._repr_markdown_()) == 'f90c29d0d9f3efe2a29870a092e68876'
+        assert core.hashstr(isopy.refval.element._repr_markdown_()) == '526d192ed8dc27262bebd65444b35e3a'
+        assert core.hashstr(isopy.refval.isotope._repr_markdown_()) == 'f43b9a96532bc5586bdc10fe279541e7'
 
     def test_call_string(self):
         assert isopy.refval('mass.isotopes') is isopy.refval.mass.isotopes
@@ -213,7 +222,11 @@ class Test_misc:
 
         with pytest.raises(ValueError):
             # reference value does not exist
-            isopy.refval('isotopes.doesnt_exist')
+            isopy.refval('doesnt_exist.doesnt_exist')
+            
+        with pytest.raises(ValueError):
+            # reference value does not exist
+            isopy.refval('isotope.doesnt_exist')
 
     def test_call_dict(self):
         data = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
@@ -226,8 +239,8 @@ class Test_misc:
         refval = isopy.refval(data, isopy.IsopyDict)
         assert type(refval) is isopy.IsopyDict
 
-        refval = isopy.refval(data, isopy.ScalarDict)
-        assert type(refval) is isopy.ScalarDict
+        refval = isopy.refval(data, isopy.RefValDict)
+        assert type(refval) is isopy.RefValDict
 
         data = isopy.IsopyDict(data)
         refval = isopy.refval(data)
@@ -239,18 +252,18 @@ class Test_misc:
         refval = isopy.refval(data, isopy.IsopyDict)
         assert type(refval) is isopy.IsopyDict
 
-        refval = isopy.refval(data, isopy.ScalarDict)
-        assert type(refval) is isopy.ScalarDict
+        refval = isopy.refval(data, isopy.RefValDict)
+        assert type(refval) is isopy.RefValDict
 
-        data = isopy.ScalarDict(data)
+        data = isopy.RefValDict(data)
         refval = isopy.refval(data)
-        assert type(refval) is isopy.ScalarDict
+        assert type(refval) is isopy.RefValDict
 
         refval = isopy.refval(data, dict)
-        assert type(refval) is isopy.ScalarDict
+        assert type(refval) is isopy.RefValDict
 
         refval = isopy.refval(data, isopy.IsopyDict)
-        assert type(refval) is isopy.ScalarDict
+        assert type(refval) is isopy.RefValDict
 
-        refval = isopy.refval(data, isopy.ScalarDict)
-        assert type(refval) is isopy.ScalarDict
+        refval = isopy.refval(data, isopy.RefValDict)
+        assert type(refval) is isopy.RefValDict

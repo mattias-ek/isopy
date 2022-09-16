@@ -11,7 +11,7 @@ import pytest
 import csv
 import warnings
 
-import isopy.core
+import isopy.core as core
 import isopy.io
 
 import openpyxl
@@ -24,7 +24,7 @@ def filename(filename):
 class Test_Data_rows:
     def test_data_to_rows_3_1(self):
         data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
-        data_ds = isopy.ScalarDict(data_d)
+        data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
         data_nd = np.array(data_l)
@@ -70,7 +70,7 @@ class Test_Data_rows:
 
     def test_data_to_rows_1_1(self):
         data_d = dict(Pd=[1.1], Cd=[11.1], Ru=[21.1])
-        data_ds = isopy.ScalarDict(data_d)
+        data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
         data_nd = np.array(data_l)
@@ -116,7 +116,7 @@ class Test_Data_rows:
 
     def test_data_to_rows_1_0(self):
         data_d = dict(Pd=1.1, Cd=11.1, Ru=21.1)
-        data_ds = isopy.ScalarDict(data_d)
+        data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
         data_nd = np.array(data_l)
@@ -798,15 +798,17 @@ class Test_Data_rows:
         data = isopy.io.rows_to_data([[]], True, None)
         assert data == dict()
 
-    def test_exceptions(self):
+    def test_unclear_keys(self):
         # Cant determine which row has the keys
         rows = [['a', 'b', 'c'], ['d', 1, 2], ['e', 3, 4]]
 
-        with pytest.raises(ValueError):
-            isopy.io.rows_to_data(rows, None, None)
+        data = isopy.io.rows_to_data(rows, None, None)
+        assert type(data) is dict
+        assert list(data.keys()) == 'a b c'.split()
 
-        with pytest.raises(ValueError):
-            isopy.io.rows_to_data(rows, True, None)
+        data = isopy.io.rows_to_data(rows, True, None)
+        assert type(data) is dict
+        assert list(data.keys()) == 'a b c'.split()
 
         data = isopy.io.rows_to_data(rows, False, None)
         assert data is rows
@@ -825,11 +827,12 @@ class Test_Data_rows:
         assert data is rows
 
         rows = [[str(r) for r in row] for row in rows]
-        with pytest.raises(ValueError):
-            isopy.io.rows_to_data(rows, None, None)
+        data = isopy.io.rows_to_data(rows, None, None)
+        assert type(data) is dict
+        assert list(data.keys()) == 'a 1 2'.split()
 
-        with pytest.raises(ValueError):
-            isopy.io.rows_to_data(rows, None, None)
+    def test_exceptions(self):
+        rows = [['a', 'b', 'c'], ['d', 1, 2], ['e', 3, 4]]
 
         # Bad keys_in_first values
         with pytest.raises(ValueError):
@@ -1570,7 +1573,7 @@ class Test_xlsx:
 
     def test_exceptions(self):
         data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
-        data_ds = isopy.ScalarDict(data_d)
+        data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
 
@@ -1786,41 +1789,42 @@ class Test_ToFrom:
             self.compare_k(isopy.array(read), data)
 
     def test_a_from_csv(self):
-        data = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data1 = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data2 = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
 
         for file in [filename('tofrom.csv'), io.StringIO(), io.BytesIO()]:
-            for from_csv in [isopy.IsopyArray.from_csv, isopy.array, isopy.asarray, isopy.asanyarray, isopy.array_from_csv]:
-                isopy.write_csv(file, data)
+            for from_csv in [isopy.array, isopy.asarray, isopy.asanyarray]:
+                isopy.write_csv(file, data1)
                 time.sleep(sleep_time)
                 read = from_csv(file)
-                self.compare_k(read, data)
+                self.compare_k(read, data1)
 
-                isopy.write_csv(file, data,'This is a comment', comment_symbol='%')
+                isopy.write_csv(file, data1,'This is a comment', comment_symbol='%')
                 time.sleep(sleep_time)
                 read = from_csv(file, comment_symbol='%')
-                self.compare_k(read, data)
+                self.compare_k(read, data1)
 
-                isopy.write_csv(file, data, keys_in_first='c')
+                isopy.write_csv(file, data1, keys_in_first='c')
                 time.sleep(sleep_time)
                 read = from_csv(file, keys_in_first='c')
-                self.compare_k(read, data)
+                self.compare_k(read, data1)
 
-                isopy.write_csv(file, data, dialect='excel-tab')
+                isopy.write_csv(file, data1, dialect='excel-tab')
                 time.sleep(sleep_time)
                 read = from_csv(file, dialect='excel-tab')
-                self.compare_k(read, data)
+                self.compare_k(read, data1)
 
-        # Test kwargs
-        data = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
+                isopy.write_csv(file, data2)
+                time.sleep(sleep_time)
+                read = isopy.array(file, ndim=0)
+                assert read.ndim == 0
+                self.compare_k(read, data2)
 
-        file = io.BytesIO()
-        isopy.write_csv(file, data)
-        read = isopy.IsopyArray.from_csv(file, ndim=0)
-        self.compare_k(read, data)
+                read = isopy.array(file)
+                assert read.ndim == 1
 
     def test_a_to_clipboard(self):
         data = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
-
 
         data.to_clipboard()
         read = isopy.read_clipboard()
@@ -1839,144 +1843,78 @@ class Test_ToFrom:
         self.compare_k(isopy.array(read), data)
 
     def test_a_from_clipboard(self):
-        data = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
-
-        for from_clipboard in [isopy.IsopyArray.from_clipboard, isopy.array_from_clipboard]:
-            isopy.write_clipboard(data)
-            read = from_clipboard()
-            self.compare_k(read, data)
-
-            isopy.write_clipboard(data, 'This is a comment', comment_symbol='%')
-            read = from_clipboard(comment_symbol='%')
-            self.compare_k(read, data)
-
-            isopy.write_clipboard(data, keys_in_first='c')
-            read = from_clipboard(keys_in_first='c')
-            self.compare_k(read, data)
-
-            isopy.write_clipboard(data, dialect='excel-tab')
-            read = from_clipboard(dialect='excel-tab')
-            self.compare_k(read, data)
+        data1 = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data2 = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
 
         for from_csv in [isopy.array, isopy.asarray, isopy.asanyarray]:
-            isopy.write_clipboard(data)
+            isopy.write_clipboard(data1)
             read = from_csv('clipboard')
-            self.compare_k(read, data)
+            self.compare_k(read, data1)
 
-            isopy.write_clipboard(data, 'This is a comment', comment_symbol='%')
+            isopy.write_clipboard(data1, 'This is a comment', comment_symbol='%')
             read = from_csv('clipboard', comment_symbol='%')
-            self.compare_k(read, data)
+            self.compare_k(read, data1)
 
-            isopy.write_clipboard(data, keys_in_first='c')
+            isopy.write_clipboard(data1, keys_in_first='c')
             read = from_csv('clipboard', keys_in_first='c')
-            self.compare_k(read, data)
+            self.compare_k(read, data1)
 
-            isopy.write_clipboard(data, dialect='excel-tab')
+            isopy.write_clipboard(data1, dialect='excel-tab')
             read = from_csv('clipboard', dialect='excel-tab')
-            self.compare_k(read, data)
+            self.compare_k(read, data1)
 
-        data = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
+            isopy.write_clipboard(data2)
+            time.sleep(sleep_time)
+            read = isopy.array('clipboard', ndim=0)
+            assert read.ndim == 0
+            self.compare_k(read, data2)
 
-        isopy.write_clipboard(data)
-        read = isopy.IsopyArray.from_clipboard(ndim=0)
-        self.compare_k(read, data)
+            read = isopy.array('clipboard')
+            assert read.ndim == 1
 
-    ## scalardict
+    ## refval
     def test_ds_to_csv(self):
-        data = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data = core.RefValDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
 
         for file in [filename('tofrom.csv'), io.StringIO(), io.BytesIO()]:
             data.to_csv(file)
             time.sleep(sleep_time)
             read = isopy.read_csv(file)
-            self.compare_k(isopy.ScalarDict(read), data)
+            self.compare_k(core.RefValDict(read), data)
 
             data.to_csv(file, 'This is a comment', comment_symbol='%')
             time.sleep(sleep_time)
             read = isopy.read_csv(file, comment_symbol='%')
-            self.compare_k(isopy.ScalarDict(read), data)
+            self.compare_k(core.RefValDict(read), data)
 
             data.to_csv(file, keys_in_first='c')
             time.sleep(sleep_time)
             read = isopy.read_csv(file, keys_in_first='c')
-            self.compare_k(isopy.ScalarDict(read), data)
+            self.compare_k(core.RefValDict(read), data)
 
             data.to_csv(file, dialect='excel-tab')
             time.sleep(sleep_time)
             read = isopy.read_csv(file, dialect='excel-tab')
-            self.compare_k(isopy.ScalarDict(read), data)
-
-    def test_ds_from_csv(self):
-        data = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
-
-        for file in [filename('tofrom.csv'), io.StringIO(), io.BytesIO()]:
-            isopy.write_csv(file, data)
-            time.sleep(sleep_time)
-            read = isopy.ScalarDict.from_csv(file)
-            self.compare_k(read, data)
-
-            isopy.write_csv(file, data, 'This is a comment', comment_symbol='%')
-            time.sleep(sleep_time)
-            read = isopy.ScalarDict.from_csv(file, comment_symbol='%')
-            self.compare_k(read, data)
-
-            isopy.write_csv(file, data, keys_in_first='c')
-            time.sleep(sleep_time)
-            read = isopy.ScalarDict.from_csv(file, keys_in_first='c')
-            self.compare_k(read, data)
-
-            isopy.write_csv(file, data, dialect='excel-tab')
-            time.sleep(sleep_time)
-            read = isopy.ScalarDict.from_csv(file, dialect='excel-tab')
-            self.compare_k(read, data)
-
-        file = io.BytesIO()
-        isopy.write_csv(file, data)
-        read = isopy.ScalarDict.from_csv(file, default_value=1)
-        np.testing.assert_allclose(read.default_value, 1)
+            self.compare_k(core.RefValDict(read), data)
 
     def test_ds_to_clipboard(self):
-        data = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data = core.RefValDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
 
         data.to_clipboard()
         read = isopy.read_clipboard()
-        self.compare_k(isopy.ScalarDict(read), data)
+        self.compare_k(core.RefValDict(read), data)
 
         data.to_clipboard('This is a comment', comment_symbol='%')
         read = isopy.read_clipboard(comment_symbol='%')
-        self.compare_k(isopy.ScalarDict(read), data)
+        self.compare_k(core.RefValDict(read), data)
 
         data.to_clipboard(keys_in_first='c')
         read = isopy.read_clipboard(keys_in_first='c')
-        self.compare_k(isopy.ScalarDict(read), data)
+        self.compare_k(core.RefValDict(read), data)
 
         data.to_clipboard(dialect='excel-tab')
         read = isopy.read_clipboard(dialect='excel-tab')
-        self.compare_k(isopy.ScalarDict(read), data)
-
-    def test_ds_from_clipboard(self):
-        data = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
-
-        isopy.write_clipboard(data)
-        read = isopy.ScalarDict.from_clipboard()
-        self.compare_k(read, data)
-
-        isopy.write_clipboard(data, 'This is a comment', comment_symbol='%')
-        read = isopy.ScalarDict.from_clipboard(comment_symbol='%')
-        self.compare_k(read, data)
-
-        isopy.write_clipboard(data, keys_in_first='c')
-        read = isopy.ScalarDict.from_clipboard(keys_in_first='c')
-        self.compare_k(read, data)
-
-        isopy.write_clipboard(data, dialect='excel-tab')
-        read = isopy.ScalarDict.from_clipboard(dialect='excel-tab')
-        self.compare_k(read, data)
-
-        # Kwargs
-        isopy.write_clipboard(data)
-        read = isopy.ScalarDict.from_clipboard(default_value=1)
-        np.testing.assert_allclose(read.default_value, 1)
+        self.compare_k(core.RefValDict(read), data)
 
     ## ndarray
     def test_nd_from_csv(self):
@@ -1988,12 +1926,12 @@ class Test_ToFrom:
             read = isopy.asanyarray(file)
             self.compare_nd(read, data)
 
-            isopy.write_csv(file, 'This is a comment', comment_symbol='%')
+            isopy.write_csv(file, data, 'This is a comment', comment_symbol='%')
             time.sleep(sleep_time)
             read = isopy.asanyarray(file, comment_symbol='%')
             self.compare_nd(read, data)
 
-            isopy.write_csv(file, dialect='excel-tab')
+            isopy.write_csv(file, data, dialect='excel-tab')
             time.sleep(sleep_time)
             read = isopy.asanyarray(file, dialect='excel-tab')
             self.compare_nd(read, data)
@@ -2050,9 +1988,10 @@ class Test_ToFrom:
     def test_a_from_xlsx(self):
         data1 = isopy.array(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
         data2 = data1 * 100
+        data3 = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
 
         for file in [filename('tofrom.xlsx'), io.BytesIO()]:
-            for from_xlsx in [isopy.IsopyArray.from_xlsx, isopy.array, isopy.asarray, isopy.asanyarray, isopy.array_from_xlsx]:
+            for from_xlsx in [isopy.array, isopy.asarray, isopy.asanyarray]:
                 isopy.write_xlsx(file, data1)
                 read = from_xlsx(file, sheetname='sheet1')
                 self.compare_k(read, data1)
@@ -2079,85 +2018,48 @@ class Test_ToFrom:
                 read = from_xlsx(file, start_at='E1', sheetname='sheet1')
                 self.compare_k(read, data2)
 
-        # Test kwargs
-        data1 = isopy.array(Pd=1.0, Cd=np.nan, Ru=21.0)
+                isopy.write_xlsx(file, data3)
+                read = isopy.array(file, ndim=0, sheetname='sheet1')
+                assert read.ndim == 0
+                self.compare_k(read, data3)
 
-        file = io.BytesIO()
-        isopy.write_xlsx(file, data1)
-        read = isopy.IsopyArray.from_xlsx(file, ndim=0, sheetname='sheet1')
-        self.compare_k(read, data1)
+                read = isopy.array(file, sheetname='sheet1')
+                assert read.ndim == 1
 
-    ## scalardict
+    ## refval
     def test_ds_to_xlsx(self):
-        data1 = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        data1 = core.RefValDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
         data2 = np.multiply(data1, 100)
 
         for file in [filename('tofrom.xlsx'), io.BytesIO()]:
             data1.to_xlsx(file)
             read = isopy.read_xlsx(file, 'sheet1')
-            self.compare_k(isopy.ScalarDict(read), data1)
+            self.compare_k(core.RefValDict(read), data1)
 
             data1.to_xlsx(file, 'sheet2', 'This is a comment', comment_symbol='%')
             read = isopy.read_xlsx(file, 'sheet2', comment_symbol='%')
-            self.compare_k(isopy.ScalarDict(read), data1)
+            self.compare_k(core.RefValDict(read), data1)
 
             data1.to_xlsx(file, keys_in_first='c', start_at='E1')
             read = isopy.read_xlsx(file, 'sheet1', keys_in_first='c', start_at='E1')
-            self.compare_k(isopy.ScalarDict(read), data1)
+            self.compare_k(core.RefValDict(read), data1)
 
             data1.to_xlsx(file)
             data2.to_xlsx(file, 'sheet2', append=True)
             read = isopy.read_xlsx(file, 'sheet1')
-            self.compare_k(isopy.ScalarDict(read), data1)
+            self.compare_k(core.RefValDict(read), data1)
             read = isopy.read_xlsx(file, 'sheet2')
-            self.compare_k(isopy.ScalarDict(read), data2)
+            self.compare_k(core.RefValDict(read), data2)
 
             data1.to_xlsx(file)
             data2.to_xlsx(file, append=True, start_at='E1', clear=False)
             read = isopy.read_xlsx(file, 'sheet1')
-            self.compare_k(isopy.ScalarDict(read), data1)
+            self.compare_k(core.RefValDict(read), data1)
             read = isopy.read_xlsx(file, 'sheet1', start_at='E1')
-            self.compare_k(isopy.ScalarDict(read), data2)
-
-    def test_ds_from_xlsx(self):
-        data1 = isopy.ScalarDict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
-        data2 = np.multiply(data1, 100)
-
-        for file in [filename('tofrom.xlsx'), io.BytesIO()]:
-                isopy.write_xlsx(file, data1)
-                read = isopy.ScalarDict.from_xlsx(file, sheetname='sheet1')
-                self.compare_k(read, data1)
-
-                isopy.write_xlsx(file, data1, comments='This is a comment', comment_symbol='%')
-                read = isopy.ScalarDict.from_xlsx(file, comment_symbol='%', sheetname='sheet1')
-                self.compare_k(read, data1)
-
-                isopy.write_xlsx(file, data1, keys_in_first='c')
-                read = isopy.ScalarDict.from_xlsx(file, keys_in_first='c', sheetname='sheet1')
-                self.compare_k(read, data1)
-
-                isopy.write_xlsx(file, data1)
-                isopy.write_xlsx(file, append=True, sheet2=data2)
-                read = isopy.ScalarDict.from_xlsx(file, sheetname='sheet1')
-                self.compare_k(read, data1)
-                read = isopy.ScalarDict.from_xlsx(file, sheetname='sheet2')
-                self.compare_k(read, data2)
-
-                isopy.write_xlsx(file, data1)
-                isopy.write_xlsx(file, data2, append=True, start_at='E1', clear=False)
-                read = isopy.ScalarDict.from_xlsx(file, sheetname='sheet1')
-                self.compare_k(read, data1)
-                read = isopy.ScalarDict.from_xlsx(file, start_at='E1', sheetname='sheet1')
-                self.compare_k(read, data2)
-
-        # Test kwargs
-        file = io.BytesIO()
-        isopy.write_xlsx(file, data1)
-        read = isopy.ScalarDict.from_xlsx(file, default_value=1, sheetname='sheet1')
-        np.testing.assert_allclose(read.default_value, 1)
+            self.compare_k(core.RefValDict(read), data2)
 
     ## ndarray
-    def test_nd_from_csv(self):
+    def test_nd_from_xlsx(self):
         data1 = np.array([[1.0, 11.0, 21.0], [2.0, np.nan, 22.0], [3.0, 13.0, 23.0]])
         data2 = data1 * 100
 
@@ -2227,7 +2129,7 @@ class Test_exp:
         assert len(data.measurements) == 1
         assert 1 in data.measurements
 
-        assert isinstance(data.measurements[1], isopy.IsopyArray)
+        assert isinstance(data.measurements[1], core.IsopyArray)
         for key in '101ru 102pd 104pd 105pd 106pd 108pd 110pd 111cd'.split():
             assert key in data.measurements[1].keys
 

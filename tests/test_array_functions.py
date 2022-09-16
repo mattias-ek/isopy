@@ -3,6 +3,8 @@ from isopy import core, array_functions
 import numpy as np
 import pytest
 import warnings
+import operator as op
+from scipy import stats
 
 def assert_array_equal_array(array1, array2, match_dtype=True):
     assert isinstance(array1, core.IsopyArray)
@@ -31,9 +33,9 @@ class Test_ArrayFunctions:
         array3 = array2.copy()
         array3['pd'][5] = np.nan
 
-        dict1 = array1.to_scalardict()
-        dict2 = array2.to_scalardict()
-        dict3 = array3.to_scalardict()
+        dict1 = array1.to_refval()
+        dict2 = array2.to_refval()
+        dict3 = array3.to_refval()
 
         # Elementwise functions
         for func in array_functions.np_elementwise:
@@ -309,7 +311,7 @@ class Test_ArrayFunctions:
 
         if axis is core.NotGiven or axis == 0:
             result = func(ds, **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -321,7 +323,7 @@ class Test_ArrayFunctions:
                 np.testing.assert_allclose(result[key], true)
 
             result = isopy.arrayfunc(func, ds, **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -333,7 +335,7 @@ class Test_ArrayFunctions:
                 np.testing.assert_allclose(result[key], true)
 
             result = isopy.arrayfunc(func, ds.to_dict(), **kwargs)
-            assert isinstance(result, core.ScalarDict)
+            assert isinstance(result, core.RefValDict)
             assert result.keys == ds.keys
             for key in result.keys:
                 true = func(ds[key])
@@ -348,13 +350,13 @@ class Test_ArrayFunctions:
             true = func(ds.to_list(), **kwargs)
 
             result = func(ds, **kwargs)
-            assert not isinstance(result, core.ScalarDict)
+            assert not isinstance(result, core.RefValDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
 
             result = isopy.arrayfunc(func, ds, **kwargs)
-            assert not isinstance(result, core.ScalarDict)
+            assert not isinstance(result, core.RefValDict)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
@@ -382,7 +384,9 @@ class Test_ArrayFunctions:
         value3 = [i for i in range(10)]
         value4 = [i for i in range(3)]
 
-        for func in (array_functions.np_dual):
+        dual_funcs = array_functions.np_dual
+        dual_funcs += [op.add, op.sub, op.mul, op.truediv, op.floordiv, op.pow]
+        for func in dual_funcs:
             # all different array combinations
             self.dualinput_aa(func, array1, array2, 0)
             self.dualinput_aa(func, array1, array4, 1)
@@ -474,7 +478,7 @@ class Test_ArrayFunctions:
                 self.dualinput_dv(func, dict7, value3)
 
     def dualinput_aa(self, func, a1, a2, ndim):
-        keys = a1.keys | a2.keys
+        keys = (a1.keys | a2.keys).sorted()
 
         result = func(a1, a2)
         assert isinstance(result, core.IsopyArray)
@@ -529,7 +533,7 @@ class Test_ArrayFunctions:
 
     def dualinput_ad(self, func, a, d, ndim):
         keys = a.keys
-        ds = isopy.ScalarDict(d)
+        ds = isopy.asrefval(d)
 
         result = func(a, d)
         assert isinstance(result, core.IsopyArray)
@@ -571,15 +575,15 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dd(self, func, d1, d2):
-        ds1 = isopy.ScalarDict(d1)
-        ds2 = isopy.ScalarDict(d2)
-        keys = ds1.keys | ds2.keys
+        ds1 = isopy.asrefval(d1)
+        ds2 = isopy.asrefval(d2)
+        keys = (ds1.keys | ds2.keys).sorted()
 
         with pytest.raises(TypeError):
             func(d1, d2) # At least one dictionaries must be a scalar dict
 
         result = func(ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -587,7 +591,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -595,7 +599,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -604,7 +608,7 @@ class Test_ArrayFunctions:
 
         #Array func
         result = isopy.arrayfunc(func, d1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -612,7 +616,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -620,7 +624,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
@@ -628,22 +632,22 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
-        ds1 = isopy.ScalarDict(d1, default_value=1)
-        ds2 = isopy.ScalarDict(d2, default_value=2)
-        keys = ds1.keys | ds2.keys
+        ds1 = isopy.asrefval(d1, default_value=1)
+        ds2 = isopy.asrefval(d2, default_value=2)
+        keys = (ds1.keys | ds2.keys).sorted()
 
         with pytest.raises(TypeError):
             func(d1, d2)  # At least one dictionaries must be a scalar dict
 
         result = func(ds1, d2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, 1), ds2.get(key, np.nan))
@@ -651,7 +655,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(d1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, np.nan), ds2.get(key, 2))
@@ -659,7 +663,7 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds1, ds2)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
             true = func(ds1.get(key, 1), ds2.get(key, 2))
@@ -697,33 +701,34 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, result2)
 
     def dualinput_dv(self, func, d, v):
-        ds = isopy.ScalarDict(d)
+        ds = isopy.asrefval(d)
+        av = np.array(v)
         keys = ds.keys
 
         with pytest.raises(TypeError):
             func(d, v)  # At least one dictionaries must be a scalar dict
 
         result = isopy.arrayfunc(func, d, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = func(ds, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, ds, v)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(ds.get(key, np.nan), v)
+            true = func(ds.get(key, np.nan), av)
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
@@ -732,108 +737,101 @@ class Test_ArrayFunctions:
             func(v, d)  # At least one dictionaries must be a scalar dict
 
         result = isopy.arrayfunc(func, v, d)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = func(v, ds)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
         result = isopy.arrayfunc(func, v, ds)
-        assert isinstance(result, core.ScalarDict)
+        assert isinstance(result, core.RefValDict)
         assert result.keys == keys
         for key in keys:
-            true = func(v, ds.get(key, np.nan))
+            true = func(av, ds.get(key, np.nan))
             assert result.size == true.size
             np.testing.assert_allclose(result[key], true)
 
-    def test_deprecated_dualinput(self):
+    def test_isopy_dualinput(self):
         keys1 = 'ru pd cd'.split()
         keys2 = 'pd ag cd'.split()
 
         a1 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys1, seed=1)
         a2 = isopy.random(1, [(0, 1), (1, 0.1), (0.5, 0.5)], keys2, seed=2)
-        d1 = a1.to_dict()
-        d2 = a2.to_dict()
-        ds1 = a1.to_scalardict()
-        ds2 = a2.to_scalardict()
+        ds2 = a2.to_refval()
 
-        # a, a
-        result = isopy.add(a1, a2)
-        true = a1 + a2
-        assert_array_equal_array(result, true)
+        keys = 'ru cd ag'.split()
+        keys_s1 = 'ru ag cd'.split()
+        keys_s2 = 'ru cd'.split()
 
-        result = isopy.add(a1, a2, 0)
-        true = a1.default(0) + a2.default(0)
-        assert_array_equal_array(result, true)
 
-        result = isopy.add(a1, a2, (0,1))
-        true = a1.default(0) + a2.default(1)
-        assert_array_equal_array(result, true)
+        for func, operator in [(isopy.add, op.add),
+                               (isopy.subtract, op.sub),
+                               (isopy.multiply, op.mul),
+                               (isopy.divide, op.truediv),
+                               (isopy.power, op.pow)]:
+            # a, a
+            true = operator(a1, a2)
+            result = func(a1, a2)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == true.keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        # a, d
-        result = isopy.add(a1, d2)
-        true = a1 + a2.to_scalardict()
-        assert_array_equal_array(result, true)
+            result = func(a1, a2, keys = keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(a1, d2, 0)
-        true = a1.default(0) + a2.to_scalardict(0)
-        assert_array_equal_array(result, true)
+            result = func(a1, a2, key_eq=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys_s1
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(a1, d2, (0, 1))
-        true = a1.default(0) + a2.to_scalardict(1)
-        assert_array_equal_array(result, true)
+            # a ds
+            result = func(a1, ds2)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == a1.keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        # d a
-        result = isopy.add(d1, a2)
-        true = a1.to_scalardict() + a2
-        assert_array_equal_array(result, true)
+            result = func(a1, ds2, keys=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(d1, a2, 0)
-        true = a1.to_scalardict(0) + a2.default(0)
-        assert_array_equal_array(result, true)
+            result = func(a1, ds2, key_eq=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys_s2
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true[key])
 
-        result = isopy.add(d1, a2, (0, 1))
-        true = a1.to_scalardict(0) + a2.default(1)
-        assert_array_equal_array(result, true)
+            # v v
+            true = operator(2.0, 3.0)
+            result = func(2.0, 3.0)
+            assert type(result) == np.float64
+            np.testing.assert_equal(result, true)
 
-        # a ds
-        result = isopy.add(a1, ds2)
-        true = a1 + ds2
-        assert_array_equal_array(result, true)
+            result = func(2.0, 3.0, keys=keys)
+            assert type(result) == core.IsopyNdarray
+            assert result.keys == keys
+            for key in result.keys:
+                np.testing.assert_equal(result[key], true)
 
-        result = isopy.add(a1, ds2, 0)
-        true = a1.default(0) + ds2
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(a1, ds2, (0, 1))
-        true = a1.default(0) + ds2
-        assert_array_equal_array(result, true)
-
-        # ds a
-        result = isopy.add(ds1, a2)
-        true = ds1 + a2
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(ds1, a2, 0)
-        true = ds1 + a2.default(0)
-        assert_array_equal_array(result, true)
-
-        result = isopy.add(ds1, a2, (0, 1))
-        true = ds1 + a2.default(1)
-        assert_array_equal_array(result, true)
-
-        # keys
-        result = isopy.add(a1, ds2, keys=('ru', 'cd'))
-        assert result.keys == ('ru', 'cd')
+            result = func(2.0, 3.0, keys_eq=keys)
+            assert type(result) == np.float64
+            np.testing.assert_equal(result, true)
 
     def test_count_finite(self):
         array = isopy.array([[1, 2, 3], [4, np.nan, 6]], 'ru pd cd'.split())
@@ -851,15 +849,15 @@ class Test_ArrayFunctions:
         np.testing.assert_allclose(isopy.nancount(data, axis=1), [3, 2])
 
     def test_keyminmax(self):
-        array = isopy.random(10, [3, 1, 5], 'ru pd cd'.split(), seed=46)
-        array['ru'][1] = 100
-        array['ru'][2] = -2
+        array = isopy.array(dict(ru=[2, 2, 6], pd=[-7,3,4], cd=[1,4,5]))
+
+        assert isopy.keymin(array) == 'ru'
+        assert isopy.keymin(array, np.min) == 'pd'
+        assert isopy.keymin(array, np.min, abs=True) == 'cd'
 
         assert isopy.keymax(array) == 'cd'
-        assert isopy.keymax(array, np.mean) == 'ru'
-
-        assert isopy.keymin(array) == 'pd'
-        assert isopy.keymin(array, np.min) == 'ru'
+        assert isopy.keymax(array, np.max) == 'ru'
+        assert isopy.keymax(array, np.max, abs=True) == 'pd'
 
     def test_where(self):
         data = [[1, 2, 3], [3, np.nan, 5], [6, 7, 8], [9, 10, np.nan]]
@@ -910,6 +908,16 @@ class Test_ArrayFunctions:
             np.testing.assert_allclose(result1['ru'], result2['ru'])
             np.testing.assert_allclose(result1['cd'], result2['cd'])
             np.testing.assert_allclose(np.ones(4), result2['ag'])
+
+        # Should change the arrays in place
+        # These functions will also have out as a tuple that needs to be changed
+        array2 = np.add(array, 1)
+        np.subtract(array2, 1, out=array2)
+        assert_array_equal_array(array2, array)
+
+        array2 = np.add(array, 1)
+        array2 -= 1
+        assert_array_equal_array(array2, array)
 
     def test_special(self):
         # np.average, np.copyto
@@ -982,11 +990,11 @@ class Test_ArrayFunctions:
         result = np.average(array, 0, weights)
         assert_array_equal_array(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, weights=weights2)
         assert_array_equal_array(result, correct)
 
@@ -1004,11 +1012,11 @@ class Test_ArrayFunctions:
         result = np.average(array, 1, weights)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, axis=1, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
@@ -1034,11 +1042,11 @@ class Test_ArrayFunctions:
         result = np.average(array, None, weights)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.IsopyDict(weights)
+        weights2 = isopy.asdict(weights)
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
-        weights2 = isopy.ScalarDict(weights)
+        weights2 = isopy.asrefval(weights)
         result = np.average(array, axis=None, weights=weights2)
         np.testing.assert_allclose(result, correct)
 
@@ -1060,7 +1068,7 @@ class Test_ArrayFunctions:
             if func not in tested:
                 raise ValueError(f'special function {func.__name__} not tested')
 
-    def test_concatenate_1(self):
+    def test_rstack(self):
         # Axis = 0
 
         array1 = isopy.ones(2, 'ru pd cd'.split())
@@ -1107,6 +1115,29 @@ class Test_ArrayFunctions:
             true = np.concatenate((array1.get(key), [np.nan], array3.get(key)))
             np.testing.assert_allclose(result[key], true)
 
+        a = isopy.array(a=1, b=2, flavour='general')
+        b = isopy.array(a=11, b=12)
+        assert a.keys() != b.keys()
+
+        c = isopy.rstack(a, b)
+        assert c.ncols == 4
+
+        a = isopy.ones(None, 'ru pd')
+        b = isopy.ones(1, 'pd cd') * 2
+
+        c = isopy.rstack(a, b)
+        assert c.keys == 'ru pd cd'
+        np.testing.assert_allclose(c['ru'], [1, np.nan])
+        np.testing.assert_allclose(c['pd'], [1, 2])
+        np.testing.assert_allclose(c['cd'], [np.nan, 2])
+
+        c = isopy.rstack(a.default(10), b.default(20))
+        assert c.keys == 'ru pd cd'
+        np.testing.assert_allclose(c['ru'], [1, 20])
+        np.testing.assert_allclose(c['pd'], [1, 2])
+        np.testing.assert_allclose(c['cd'], [10, 2])
+
+    def test_cstack(self):
         # Axis = 1
         array1 = isopy.ones(2, 'ru pd cd'.split())
         array2 = isopy.ones(-1, 'rh ag'.split()) * 2
@@ -1154,7 +1185,14 @@ class Test_ArrayFunctions:
         with pytest.raises(np.AxisError):
             result = isopy.concatenate(array1, array2, array3, axis=2)
 
-    def test_cocatenate_2(self):
+        a = isopy.array(a=1, b=2, flavour='general')
+        b = isopy.array(a=11, b=12)
+        assert a.keys() != b.keys()
+
+        c = isopy.cstack(a, b)
+        assert c.ncols == 4
+
+    def test_concatenate(self):
         array1 = isopy.ones(2) * 4
         array2 = isopy.ones(2) * 5
         array1 = array1.reshape((1, -1))
@@ -1170,6 +1208,288 @@ class Test_ArrayFunctions:
         assert not isinstance(result, core.IsopyArray)
         np.testing.assert_allclose(result, true)
 
+
+    def test_refval_inheritance(self):
+        keys = 'ru pd cd'.split()
+        array1 = isopy.random(None, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
+        array2 = isopy.random(100, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
+
+        dict1 = array1.to_refval()
+        dict1.ratio_function = 'divide'
+        dict1.molecule_functions = 'abundance'
+        dict1.default_value = 1
+
+        assert dict1.ratio_function == np.divide
+        assert dict1.molecule_functions == (np.add, np.multiply, None)
+
+        dict2 = array2.to_refval()
+        dict2.ratio_function = np.add
+        dict2.molecule_functions = 'mass'
+        dict2.default_value = 2
+
+        assert dict2.ratio_function == np.add
+        assert dict2.molecule_functions[:2] == (np.add, np.multiply)
+
+        dict3 = array2.to_refval()
+        dict3.ratio_function = np.multiply
+        dict3.molecule_functions = 'fraction'
+        dict3.default_value = [i for i in range(100)]
+
+        assert dict3.ratio_function == np.multiply
+        assert dict3.molecule_functions == (np.multiply, np.multiply, None)
+
+        # abs
+        result = np.abs(dict1)
+        assert result.ratio_function == dict1.ratio_function
+        assert result.molecule_functions == dict1.molecule_functions
+        assert np.all(result.default_value == dict1.default_value)
+
+        result = np.abs(dict2)
+        assert result.ratio_function == dict2.ratio_function
+        assert result.molecule_functions == dict2.molecule_functions
+        assert np.all(result.default_value == dict2.default_value)
+
+        result = np.abs(dict3)
+        assert result.ratio_function == dict3.ratio_function
+        assert result.molecule_functions == dict3.molecule_functions
+        assert np.all(result.default_value == dict3.default_value)
+
+        # sum
+        result = np.sum(dict1)
+        assert result.ratio_function == dict1.ratio_function
+        assert result.molecule_functions == dict1.molecule_functions
+        assert np.all(result.default_value == dict1.default_value)
+
+        result = np.sum(dict2)
+        assert result.ratio_function == dict2.ratio_function
+        assert result.molecule_functions == dict2.molecule_functions
+        assert np.all(result.default_value == dict2.default_value[0])
+
+        result = np.sum(dict3)
+        assert result.ratio_function == dict3.ratio_function
+        assert result.molecule_functions == dict3.molecule_functions
+        assert np.isnan(result.default_value)
+
+        #add
+        result = np.add(dict1, dict2)
+        assert result.ratio_function is None
+        assert result.molecule_functions is None
+        assert np.all(np.isnan(result.default_value))
+
+        result = np.add(dict1, dict2.to_dict())
+        assert result.ratio_function is None
+        assert result.molecule_functions is None
+        assert np.all(np.isnan(result.default_value))
+
+class Test_OutliersLimits:
+    def test_limits(self):
+        data = isopy.random(100, (1,1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd2 = isopy.sd2(data)
+
+        upper = isopy.upper_limit(data)
+        assert upper == median + mad3
+
+        upper = isopy.upper_limit(data, np.mean, isopy.sd2)
+        assert upper == mean + sd2
+
+        upper = isopy.upper_limit.sd2(data)
+        assert upper == mean + sd2
+
+        upper = isopy.upper_limit(data, 1, isopy.sd2)
+        assert upper == 1 + sd2
+
+        upper = isopy.upper_limit(data, np.mean, 1)
+        assert upper == mean + 1
+
+        upper = isopy.upper_limit(data, 1, 1)
+        assert upper == 2
+
+        lower = isopy.lower_limit(data)
+        assert lower == median - mad3
+
+        lower = isopy.lower_limit.sd2(data)
+        assert lower == mean - sd2
+
+        lower = isopy.lower_limit(data, np.mean, isopy.sd2)
+        assert lower == mean - sd2
+
+        lower = isopy.lower_limit(data, 1, isopy.sd2)
+        assert lower == 1 - sd2
+
+        lower = isopy.lower_limit(data, np.mean, 1)
+        assert lower == mean - 1
+
+        lower = isopy.lower_limit(data, 1, 1)
+        assert lower == 0
+
+    def test_is_outliers1(self):
+        #axis = 0
+        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd = isopy.sd(data)
+
+        median_outliers = (data > (median + mad3)) + (data < (median - mad3))
+        mean_outliers = (data > (mean + sd)) + (data < (mean - sd))
+        mean_outliers1 = (data > (1 + sd)) + (data < (1 - sd))
+        mean_outliers2 = (data > (mean + 1)) + (data < (mean - 1))
+        mean_outliers3 = (data > (1 + 1)) + (data < (1 - 1))
+
+        outliers = isopy.is_outlier(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], median_outliers[key])
+
+        outliers = isopy.is_outlier(data, np.mean, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.is_outlier.sd(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.is_outlier(data, 1, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
+
+        outliers = isopy.is_outlier(data, np.mean, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
+
+        outliers = isopy.is_outlier(data, 1, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
+
+        # invert
+        median_outliers = np.invert(median_outliers)
+        mean_outliers = np.invert(mean_outliers)
+        mean_outliers1 = np.invert(mean_outliers1)
+        mean_outliers2 = np.invert(mean_outliers2)
+        mean_outliers3 = np.invert(mean_outliers3)
+
+        outliers = isopy.not_outlier(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], median_outliers[key])
+
+        outliers = isopy.not_outlier(data, np.mean, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.not_outlier.sd(data)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers[key])
+
+        outliers = isopy.not_outlier(data, 1, isopy.sd)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers1[key])
+
+        outliers = isopy.not_outlier(data, np.mean, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers2[key])
+
+        outliers = isopy.not_outlier(data, 1, 1)
+        assert outliers.keys == data.keys
+        assert outliers.size == data.size
+        for key in outliers.keys:
+            np.testing.assert_allclose(outliers[key], mean_outliers3[key])
+
+    def test_find_outliers2(self):
+        # axis = 0
+        data = isopy.random(100, (1, 1), keys=isopy.refval.element.isotopes['pd'])
+
+        median = np.median(data)
+        mean = np.mean(data)
+        mad3 = isopy.mad3(data)
+        sd = isopy.sd2(data)
+
+        median_outliers = np.any((data > (median + mad3)) + (data < (median - mad3)), axis=1)
+        mean_outliers = np.any((data > (mean + sd)) + (data < (mean - sd)), axis=1)
+        mean_outliers1 = np.any((data > (1 + sd)) + (data < (1 - sd)), axis=1)
+        mean_outliers2 = np.any((data > (mean + 1)) + (data < (mean - 1)), axis=1)
+        mean_outliers3 = np.any((data > (1 + 1)) + (data < (1 - 1)), axis=1)
+
+        outliers = isopy.is_outlier(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, median_outliers)
+
+        outliers = isopy.is_outlier(data, np.mean, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.is_outlier.sd2(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.is_outlier(data, 1, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers1)
+
+        outliers = isopy.is_outlier(data, np.mean, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers2)
+
+        outliers = isopy.is_outlier(data, 1, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers3)
+
+        # invert
+
+        median_outliers = np.invert(median_outliers)
+        mean_outliers = np.invert(mean_outliers)
+        mean_outliers1 = np.invert(mean_outliers1)
+        mean_outliers2 = np.invert(mean_outliers2)
+        mean_outliers3 = np.invert(mean_outliers3)
+
+        outliers = isopy.not_outlier(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, median_outliers)
+
+        outliers = isopy.not_outlier(data, np.mean, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.not_outlier.sd2(data, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers)
+
+        outliers = isopy.not_outlier(data, 1, isopy.sd2, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers1)
+
+        outliers = isopy.not_outlier(data, np.mean, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers2)
+
+        outliers = isopy.not_outlier(data, 1, 1, axis=1)
+        assert len(outliers) == data.size
+        np.testing.assert_allclose(outliers, mean_outliers3)
 
 def test_allowed_numpy_functions():
         # These are non-vital so just make sure they return a string
@@ -1192,3 +1512,7 @@ def test_allowed_numpy_functions():
         result = array_functions.approved_numpy_functions(delimiter=None)
         assert isinstance(result, list)
         assert False not in [isinstance(string, str) for string in result]
+
+def test_calculate_ci():
+    assert array_functions.calculate_ci(0.95) == stats.norm.ppf(0.975)
+    assert array_functions.calculate_ci(0.95, 5) == stats.t.ppf(0.975, 5)
