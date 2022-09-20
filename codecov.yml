@@ -3,10 +3,9 @@ coverage:
     project:
       core:
         target: 90%
-        paths: "!toolbox/"
+        paths: "!isopy/toolbox/"
 
       toolbox:
-        paths: "toolbox/"
-        if_ci_failed: success
+        paths: "isopy/toolbox/"
+        target: 75%
     patch: off
-
