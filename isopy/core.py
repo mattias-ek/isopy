@@ -2524,7 +2524,9 @@ class TabulateMixin:
                  include_objinfo = False,
                  keyfmt = None,
                  floatfmt = None,
-                 intfmt = None):
+                 intfmt = None,
+                 keys = None,
+                 **key_filters):
         """
         Turn the contents of the array/dictionary to a table.
 
@@ -2557,6 +2559,10 @@ class TabulateMixin:
             The format for float values in the table, e.g. ``".2f"`` for 2 decimal places.
         intfmt : str | None
             The format for integer values in the table.
+        keys
+            The keys the table should contain. If not given all the keys in the item is shown.
+        **key_filters
+            Key filters to be decide which keys should be included in the table.
 
         Returns
         -------
@@ -2589,6 +2595,15 @@ class TabulateMixin:
 
         kwargs = dict(disable_numparse=True, headers = 'keys')
 
+        if keys:
+            keys = askeylist(keys)
+        else:
+            keys = self.keys
+
+        if key_filters:
+            keys = keys.filter(**key_filters)
+
+
         colalign = []
         table = {}
         if include_row or row_names is not None:
@@ -2606,10 +2621,11 @@ class TabulateMixin:
             colalign.append('left')
             table['(row)'] = row_names
 
-        for k in self.keys():
-            dtype = self[k].dtype
+        for k in keys:
+            dtype = self.get(k).dtype
             title = f'{k.str(keyfmt)} ({dtype.kind}{dtype.itemsize})' if include_dtype else f'{k.str(keyfmt)}'
-            val = self[k].tolist() if self.ndim == 1 else [self[k].tolist()]
+
+            val = self.get(k).tolist() if self.ndim == 1 else [self.get(k).tolist()]
 
             if dtype.kind == 'f':
                 colalign.append('right')
@@ -2662,7 +2678,8 @@ class TabulateMixin:
                                    include_objinfo = include_objinfo,
                                    keyfmt = 'latex',
                                    floatfmt = floatfmt,
-                                   intfmt = intfmt)
+                                   intfmt = intfmt,
+                                   keys = keys)
 
                 html_string = self.tabulate(**html_kwargs)._html
                 return TableStr(string, html = html_string)
