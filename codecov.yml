@@ -8,4 +8,5 @@ coverage:
       toolbox:
         paths: "!toolbox/"
         if_ci_failed: success
+    patch: off
 
