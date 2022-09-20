@@ -17,6 +17,7 @@ import colorsys
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
            'plot_spider', 'plot_hcompare', 'plot_vcompare', 'plot_contours',
            'create_subplots', 'update_figure', 'update_axes', 'create_legend',
+           'plot_text', 'plot_box', 'plot_polygon',
            'Markers', 'Colors']
 
 scatter_style = {'markeredgecolor': 'black', 'ecolor': 'black', 'capsize': 3, 'elinewidth': 1, 'zorder': 2}
@@ -786,7 +787,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     regression_result
         Any object returned by one of isopy's regression functions, an object with ``.slope`` and
         ``.intercept`` attributes or a callable object which takes the x value and returns the y
-        value.
+        value. Can also be either a single scalar representing the slope or a tuple of two scalars,
+        representing the slope and the intercept.
     color : str, Optional
         Color of the regression line if *line* is not ``False``.
         Accepted strings are named colour in matplotlib or a string of a hex triplet begining with "#".
@@ -890,10 +892,22 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         y_eq = lambda x: x * regression_result.slope + regression_result.intercept
         y_se_eq = None
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
-        y_eq = lambda x: x * regression_result[0] + regression_result[1]
-        y_se_eq = None
+        try:
+            slope = np.float(regression_result[0])
+            intercept = np.float(regression_result[1])
+        except:
+            raise ValueError('regression_value cannot be converted to a floats')
+        else:
+            y_eq = lambda x: x * slope + intercept
+            y_se_eq = None
     else:
-        raise ValueError('regression result not recognized')
+        try:
+            slope = np.float64(regression_result)
+        except:
+            raise ValueError('regression_value cannot be converted to a float')
+        else:
+            y_eq = lambda x: x * slope
+            y_se_eq = None
 
     style = {}
     style.update(regression_style)
@@ -935,12 +949,17 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         if isinstance(regression_result, toolbox.regress.LinregressResult):
             style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
         else:
+            var = y_eq(xlim[1]) - y_eq(xlim[0])
             label_intercept = y_eq(0)
             label_slope = y_eq(1) - label_intercept
-            var = y_eq(xlim[1]) - y_eq(xlim[0])
 
-            style['label'] = f'{style.get("label", "")} y={_format_sigfig(label_slope, sigfig, var)}x + ' \
-                             f'{_format_sigfig(label_intercept, sigfig, var)}'.strip()
+            if not np.isnan(label_intercept):
+                label_intercept = _format_sigfig(label_intercept, sigfig, var)
+            if not np.isnan(label_slope):
+                label_slope = _format_sigfig(label_slope, sigfig, var)
+
+            style['label'] = f'{style.get("label", "")} y={label_slope}x + ' \
+                             f'{label_intercept}'.strip()
 
 
     x = np.linspace(xlim[0], xlim[1], 10000)
@@ -2142,6 +2161,7 @@ def _label_unit(refval, val, unit, sigfig):
     if unit == 'ppb':
         return f'{_format_sigfig(val/refval * 1E9, sigfig, pm=True)} ppb'
 
+@_update_figure_and_axes
 def plot_box(axes, x = None, y = None, color = None, autoscale = True, **style_kwargs):
     """
     Plot a semi-transparent box on *axes*.
@@ -2197,6 +2217,7 @@ def plot_box(axes, x = None, y = None, color = None, autoscale = True, **style_k
 
     _plot_polygon(axes, coordinates, autoscale, **style)
 
+@_update_figure_and_axes
 def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs):
     """
     Plot a semi-transparent polygon on *axes*.
@@ -2252,6 +2273,45 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
     else: style.setdefault('color', 'black')
 
     _plot_polygon(axes, coordinates, autoscale, **style)
+
+@_update_figure_and_axes
+def plot_text(axes, xpos, ypos, text, rotation = None, fontsize = None, posabs = True, **kwargs):
+    """
+    Add text to plot.
+
+    Parameters
+    ----------
+    axes
+        The axes on which the regression will we plotted. Must be a matplotlib axes object or any
+        object with a gca() method that return a matplotlib axes object, such as a matplotlib
+        pyplot instance.
+    xpos, ypos
+        Position of the text in the plot. If *posabs* is True then the text is placed at these data coordinates.
+        If *posabs* is False then the text is placed at this relative position.
+    text
+        The text to be included in the plot.
+    rotation
+        If given the text is rotated anti-clockwise by this many degrees.
+    fontsize
+        The fontsize of the text.
+    posabs
+        If True *xpos* and *ypos* represents data coordinates. If False *xpos* and *ypos* represents
+        the relative position on the axes in the interval 0 to 1.
+    kwargs
+        Any other valid keyword argument for the :meth:`matplotlib.axes.Axes.text` method.
+    """
+    axes = _check_axes(axes)
+
+    if rotation:
+        kwargs['rotation'] = rotation
+
+    if fontsize:
+        kwargs['fontsize'] = fontsize
+
+    if posabs is False:
+        kwargs['transform'] = axes.transAxes
+
+    axes.text(xpos, ypos, text, **kwargs)
 
 @_update_figure_and_axes
 def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',

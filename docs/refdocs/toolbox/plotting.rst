@@ -51,6 +51,18 @@ plot_contours
 +++++++++++++
 .. autofunction:: plot_contours
 
+plot_text
++++++++++++++
+.. autofunction:: plot_text
+
+plot_box
++++++++++++++
+.. autofunction:: plot_box
+
+plot_polygon
++++++++++++++
+.. autofunction:: plot_polygon
+
 Markers
 +++++++
 .. autoclass:: Markers

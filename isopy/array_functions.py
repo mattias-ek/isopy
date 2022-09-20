@@ -451,7 +451,6 @@ def nancount(a, axis=None): #, where = core.NotGiven):
     """
     #if where is not core.NotGiven:
     #    a = a[where]
-    print(a, axis)
     return np.count_nonzero(np.isfinite(a), axis=axis)
 
 for func in [sd, nansd, se, nanse, mad, nanmad, nancount]:
