@@ -2669,6 +2669,7 @@ class TabulateMixin:
             if include_objinfo:
                 string = f'{string}\n{self._description_()}'
 
+
             if html_repr:
                 html_kwargs = dict(tablefmt = 'html',
                                    include_row = include_row,
