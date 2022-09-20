@@ -786,7 +786,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     regression_result
         Any object returned by one of isopy's regression functions, an object with ``.slope`` and
         ``.intercept`` attributes or a callable object which takes the x value and returns the y
-        value.
+        value. Can also be either a single scalar representing the slope or a tuple of two scalars,
+        representing the slope and the intercept.
     color : str, Optional
         Color of the regression line if *line* is not ``False``.
         Accepted strings are named colour in matplotlib or a string of a hex triplet begining with "#".
@@ -890,10 +891,22 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         y_eq = lambda x: x * regression_result.slope + regression_result.intercept
         y_se_eq = None
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
-        y_eq = lambda x: x * regression_result[0] + regression_result[1]
-        y_se_eq = None
+        try:
+            slope = np.float(regression_result[0])
+            intercept = np.float(regression_result[1])
+        except:
+            raise ValueError('regression_value cannot be converted to a floats')
+        else:
+            y_eq = lambda x: x * slope + intercept
+            y_se_eq = None
     else:
-        raise ValueError('regression result not recognized')
+        try:
+            slope = np.float64(regression_result)
+        except:
+            raise ValueError('regression_value cannot be converted to a float')
+        else:
+            y_eq = lambda x: x * slope
+            y_se_eq = None
 
     style = {}
     style.update(regression_style)
