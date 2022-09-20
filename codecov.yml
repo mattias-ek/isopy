@@ -1,12 +1,12 @@
 coverage:
   status:
     project:
+      default: false
       core:
         target: 90%
-        paths: "!isopy/toolbox/"
-
+        paths: ["!isopy/toolbox/"]
       toolbox:
-        paths: "isopy/toolbox/"
+        paths: ["isopy/toolbox/"]
         target: 75%
     patch: off
 
