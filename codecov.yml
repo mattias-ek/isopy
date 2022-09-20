@@ -6,7 +6,7 @@ coverage:
         paths: "!toolbox/"
 
       toolbox:
-        paths: "!toolbox/"
+        paths: "toolbox/"
         if_ci_failed: success
     patch: off
 
