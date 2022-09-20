@@ -2562,7 +2562,7 @@ class TabulateMixin:
         keys
             The keys the table should contain. If not given all the keys in the item is shown.
         **key_filters
-            Key filters to be decide which keys should be included in the table.
+            Key filters to decide which keys should be included in the table.
 
         Returns
         -------

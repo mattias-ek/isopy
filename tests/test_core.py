@@ -5228,7 +5228,6 @@ class Test_ToMixin:
         for key in b.keys:
             np.testing.assert_allclose(b[key], tovalue[str(key)])
 
-
     def test_100_1_text(self):
         # size 100, 1-dim
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed = 46, dtype = [np.float64, np.float64, np.int8])
@@ -5263,6 +5262,21 @@ class Test_ToMixin:
         assert type(text) is core.TableStr
         assert core.hashstr(text) == '0144869d470752578acd85316a292d39'
         assert core.hashstr(text._repr_html_()) == '5ce0d4860254e5d7d542b0599474fefe'
+
+        text = a.tabulate(keys='pd ru')
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'ca46507b23ebf90abfa62e51dad6e340'
+        assert core.hashstr(text._repr_html_()) == '35f0ac2cfc99537246d4cf47bdfd3191'
+
+        text = a.tabulate(key_eq=['pd', 'ru'])
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == 'ea33f20010531b4e3349205ddd9691f9'
+        assert core.hashstr(text._repr_html_()) == 'f17dfd06cd06895103634f58d6260824'
+
+        text = a.tabulate(keys='ru cd', key_eq=['pd', 'ru'])
+        assert type(text) is core.TableStr
+        assert core.hashstr(text) == '7a8f4674814298d594f621214bcb3d8a'
+        assert core.hashstr(text._repr_html_()) == '1603955fcb782ff0b2f375a5183bb49d'
 
         text = a.tabulate('simple')
         assert type(text) is core.TableStr
