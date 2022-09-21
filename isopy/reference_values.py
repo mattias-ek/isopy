@@ -189,7 +189,7 @@ class element(RefValGroup):
                                        self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
         return core.RefValDict(**weights, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
     @core.cached_property
     def atomic_number(self):
@@ -219,18 +219,10 @@ class element(RefValGroup):
         The ``get()`` method of this dictionary will automatically calculate the ratio of two
         isotopes if both are present the dictionary. The ``get()`` method will return ``np.nan``
         for absent keys.
-
-        Examples
-        --------
-        >>> isopy.refval.element.atomic_number['pd']
-        1.36
-
-        >>> isopy.refval.element.atomic_number.get('ge')
-        32
         """
         return core.RefValDict(load_refval_values('element_initial_solar_system_abundance_L09'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
 class isotope(RefValGroup):
     def __init__(self, parent):
@@ -326,7 +318,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_mass_W17'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
+                               molecule_functions='mass')
 
     @core.cached_property
     def mass_AME20(self):
@@ -342,7 +334,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_mass_AME20', keys_in_first='c'),
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
+                               molecule_functions='mass')
 
     @core.cached_property
     def mass_number(self):
@@ -366,7 +358,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict({key: int(key.mass_number) for key in self.mass_W17},
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, lambda x1, x2: np.divide(x1, np.abs(x2))))
+                               molecule_functions='mass')
 
     @core.cached_property
     def best_measurement_fraction_M16(self):
@@ -392,7 +384,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_best_measurement_fraction_M16'),
                                default_value=np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions=(np.multiply, np.multiply, None))
+                               molecule_functions='fraction')
 
     @core.cached_property
     def initial_solar_system_fraction_L09(self):
@@ -418,7 +410,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_fraction_L09'),
                                default_value = np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions=(np.multiply, np.multiply, None))
+                               molecule_functions='fraction')
 
     @core.cached_property
     def initial_solar_system_abundance_L09(self):
@@ -444,7 +436,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_L09'),
                                default_value = np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
     @core.cached_property
     def initial_solar_system_abundance_L09b(self):
@@ -478,7 +470,7 @@ class isotope(RefValGroup):
         result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
 
         return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
     @core.cached_property
     def present_solar_system_fraction_AG89(self):
@@ -493,7 +485,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_present_solar_system_fraction_AG89'),
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.multiply, np.multiply, None))
+                               molecule_functions='fraction')
 
     @core.cached_property
     def initial_solar_system_abundance_AG89(self):
@@ -510,7 +502,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_AG89'),
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
     @core.cached_property
     def present_solar_system_abundance_AG89(self):
@@ -527,7 +519,7 @@ class isotope(RefValGroup):
         """
         return core.RefValDict(load_refval_values('isotope_present_solar_system_abundance_AG89'),
                                default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions=(np.add, np.multiply, None))
+                               molecule_functions='abundance')
 
     @core.cached_property
     def sprocess_fraction_B11(self):
