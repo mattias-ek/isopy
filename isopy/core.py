@@ -1454,11 +1454,11 @@ class MoleculeKeyString(IsopyKeyString):
                         alliso.extend([a + [molecule] for a in all])
                     all = alliso
 
-        return [self._new(mol, 1, self.charge) for mol in all]
+        return tuple(self._new(mol, 1, self.charge) for mol in all)
 
     @property
-    def isotopes(self, isotopes = None):
-        return askeylist(self._isotopes_(isotopes))
+    def isotopes(self):
+        return askeylist(self._isotopes_(None))
 
 
 class RatioKeyString(IsopyKeyString):
@@ -1716,8 +1716,8 @@ class GeneralKeyString(IsopyKeyString):
 
     def _str_options_(self):
         return dict(key = str(self),
-                    math = fr'\mathrm{{{self}}}',
-                    latex = fr'$\mathrm{{{self}}}$')
+                    math = fr'\mathrm{{{self}}}'.replace(' ', '\ '),
+                    latex = fr'$\mathrm{{{self}}}$'.replace(' ', '\ '))
 
 
 def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
