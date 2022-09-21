@@ -1390,9 +1390,9 @@ class MoleculeKeyString(IsopyKeyString):
 
     def _sortkey_(self):
         if self.flavour == 'molecule[isotope]':
-            return f'D{self.mz:0>8.3f}{self._z_():0>4}'
+            return f'C{self.mz:0>8.3f}{self._z_():0>4}'
         else:
-            return f'D{0:0>8.3f}{self._z_():0>4}'
+            return f'C{0:0>8.3f}{self._z_():0>4}'
 
     # TODO examples and more options
     def str(self, format=None):
