@@ -1,6 +1,6 @@
 Installing isopy
 ----------------
-Isopy requires python  => 3.8  and can be installed using `pip <https://pip.pypa.io/en/stable/>`_.
+Isopy requires python  => 3.9  and can be installed using `pip <https://pip.pypa.io/en/stable/>`_.
 You can install isopy using the following command:
 
 .. code-block:: bash

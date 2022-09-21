@@ -1228,7 +1228,7 @@ class Test_ArrayFunctions:
         dict2.default_value = 2
 
         assert dict2.ratio_function == np.add
-        assert dict2.molecule_functions[:2] == (np.add, np.multiply)
+        assert dict2.molecule_functions == (np.add, np.multiply, np.divide)
 
         dict3 = array2.to_refval()
         dict3.ratio_function = np.multiply
@@ -1236,7 +1236,7 @@ class Test_ArrayFunctions:
         dict3.default_value = [i for i in range(100)]
 
         assert dict3.ratio_function == np.multiply
-        assert dict3.molecule_functions == (np.multiply, np.multiply, None)
+        assert dict3.molecule_functions == (np.multiply, np.power, None)
 
         # abs
         result = np.abs(dict1)

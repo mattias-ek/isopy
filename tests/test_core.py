@@ -675,7 +675,7 @@ class Test_IsopyKeyString:
                 key = core.MoleculeKeyString(string)
                 assert key.charge == charge
                 assert str(key) == '138Ba' + ('+' * charge or '-' * abs(charge))
-                assert key.mz == 138 / abs(charge)
+                assert key.mz == 138 / charge
 
         key = core.IsotopeKeyString('138Ba')
         for charge in [-2, -1, 1, 2]:
@@ -691,7 +691,7 @@ class Test_IsopyKeyString:
                 key = core.MoleculeKeyString(string)
                 assert key.charge == charge
                 assert str(key) == '[([1H]2[16O])' + ('+' * charge or '-' * abs(charge)) + ']'
-                assert key.mz == 18 / abs(charge)
+                assert key.mz == 18 / charge
 
         key = core.MoleculeKeyString('H2O')
         for charge in [-2, -1, 1, 2]:
@@ -1312,37 +1312,37 @@ class Test_IsopyList:
         return keylist
 
     def test_filter_mz(self):
-        keylist = isopy.keylist('64zn  132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split())
+        keylist = isopy.keylist('64zn  132ba++ 66zn 67zn 68zn 137ba++ 70zn 136ba'.split())
 
-        assert keylist.filter(mz_eq = 66) == '132ba-- 66zn'.split()
-        assert keylist.filter(mz_eq = [66, 68]) == '132ba-- 66zn 68zn'.split()
+        assert keylist.filter(mz_eq = 66) == '132ba++ 66zn'.split()
+        assert keylist.filter(mz_eq = [66, 68]) == '132ba++ 66zn 68zn'.split()
 
         assert keylist.filter(mz_neq=66) == '64zn  67zn 68zn 137ba++ 70zn 136ba'.split()
         assert keylist.filter(mz_neq=[66, 68]) == '64zn 67zn 137ba++ 70zn 136ba'.split()
 
         assert keylist.filter(mz_lt = 66) == '64zn'.split()
 
-        assert keylist.filter(mz_le=66) == '64zn  132ba-- 66zn'.split()
+        assert keylist.filter(mz_le=66) == '64zn  132ba++ 66zn'.split()
 
         assert keylist.filter(mz_gt=66) == '67zn 68zn 137ba++ 70zn 136ba'.split()
 
-        assert keylist.filter(mz_ge=66) == '132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split()
+        assert keylist.filter(mz_ge=66) == '132ba++ 66zn 67zn 68zn 137ba++ 70zn 136ba'.split()
 
-        keylist = isopy.askeylist('64zn  132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split())
+        keylist = isopy.askeylist('64zn  132ba++ 66zn 67zn 68zn 137ba++ 70zn 136ba'.split())
 
-        assert keylist.filter(mz_eq=66) == '132ba-- 66zn'.split()
-        assert keylist.filter(mz_eq=[66, 68]) == '132ba-- 66zn 68zn'.split()
+        assert keylist.filter(mz_eq=66) == '132ba++ 66zn'.split()
+        assert keylist.filter(mz_eq=[66, 68]) == '132ba++ 66zn 68zn'.split()
 
         assert keylist.filter(mz_neq=66) == '64zn  67zn 68zn 137ba++ 70zn 136ba'.split()
         assert keylist.filter(mz_neq=[66, 68]) == '64zn 67zn 137ba++ 70zn 136ba'.split()
 
         assert keylist.filter(mz_lt=66) == '64zn'.split()
 
-        assert keylist.filter(mz_le=66) == '64zn  132ba-- 66zn'.split()
+        assert keylist.filter(mz_le=66) == '64zn  132ba++ 66zn'.split()
 
         assert keylist.filter(mz_gt=66) == '67zn 68zn 137ba++ 70zn 136ba'.split()
 
-        assert keylist.filter(mz_ge=66) == '132ba-- 66zn 67zn 68zn 137ba++ 70zn 136ba'.split()
+        assert keylist.filter(mz_ge=66) == '132ba++ 66zn 67zn 68zn 137ba++ 70zn 136ba'.split()
 
     def test_filter_flavour(self):
         keylist = isopy.keylist(['ru', 'pd', '105pd', '106pd', '110cd/105pd', '111cd/105pd'])
@@ -2822,15 +2822,15 @@ class Test_Dict:
         #assert d.molecule_functions == (np.add, np.multiply, lambda v, c: np.multiply(v, np.abs(c)))
         # lambdas dont evaluate with ==
         assert d.get('(H2O)++') == (((3 * 2) + 4) * 1) / 2
-        assert d.get('(H2O)--') == (((3 * 2) + 4) * 1) / 2
+        assert d.get('(H2O)--') == (((3 * 2) + 4) * 1) / -2
 
         d.molecule_functions = 'abundance'
         assert d.molecule_functions == (np.add, np.multiply, None)
         assert d.get('(H2O)++') == (((3 * 2) + 4) * 1)
 
         d.molecule_functions = 'fraction'
-        assert d.molecule_functions == (np.multiply, np.multiply, None)
-        assert d.get('(H2O)++') == (((3 * 2) * 4) * 1)
+        assert d.molecule_functions == (np.multiply, np.power, None)
+        assert d.get('(H2O)++') == (((3 ** 2) * 4) * 1)
 
         with pytest.raises(ValueError):
             d.molecule_functions = 'unknown'
