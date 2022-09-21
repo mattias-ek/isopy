@@ -2882,8 +2882,8 @@ class ToTypeFileMixin:
 ############
 NAMED_RATIO_FUNCTION = dict(divide=np.divide)
 NAMED_MOLECULE_FUNCTIONS = dict(abundance=(np.add, np.multiply, None),
-                                fraction=(np.multiply, np.multiply, None),
-                                mass=(np.add, np.multiply, lambda v, c: np.divide(v, np.abs(c))))
+                                fraction=(np.multiply, np.power, None),
+                                mass=(np.add, np.multiply, np.divide))
 
 def inv_named_function(value, named_function):
     for name, func in named_function.items():
@@ -3187,9 +3187,9 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         the data present in the array. The first function is used to calculate the value for the components,
         the second function for the ``n`` and the final function for the ``charge``. If the third item in the tuple
         is ``None`` then the charge is ignored. If None then no attempt is made to calculate the missing value.
-        ``'fraction'`` is an alias for ``(np.multiply, np.multiply, None)``, ``'abundance'`` is an alias for
+        ``'fraction'`` is an alias for ``(np.multiply, np.power, None)``, ``'abundance'`` is an alias for
         ``(np.add, np.multiply, None)`` and ``'mass'`` is an alias for
-        ``(np.add, np.multiply, lambda value, charge: np.multiply(value, np.abs(charge)))``
+        ``(np.add, np.multiply, np.divide)``
     kwargs : scalar, Optional
         Key, Value pairs to be included in the dictionary
 
