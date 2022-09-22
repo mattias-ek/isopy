@@ -3597,6 +3597,21 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         data type. If not given the data type is inferred from *values* if they already
         have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
         conversion fails the default data type from ``np.array(values[column])`` is used.
+
+    Attributes
+    ----------
+    ncols
+        The number of columns in the array
+    nrows
+        The number of rows in the array. If the array is 0-dimensional *nrows* is ``-1``.
+    ndim
+        The number of dimensions of the data in the array.
+    size
+        The number of rows in the array. If the array is 0-dimensional *size* is ``1``.
+    datatypes
+        The data type for each column in the array.
+    keys
+        The column key strings
     """
 
     __default__ = nan
