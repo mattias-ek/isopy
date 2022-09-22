@@ -1494,7 +1494,7 @@ class Test_IsopyList:
         assert ratio != ratio2
         assert ratio == ratio2.sorted()
 
-        mixed = isopy.askeylist('105 pd 99ru H2O 108pd/105pd hermione'.split())
+        mixed = isopy.askeylist('105 pd H2O 99ru 108pd/105pd hermione'.split())
         mixed2 = isopy.askeylist('H2O 108pd/105pd 99ru 105 hermione pd'.split())
         assert mixed != mixed2
         assert mixed == mixed2.sorted()

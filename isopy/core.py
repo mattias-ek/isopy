@@ -1390,9 +1390,9 @@ class MoleculeKeyString(IsopyKeyString):
 
     def _sortkey_(self):
         if self.flavour == 'molecule[isotope]':
-            return f'D{self.mz:0>8.3f}{self._z_():0>4}'
+            return f'C{self.mz:0>8.3f}{self._z_():0>4}'
         else:
-            return f'D{0:0>8.3f}{self._z_():0>4}'
+            return f'C{0:0>8.3f}{self._z_():0>4}'
 
     # TODO examples and more options
     def str(self, format=None):
@@ -1454,11 +1454,11 @@ class MoleculeKeyString(IsopyKeyString):
                         alliso.extend([a + [molecule] for a in all])
                     all = alliso
 
-        return [self._new(mol, 1, self.charge) for mol in all]
+        return tuple(self._new(mol, 1, self.charge) for mol in all)
 
     @property
-    def isotopes(self, isotopes = None):
-        return askeylist(self._isotopes_(isotopes))
+    def isotopes(self):
+        return askeylist(self._isotopes_(None))
 
 
 class RatioKeyString(IsopyKeyString):
@@ -1716,8 +1716,8 @@ class GeneralKeyString(IsopyKeyString):
 
     def _str_options_(self):
         return dict(key = str(self),
-                    math = fr'\mathrm{{{self}}}',
-                    latex = fr'$\mathrm{{{self}}}$')
+                    math = fr'\mathrm{{{self}}}'.replace(' ', '\ '),
+                    latex = fr'$\mathrm{{{self}}}$'.replace(' ', '\ '))
 
 
 def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
@@ -3597,6 +3597,21 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         data type. If not given the data type is inferred from *values* if they already
         have a numpy data type. Otherwise values are converted to ``np.float64`` if possible. If
         conversion fails the default data type from ``np.array(values[column])`` is used.
+
+    Attributes
+    ----------
+    ncols
+        The number of columns in the array
+    nrows
+        The number of rows in the array. If the array is 0-dimensional *nrows* is ``-1``.
+    ndim
+        The number of dimensions of the data in the array.
+    size
+        The number of rows in the array. If the array is 0-dimensional *size* is ``1``.
+    datatypes
+        The data type for each column in the array.
+    keys
+        The column key strings
     """
 
     __default__ = nan

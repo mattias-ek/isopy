@@ -24,35 +24,43 @@ iskeystring
 +++++++++++
 .. autofunction:: iskeystring
 
+
 MassKeyString
 +++++++++++++
 .. autoclass:: isopy.core.MassKeyString
     :member-order: bysource
+    :members: str
+
 
 ElementKeyString
 ++++++++++++++++
 .. autoclass:: isopy.core.ElementKeyString
     :member-order: bysource
+    :members: str
 
 IsotopeKeyString
 ++++++++++++++++
 .. autoclass:: isopy.core.IsotopeKeyString
     :member-order: bysource
+    :members: str
 
 MoleculeKeyString
 +++++++++++++++++
 .. autoclass:: isopy.core.MoleculeKeyString
     :member-order: bysource
+    :members: str
 
 RatioKeyString
 ++++++++++++++
 .. autoclass:: isopy.core.RatioKeyString
     :member-order: bysource
+    :members: str
 
 GeneralKeyString
 ++++++++++++++++
 .. autoclass:: isopy.core.GeneralKeyString
     :member-order: bysource
+    :members: str
 
 Key list
 --------
@@ -79,6 +87,7 @@ IsopyKeyList
 ++++++++++++
 .. autoclass:: isopy.core.IsopyKeyList
     :member-order: bysource
+    :members: filter, sorted, reversed, flatten, strlist, str
 
 Arrays
 ------
@@ -130,8 +139,9 @@ isarray
 IsopyArray
 ++++++++++
 .. autoclass:: isopy.core.IsopyArray
-    :inherited-members:
     :member-order: bysource
+    :members: values, items, get, copy, filter, ratio, deratio, normalise, default, tabulate, to_array, to_refval, to_ndarray, to_dict, to_list, to_dataframe, to_clipboard, to_csv, to_xlsx
+
 
 
 
@@ -163,12 +173,14 @@ isrefval
 IsopyDict
 +++++++++
 .. autoclass:: isopy.core.IsopyDict
+    :member-order: bysource
+    :members: get, to_dict
 
 RefValDict
 ++++++++++
 .. autoclass:: isopy.core.RefValDict
-    :inherited-members: dict
     :member-order: bysource
+    :members: get, tabulate, to_array, to_refval, to_ndarray, to_dict, to_list, to_dataframe, to_clipboard, to_csv, to_xlsx
 
 
 Flavour
