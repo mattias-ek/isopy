@@ -330,7 +330,7 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
                 # Stop reading data if we find this string at the beginning of a row
                 break
 
-            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
+            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol and row[0] not in NAN_STRINGS:
                 # Row is a comment, ignore
                 continue
 

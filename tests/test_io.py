@@ -23,7 +23,7 @@ def filename(filename):
 
 class Test_Data_rows:
     def test_data_to_rows_3_1(self):
-        data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
+        data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[np.nan, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
         data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
