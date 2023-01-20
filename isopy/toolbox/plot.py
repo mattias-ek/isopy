@@ -755,17 +755,19 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     _axes_add_data(axes, x, y, xerr, yerr)
 
     if regression is not None:
-        if regression == 'york':
+        if regression == 'york' or regression == 'york1':
             regression_result = isopy.tb.yorkregress(x, y, xerr, yerr)
         elif regression == 'york2':
             regression_result = isopy.tb.yorkregress2(x, y, xerr, yerr)
         elif regression == 'york95':
             regression_result = isopy.tb.yorkregress95(x, y, xerr, yerr)
+        elif regression == 'york99':
+            regression_result = isopy.tb.yorkregress99(x, y, xerr, yerr)
         elif regression == 'linear':
             regression_result = isopy.tb.linregress(x, y)
         else:
             raise ValueError(f'"{regression}" not a valid regression')
-        plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
+        plot_regression(axes, regression_result, color=style.get('color', None), label_equation=('label' in style))
 
 @_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
@@ -893,8 +895,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         y_se_eq = None
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
         try:
-            slope = np.float(regression_result[0])
-            intercept = np.float(regression_result[1])
+            slope = np.float64(regression_result[0])
+            intercept = np.float64(regression_result[1])
         except:
             raise ValueError('regression_value cannot be converted to a floats')
         else:
@@ -2132,7 +2134,8 @@ def _format_sigfig(value, sigfig, variation = None, pm=False):
             precision = sigfig
         else:
             precision = sigfig - int(np.log10(np.abs(variation)))
-        if precision < 0: precision = 0
+        if precision < 0:
+            precision = 0
     else:
         precision = 0
 
