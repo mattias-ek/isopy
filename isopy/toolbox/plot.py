@@ -2121,7 +2121,8 @@ def _format_sigfig(value, sigfig, variation = None, pm=False):
             precision = sigfig
         else:
             precision = sigfig - int(np.log10(np.abs(variation)))
-        if precision < 0: precision = 0
+        if precision < 0:
+            precision = 0
     else:
         precision = 0
 
