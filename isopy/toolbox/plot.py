@@ -893,8 +893,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         y_se_eq = None
     elif isinstance(regression_result, tuple) and len(regression_result) == 2:
         try:
-            slope = np.float(regression_result[0])
-            intercept = np.float(regression_result[1])
+            slope = np.float64(regression_result[0])
+            intercept = np.float64(regression_result[1])
         except:
             raise ValueError('regression_value cannot be converted to a floats')
         else:
