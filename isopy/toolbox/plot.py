@@ -755,17 +755,19 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     _axes_add_data(axes, x, y, xerr, yerr)
 
     if regression is not None:
-        if regression == 'york':
+        if regression == 'york' or regression == 'york1':
             regression_result = isopy.tb.yorkregress(x, y, xerr, yerr)
         elif regression == 'york2':
             regression_result = isopy.tb.yorkregress2(x, y, xerr, yerr)
         elif regression == 'york95':
             regression_result = isopy.tb.yorkregress95(x, y, xerr, yerr)
+        elif regression == 'york99':
+            regression_result = isopy.tb.yorkregress99(x, y, xerr, yerr)
         elif regression == 'linear':
             regression_result = isopy.tb.linregress(x, y)
         else:
             raise ValueError(f'"{regression}" not a valid regression')
-        plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
+        plot_regression(axes, regression_result, color=style.get('color', None), label_equation=('label' in style))
 
 @_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,
@@ -946,20 +948,7 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 
     if label_equation is True:
         sigfig = 2
-        if isinstance(regression_result, toolbox.regress.LinregressResult):
-            style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
-        else:
-            var = y_eq(xlim[1]) - y_eq(xlim[0])
-            label_intercept = y_eq(0)
-            label_slope = y_eq(1) - label_intercept
-
-            if not np.isnan(label_intercept):
-                label_intercept = _format_sigfig(label_intercept, sigfig, var)
-            if not np.isnan(label_slope):
-                label_slope = _format_sigfig(label_slope, sigfig, var)
-
-            style['label'] = f'{style.get("label", "")} y={label_slope}x + ' \
-                             f'{label_intercept}'.strip()
+        style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
 
 
     x = np.linspace(xlim[0], xlim[1], 10000)
