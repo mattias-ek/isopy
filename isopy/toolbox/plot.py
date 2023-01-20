@@ -948,7 +948,20 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 
     if label_equation is True:
         sigfig = 2
-        style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
+        if isinstance(regression_result, toolbox.regress.LinregressResult):
+            style['label'] = f'{style.get("label", "")} {regression_result.label(sigfig)}'.strip()
+        else:
+            var = y_eq(xlim[1]) - y_eq(xlim[0])
+            label_intercept = y_eq(0)
+            label_slope = y_eq(1) - label_intercept
+
+            if not np.isnan(label_intercept):
+                label_intercept = _format_sigfig(label_intercept, sigfig, var)
+            if not np.isnan(label_slope):
+                label_slope = _format_sigfig(label_slope, sigfig, var)
+
+            style['label'] = f'{style.get("label", "")} y={label_slope}x + ' \
+                             f'{label_intercept}'.strip()
 
 
     x = np.linspace(xlim[0], xlim[1], 10000)
