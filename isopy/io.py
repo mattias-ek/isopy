@@ -101,17 +101,17 @@ def rows_to_data(data, has_keys, keys_in_first):
     else:
         raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
 
-def data_to_rows(data, keys_in_first):
+def data_to_rows(data, keys_in_first, keyfmt = None):
     data = isopy.asanyarray(data)
 
     if isinstance(data, core.IsopyArray):
         if data.ndim == 0:
             data = data.reshape(-1)
         if keys_in_first == 'r':
-            rows = [[str(k) for k in data.keys()]]
+            rows = [[k.str(keyfmt) for k in data.keys()]]
             rows += data.to_list()
         elif keys_in_first == 'c':
-            rows = [[str(k)] + v.tolist() for k, v in data.items()]
+            rows = [[k.str(keyfmt)] + v.tolist() for k, v in data.items()]
         else:
             raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
     else:
@@ -330,7 +330,7 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
                 # Stop reading data if we find this string at the beginning of a row
                 break
 
-            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
+            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol and row[0] not in NAN_STRINGS:
                 # Row is a comment, ignore
                 continue
 
@@ -352,7 +352,7 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
     return data
 
 
-def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol = '#',
+def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol = '#', keyfmt = None,
               dialect = 'excel') -> None:
     """
     Save data to a csv file.
@@ -371,11 +371,13 @@ def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol =
         keys should be in the first column.
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file.
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
     dialect
         The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
     """
 
-    rows = data_to_rows(data, keys_in_first)
+    rows = data_to_rows(data, keys_in_first, keyfmt)
 
     if comments is not None:
         if type(comments) is not list:
@@ -441,7 +443,7 @@ def read_clipboard(has_keys= None, keys_in_first = None, comment_symbol ='#', di
                     keys_in_first=keys_in_first, dialect=dialect)
 
 def write_clipboard(data, comments=None, keys_in_first='r',
-              comment_symbol = '#', dialect = 'excel'):
+              comment_symbol = '#', keyfmt = None, dialect = 'excel'):
     """
     Copies data to the clipboard
 
@@ -454,13 +456,16 @@ def write_clipboard(data, comments=None, keys_in_first='r',
     keys_in_first : {'c', 'r'}
         Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
         keys should be in the first column.
-    dialect
-        The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
     comment_symbol : str, Default = '#'
         This string will precede any comments.
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
+    dialect
+        The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is gives ', ' seperated data.
     """
     text = io.StringIO()
-    write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect, comment_symbol=comment_symbol)
+    write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect,
+              comment_symbol=comment_symbol, keyfmt=keyfmt)
 
     text.seek(0)
     pyperclip.copy(text.read())
@@ -605,7 +610,8 @@ def _read_xlsx_sheet(worksheet, has_keys, keys_in_first, comment_symbol, start_a
 
 
 def write_xlsx(filename, *sheets, comments = None,
-               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True, **sheetnames):
+               keys_in_first= 'r', comment_symbol= '#', keyfmt = None,
+               start_at ="A1", append = False, clear = True, **sheetnames):
     """
     Save data to an excel file.
 
@@ -618,11 +624,13 @@ def write_xlsx(filename, *sheets, comments = None,
         Data given here will be saved as sheet1, sheet2 etc.
     comments : str, Sequence[str], Optional
         Comments to be included at the top of the file
-    comment_symbol : str, Default = '#'
-        This string will precede any comments at the beginning of the file
     keys_in_first : {'c', 'r'}
         Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
         keys should be in the first column.
+    comment_symbol : str, Default = '#'
+        This string will precede any comments at the beginning of the file
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
     start_at: str, (int, int)
         The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
         tuple of integers.
@@ -666,7 +674,7 @@ def write_xlsx(filename, *sheets, comments = None,
             else:
                worksheet = workbook[sheetname]
 
-            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at)
+            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at, keyfmt)
 
         #Workbooks must have at least one sheet
         if len(workbook.sheetnames) == 0:
@@ -676,8 +684,8 @@ def write_xlsx(filename, *sheets, comments = None,
     finally:
         if save: workbook.close()
 
-def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at):
-    rows = data_to_rows(data, keys_in_first)
+def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at, keyfmt):
+    rows = data_to_rows(data, keys_in_first, keyfmt)
     if type(start_at) is tuple:
         start_r, start_c = start_at
     else:
