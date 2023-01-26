@@ -2803,7 +2803,7 @@ class ToTypeFileMixin:
             raise TypeError('Pandas not installed')
 
     def to_csv(self, filename, comments = None, keys_in_first='r',
-              dialect = 'excel', comment_symbol = '#'):
+              comment_symbol = '#', keyfmt = None, dialect = 'excel', ):
         """
         Save the array/dictionary to a csv file.
 
@@ -2819,14 +2819,17 @@ class ToTypeFileMixin:
             keys should be in the first column.
         comment_symbol : str, Default = '#'
             This string will precede any comments at the beginning of the file.
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
         dialect
             The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
         """
         isopy.write_csv(filename, self, comments=comments, keys_in_first=keys_in_first,
-                        dialect=dialect, comment_symbol=comment_symbol)
+                        dialect=dialect, comment_symbol=comment_symbol, keyfmt=keyfmt)
 
     def to_xlsx(self, filename, sheetname = 'sheet1', comments = None,
-               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True):
+               keys_in_first= 'r', comment_symbol= '#', keyfmt = None,
+               start_at ="A1", append = False, clear = True):
         """
         Save the array/dictionary to an excel workbook.
 
@@ -2839,12 +2842,14 @@ class ToTypeFileMixin:
             Data will be saved in a sheet with this name.
         comments : str, Sequence[str], Optional
             Comments to be included at the top of the file
-        comment_symbol : str, Default = '#'
-            This string will precede any comments at the beginning of the file
         keys_in_first : {'c', 'r'}
             Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
             keys should be in the first column.
-        start_at: str, (int, int)
+        comment_symbol : str, Default = '#'
+            This string will precede any comments at the beginning of the file
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
+        start_at : str, (int, int)
             The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
             tuple of integers.
         append : bool, Default = False
@@ -2854,9 +2859,9 @@ class ToTypeFileMixin:
             If ``True`` any preexisting sheets are cleared before any new data is written to it.
         """
         isopy.write_xlsx(filename, comments=comments, keys_in_first=keys_in_first, comment_symbol=comment_symbol,
-                        start_at=start_at, append=append, clear=clear, **{sheetname: self})
+                        start_at=start_at, append=append, clear=clear, keyfmt=keyfmt, **{sheetname: self})
 
-    def to_clipboard(self, comments=None, keys_in_first='r', dialect = 'excel', comment_symbol = '#'):
+    def to_clipboard(self, comments=None, keys_in_first='r', comment_symbol = '#', keyfmt = None, dialect = 'excel',):
         """
         Copy the array/dictionary to the clipboard.
 
@@ -2867,13 +2872,15 @@ class ToTypeFileMixin:
         keys_in_first : {'c', 'r'}
             Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
             keys should be in the first column.
-        dialect
-            The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
         comment_symbol : str, Default = '#'
             This string will precede any comments.
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
+        dialect
+            The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
         """
         isopy.write_clipboard(self, comments=comments,  keys_in_first=keys_in_first,
-                        dialect=dialect, comment_symbol=comment_symbol)
+                        dialect=dialect, comment_symbol=comment_symbol, keyfmt=keyfmt)
 
 # Merge with ArrayFuncMixin
 
