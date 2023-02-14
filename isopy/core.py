@@ -611,7 +611,7 @@ class IsopyKeyString(str):
     def __eq__(self, other):
         if not isinstance(other, IsopyKeyString):
             try:
-                other = askeystring(other, flavour = self.flavour)
+                other = askeystring(other, flavour = self.flavour, change_flavour=False)
             except:
                 return False
 
@@ -998,7 +998,6 @@ class IsotopeKeyString(IsopyKeyString):
         return super(IsotopeKeyString, cls).__new__(cls, string,
                                                    mass_number = mass,
                                                    element_symbol = element,
-                                                   mz = float(mass),
                                                    flavour = IsotopeFlavour())
 
     def __hash__(self):
@@ -1024,6 +1023,11 @@ class IsotopeKeyString(IsopyKeyString):
 
     def _z_(self):
         return self.element_symbol._z_()
+    
+    @property
+    def mz(self):
+        # Has to be a property as it looks up the value
+        return isopy.refval.isotope.mass_number.get(self, molecule_default='mz')
 
     def str(self, format=None):
         """
@@ -1418,7 +1422,7 @@ class MoleculeKeyString(IsopyKeyString):
     @property
     def mz(self):
         # Has to be a property as it looks up the value
-        return isopy.refval.isotope.mass_number.get(self)
+        return isopy.refval.isotope.mass_number.get(self, molecule_default='mz')
 
     @property
     def element_symbol(self):
@@ -1796,7 +1800,7 @@ def keystring(key, *, allow_reformatting=True, flavour='any'):
                         f'unable to parse {type(key).__name__} "{key}" into {flavours}')
 
 @lru_cache(CACHE_MAXSIZE)
-def askeystring(key, *, allow_reformatting=True, flavour ='any'):
+def askeystring(key, *, allow_reformatting=True, flavour ='any', change_flavour=True):
     """
     Returns a key string preserving the flavour if valid.
 
@@ -1812,6 +1816,9 @@ def askeystring(key, *, allow_reformatting=True, flavour ='any'):
         has the correct format is considered.
     flavour
         The possible flavour(s) of the key string.
+    change_flavour : bool, Default = True
+        If ``True`` and *key* is a key string with a flavour not in *flavour* the flavour of 
+        the key string will be changed. If ``False`` an exception is raised.
 
     Examples
     --------
@@ -1834,10 +1841,10 @@ def askeystring(key, *, allow_reformatting=True, flavour ='any'):
     if isinstance(key, IsopyKeyString):
         if key.flavour in flavour:
             return key
-        else:
+        elif not change_flavour:
             raise KeyFlavourError(key, flavour)
-    else:
-        return keystring(key, allow_reformatting=allow_reformatting, flavour=flavour)
+    
+    return keystring(key, allow_reformatting=allow_reformatting, flavour=flavour)
 
 ################
 ### Key List ###
@@ -2027,7 +2034,7 @@ class IsopyKeyList(tuple):
     def __eq__(self, other):
         if not isinstance(other, IsopyKeyList):
             try:
-                other = askeylist(other, flavour=self.flavour)
+                other = askeylist(other, flavour=self.flavour, change_flavour=False)
             except:
                 return False
         return hash(self) == hash(other)
@@ -2044,7 +2051,7 @@ class IsopyKeyList(tuple):
         for item in items:
             if not isinstance(item, IsopyKeyString):
                 try:
-                    item = askeystring(item, flavour=self.flavour)
+                    item = askeystring(item, flavour=self.flavour, change_flavour=False)
                 except:
                     return False
 
@@ -2195,7 +2202,7 @@ class IsopyKeyList(tuple):
     @functools.wraps(tuple.count)
     def count(self, item):
         try:
-            askeystring(item, flavour=self.flavour)
+            askeystring(item, flavour=self.flavour, change_flavour=False)
         except:
             return 0
         else:
@@ -2204,7 +2211,7 @@ class IsopyKeyList(tuple):
     @functools.wraps(tuple.index)
     def index(self, item, *args):
         try:
-            item = askeystring(item, flavour=self.flavour)
+            item = askeystring(item, flavour=self.flavour, change_flavour=False)
             return super(IsopyKeyList, self).index(item, *args)
         except (KeyValueError, ValueError):
             raise ValueError(f'{item} not in {self.__class__}')
@@ -2381,7 +2388,8 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
 
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, sort=False, flavour ='any'):
+def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, 
+              sort=False, flavour ='any', change_flavour=True):
     """
     Returns a key list preserving the flavour of each key string if it has a valid flavour.
 
@@ -2406,6 +2414,9 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
         If ``True`` the keys in will be sorted
     flavour
         The possible flavour(s) of key strings in the key list.
+    change_flavour : bool, Default = True
+        If ``True`` and key is a key string with a flavour not in *flavour* the flavour of 
+        the key string will be changed. If ``False`` an exception is raised.
 
     Examples
     --------
@@ -2429,7 +2440,8 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
     """
     flavour = asflavour(flavour)
 
-    keys = [askeystring(k, allow_reformatting=allow_reformatting, flavour=flavour) for k in keys[0]]
+    keys = [askeystring(k, allow_reformatting=allow_reformatting, flavour=flavour, change_flavour=change_flavour)
+            for k in keys[0]]
 
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
                         allow_duplicates=allow_duplicates, sort=sort)
@@ -2742,8 +2754,9 @@ class ToTypeFileMixin:
 
         return array({k: self.get(k, default=default) for k in keys})
 
-    def to_refval(self, keys = None, default=NotGiven, *, default_value=NotGiven, ratio_function=NotGiven,
-                  molecule_functions=NotGiven, **key_filters):
+    @renamed_kwarg(ratio_function='ratio_default', molecule_functions='molecule_default')
+    def to_refval(self, keys = None, default=NotGiven, *, default_value=NotGiven, ratio_default=NotGiven,
+                  molecule_default=NotGiven, **key_filters):
         """
         Convert the object to a RefValDict.
 
@@ -2759,13 +2772,13 @@ class ToTypeFileMixin:
             default_value = self.__default__
 
         if type(self) is RefValDict:
-            if ratio_function is NotGiven:
-                ratio_function = self.ratio_function
-            if molecule_functions is NotGiven:
-                molecule_functions = self.molecule_functions
+            if ratio_default is NotGiven:
+                ratio_default = self.ratio_default
+            if molecule_default is NotGiven:
+                molecule_default = self.molecule_default
 
-        return RefValDict(d, default_value=default_value, ratio_function=ratio_function,
-                          molecule_functions=molecule_functions)
+        return RefValDict(d, default_value=default_value, ratio_default=ratio_default,
+                          molecule_default=molecule_default)
 
     def to_ndarray(self, keys = None, default=NotGiven, **key_filters):
         """
@@ -2887,10 +2900,12 @@ class ToTypeFileMixin:
 ############
 ### Dict ###
 ############
-NAMED_RATIO_FUNCTION = dict(divide=np.divide)
-NAMED_MOLECULE_FUNCTIONS = dict(abundance=(np.add, np.multiply, None),
-                                fraction=(np.multiply, np.power, None),
-                                mass=(np.add, np.multiply, np.divide))
+REFVAL_RATIO_FUNCTIONS = {
+                         'divide':np.divide}
+REFVAL_MOLECULE_FUNCTIONS = {
+                             'abundance': (np.add, np.multiply, None),
+                             'fraction': (np.multiply, np.power, None),
+                             'mz': (np.add, np.multiply, np.divide)}
 
 def inv_named_function(value, named_function):
     for name, func in named_function.items():
@@ -2992,21 +3007,21 @@ class IsopyDict(dict):
 
     @readonly_method
     def __delitem__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         super(IsopyDict, self).__delitem__(key)
 
     @readonly_method
     def __setitem__(self, key, value):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         value = self._make_value(value, key)
         super(IsopyDict, self).__setitem__(key, value)
 
     def __contains__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         return super(IsopyDict, self).__contains__(key)
 
     def __getitem__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         return super(IsopyDict, self).__getitem__(key)
 
     @property
@@ -3061,7 +3076,7 @@ class IsopyDict(dict):
             default = self.__default__
 
         try:
-            key = askeystring(key, flavour=self._key_flavour_)
+            key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         except KeyParseError:
             pass
         else:
@@ -3081,7 +3096,7 @@ class IsopyDict(dict):
 
         A TypeError is raised if the dictionary is readonly and *key* is not in the dictionary.
         """
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
         if default is NotGiven:
             default = self.__default__
 
@@ -3131,7 +3146,7 @@ class IsopyDict(dict):
         """
         if isinstance(key, (str, int)):
             try:
-                key = askeystring(key, flavour=self._key_flavour_)
+                key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
             except KeyParseError:
                 pass
             else:
@@ -3185,18 +3200,23 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         Will attempt to convert each key into an *flavour* key string. If *flavour* is a sequence of
         flavours then the first successful conversion is used.  If *flavour* is 'any' the flavours
         tried are ``['mass', 'element', 'isotope', 'ratio', 'molecule', 'general']``.
-    ratio_function : callable
-        The function that should be used to calculate the value of a missing ratio key string from the data present
-        in the array. If None then no attempt is made to calculate the missing value. ``'divide'`` is an
-        alias for ``np.divide``.
-    molecule_functions : None or (callable, callable, callable or None)
-        A tuple of three functions that should be used to calculate the value of a missing molecule key string from
-        the data present in the array. The first function is used to calculate the value for the components,
-        the second function for the ``n`` and the final function for the ``charge``. If the third item in the tuple
-        is ``None`` then the charge is ignored. If None then no attempt is made to calculate the missing value.
-        ``'fraction'`` is an alias for ``(np.multiply, np.power, None)``, ``'abundance'`` is an alias for
-        ``(np.add, np.multiply, None)`` and ``'mass'`` is an alias for
-        ``(np.add, np.multiply, np.divide)``
+    ratio_default : str, optional
+        The default behaviour for the get method when encountering missing ratio values. If None the default_value
+        is returned. If a valid option is given then this method is used to calculate the value of the missing 
+        ratio from the numberator and denominator, assuming these are present in the dictionary.
+        Current options are: 
+         - ``'divide'`` - Divides the numberator by the denominator.
+    molecule_default : str, optional
+        The default behaviour for the get method when encountering missing molecule values. If None the default_value
+        is returned. If a valid option is given then this method is used to calculate the value of the missing 
+        molecule from its components, assuming these are present in the dictionary.
+        Current options are: 
+        - ``'abundance'`` - The value for individual components are added together and then multiplied
+        by the value of ``n``. The charge is ignored. 
+        - ``'fraction'`` - The value for the individual components are multiplied
+        together and then raised to the power of ``n``. The charge is ignored. 
+        - ``'mz'`` - The value for individual components
+        are added together, then multiplied by the value of ``n`` and finally divided by the ``charge``.
     kwargs : scalar, Optional
         Key, Value pairs to be included in the dictionary
 
@@ -3213,14 +3233,10 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         The number of dimensions that each value array in the dictionary.
     size
         The size of each value array in the dictionary.
-    ratio_function
-        The function used to calculate the value of a missing ratio key string from the data present in the array. If
-        None then no attempt is made to calculate the missing value.
-    molecule_functions
-        A tuple of three functions used to calculate the value of a missing molecule key string from the data present
-        in the array. The first function is used to calculate the value for the components, the second function for
-        the ``n`` and the final function for the ``charge``. If the third item in the tuple is None then the charge is
-        ignored. If None then no attempt is made to calculate the missing value.
+    ratio_default
+        The default behaviour for the get method when encountering missing molecule values.
+    molecule_default
+        The default behaviour for the get method when encountering missing molecule values.
 
     Examples
     --------
@@ -3240,8 +3256,8 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
 
     def _description_(self, boldstart = '', boldend = ''):
         descr = f"{boldstart}{self.__class__.__name__}{boldend}({self.size}, readonly={self.readonly}, key_flavour='{self.key_flavour}'"
-        descr = f'{descr}, ratio_function={inv_named_function(self._ratio_func, NAMED_RATIO_FUNCTION)}'
-        descr = f'{descr}, molecule_functions={inv_named_function(self._molecule_funcs, NAMED_MOLECULE_FUNCTIONS)}'
+        descr = f'{descr}, ratio_default={self.ratio_default}'
+        descr = f'{descr}, molecule_default={self.molecule_default}'
         if self.ndim == 0 or False in [np.array_equal(self.__default__[0], dv, equal_nan=True) for dv in self.__default__]:
             default_value = self.__default__
         else:
@@ -3249,31 +3265,32 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         descr = f'{descr}, default_value={default_value})'
         return descr
 
+    @renamed_kwarg(ratio_function='ratio_default', molecule_functions='molecule_default')
     def __init__(self, *args: dict, default_value=nan,
-                 readonly= False, key_flavour = 'any', ratio_function = None,
-                 molecule_functions = None, **kwargs):
+                 readonly= False, key_flavour = 'any', ratio_default = None,
+                 molecule_default = None, **kwargs):
 
         if len(args) == 1 and type(args[0]) is RefValDict:
             if default_value is NotGiven:
                 default_value = args[0].default_value
-            if ratio_function is NotGiven:
-                ratio_function = args[0].ratio_function
-            if molecule_functions is NotGiven:
-                molecule_functions = args[0].molecule_functions
+            if ratio_default is NotGiven:
+                ratio_default = args[0].ratio_default
+            if molecule_default is NotGiven:
+                molecule_default = args[0].molecule_default
         else:
             if default_value is NotGiven:
                 default_value = nan
-            if ratio_function is NotGiven:
-                ratio_function = None
-            if molecule_functions is NotGiven:
-                molecule_functions = None
+            if ratio_default is NotGiven:
+                ratio_default = None
+            if molecule_default is NotGiven:
+                molecule_default = None
 
         self._readonly_ = False
         self._size = 1
         self._ndim = 0
 
-        self.ratio_function = ratio_function
-        self.molecule_functions = molecule_functions
+        self.ratio_default = ratio_default
+        self.molecule_default = molecule_default
 
         super(RefValDict, self).__init__(*args, default_value=default_value,
                                          readonly=readonly,
@@ -3282,7 +3299,7 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            key = askeystring(key, flavour=self._key_flavour_)
+            key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
             return super(IsopyDict, self).__getitem__(key)
         elif isinstance(key, (int, slice)):
             if self.ndim == 0 and (key == 0 or key == slice(None)):
@@ -3343,8 +3360,8 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         return self.__class__(data,
                               default_value=default_value,
                               key_flavour=self._key_flavour_,
-                              ratio_function = self._ratio_func,
-                              molecule_functions=self._molecule_funcs)
+                              ratio_default = self._ratio_default,
+                              molecule_default=self._molecule_default)
 
     def _make_value(self, value, key, resize = True, default_value = False):
         try:
@@ -3384,7 +3401,7 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
     def _make_default_value(self, value):
         return self._make_value(value, 'default_value', default_value=True)
 
-    def get(self, key = None, default = NotGiven):
+    def get(self, key = None, default = NotGiven, ratio_default=None, molecule_default=None):
         """
         Return the the value for *key* if present in the dictionary. If *default* is
         not given the default value of the dictionary is used.
@@ -3400,32 +3417,37 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         Examples
         --------
         >>> reference = RefValDict({'108Pd': 100, '105Pd': 20, '104Pd': 150},
-                                    ratio_func=isopy.divide, molecule_funcs=(isopy.multiply, isopy.multiply, None))
+                                    ratio_default='divide')
         >>> reference.get('pd108')
         100
         >>> reference.get('104Pd/105Pd') # Automatically divides the values
         7.5
-        >>> reference.get('(105Pd)2') # Return the product of all the components multiplied by n ignoring any charge
-        40
+        >>> reference.get('((105Pd)(108Pd))2', molecule_default='abundance') # Adds the components together and multiplies by n
+        240
         """
         if isinstance(key, (str, int)):
             try:
-                key = askeystring(key, flavour=self._key_flavour_)
+                key = askeystring(key, flavour=self._key_flavour_, change_flavour=False)
             except KeyParseError:
                 pass
             else:
                 try:
                     return super(IsopyDict, self).__getitem__(key)
                 except KeyError:
-                    if type(key) is RatioKeyString and self._ratio_func is not None:
-                        return self._ratio_func(self.get(key.numerator, default), self.get(key.denominator, default))
+                    ratio_default = ratio_default or self._ratio_default
+                    molecule_default = molecule_default or self._molecule_default
+                    
+                    if type(key) is RatioKeyString and ratio_default is not None:
+                        df = REFVAL_RATIO_FUNCTIONS[ratio_default]
+                        return df(self.get(key.numerator, default, ratio_default=ratio_default), self.get(key.denominator, default))
 
-                    if type(key) is MoleculeKeyString and self._molecule_funcs is not None:
-                        m = functools.reduce(self._molecule_funcs[0], [self.get(c, default) for c in key.components])
-                        m = self._molecule_funcs[1](m, key.n)
+                    if type(key) is MoleculeKeyString and molecule_default is not None:
+                        mf0, mf1, mf2 = REFVAL_MOLECULE_FUNCTIONS[molecule_default]
+                        m = functools.reduce(mf0, [self.get(c, default, molecule_default=molecule_default) for c in key.components])
+                        m = mf1(m, key.n)
 
-                        if  key.charge is not None and self._molecule_funcs[2] is not None:
-                            m = self._molecule_funcs[2](m, key.charge)
+                        if  key.charge is not None and mf2 is not None:
+                            m = mf2(m, key.charge)
 
                         return m
 
@@ -3450,42 +3472,51 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
     def size(self):
         return self._size
 
+        
+    @property
+    def ratio_default(self):
+        return self._ratio_default
+
+    @ratio_default.setter
+    @readonly_method
+    def ratio_default(self, ratio_default):
+        if ratio_default is not None and ratio_default not in REFVAL_RATIO_FUNCTIONS:
+            raise ValueError(f'"{ratio_default}" not a valid option for missing ratio values')
+
+        self._ratio_default = ratio_default
+
+    @property
+    def molecule_default(self):
+        return self._molecule_default
+
+    @molecule_default.setter
+    @readonly_method
+    def molecule_default(self, molecule_default):
+        if molecule_default is not None and molecule_default not in REFVAL_MOLECULE_FUNCTIONS:
+            raise ValueError(f'"{molecule_default}" not a valid option for missing molecule values')
+
+        self._molecule_default = molecule_default
+        
+    # Deprecated
+    
     @property
     def ratio_function(self):
-        return self._ratio_func
+        return self.ratio_default
 
     @ratio_function.setter
     @readonly_method
     def ratio_function(self, ratio_func):
-        ratio_func = NAMED_RATIO_FUNCTION.get(ratio_func, ratio_func)
-
-        if ratio_func is None or callable(ratio_func):
-            self._ratio_func = ratio_func
-        else:
-            raise ValueError('ratio_functions must be None or a callable')
-
+        self.ratio_default = ratio_func
+        
     @property
     def molecule_functions(self):
-        return self._molecule_funcs
+        return self.molecule_default
 
     @molecule_functions.setter
     @readonly_method
     def molecule_functions(self, molecule_funcs):
-        molecule_funcs = NAMED_MOLECULE_FUNCTIONS.get(molecule_funcs, molecule_funcs)
-
-        if type(molecule_funcs) is tuple and len(molecule_funcs) == 3:
-            if not callable(molecule_funcs[0]):
-                raise ValueError('molecule_funcs[0] must be callable')
-            if not callable(molecule_funcs[1]):
-                raise ValueError('molecule_funcs[1] must be callable')
-            if not callable(molecule_funcs[2]) and molecule_funcs[2] is not None:
-                raise ValueError('molecule_funcs[2] must be callable or None')
-            else:
-                self._molecule_funcs = molecule_funcs
-        elif molecule_funcs is None:
-            self._molecule_funcs = None
-        else:
-            raise ValueError('molecule_functions must be None or a tuple of callable items')
+        self.molecule_default= molecule_funcs
+        
 
 
 ScalarDict = RefValDict # For legacy reasons
@@ -3510,7 +3541,8 @@ def isdict(item, key_flavour=NotGiven, default_value=NotGiven):
 
     return True
 
-def isrefval(item, key_flavour=NotGiven, default_value=NotGiven, ratio_function=NotGiven, molecule_functions=NotGiven):
+@renamed_kwarg(ratio_function='ratio_default', molecule_functions='molecule_default')
+def isrefval(item, key_flavour=NotGiven, default_value=NotGiven, ratio_default=NotGiven, molecule_default=NotGiven):
     """
     Returns ``True`` if *item* is a refval dict otherwise returns ``False``.
     """
@@ -3530,14 +3562,12 @@ def isrefval(item, key_flavour=NotGiven, default_value=NotGiven, ratio_function=
             if not np.array_equal(item.default_value, default_value, equal_nan=True):
                 return False
 
-    if ratio_function is not NotGiven:
-        if (item._ratio_func is not ratio_function and
-                item._ratio_func != NAMED_RATIO_FUNCTION.get(ratio_function, ratio_function)):
+    if ratio_default is not NotGiven:
+        if item.ratio_default is not ratio_default:
             return False
 
-    if molecule_functions is not NotGiven:
-        if (item._molecule_funcs is not molecule_functions and
-                item._molecule_funcs != NAMED_MOLECULE_FUNCTIONS.get(molecule_functions, molecule_functions)):
+    if molecule_default is not NotGiven:
+        if item.molecule_default is not molecule_default:
             return False
 
     return True
@@ -3556,7 +3586,8 @@ def asdict(d, default_value = NotGiven, key_flavour = NotGiven):
     else:
         return IsopyDict(d, default_value = default_value, key_flavour = key_flavour)
 
-def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function = NotGiven, molecule_functions = NotGiven):
+@renamed_kwarg(ratio_function='ratio_default', molecule_functions='molecule_default')
+def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_default = NotGiven, molecule_default = NotGiven):
     """
     Return *d* if it is an RefValDict otherwise convert *d* into one and return it.
 
@@ -3569,11 +3600,11 @@ def asrefval(d, default_value = NotGiven, key_flavour = NotGiven, ratio_function
         d = isopy.refval(d)
 
     if isopy.isrefval(d, key_flavour=key_flavour, default_value=default_value,
-                      ratio_function=ratio_function, molecule_functions=molecule_functions):
+                      ratio_default=ratio_default, molecule_default=molecule_default):
         return d
     else:
         return RefValDict(d, default_value = default_value, key_flavour = key_flavour,
-                      molecule_functions=molecule_functions, ratio_function=ratio_function)
+                      molecule_default=molecule_default, ratio_default=ratio_default)
 
 
 #############
@@ -3762,7 +3793,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
     def _description_(self, boldstart = '', boldend = ''):
         return f"{boldstart}{self.__class__.__name__}{boldend}({self.nrows}, flavour='{self.flavour}', default_value={self.__default__})"
-
+    
     def __eq__(self, other):
         other = np.asanyarray(other)
 
@@ -3795,7 +3826,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
         elif isinstance(index, (list, tuple)) and len(index) > 0:
             if False not in {isinstance(k, str) for k in index}:
-                return askeylist(index, flavour = self.flavour), None
+                return askeylist(index, flavour = self.flavour, change_flavour=False), None
 
             elif self.ndim == 0 and False not in {type(k) is int for k in index}:
                 raise IndexError('0-dimensional arrays cannot be indexed by row')
@@ -3928,7 +3959,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         If *default* is not given np.nan is used.
         """
         try:
-            key = askeystring(key, flavour=self.flavour)
+            key = askeystring(key, flavour=self.flavour, change_flavour=False)
             return self.__getitem__(key)
         except:
 
