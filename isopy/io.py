@@ -12,19 +12,32 @@ import pyperclip
 from openpyxl import load_workbook
 import itertools
 import io
+import zipfile, os
 import numpy as np
 
 
 __all__ = ['read_exp',
            'read_csv', 'write_csv',
            'read_xlsx', 'write_xlsx',
-           'read_clipboard', 'write_clipboard']
+           'read_clipboard', 'write_clipboard',
+           'new_archive', 'load_archive']
 
 import isopy.checks
 
 NAN_STRINGS = 'nan #NA #N/A N/A NA =NA() =na()'.split()
 
-def rows_to_data(data, has_keys, keys_in_first):
+def rows_to_data(data, has_keys, keys_in_first, description = None):
+    if description:
+        keys_in_first = description.get('keys_in_first', keys_in_first)
+
+        output_type = description.get('type', None)
+        if  output_type == 'array':
+            has_keys = True
+        elif output_type == 'ndarray':
+            has_keys = False
+    else:
+        output_type = None
+    
     if len(data) == 0 or len(data[0])==0:
         if has_keys is not True and keys_in_first is None:
             return [[]]
@@ -91,27 +104,70 @@ def rows_to_data(data, has_keys, keys_in_first):
         else:
             # Neither contain only strings
             has_keys=False
-
+    
     if has_keys is False:
-        return data
+        output = data
     elif keys_in_first == 'c':
-        return {v[0]: v[1:] for v in data}
+        output = {v[0]: v[1:] for v in data}
     elif keys_in_first == 'r':
-        return {v[0]: v[1:] for v in zip(*data)}
+        output = {v[0]: v[1:] for v in zip(*data)}
     else:
         raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
+    
+    if output_type is None:
+        return output
+    
+    elif output_type == 'array':
+        ndim = description.get('ndim', '1')
+        if ndim =='0':
+            output = {k: v[0] for k, v in output.items()}
+            
+        flavours = description.get('flavour', None)
+        if type(flavours) is not list:
+            flavours = [flavours] * len(output)
+            
+        datatypes = description.get('dtype', None)
+        if type(datatypes) is not list:
+            datatypes = [datatypes] * len(output)
+        
+        output = {isopy.keystring(k, flavour=flavours[i]): np.array(v, dtype=datatypes[i]) 
+                for i, (k,v) in enumerate(output.items())}
+        
+        return isopy.array(output)
+        
+    elif output_type == 'refval':
+        # Not possible
+        flavours = description.get('flavour', None)
+        if type(flavours) is not list:
+            flavours = [flavours] * len(output)
+            
+        return isopy.refval({isopy.keystring(k, flavour=flavours[i]): v
+                for i, (k,v) in enumerate(output.items())})
+        
+    elif output_type == 'ndarray':
+        datatype = description.get('dtype', None)
+        ndim = description.get('ndim', '2')
+        if ndim == '0':
+            output = output[0][0]
+        elif ndim == '1':
+            output = output[0]
+        
+        return np.array(output, dtype=datatype)
 
-def data_to_rows(data, keys_in_first):
-    data = isopy.asanyarray(data)
-
+# TODO include unit description
+# TODO preserve default value, store dtype as well
+def data_to_rows(data, keys_in_first, keyfmt = None):
+    data = isopy.asanyarray(data, flavour='general')
+    
     if isinstance(data, core.IsopyArray):
+        # TODO in to_list() have include columnkeys and rowID
         if data.ndim == 0:
             data = data.reshape(-1)
         if keys_in_first == 'r':
-            rows = [[str(k) for k in data.keys()]]
+            rows = [[k.str(keyfmt) for k in data.keys()]]
             rows += data.to_list()
         elif keys_in_first == 'c':
-            rows = [[str(k)] + v.tolist() for k, v in data.items()]
+            rows = [[k.str(keyfmt)] + v.tolist() for k, v in data.items()]
         else:
             raise ValueError(f'Unknown value for "keys_in_first" {keys_in_first}')
     else:
@@ -125,6 +181,44 @@ def data_to_rows(data, keys_in_first):
 
     return rows
 
+def data_description(data, keys_in_first):
+    description = {}
+    if isinstance(data, core.IsopyArray):
+        description['keys_in_first'] = keys_in_first
+        description['type'] = 'array'
+        description['ndim'] = f'{data.ndim}'
+        description['flavour'] = ";".join([str(f) for f in data.keys.flavours])
+        description['dtype'] = ";".join([str(dt) for dt in data.datatypes])
+    elif isinstance(data, core.RefValDict):
+        raise NotImplementedError('RefValDicts cannot be saved with a description')
+        description['type'] = 'refval'
+        description['flavour'] = ";".join([str(f) for f in data.keys.flavours])
+        if data.ratio_default is not None:
+            description['ratio_default'] = data.ratio_default
+        if data.molecule_default is not None:
+            description['molecule_default'] = data.molecule_default
+        # TODO default_value
+    elif isinstance(data, np.ndarray):
+        description['type'] = 'ndarray'
+        description['ndim'] = f'{data.ndim}'
+        description['dtype'] = str(data.dtype)
+    elif isinstance(data, dict):
+        description['keys_in_first'] = keys_in_first
+    
+    if description:
+        return f'[isopy]{"&".join([f"{k}={v}" for k,v in description.items()])}'
+    else:
+        return None
+    
+def parse_description(string):
+    description = {}
+    for item in string.split('&'):
+        k, v = item.split('=')
+        if ';' in v:
+            v = v.split(';')
+        description[k] = v
+    return description
+    
 ################
 ### read exp ###
 ################
@@ -246,7 +340,8 @@ def read_exp(filename, rename = None) -> NeptuneData:
 ######################
 ### read/write CSV ###
 ######################
-def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#', encoding = None, dialect = 'excel'):
+def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#', 
+             encoding = None, dialect = 'excel', ignore_description = False):
     """
     Load data from a csv file.
 
@@ -269,6 +364,8 @@ def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#'
         Encoding of the file. If None the encoding will be guessed from the file.
     dialect
         Dialect of the csv file. If None the dialect will be guessed from the file.
+    ignore_description : bool
+        If True the description of the array, if included in the file, is ignored.
 
     Returns
     -------
@@ -303,6 +400,8 @@ def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#'
     if dialect is None:
         dialect = csv.Sniffer().sniff(text)
 
+    description = None
+    
     # Create a reader object by converting the file string to a file-like object
     csv_reader = csv.reader(io.StringIO(text), dialect=dialect)
     for row in csv_reader:
@@ -310,13 +409,16 @@ def read_csv(filename, has_keys= None, keys_in_first = None, comment_symbol ='#'
         if len(row_data) == 0:
             return rows_to_data([[]], has_keys, keys_in_first)
 
-        if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
-            pass # This is a comment so ignore it.
+        if comment_symbol is not None and row[0].startswith(comment_symbol):
+            if not ignore_description and row[0].startswith(f'{comment_symbol}[isopy]'):
+                description = parse_description(row[0].removeprefix(f'{comment_symbol}[isopy]'))
         else:
             data = _read_csv_data(row_data, csv_reader, comment_symbol)
-            return rows_to_data(data, has_keys, keys_in_first)
+            return rows_to_data(data, has_keys, keys_in_first, description)
 
     return rows_to_data([[]], has_keys, keys_in_first)
+
+
 
 def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=None):
     data = []
@@ -330,7 +432,7 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
                 # Stop reading data if we find this string at the beginning of a row
                 break
 
-            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol:
+            if comment_symbol is not None and row[0][:len(comment_symbol)] == comment_symbol and row[0] not in NAN_STRINGS:
                 # Row is a comment, ignore
                 continue
 
@@ -352,8 +454,8 @@ def _read_csv_data(first_row, reader, comment_symbol=None, termination_symbol=No
     return data
 
 
-def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol = '#',
-              dialect = 'excel') -> None:
+def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol = '#', keyfmt = None,
+              dialect = 'excel', include_description=False) -> None:
     """
     Save data to a csv file.
 
@@ -371,19 +473,33 @@ def write_csv(filename, data, comments=None, keys_in_first='r', comment_symbol =
         keys should be in the first column.
     comment_symbol : str, Default = '#'
         This string will precede any comments at the beginning of the file.
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
     dialect
-        The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
-    """
+        The CSV dialect used to save the file. Default to 'excel' which is a ', ' separated file.
+    include_description : bool
+        If True then a comment including a description of the data is included at the top of the file.
+    """    
+    if include_description:
+        description = data_description(data, keys_in_first=keys_in_first)
+    else:
+        description = None
+        
+    rows = data_to_rows(data, keys_in_first, keyfmt)
 
-    rows = data_to_rows(data, keys_in_first)
-
-    if comments is not None:
-        if type(comments) is not list:
+    if comments is not None or description:
+        if comments is None:
+            comments = []   
+        elif type(comments) is not list:
             comments = [comments]
+        
+        if description:
+            comments = [description] + comments
 
         crows = []
-        for comment in comments:
-            crows.append([f'{comment_symbol}{comment}'] + ['' for i in range(len(rows[0][1:]))])
+        if comments is not None:
+            for comment in comments:
+                crows.append([f'{comment_symbol}{comment}'] + ['' for i in range(len(rows[0][1:]))])
 
         if len(rows[0]) == 0:
             rows = crows
@@ -441,7 +557,7 @@ def read_clipboard(has_keys= None, keys_in_first = None, comment_symbol ='#', di
                     keys_in_first=keys_in_first, dialect=dialect)
 
 def write_clipboard(data, comments=None, keys_in_first='r',
-              comment_symbol = '#', dialect = 'excel'):
+              comment_symbol = '#', keyfmt = None, dialect = 'excel'):
     """
     Copies data to the clipboard
 
@@ -454,13 +570,16 @@ def write_clipboard(data, comments=None, keys_in_first='r',
     keys_in_first : {'c', 'r'}
         Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
         keys should be in the first column.
-    dialect
-        The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
     comment_symbol : str, Default = '#'
         This string will precede any comments.
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
+    dialect
+        The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is gives ', ' seperated data.
     """
     text = io.StringIO()
-    write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect, comment_symbol=comment_symbol)
+    write_csv(text, data, comments=comments, keys_in_first=keys_in_first, dialect=dialect,
+              comment_symbol=comment_symbol, keyfmt=keyfmt)
 
     text.seek(0)
     pyperclip.copy(text.read())
@@ -605,7 +724,8 @@ def _read_xlsx_sheet(worksheet, has_keys, keys_in_first, comment_symbol, start_a
 
 
 def write_xlsx(filename, *sheets, comments = None,
-               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True, **sheetnames):
+               keys_in_first= 'r', comment_symbol= '#', keyfmt = None,
+               start_at ="A1", append = False, clear = True, **sheetnames):
     """
     Save data to an excel file.
 
@@ -618,11 +738,13 @@ def write_xlsx(filename, *sheets, comments = None,
         Data given here will be saved as sheet1, sheet2 etc.
     comments : str, Sequence[str], Optional
         Comments to be included at the top of the file
-    comment_symbol : str, Default = '#'
-        This string will precede any comments at the beginning of the file
     keys_in_first : {'c', 'r'}
         Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
         keys should be in the first column.
+    comment_symbol : str, Default = '#'
+        This string will precede any comments at the beginning of the file
+    keyfmt
+        Specify the format used for the key string. See the ``str()`` method of each key string for options.
     start_at: str, (int, int)
         The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
         tuple of integers.
@@ -666,7 +788,7 @@ def write_xlsx(filename, *sheets, comments = None,
             else:
                worksheet = workbook[sheetname]
 
-            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at)
+            _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at, keyfmt)
 
         #Workbooks must have at least one sheet
         if len(workbook.sheetnames) == 0:
@@ -676,8 +798,8 @@ def write_xlsx(filename, *sheets, comments = None,
     finally:
         if save: workbook.close()
 
-def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at):
-    rows = data_to_rows(data, keys_in_first)
+def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_at, keyfmt):
+    rows = data_to_rows(data, keys_in_first, keyfmt)
     if type(start_at) is tuple:
         start_r, start_c = start_at
     else:
@@ -696,3 +818,274 @@ def _write_xlsx(worksheet, data, comments, comment_symbol, keys_in_first, start_
                 value = '#N/A'
             if value is not None and value != '':
                 worksheet.cell(start_r + ri, start_c + ci).value = value
+
+# Archive
+# TODO what happens to groups without any files in them
+# __repr__, __str__ and _repr_markdown_ 
+
+def verify_archive_filename(filename, overwrite = True, allow_none = False):
+    if type(filename) is str:
+        if not filename.endswith('.zip') and not filename.endswith('.data'):
+            filename = filename + '.data.zip'
+        if not overwrite and os.path.exists(filename):
+            raise ValueError(f'"{filename}" already exists')
+    elif allow_none and filename is None:
+        pass
+    elif type(filename) is not io.BytesIO:
+        raise TypeError(f'Filename must be a string or a BytesIO object (not {type(filename)})')
+    
+    return filename
+
+def new_archive(filename = None, overwrite=False):
+    """ Create a new data archive
+
+    Parameters
+    ----------
+    filename : str, io.BytesIO, optional
+        The filename, or file like object, where the archive will be saved.
+    overwrite : bool, optional
+        If False an exception is raised if *filename* already exits.
+
+    Returns
+    -------
+    DataArchive
+    """
+    filename = verify_archive_filename(filename, overwrite=overwrite, allow_none=True)
+    return DataArchive(filename)
+    
+
+def load_archive(filename):
+    """ Loads a data archive
+
+    Parameters
+    ----------
+    filename : str, io.BytesIO
+        The filename, or file like object, where the archive is saved.
+
+    Returns
+    -------
+    DataArchive
+
+    Raises
+    ------
+    ValueError
+        Raised if *filename* does not exist.
+    """
+    filename = verify_archive_filename(filename)
+    
+    archive = DataArchive(filename)
+    archive.reload()
+    return archive
+
+class DataGroup:
+    def __init__(self):
+        super().__setattr__('_items', {})
+        
+    def _repr_markdown_(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return f'This archive group contains:{self._str_()}'
+    
+    def _str_(self, level = 0):
+        string = ''
+        pre = f'\n{" "*(level*2)}- '
+        for k, v in self._items.items():
+            if isinstance(v, DataGroup):
+                string += f'{pre}{k}/'
+                string += v._str_(level+1)
+            elif isinstance(v, core.IsopyArray):
+                string += f'{pre}{k} (ndim={v.ndim}, nrows={v.nrows}, ncols={v.ncols})'
+            else:
+                string += f'{pre}{k} (ndim={v.ndim}, size={v.size})'
+        return string
+    
+    def __repr__(self):
+        return 'DataGroup([' + self._repr_().removeprefix(', ') + '])'
+        
+    def _repr_(self, path = ''):
+        string = ''
+        for k, v in self._items.items():
+            if isinstance(v, DataGroup):
+                string += f', {path}{k}/'
+                string += v._repr_(f'{path}{k}/')
+            else:
+                string += f', {path}{k}'
+        return string
+    
+    def _save_(self, file, path):
+        for name, data in self._items.items():
+            if isinstance(data, DataGroup):
+                data._save_(file, f'{path}{name}/')
+            else:
+                isopy.write_csv((b:=io.BytesIO()), data, include_description=True)
+                file.writestr(f'{path}{name}.csv', b.getvalue())
+    
+    def __getattr__(self, name):
+        try:
+            return self._items[name]
+        except KeyError:
+            raise AttributeError(f'No attribute, group or data with name "{name}"')
+    
+    def __setattr__(self, name, data):
+        self._add_(name.split('__'), data)
+        
+    def __delattr__(self, name):
+        item = self._items.pop(name, None)
+        if isinstance(item, DataGroup):
+            item.clear()
+    
+    def _add_(self, names, data):
+        if len(names) == 1 and data is not None:
+            name = names[0]
+            if not name.isidentifier():
+                raise ValueError(f'Invalid name: {name}')
+
+            data = isopy.asanyarray(data)
+            
+            if name in self._items and isinstance(self._items[name], DataGroup):
+                raise ValueError('f"{name}" is being used by a group item.')
+            else:
+                self._items[name] = data
+        elif len(names) > 0:
+            name = names[0]
+            if not name.isidentifier():
+                raise ValueError(f'Invalid name: {name}')
+            
+            if name not in self._items:
+                self._items[name] = DataGroup()
+            elif name in self._items and not isinstance(self._items[name], DataGroup):
+                raise ValueError('f"{name}" is being used by a data item.')
+            
+            return self._items[name]._add_(names[1:], data)
+        
+        else:
+            return self
+                
+    def add(self, name, data = None):
+        """Add subgroup or data to the current location in the archive.
+
+        Parameters
+        ----------
+        name : str
+            Name or path of the subgroup or data relative to the current location within the archive. Can also be a path within the archive. 
+            Any non-existing groups will be created as necessary. Existing subgroups will not be overwritten but existing data will be.
+            
+        data : array, ndarray, optional
+            The data to be included in the archive. Argument can be anything that is compatible with `isopy.asanyarray`.
+            If not given then a subgroup is created instead.
+
+        Returns
+        -------
+        array, DataGroup
+            Returns the subgroup or data added to the archive.
+            
+        Raises
+        ------
+        ValueError
+            If *name* is not a valid python identifier.
+        """
+        paths = name.split('/')
+        for name in paths:
+            if not name.isidentifier():
+                raise ValueError(f'Invalid name: {name}')
+        
+        return self._add_(paths, data)
+        
+    def clear(self):
+        """Removes all data and subgroups at the current location within the archive. 
+        """
+        for item in self._items.values():
+            if isinstance(item, DataGroup):
+                item.clear()
+            
+        self._items.clear()
+    
+
+class DataArchive(DataGroup):
+    """ A data archive that can contain multiple isopy arrays, refvals and 1D/2D numpy arrays.
+    
+    Subgroups and data can be accessed as attributes, e.g. `archive.data1` or `archive.group1.data1`.
+
+    Attributes
+    ----------
+    filename : str, io.BytesIO, None
+        The filename, or file like object, where the archive is saved. Readonly
+    """
+    def __init__(self, filename = None):
+        super().__init__()
+        super(DataGroup, self).__setattr__('_filename', filename)
+    
+    def __str__(self):
+        return f'The archive {self.filename} contains:{self._str_()}'
+    
+    def __repr__(self):  
+        return f'DataArchive({repr(self.filename)}, [' + self._repr_().removeprefix(', ') + '])'
+    
+    @property
+    def filename(self):
+        return self._filename
+    
+    def _loadfile_(self, filename):
+        self.clear()
+        
+        if filename is None:
+            return
+        
+        if type(filename) is io.BytesIO:
+            filename.seek(0)
+        
+        with zipfile.ZipFile(filename, mode='r') as file:
+            for path in file.namelist():
+                # Only load csv files, other files ignored
+                if path.endswith('.csv'):
+                    data = isopy.read_csv(file.read(path))
+                    self._add_(path.removesuffix('.csv').split('/'), data)
+        
+    def _savefile_(self, filename):
+        # Automatically truncates BytesIO objects       
+        with zipfile.ZipFile(filename, mode='w') as file:
+            self._save_(file, '')
+        
+    def save(self):
+        """ Save the archive.
+        
+        This method is not available for archive subgroups.
+        """
+        if self._filename is None:
+            raise ValueError('No filename or file object associated with the Archive')
+        
+        self._savefile_(self._filename)
+    
+    def saveas(self, filename, overwrite=False):
+        """ Save the archive to *filename*.
+        
+        Future calls to the `save()` method will save the archive to *filename*.
+        
+        This method is not available for archive subgroups.
+
+        Parameters
+        ----------
+        filename : str, io.BytesIO
+            The new location of the archive.
+        overwrite : bool, optional
+            Whether existing files should be overwritten.
+            
+        Raises
+        ------
+        IOError
+            Raised if *filename* already exits and *overwrite* is False.
+        """
+        filename = verify_archive_filename(filename, overwrite)
+        self._savefile_(filename)
+        super(DataGroup, self).__setattr__('_filename', filename)
+    
+    def reload(self):
+        """Reloads the contents of the archive. Any unsaved changes are lost.
+        
+        This method is not available for archive subgroups.
+        """
+        if self._filename is None:
+            raise ValueError('No filename or file object associated with the Archive')
+        
+        self._loadfile_(self._filename)

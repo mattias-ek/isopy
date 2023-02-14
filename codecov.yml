@@ -9,4 +9,3 @@ coverage:
         paths: ["isopy/toolbox/"]
         target: 75%
     patch: off
-

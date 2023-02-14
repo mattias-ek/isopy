@@ -13,6 +13,7 @@ import warnings
 
 import isopy.core as core
 import isopy.io
+import isopy.testing as testing
 
 import openpyxl
 
@@ -23,7 +24,7 @@ def filename(filename):
 
 class Test_Data_rows:
     def test_data_to_rows_3_1(self):
-        data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[11.1, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
+        data_d = dict(Pd=[1.1, 2.2, 3.3], Cd=[np.nan, np.nan, 13.3], Ru=[21.1, 22.2, 23.3])
         data_ds = core.RefValDict(data_d)
         data_a = isopy.array(data_d)
         data_l = data_a.to_list()
@@ -890,6 +891,7 @@ class Test_Data_rows:
 
             np.testing.assert_allclose(data, true)
 
+
 class Test_CSV:
     def test_all(self):
         # This fails occasionaly because it says the file is not avaliable
@@ -1016,6 +1018,125 @@ class Test_CSV:
         read = isopy.read_csv(filebytes, comment_symbol='%')
         self.compare(data, read)
 
+    def test_description(self):
+        file = io.BytesIO()
+        data = dict(Pd=[1.0, 2.0, 3.0], Cd=[11.0, np.nan, 13.0], Ru=[21.0, 22.0, 23.0])
+        array = isopy.array(data)
+        
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        read = isopy.read_csv(file, ignore_description=True)
+        assert type(read) is dict
+        self.compare(data, read)
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, core.IsopyArray)
+        assert read.flavour == array.flavour
+        assert read.keys == array.keys
+        assert read.ndim == array.ndim
+        assert read.datatypes == array.datatypes
+        
+        data = {'pd': [1], 'cd': [True], 'ru': ['hello']}
+        array = isopy.array(data, dtype=[np.int32, bool, None], flavour='general')
+
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        read = isopy.read_csv(file, ignore_description=True)
+        assert type(read) is dict
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, core.IsopyArray)
+        assert read.flavour == array.flavour
+        assert read.keys == array.keys
+        assert read.ndim == array.ndim
+        assert read.datatypes == array.datatypes
+        
+        array = array[0]
+
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        read = isopy.read_csv(file, ignore_description=True)
+        assert type(read) is dict
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, core.IsopyArray)
+        assert read.flavour == array.flavour
+        assert read.keys == array.keys
+        assert read.ndim == array.ndim
+        assert read.datatypes == array.datatypes
+        
+        data = [[1,2,3], [3,4,5]]
+        array = np.array(data)
+        
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, np.ndarray)
+        assert read.ndim == array.ndim
+        assert read.size == array.size
+        assert read.dtype == array.dtype
+        np.testing.assert_allclose(read, array)
+        
+        data = [1,2,3]
+        array = np.array(data)
+        
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, np.ndarray)
+        assert read.ndim == array.ndim
+        assert read.size == array.size
+        assert read.dtype == array.dtype
+        np.testing.assert_allclose(read, array)
+        
+        data = 1
+        array = np.array(data)
+        
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True)
+        isopy.write_csv(file, array, include_description=True)
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, np.ndarray)
+        assert read.ndim == array.ndim
+        assert read.size == array.size
+        assert read.dtype == array.dtype
+        np.testing.assert_allclose(read, array)
+        
+        data = [[1,2,3]]
+        isopy.write_csv(filename('csv_description.csv'), data, include_description=True, keys_in_first='c')
+        isopy.write_csv(file, data, include_description=True, keys_in_first='c')
+        
+        read = isopy.read_csv(file)
+        assert type(read) is list
+        
+        data = {'pd': 'cd', 'fe': 'ni'}
+        keys_r = ['pd', 'cd']
+        keys_c = ['pd', 'fe']
+        
+        isopy.write_csv(filename('csv_description.csv'), data, include_description=True, keys_in_first='c')
+        isopy.write_csv(file, data, include_description=True, keys_in_first='c')
+        
+        read = isopy.read_csv(file)
+        assert type(read) is dict
+        assert [k for k in read.keys()] == keys_c
+        
+        read = isopy.read_csv(file, ignore_description=True)
+        assert [k for k in read.keys()] == keys_r
+        
+        array = isopy.array(data)
+        
+        isopy.write_csv(filename('csv_description.csv'), array, include_description=True, keys_in_first='c')
+        isopy.write_csv(file, array, include_description=True, keys_in_first='c')
+        
+        read = isopy.read_csv(file)
+        assert isinstance(read, core.IsopyArray)
+        assert read.keys == keys_c
+        
+        read = isopy.read_csv(file, ignore_description=True)
+        assert isopy.keylist(read.keys()) == keys_r
+           
     def compare(self, written, read):
         if isinstance(written, dict):
             assert type(read) is dict
@@ -2086,7 +2207,6 @@ class Test_ToFrom:
             read = isopy.asanyarray(file, start_at='E1', sheetname='sheet1')
             self.compare_nd(read, data2)
 
-
 # TODO check meta data
 # TODO check that the measurements are right
 # TODO check cycles, time
@@ -2152,3 +2272,293 @@ class Test_exp:
         data = isopy.read_exp(filename('palladium.exp'), renamer)
         assert '110Pd' not in data.measurements[1].keys
         assert '110Cd' in data.measurements[1].keys
+        
+class Test_DataArchive:
+    def compare_data(self, read, original):
+        if isinstance(original, core.IsopyArray):
+            assert isinstance(read, core.IsopyArray)
+            assert read.keys == original.keys
+            assert read.ndim == original.ndim
+            assert read.datatypes == original.datatypes
+            for k in original.keys:
+                np.testing.assert_allclose(read[k], original[k])
+        else:
+            assert read.ndim == original.ndim
+            assert read.dtype == original.dtype
+            np.testing.assert_allclose(read, original)
+        
+    def test_new_load(self):
+        # .data.zip
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(filename('archive.data.zip'), overwrite=True)
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(filename('archive.data.zip'))
+        self.compare_data(archive.test, array)
+        
+        archive = isopy.load_archive(filename('archive'))
+        self.compare_data(archive.test, array)
+        
+        # no extension
+        array = isopy.random(5, keys='ru pd cd')
+        with pytest.raises(ValueError):
+            archive = isopy.new_archive(filename('archive'))
+        archive = isopy.new_archive(filename('archive'), overwrite=True)    
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(filename('archive'))
+        self.compare_data(archive.test, array)
+        
+        archive = isopy.load_archive(filename('archive.data.zip'))
+        self.compare_data(archive.test, array)
+        
+        # .zip
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(filename('archive.zip'), overwrite=True)
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(filename('archive.zip'))
+        self.compare_data(archive.test, array)
+        
+        # .data
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(filename('archive.data'), overwrite=True)
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(filename('archive.data'))
+        self.compare_data(archive.test, array)
+        
+        # .other
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(filename('archive.other'), overwrite=True)
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(filename('archive.other.data.zip'))
+        self.compare_data(archive.test, array)
+        
+        # bytesIO
+        file = io.BytesIO()
+        
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(file)
+        archive.add('test', array)
+        archive.save()
+        
+        archive = isopy.load_archive(file)
+        self.compare_data(archive.test, array)
+        
+        # None
+        array = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive()
+        archive.add('test', array)
+        with pytest.raises(ValueError):
+            archive.save()
+            
+        # Invalid
+        with pytest.raises(TypeError):
+            isopy.new_archive(3.14)
+            
+        with pytest.raises(TypeError):
+            isopy.load_archive(io.StringIO())
+        
+    def test_saveas(self):
+        file = io.BytesIO()
+        
+        array1 = isopy.random(5, keys='ru pd cd')
+        archive = isopy.new_archive(file)
+        archive.add('test', array1)
+        archive.save()
+        
+        array2 = isopy.random(5, keys='ru pd cd')
+        archive.add('test', array2)
+        
+        with pytest.raises(ValueError):
+            archive.saveas(filename('archive'))
+        
+        archive.saveas(filename('archive'), overwrite=True)  
+        
+        archive1 = isopy.load_archive(file)
+        self.compare_data(archive1.test, array1)
+        
+        archive2 = isopy.load_archive(filename('archive.data.zip'))
+        self.compare_data(archive2.test, array2)
+    
+    def test_add_get_set(self):
+        array1 = isopy.random(5, keys='ru pd cd')
+        array2 = isopy.random(None, keys='ru101 pd105 cd111')
+        array3 = isopy.random(1, keys='ru101/ru pd105/pd cd111/cd')
+        
+        file = io.BytesIO()
+        archive = isopy.new_archive(file)
+
+        # add
+        archive.add('one/two')
+        archive.one.two.add('a1', array1)
+        archive.one.add('two/a2', array2)
+        group = archive.one.add('two')
+        group.add('a3', array3)
+        archive.save()
+        
+        read = isopy.load_archive(file)
+        self.compare_data(read.one.two.a1, array1)
+        self.compare_data(read.one.two.a2, array2)
+        self.compare_data(read.one.two.a3, array3)
+        
+        # get, set
+        file = io.BytesIO()
+        archive = isopy.new_archive(file)
+        
+        archive.one__two__a1 = array1
+        archive.one.two__a2 = array2
+        group = archive.one.two
+        group.a3 = array3
+        archive.save()
+        
+        read = isopy.load_archive(file)
+        self.compare_data(read.one.two.a1, array1)
+        self.compare_data(read.one.two.a2, array2)
+        self.compare_data(read.one.two.a3, array3)
+        
+        # Invalid
+        with pytest.raises(ValueError):
+            archive.add('0')
+            
+        with pytest.raises(ValueError):
+            archive.add('group/')
+            
+        with pytest.raises(ValueError):
+            archive.add('group.')
+        
+        file = io.BytesIO()
+        archive = isopy.new_archive(file)
+        archive.one__a1 = array1
+        
+        with pytest.raises(ValueError):
+            archive.one = array2
+            
+        del(archive.one)
+        archive.one = array2
+        
+        with pytest.raises(ValueError):
+            archive.one__a1 = array1
+        
+        del(archive.one)
+        archive.one__a1 = array1
+        
+        # Oddities
+        file = io.BytesIO()
+        archive = isopy.new_archive(file)
+        
+        with pytest.raises(ValueError):
+            archive.add('/a1', array1)
+            
+        with pytest.raises(ValueError):
+            archive.add('a1/', array1)
+        
+        with pytest.raises(ValueError):
+            archive.add('/', array1)
+        
+        with pytest.raises(ValueError):
+            archive.__ = array2
+        
+        # Works because of the double underscore magic  
+        # archive.__a2 = array2
+        
+        with pytest.raises(ValueError):
+            archive.a3__ = array3
+    
+    def test_reload_clear_del(self):
+        array1 = isopy.random(5, keys='ru pd cd')
+        array2 = isopy.random(None, keys='ru101 pd105 cd111')
+        
+        file = io.BytesIO()
+        archive = isopy.new_archive(file)
+        
+        archive.a = array1
+        archive.one__a = array1
+        two = archive.one.add('two')
+        two.a = array1
+        archive.save()
+        
+        self.compare_data(archive.a, array1)
+        self.compare_data(archive.one.a, array1)
+        self.compare_data(two.a, array1)
+        
+        archive.a = array2
+        archive.one.clear()
+        
+        self.compare_data(archive.a, array2)
+        
+        with pytest.raises(AttributeError):
+            archive.one.a
+            
+        with pytest.raises(AttributeError):
+            archive.one.two
+            
+        with pytest.raises(AttributeError):
+            two.a
+            
+        archive.reload()
+        two = archive.one.two
+        self.compare_data(archive.a, array1)
+        self.compare_data(archive.one.a, array1)
+        self.compare_data(two.a, array1)
+        
+        del(archive.one)
+        
+        self.compare_data(archive.a, array1)
+        
+        with pytest.raises(AttributeError):
+            archive.one
+            
+        with pytest.raises(AttributeError):
+            two.a
+            
+        archive.reload()
+        two = archive.one.two
+        self.compare_data(archive.a, array1)
+        self.compare_data(archive.one.a, array1)
+        self.compare_data(two.a, array1)
+        
+        archive.one.clear()
+        
+        archive.one
+        
+        with pytest.raises(AttributeError):
+            archive.one.a
+            
+        with pytest.raises(AttributeError):
+            archive.one.two
+            
+        with pytest.raises(AttributeError):
+            two.a
+        
+    def test_repr(self):
+        array1 = isopy.random(5, keys='ru pd cd', seed=1)
+        array2 = isopy.random(None, keys='ru101 pd105 cd111', seed=2)
+        array3 = isopy.random(1, keys='ru101/ru pd105/pd cd111/cd', seed=3)
+
+        archive = isopy.new_archive('test', overwrite=True)
+        archive.one__a1 = array1
+        archive.one__two__a2 = array2
+        archive.a3 = array3
+        
+        isopy.testing.assert_hash(archive,
+                          repr="7849678dfde9a8097b5a0c61bfc9c207",
+                          str="ddbc634da83d0c4900fc1be465d4f246",
+                          markdown="ddbc634da83d0c4900fc1be465d4f246")
+        
+        isopy.testing.assert_hash(archive.one,
+                          repr="375406bde8a1c015ce6a0d7ebef5e92a",
+                          str="ef0b29a89f07ae7b2142958da7191383",
+                          markdown="ef0b29a89f07ae7b2142958da7191383")
+        
+        
+        
+            
+        

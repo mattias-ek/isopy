@@ -23,9 +23,9 @@ remove_mass_fractionation
 +++++++++++++++++++++++++
 .. autofunction:: remove_mass_fractionation
 
-remove_mass_fractionation
-+++++++++++++++++++++++++
-.. autofunction:: remove_mass_fractionation
+add_mass_fractionation
+++++++++++++++++++++++
+.. autofunction:: add_mass_fractionation
 
 mass_fractionation_factor
 +++++++++++++++++++++++++

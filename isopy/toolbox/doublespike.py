@@ -562,7 +562,7 @@ def _deduce_inversion_keys(spike, inversion_keys):
             if len(inversion_keys) != 4:
                 raise ValueError(f'got {len(inversion_keys)} inversion isotope keys instead of 4')
             elif spike.flavour == 'isotope':
-                spike = spike.copy(key_eq=inversion_keys)
+                spike = spike.to_array(inversion_keys)
                 denom = isopy.keymax(spike)
                 numer = inversion_keys - denom
                 inversion_keys = numer / denom

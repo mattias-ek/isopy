@@ -2584,8 +2584,8 @@ class Test_Dict:
         assert np.isnan(isopydict1.get('105pd/ru'))
         assert isopydict2.get('105pd/ru') == 10
 
-        isopydict1 = core.RefValDict(dictionary, ratio_function=np.divide)
-        isopydict2 = core.RefValDict(dictionary, default_value=10, ratio_function=np.divide)
+        isopydict1 = core.RefValDict(dictionary, ratio_function='divide')
+        isopydict2 = core.RefValDict(dictionary, default_value=10, ratio_function='divide')
 
         assert isopydict1.get('105pd/ru') == 5 / 3
         assert isopydict2.get('105pd/ru') == 5/3
@@ -2644,8 +2644,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions=(np.add, np.multiply, None))
-        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions=(np.add, np.multiply, None))
+        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions='abundance')
+        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions='abundance')
 
         assert scalardict1.get('RuPd') == 4
         assert scalardict2.get('RuPd') == 4
@@ -2662,8 +2662,8 @@ class Test_Dict:
         assert np.isnan(scalardict1.get('Ge++'))
         assert scalardict2.get('Ge++') == 10
 
-        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions=(np.add, np.multiply, np.divide))
-        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions=(np.add, np.multiply, np.divide))
+        scalardict1 = core.RefValDict(zip(keys, values), molecule_functions='mz')
+        scalardict2 = core.RefValDict(zip(keys, values), default_value=10, molecule_functions='mz')
 
         assert scalardict1.get('Pd++') == 1.5
         assert scalardict2.get('Pd++') == 1.5
@@ -2794,69 +2794,48 @@ class Test_Dict:
     def test_ratio_function(self):
         d = isopy.asrefval( dict(ru=1, pd=2, cd=3) )
 
-        assert d.ratio_function is None
+        assert d.ratio_default is None
         assert np.isnan(d.get('ru/pd'))
+        assert d.get('ru/pd', ratio_default='divide') == 0.5
 
-        d.ratio_function = 'divide'
-        assert d.ratio_function == np.divide
+        d.ratio_default = 'divide'
+        assert d.ratio_function == 'divide'
         assert d.get('ru/pd') == 0.5
-
+        
         with pytest.raises(ValueError):
-            d.ratio_function = 'add'
+            d.ratio_default = np.divide
 
-        d.ratio_function = np.add
-        assert d.ratio_function == np.add
-        assert d.get('ru/pd') == 3
-
-        d.ratio_function = None
-        assert d.ratio_function is None
+        d.ratio_default = None
+        assert d.ratio_default is None
         assert np.isnan(d.get('ru/pd'))
 
     def test_molecule_functions(self):
         d = isopy.asrefval(dict(h=3, o=4))
 
-        assert d.molecule_functions is None
+        assert d.molecule_default is None
         assert np.isnan(d.get('(H2O)++'))
+        assert d.get('(H2O)++', molecule_default='mz') == (((3 * 2) + 4) * 1) / 2
 
-        d.molecule_functions = 'mass'
+        d.molecule_default = 'mz'
+        assert d.molecule_default == 'mz'
         #assert d.molecule_functions == (np.add, np.multiply, lambda v, c: np.multiply(v, np.abs(c)))
         # lambdas dont evaluate with ==
         assert d.get('(H2O)++') == (((3 * 2) + 4) * 1) / 2
         assert d.get('(H2O)--') == (((3 * 2) + 4) * 1) / -2
-
-        d.molecule_functions = 'abundance'
-        assert d.molecule_functions == (np.add, np.multiply, None)
+        
+        d.molecule_default = 'abundance'
+        assert d.molecule_default == 'abundance'
         assert d.get('(H2O)++') == (((3 * 2) + 4) * 1)
 
-        d.molecule_functions = 'fraction'
-        assert d.molecule_functions == (np.multiply, np.power, None)
+        d.molecule_default = 'fraction'
+        assert d.molecule_default == 'fraction'
         assert d.get('(H2O)++') == (((3 ** 2) * 4) * 1)
 
         with pytest.raises(ValueError):
-            d.molecule_functions = 'unknown'
+            d.molecule_default = 'unknown'
 
         with pytest.raises(ValueError):
-            d.molecule_functions = (np.add)
-
-        with pytest.raises(ValueError):
-            d.molecule_functions = (np.add, np.add)
-
-        d.molecule_functions = (np.add, np.add, np.add)
-        assert d.molecule_functions == (np.add, np.add, np.add)
-        assert d.get('(H2O)++') == (((3 + 2) + 4) + 1) + 2
-
-        d.molecule_functions = (np.add, np.add, None)
-        assert d.molecule_functions == (np.add, np.add, None)
-        assert d.get('(H2O)++') == (((3 + 2) + 4) + 1)
-        
-        with pytest.raises(ValueError):
-            d.molecule_functions = (np.add, np.add, 1)
-            
-        with pytest.raises(ValueError):
-            d.molecule_functions = (np.add, None, np.add)
-
-        with pytest.raises(ValueError):
-            d.molecule_functions = (None, np.add, np.add)
+            d.molecule_default = (np.add, np.add, np.add)
 
     def test_isdict(self):
         a = isopy.asdict({})
@@ -2918,12 +2897,10 @@ class Test_Dict:
         assert isopy.isrefval(a, ratio_function=None)
         assert not isopy.isrefval(c, ratio_function=None)
         assert isopy.isrefval(c, ratio_function='divide')
-        assert isopy.isrefval(c, ratio_function=np.divide)
 
         assert isopy.isrefval(a, molecule_functions=None)
         assert not isopy.isrefval(d, molecule_functions=None)
         assert isopy.isrefval(d, molecule_functions='abundance')
-        assert isopy.isrefval(d, molecule_functions=(np.add, np.multiply, None))
 
     def test_copy(self):
         d = isopy.asdict(dict(ru=[1, 2, 3, 4], pd=[11, 12, 13, 14], cd=[21, 22, 23, 24]),
@@ -2937,7 +2914,7 @@ class Test_Dict:
             assert copy[key] is d[key]
 
         d = isopy.asrefval(dict(ru=[1, 2, 3, 4], pd=[11, 12, 13, 14], cd=[21, 22, 23, 24]),
-                           default_value = 1, ratio_function='divide', molecule_functions='mass')
+                           default_value = 1, ratio_function='divide', molecule_functions='mz')
         copy = d.copy()
 
         assert copy is not d
@@ -5234,8 +5211,9 @@ class Test_ToMixin:
 
         text = repr(a)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'fc675acb96bc689d1858e474a3aa9482'
-        assert core.hashstr(text._repr_html_()) == 'c3c446a2f8c29d6199009ea31338414d'
+        isopy.testing.assert_hash(text,
+                          str="fc675acb96bc689d1858e474a3aa9482",
+                          html="c3c446a2f8c29d6199009ea31338414d")
 
         text = str(a)
         assert type(text) is core.TableStr
@@ -5318,13 +5296,15 @@ class Test_ToMixin:
 
         text = repr(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '93380e8bd348b98d29a9a9d5fa28a5e2'
-        assert core.hashstr(text._repr_html_()) == 'd6bd042e8230f8e9ecbd55fff7da31ea'
+        isopy.testing.assert_hash(text,
+                          str="73d81dee5f4cdeec05bbb624a40b4d9c",
+                          html="9ad5045bfb1a59aa7761b5cf2d01ddf5")
 
         text = str(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'ca6ca962a113a357cafed7b01cef5f4f'
-        assert core.hashstr(text._repr_html_()) == '7959300b42c5ba87937ea1e340a6e407'
+        isopy.testing.assert_hash(text,
+                          str="ca6ca962a113a357cafed7b01cef5f4f",
+                          html="7959300b42c5ba87937ea1e340a6e407")
 
     def test_1_1_text(self):
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype = [np.float64, np.float64, np.int8])
@@ -5377,13 +5357,15 @@ class Test_ToMixin:
 
         text = repr(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == '93a285fd104c52d5e32239e70d04c7e4'
-        assert core.hashstr(text._repr_html_()) == 'dcdcbe279bf51aa89362abdecf04ec7c'
+        isopy.testing.assert_hash(text,
+                          str="d4ecc2a91c24f0dba01e996f3941958c",
+                          html="d9a5c5a18c239d0b0ead4465d59815a7")
 
         text = str(d)
         assert type(text) is core.TableStr
-        assert core.hashstr(text) == 'd1b7f665f88324a955271fd97468797b'
-        assert core.hashstr(text._repr_html_()) == '60580bb64dd21619c2f4cea1bb19b5aa'
+        isopy.testing.assert_hash(text,
+                          str="d1b7f665f88324a955271fd97468797b",
+                          html="60580bb64dd21619c2f4cea1bb19b5aa")
 
         a = isopy.random(1, (1, 0.1), 'ru pd cd'.split(), seed=46, dtype=[np.float64, np.float64, np.int8])
         a0 = a[0]
@@ -5425,23 +5407,18 @@ class Test_ToMixin:
         a = isopy.random(20, (1, 0.1), 'ru pd cd'.split(), seed=46)
         d = isopy.asrefval(a)
         assert d._description_() == ("RefValDict(20, readonly=False, key_flavour='any', "
-                                     "ratio_function=None, molecule_functions=None, "
+                                     "ratio_default=None, molecule_default=None, "
                                      f"default_value=nan)")
 
         a = isopy.random(2, (1, 0.1), 'ru pd cd'.split(), seed=46)
         d = isopy.core.RefValDict(a, default_value=[1,2], readonly = True, key_flavour='element|isotope')
         assert d._description_() == ("RefValDict(2, readonly=True, key_flavour='element|isotope', "
-                                     "ratio_function=None, molecule_functions=None, "
+                                     "ratio_default=None, molecule_default=None, "
                                      f"default_value=[1. 2.])")
 
-        d = isopy.asrefval(a, ratio_function=np.divide, molecule_functions='abundance')
+        d = isopy.asrefval(a, ratio_default='divide', molecule_default='abundance')
         assert d._description_() == ("RefValDict(2, readonly=False, key_flavour='any', "
-                                     "ratio_function='divide', molecule_functions='abundance', "
-                                     f"default_value=nan)")
-
-        d = isopy.asrefval(a, ratio_function=np.add, molecule_functions='mass')
-        assert d._description_() == ("RefValDict(2, readonly=False, key_flavour='any', "
-                                     "ratio_function=<ufunc 'add'>, molecule_functions='mass', "
+                                     "ratio_default=divide, molecule_default=abundance, "
                                      f"default_value=nan)")
 
     def test_repr_html(self):

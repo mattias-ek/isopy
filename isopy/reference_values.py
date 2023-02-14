@@ -188,7 +188,7 @@ class element(RefValGroup):
             weights[element] = np.sum([self._parent.isotope.mass_W17.get(isotope) *
                                        self._parent.isotope.best_measurement_fraction_M16.get(isotope)
                                        for isotope in isotopes])
-        return core.RefValDict(**weights, readonly=True, ratio_function=np.divide,
+        return core.RefValDict(**weights, readonly=True, ratio_function='divide',
                                molecule_functions='abundance')
 
     @core.cached_property
@@ -221,7 +221,7 @@ class element(RefValGroup):
         for absent keys.
         """
         return core.RefValDict(load_refval_values('element_initial_solar_system_abundance_L09'),
-                               default_value=np.nan, readonly = True, ratio_function=np.divide,
+                               default_value=np.nan, readonly = True, ratio_function='divide',
                                molecule_functions='abundance')
 
 class isotope(RefValGroup):
@@ -317,8 +317,8 @@ class isotope(RefValGroup):
         1.0285859589859039
         """
         return core.RefValDict(load_refval_values('isotope_mass_W17'),
-                               default_value=np.nan, readonly = True, ratio_function=np.divide,
-                               molecule_functions='mass')
+                               default_value=np.nan, readonly = True, ratio_function='divide',
+                               molecule_functions='abundance')
 
     @core.cached_property
     def mass_AME20(self):
@@ -333,8 +333,8 @@ class isotope(RefValGroup):
 
         """
         return core.RefValDict(load_refval_values('isotope_mass_AME20', keys_in_first='c'),
-                               default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions='mass')
+                               default_value=np.nan, readonly=True, ratio_function='divide',
+                               molecule_functions='abundance')
 
     @core.cached_property
     def mass_number(self):
@@ -357,8 +357,8 @@ class isotope(RefValGroup):
         1.0285714285714285
         """
         return core.RefValDict({key: int(key.mass_number) for key in self.mass_W17},
-                               default_value=np.nan, readonly=True, ratio_function=np.divide,
-                               molecule_functions='mass')
+                               default_value=np.nan, readonly=True, ratio_function='divide',
+                               molecule_functions='abundance')
 
     @core.cached_property
     def best_measurement_fraction_M16(self):
@@ -383,7 +383,7 @@ class isotope(RefValGroup):
         1.1849529780564263
         """
         return core.RefValDict(load_refval_values('isotope_best_measurement_fraction_M16'),
-                               default_value=np.nan, readonly = True, ratio_function=np.divide,
+                               default_value=np.nan, readonly = True, ratio_function='divide',
                                molecule_functions='fraction')
 
     @core.cached_property
@@ -409,7 +409,7 @@ class isotope(RefValGroup):
         1.1849529780564263
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_fraction_L09'),
-                               default_value = np.nan, readonly = True, ratio_function=np.divide,
+                               default_value = np.nan, readonly = True, ratio_function='divide',
                                molecule_functions='fraction')
 
     @core.cached_property
@@ -435,7 +435,7 @@ class isotope(RefValGroup):
         1.184036939313984
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_L09'),
-                               default_value = np.nan, readonly = True, ratio_function=np.divide,
+                               default_value = np.nan, readonly = True, ratio_function='divide',
                                molecule_functions='abundance')
 
     @core.cached_property
@@ -469,7 +469,7 @@ class isotope(RefValGroup):
         isotope_fraction = isopy.refval.isotope.initial_solar_system_fraction_L09
         result = {k: v * element_abundance.get(k.element_symbol) for k, v in isotope_fraction.items()}
 
-        return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_function=np.divide,
+        return core.RefValDict(result, default_value=np.nan, readonly=True, ratio_function='divide',
                                molecule_functions='abundance')
 
     @core.cached_property
@@ -484,7 +484,7 @@ class isotope(RefValGroup):
         for absent keys.
         """
         return core.RefValDict(load_refval_values('isotope_present_solar_system_fraction_AG89'),
-                               default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               default_value=np.nan, readonly=True, ratio_function='divide',
                                molecule_functions='fraction')
 
     @core.cached_property
@@ -501,7 +501,7 @@ class isotope(RefValGroup):
         for absent keys.
         """
         return core.RefValDict(load_refval_values('isotope_initial_solar_system_abundance_AG89'),
-                               default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               default_value=np.nan, readonly=True, ratio_function='divide',
                                molecule_functions='abundance')
 
     @core.cached_property
@@ -518,7 +518,7 @@ class isotope(RefValGroup):
         for absent keys.
         """
         return core.RefValDict(load_refval_values('isotope_present_solar_system_abundance_AG89'),
-                               default_value=np.nan, readonly=True, ratio_function=np.divide,
+                               default_value=np.nan, readonly=True, ratio_function='divide',
                                molecule_functions='abundance')
 
     @core.cached_property
@@ -544,7 +544,7 @@ class isotope(RefValGroup):
         4.751592356687898
         """
         return core.RefValDict(load_refval_values('isotope_sprocess_fraction_B11'),
-                               ratio_function=np.divide, default_value=np.nan, readonly = True)
+                               ratio_function='divide', default_value=np.nan, readonly = True)
 
 class ReferenceValues:
     """ Reference values useful for working with geochemical data"""

@@ -1215,70 +1215,70 @@ class Test_ArrayFunctions:
         array2 = isopy.random(100, [(0, 1), (1, 0.1), (0.5, 0.5)], keys, seed=46)
 
         dict1 = array1.to_refval()
-        dict1.ratio_function = 'divide'
-        dict1.molecule_functions = 'abundance'
+        dict1.ratio_default = 'divide'
+        dict1.molecule_default = 'abundance'
         dict1.default_value = 1
 
-        assert dict1.ratio_function == np.divide
-        assert dict1.molecule_functions == (np.add, np.multiply, None)
+        assert dict1.ratio_function == 'divide'
+        assert dict1.molecule_functions == 'abundance'
 
         dict2 = array2.to_refval()
-        dict2.ratio_function = np.add
-        dict2.molecule_functions = 'mass'
+        dict2.ratio_default = None
+        dict2.molecule_default = 'mz'
         dict2.default_value = 2
 
-        assert dict2.ratio_function == np.add
-        assert dict2.molecule_functions == (np.add, np.multiply, np.divide)
+        assert dict2.ratio_default is None
+        assert dict2.molecule_default == 'mz'
 
         dict3 = array2.to_refval()
-        dict3.ratio_function = np.multiply
-        dict3.molecule_functions = 'fraction'
+        dict3.ratio_default = 'divide'
+        dict3.molecule_default = 'fraction'
         dict3.default_value = [i for i in range(100)]
 
-        assert dict3.ratio_function == np.multiply
-        assert dict3.molecule_functions == (np.multiply, np.power, None)
+        assert dict3.ratio_function == 'divide'
+        assert dict3.molecule_default == 'fraction'
 
         # abs
         result = np.abs(dict1)
-        assert result.ratio_function == dict1.ratio_function
-        assert result.molecule_functions == dict1.molecule_functions
+        assert result.ratio_default == dict1.ratio_function
+        assert result.molecule_default == dict1.molecule_functions
         assert np.all(result.default_value == dict1.default_value)
 
         result = np.abs(dict2)
-        assert result.ratio_function == dict2.ratio_function
+        assert result.ratio_default == dict2.ratio_function
         assert result.molecule_functions == dict2.molecule_functions
         assert np.all(result.default_value == dict2.default_value)
 
         result = np.abs(dict3)
-        assert result.ratio_function == dict3.ratio_function
-        assert result.molecule_functions == dict3.molecule_functions
+        assert result.ratio_default == dict3.ratio_function
+        assert result.molecule_default == dict3.molecule_functions
         assert np.all(result.default_value == dict3.default_value)
 
         # sum
         result = np.sum(dict1)
-        assert result.ratio_function == dict1.ratio_function
-        assert result.molecule_functions == dict1.molecule_functions
+        assert result.ratio_default == dict1.ratio_function
+        assert result.molecule_default == dict1.molecule_functions
         assert np.all(result.default_value == dict1.default_value)
 
         result = np.sum(dict2)
-        assert result.ratio_function == dict2.ratio_function
-        assert result.molecule_functions == dict2.molecule_functions
+        assert result.ratio_default == dict2.ratio_function
+        assert result.molecule_default == dict2.molecule_functions
         assert np.all(result.default_value == dict2.default_value[0])
 
         result = np.sum(dict3)
-        assert result.ratio_function == dict3.ratio_function
-        assert result.molecule_functions == dict3.molecule_functions
+        assert result.ratio_default == dict3.ratio_function
+        assert result.molecule_default == dict3.molecule_functions
         assert np.isnan(result.default_value)
 
         #add
         result = np.add(dict1, dict2)
-        assert result.ratio_function is None
-        assert result.molecule_functions is None
+        assert result.ratio_default is None
+        assert result.molecule_default is None
         assert np.all(np.isnan(result.default_value))
 
         result = np.add(dict1, dict2.to_dict())
-        assert result.ratio_function is None
-        assert result.molecule_functions is None
+        assert result.ratio_default is None
+        assert result.molecule_default is None
         assert np.all(np.isnan(result.default_value))
 
 class Test_OutliersLimits:
