@@ -31,3 +31,18 @@ read_exp
 ++++++++
 .. autofunction :: read_exp
 
+new_archive
++++++++++++
+.. autofunction :: new_archive
+
+load_archive
+++++++++++++
+.. autofunction :: load_archive
+
+DataArchive
+++++++++++++++++
+.. autoclass:: isopy.io.DataArchive
+    :member-order: bysource
+
+
+
