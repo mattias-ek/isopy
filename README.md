@@ -1,7 +1,7 @@
 # isoPy
 
 [![PyPI version](https://badge.fury.io/py/isopy.svg)](https://badge.fury.io/py/isopy)
-![pytests](https://github.com/mattias-ek/isopy/actions/workflows/run-tests.yml/badge.svg?branch=master)
+![pytests](https://github.com/mattias-ek/isopy/actions/workflows/PyTest.yml/badge.svg?branch=master)
 [![codecov](https://codecov.io/gh/mattias-ek/isopy/branch/master/graph/badge.svg?token=W6SII47DJI)](https://codecov.io/gh/mattias-ek/isopy)
 
 Isopy is a Python 3 library for data processing in isotope geo/cosmochemistry.
