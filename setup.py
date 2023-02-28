@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="isopy",
-    version='0.7.4',
+    version='0.7.8',
     packages=setuptools.find_packages(include=['isopy', 'isopy.*']),
     install_requires=['numpy>=1.20',
                       'pyperclip>=1.8',
