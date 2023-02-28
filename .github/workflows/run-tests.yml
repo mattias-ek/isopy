@@ -1,0 +1,63 @@
+name: Run tests
+
+on: [push]
+
+jobs:
+  testubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9", "3.10"]
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: install-xclip
+        run: sudo apt install -y xclip
+      - name: install-xvfb
+        run: sudo apt install -y xvfb
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Test with pytest
+        run: |
+          pip install pytest
+          pip install codecov
+          pip install pytest-cov
+          pip install pytest-mpl
+          xvfb-run pytest --cov-report=xml --cov=isopy tests/
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v2
+
+
+  testmacwin:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        python-version: ["3.9", "3.10"]
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Test with pytest
+        run: |
+          pip install pytest
+          pip install codecov
+          pip install pytest-cov
+          pip install pytest-mpl
+          pytest --cov-report=xml --cov=isopy tests/
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v2
