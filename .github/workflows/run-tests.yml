@@ -28,4 +28,4 @@ jobs:
           pip install pytest-mpl
           pytest tests.py --cov-report=xml --cov=isopy tests/
       - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v2
