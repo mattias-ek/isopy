@@ -14,7 +14,7 @@ isopy: A python package for data processing in isotope geo/cosmochemistry
 
 
 
-Isopy is a python 3 package that provides a set of custom numpy arrays
+Isopy is a python package that provides a set of custom numpy arrays
 that aims to simplify data processing in geo/cosmochemistry. The library
 comes with a toolbox of useful functions that are currently geared towards
 processing of isotopic data.
@@ -26,6 +26,7 @@ processing of isotopic data.
 
    Installation <installation>
    Tutorials <tutorials>
+   Release notes <releasenotes>
 
 .. toctree::
    :maxdepth: 2
