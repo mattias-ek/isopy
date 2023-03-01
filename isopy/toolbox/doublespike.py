@@ -308,10 +308,10 @@ def ds_inversion(measured, spike, standard=None, isotope_masses='isotope.mass', 
     ----------
     measured : IsopyArray
         Measured isotope ratios
-    standard : IsopyArray, dict
-        References isotope ratios or a dict or references values
     spike : IsopyArray, dict
         Spike isotope ratios or a dict or references values
+    standard : IsopyArray, dict
+        References isotope ratios or a dict or references values
     isotope_masses : IsopyArray, dict, Optional
         Mass isotope ratios or a dict or references values. If not given hte :attr:`isotope.mass` will be used.
     inversion_keys : RatioKeyList, Optional
