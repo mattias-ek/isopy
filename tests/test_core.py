@@ -1591,18 +1591,18 @@ class Test_IsopyList:
 
         # The key.str() method is tested elsewhere so we can use it here
         keys = isopy.keylist('101 pd 105pd H2O pd/ru hermione'.split())
-        keystr = ', '.join([k.str() for k in keys])
-        assert keys.str() == f'[{keystr}]'
+        keystr = ", ".join([f"'{k.str()}'" for k in keys])
+        assert keys.str() == f"({keystr})"
 
         keys = isopy.keylist('101 pd 105pd H2O pd/ru hermione'.split())
-        keystr = ', '.join([k.str('key = {key}') for k in keys])
-        assert keys.str('key = {key}') == f'[{keystr}]'
+        keystr = ', '.join([k.str("'key = {key}'") for k in keys])
+        assert keys.str('key = {key}') == f"({keystr})"
 
         keystr = ', '.join([k.str('math') for k in keys])
-        assert keys.str('math') == fr'\left[{keystr}\right]'
-        assert keys.str('latex') == fr'$\left[{keystr}\right]$'
+        assert keys.str('math') == fr'\left({keystr}\right)'
+        assert keys.str('latex') == fr'$\left({keystr}\right)$'
 
-        assert keys._repr_latex_() == fr'$$\left[{keystr}\right]$$'
+        assert keys._repr_latex_() == fr'$$\left({keystr}\right)$$'
         core.IPYTHON_REPR = False
         assert keys._repr_latex_() is None
         core.IPYTHON_REPR = True

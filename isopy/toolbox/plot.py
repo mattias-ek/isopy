@@ -755,17 +755,19 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
     _axes_add_data(axes, x, y, xerr, yerr)
 
     if regression is not None:
-        if regression == 'york':
+        if regression == 'york' or regression == 'york1':
             regression_result = isopy.tb.yorkregress(x, y, xerr, yerr)
         elif regression == 'york2':
             regression_result = isopy.tb.yorkregress2(x, y, xerr, yerr)
         elif regression == 'york95':
             regression_result = isopy.tb.yorkregress95(x, y, xerr, yerr)
+        elif regression == 'york99':
+            regression_result = isopy.tb.yorkregress99(x, y, xerr, yerr)
         elif regression == 'linear':
             regression_result = isopy.tb.linregress(x, y)
         else:
             raise ValueError(f'"{regression}" not a valid regression')
-        plot_regression(axes, regression_result, color=style.get('color', None), label=('label' in style))
+        plot_regression(axes, regression_result, color=style.get('color', None), label_equation=('label' in style))
 
 @_update_figure_and_axes
 def plot_regression(axes, regression_result, color=None, line=True, xlim = None, autoscale = False,

@@ -8,6 +8,7 @@ import hashlib
 import warnings
 import collections.abc as abc
 import io
+from scipy import stats
 import operator
 from tabulate import tabulate as tabulate_
 
@@ -40,7 +41,7 @@ IPYTHON_REPR = True
 
 
 __all__ = ['iskeystring', 'iskeylist', 'isarray', 'isdict', 'isrefval',
-           'asflavour',
+           'asflavour', 'asunit', 'new_unit',
            'keystring', 'askeystring',
            'keylist', 'askeylist',
            'array', 'asarray', 'asanyarray',
@@ -71,6 +72,7 @@ def lru_cache(maxsize=128):
 
         lru_cache_wrapper.__cached__ = cached
         lru_cache_wrapper.__uncached__ = uncached
+        lru_cache_wrapper._ = uncached
         lru_cache_wrapper.cache_info = cached.cache_info
         lru_cache_wrapper.clear_cache = cached.cache_clear
         return lru_cache_wrapper
@@ -196,6 +198,32 @@ def deprecrated_function(message, stacklevel = 1):
 
 def hashstr(string):
     return hashlib.md5(string.encode('UTF-8')).hexdigest()
+
+def parse_bracket(i, string):
+    open_char = string[i]
+    if open_char == '(':
+        close_char = ')'
+    elif open_char == '[':
+        close_char = ']'
+    elif open_char == '{':
+        close_char = '}'
+    else:
+        raise ValueError(f'Unknown opening bracket "{open_char}"')
+
+    open_brackets = 1
+    for j, jc in enumerate(string[i + 1:]):
+        if jc == open_char:
+            open_brackets += 1
+        elif jc == close_char:
+            open_brackets -= 1
+
+        if open_brackets == 0:
+            j = i + j + 1
+            break
+    else:
+        raise ValueError(f'Unmatched "{open_char}" at index {i} in string "{string}"')
+
+    return j, string[i + 1:j]
 
 ################
 ### Flavours ###
@@ -539,6 +567,660 @@ FLAVOURS = {f.__flavour_name__: f for f in [MassFlavour, ElementFlavour,
 
 ANY_FLAVOUR = ListFlavour(tuple(f() for f in FLAVOURS.values()))
 
+############
+### Unit ###
+############
+class UnitConvertError(ValueError):
+    def __init__(self, message = None, from_unit = None, to_unit = None):
+        if message is None and from_unit and to_unit:
+            message = f'Cannot convert from {repr(from_unit)} to {repr(to_unit)}'
+
+        super().__init__(message)
+
+class BaseUnit:
+    _level = 100
+    def __hash__(self):
+        return hash((type(self), self.name))
+
+    def __bool__(self):
+        return True
+
+    def __eq__(self, other):
+        other = asunit(other)
+        return hash(self) == hash(other)
+    
+    def str(self, math=None):
+        return super().__str__()
+
+    def removeunit(self, string):
+        return self.parse(string)[0]
+
+    def hasunit(self, string):
+        try:
+            self.parser(string)
+        except ValueError:
+            return False
+        else:
+            return True
+
+    def parse(self, string):
+        try:
+            return self.parser(string)
+        except ValueError:
+            return string, self
+
+    def _set_exclamation_(self):
+        pass
+
+class Unit(BaseUnit):
+    def __init__(self, name, prefix=None, suffix=None,
+                 prefix_math=None, suffix_math=None):
+        self.name = name
+        self.basename = name
+        self.prefix = prefix or ""
+        self.suffix = suffix or ""
+        self.prefix_math = prefix_math or self.prefix.replace(" ", r"\ ")
+        self.suffix_math = suffix_math or self.suffix.replace(" ", r"\ ")
+        self._converters = {}
+
+    def __str__(self, parenthesis = False):
+        return self.name # parenthesis ignored
+
+    def __repr__(self, *others):
+        others = ''.join(others)
+        prefix = f', prefix="{self.prefix}"' if self.prefix else ''
+        suffix = f', suffix="{self.suffix}"' if self.suffix else ''
+        return f'{self.__class__.__name__}("{self.basename}"{others}{prefix}{suffix})'
+
+    def __or__(self, other):
+        other = asunit(other)
+        return UnitGroup(self, other)
+
+    def __and__(self, other):
+        other = asunit(other)
+        if other._level > self._level:
+            return other._rand_(self)
+        else:
+            return NotImplemented
+
+    def __add__(self, other):
+        other = asunit(other)
+        if self is other:
+            return self
+        else:
+            return NONE_UNIT
+
+    def __sub__(self, other):
+        other = asunit(other)
+        if self is other:
+            return self
+        else:
+            return NONE_UNIT
+
+    def __mul__(self, other):
+        other = asunit(other)
+        if other is NONE_UNIT:
+            return self
+        else:
+            return NONE_UNIT
+
+    def __div__(self, other):
+        other = asunit(other)
+        if other is NONE_UNIT:
+            return self
+        else:
+            return NONE_UNIT
+
+    def __pow__(self, power, modulo=None):
+        power = asunit(power)
+        if power is NONE_UNIT:
+            return self
+        else:
+            return NONE_UNIT
+
+    def _rand_(self, other):
+        raise TypeError(f'Cannot combine {self} with {other}')
+
+    def parser(self, string):
+        original = string
+
+        if self.prefix:
+            if string.startswith(self.prefix):
+                string = string.removeprefix(self.prefix)
+            else:
+                raise ValueError(f'{self}: Prefix "{self.prefix}" not found in "{original}"')
+
+        if self.suffix:
+            if string.endswith(self.suffix):
+                string = string.removesuffix(self.suffix)
+            else:
+                raise ValueError(f'{self}: valid suffix not found in "{original}"')
+
+        return string, self
+
+    def convert(self, data, to_unit):
+        to_unit = asunit(to_unit)
+
+        new_data, new_unit = self._convert_(data, to_unit)
+
+        if isinstance(new_data, IsopyArray) and new_data.unit != new_unit:
+            return new_data.copy(new_unit=new_unit)
+        else:
+            return new_data
+
+    def _convert_(self, data, to_unit):
+        if to_unit is self:
+            return data, to_unit
+
+        elif (func := self._converters.get(to_unit.name, None)):
+            new_data = func(data)
+            new_unit = to_unit
+
+        elif to_unit._level > self._level:
+            raise UnitConvertError(from_unit = self, to_unit = to_unit)
+
+        elif type(to_unit) is UnitGroup:
+            new_data, new_unit = to_unit._convert_from_(data, self)
+        else:
+            new_data, new_unit = self._convert_to_(data, to_unit)
+
+        return new_data, new_unit
+
+    def _convert_to_(self, data, to_unit):
+        raise UnitConvertError(from_unit = self, to_unit = to_unit)
+
+    def str(self, string, math=False):
+        string = super().str(string, math)
+        if math:
+            return f'{self.prefix_math}{string}{self.suffix_math}'
+        else:
+            return f'{self.prefix}{string}{self.suffix}'
+
+    def add_converter(self, to_unit, func):
+        to_unit = asunit(to_unit)
+        if not isinstance(to_unit, Unit):
+            raise TypeError('to_unit must be a Unit or subclass of a Unit')
+        else:
+            self._converters[to_unit.name] = func
+
+class NoneUnit(Unit):
+    def __init__(self):
+        super(NoneUnit, self).__init__('None')
+
+    def __bool__(self):
+        return False
+
+    def parser(self, string):
+        return string, self
+
+    def add_converter(self, to_unit, func):
+        raise TypeError(f'Cannot add converters to {self.__class__}')
+
+class SecondaryUnit(Unit):
+    def __init__(self, name, basename=None, primary_unit=None, **kwargs):
+        super().__init__(name, **kwargs)
+        self.basename = basename or name
+        self.primary_unit = primary_unit or NONE_UNIT
+
+    def __str__(self, parenthesis=False):
+        if parenthesis and self.primary_unit:
+            return f'({self.name})'
+        else:
+            return self.name
+
+    def __repr__(self, *args):
+        primary_unit = f', primary_unit="{self.primary_unit.name}"' if self.primary_unit else ''
+        return super().__repr__(primary_unit, *args)
+
+    def _rand_(self, other):
+        other = asunit(other)
+        if self.primary_unit:
+            raise TypeError(f'{repr(self)} already contains a primary unit.')
+
+        elif isinstance(other, UnitGroup):
+            return UnitGroup(*(unit & self for unit in other.units))
+        else:
+            return self.new(other)
+
+    def new(self, primary_unit=NotGiven):
+        primary_unit = asunit(primary_unit)
+        if primary_unit is NotGiven:
+            primary_unit = self.primary_unit
+        elif primary_unit._level > self._level:
+            raise TypeError(f'Cannot combine {primary_unit!r} with {self!r}')
+
+        unitname = f'{primary_unit.name}&{self.basename}' if primary_unit else self.basename
+
+        if unitname.lower() in ALL_UNITS:
+            return ALL_UNITS[unitname.lower()]
+        else:
+            unit = self._new_(unitname, primary_unit)
+            ALL_UNITS[unitname.lower()] = unit
+            return unit
+
+    def _new_(self, unitname, primary_unit, **kwargs):
+        return self.__class__(unitname, basename=self.basename, primary_unit=primary_unit,
+                              prefix=self.prefix, suffix=self.suffix,
+                              prefix_math=self.prefix_math, suffix_math=self.suffix_math, **kwargs)
+
+    def parser(self, string):
+        string, unit = super().parser(string)
+        if self.primary_unit:
+            string, primary_unit = self.primary_unit.parser(string)
+
+        return string, unit
+
+    def add_converter(self, to_unit, func):
+        if self.primary_unit:
+            super().add_converter(to_unit, func)
+        else:
+            raise TypeError(f'Cannot add converters to {repr(self)}')
+
+class SDUnit(SecondaryUnit):
+    _level = 300
+    def __init__(self, name, zscore=None, ci=None, suffix=None, suffix_math=None, **kwargs):
+        super().__init__(name, suffix=suffix or f' {name}', suffix_math=suffix_math, **kwargs)
+        self.zscore = zscore
+        self.ci = ci
+
+    def __repr__(self):
+        zscore = f', zscore={self.zscore}' if self.zscore is not None else ''
+        ci = f', ci={self.ci}' if self.ci is not None else ''
+        return super().__repr__(zscore, ci)
+
+    def new(self, primary_unit = NotGiven, zscore = NotGiven, ci = NotGiven):
+        if zscore is NotGiven and ci is NotGiven:
+            zscore, ci = self.zscore, self.ci
+
+        if zscore is NotGiven:
+            zscore = None
+        if ci is NotGiven:
+            ci = None
+
+        primary_unit = asunit(primary_unit)
+        if primary_unit is NotGiven:
+            primary_unit = self.primary_unit
+        elif primary_unit._level > self._level:
+            raise TypeError(f'Cannot combine {primary_unit!r} with {self!r}')
+
+        if zscore is not None and ci is not None:
+            raise ValueError('Both zscore and ci given')
+        elif zscore is not None:
+            zscore = int(zscore) if zscore % 1 == 0 else zscore
+            unitname = f'{zscore}{self.basename}'
+            unitsuffix = f' {zscore}{self.basename}'
+        elif ci is not None:
+            ci_percent = ci * 100
+            ci_percent = int(ci_percent) if ci_percent % 1 == 0 else ci_percent
+            unitname = f'{ci_percent}CI{self.basename}'
+            unitsuffix = f' {ci_percent}% CI {self.basename}'
+        else:
+            unitname = f'{self.basename}'
+            unitsuffix = f' {self.basename}'
+
+        unitname = f'{primary_unit.name}&{unitname}' if primary_unit else unitname
+
+        if unitname.lower() in ALL_UNITS:
+            return ALL_UNITS[unitname.lower()]
+        else:
+            unit = self.__class__(unitname, zscore=zscore, ci=ci, basename=self.basename,
+                                  primary_unit=primary_unit, suffix=unitsuffix)
+            ALL_UNITS[unitname.lower()] = unit
+
+            return unit
+
+
+    def parser(self, string):
+        original = string
+
+        if self.zscore is not None or self.ci is not None:
+            string, unit = super().parser(string)
+        else:
+            if string.endswith(f'% CI {self.basename}'):
+                string = string.removesuffix(f'% CI {self.basename}')
+                split = string.rsplit(" ", 1)
+                try:
+                    number = float(split[-1])
+                except ValueError:
+                    raise ValueError(f'{self}: No confidence interval given in "{original}"')
+                else:
+                    number = int(number) if number % 1 == 0 else number
+                    string = split[0] if len(split) > 1 else ''
+                    unit = self.new(ci=number / 100)
+
+            elif string.endswith(self.basename):
+                string = string.removesuffix(self.basename)
+                split = string.rsplit(" ", 1)
+                try:
+                    number = float(split[-1])
+                except ValueError:
+                    unit = self
+                else:
+                    number = int(number) if number % 1 == 0 else number
+                    unit = self.new(zscore=number)
+                string = split[0] if len(split) > 1 else ''
+            else:
+                raise ValueError(f'{self}: {self.basename} suffix not found in "{original}"')
+
+        if self.primary_unit:
+            string, primary_unit = self.primary_unit.parser(string)
+
+        return string, unit
+
+    def _convert_to_(self, data, to_unit):
+        if type(to_unit) is SDUnit:
+            if self.basename != to_unit.basename:
+                raise UnitConvertError(from_unit = self, to_unit = to_unit)
+
+            if to_unit.primary_unit:
+                if self.primary_unit:
+                    new_data, new_primary_unit = self.primary_unit._convert_(data, to_unit.primary_unit)
+                else:
+                    raise UnitConvertError(from_unit = self, to_unit = to_unit)
+            else:
+                new_data, new_primary_unit = data, self.primary_unit
+
+            if self.zscore != to_unit.zscore or self.ci != to_unit.ci:
+                if self.zscore is not None:
+                    new_data = new_data / self.zscore
+                elif self.ci is not None:
+                    new_data = new_data / stats.norm.ppf(0.5 + self.ci / 2)
+                else:
+                    new_data = new_data
+
+                if to_unit.zscore is not None:
+                    new_data = new_data * to_unit.zscore
+                elif to_unit.ci is not None:
+                    new_data = new_data * stats.norm.ppf(0.5 + to_unit.ci / 2)
+
+            new_unit = to_unit.new(primary_unit = new_primary_unit)
+
+        elif self.primary_unit:
+            new_data, new_primary_unit = self.primary_unit._convert_(data, to_unit)
+        else:
+            raise UnitConvertError(from_unit = self, to_unit = to_unit)
+
+        return new_data, new_unit
+
+class PartsPerUnit(SecondaryUnit):
+    _level = 200
+    def __init__(self, name, partsper, suffix, suffix_math, **kwargs):
+        super().__init__(name, suffix=suffix, suffix_math=suffix_math, **kwargs)
+        self.parts_per = partsper
+
+    def _new_(self, unitname, primary_unit):
+        return super()._new_(unitname, primary_unit, partsper=self.parts_per)
+
+    def _convert_to_(self, data, to_unit):
+        # Because parts per is a fraction, changing the primary unit will not change
+        # the value of the fraction. So no conversion should be made for the primary unit.
+        # Still have to make sure it is possible though.
+        new_data = data
+        if type(to_unit) is PartsPerUnit:
+            if to_unit.primary_unit:
+                if self.primary_unit:
+                    _, new_primary_unit = self.primary_unit._convert_(data, to_unit.primary_unit)
+                else:
+                    UnitConvertError(from_unit = self, to_unit = to_unit)
+            else:
+                new_primary_unit = self.primary_unit
+
+            if to_unit.parts_per != self.parts_per:
+                new_data = (data / self.parts_per) * to_unit.parts_per
+
+            new_unit = to_unit.new(new_primary_unit)
+        elif self.primary_unit:
+            _, new_primary_unit = self.primary_unit._convert_(data, to_unit)
+            new_unit = self.new(new_primary_unit)
+        else:
+            UnitConvertError(from_unit = self, to_unit = to_unit)
+
+        return new_data, new_unit
+    
+class PMUnit(SecondaryUnit):
+    _level = 400
+    def __init__(self, name, **kwargs):
+        super().__init__(name, prefix='± ', prefix_math=r'\pm\ ', **kwargs)
+
+    def _convert_to_(self, data, to_unit):
+        if type(to_unit) is self.__class__:
+            if to_unit.primary_unit:
+                if self.primary_unit:
+                    return self.primary_unit._convert_(data, to_unit.primary_unit)
+                else:
+                    UnitConvertError(from_unit=self, to_unit=to_unit)
+            else:
+                return data, self
+
+class UnitGroup(BaseUnit):
+    def __init__(self, *units, default_unit = None):
+        self._units = []
+
+        for unit in units:
+            if type(unit) is UnitGroup:
+                self._units += unit._units
+            else:
+                self._units.append(unit)
+
+        self.default_unit = default_unit
+
+    def __str__(self, parenthesis=False):
+        units = []
+        for i, unit in enumerate(self._units):
+            if i == self._default_unit_index:
+                units.append(f'{unit.__str__(parenthesis=True)}!')
+            else:
+                units. append(unit.__str__(parenthesis=True))
+
+        string = '|'.join(units)
+
+        if parenthesis:
+            return f'({string})'
+        else:
+            return string
+
+    def __repr__(self):
+        units = ', '.join([f'"{u.name}"' for u in self._units])
+        return f'{self.__class__.__name__}({units}, default_unit="{self.default_unit.name}")'
+
+    def __contains__(self, unit):
+        unit = asunit(unit)
+        return hash(unit) in [hash(u) for u in self._units]
+
+    def __len__(self):
+        return len(self._units)
+
+    def __or__(self, other):
+        other = asunit(other)
+        return UnitGroup(self, other, default_unit=self.default_unit)
+
+    @property
+    def name(self):
+        return self.__str__()
+
+    @property
+    def units(self):
+        return tuple(self._units)
+
+    def parse(self, string):
+        try:
+            return self.parser(string)
+        except ValueError:
+            return string, self.default_unit()
+
+    def parser(self, string):
+        for unit in self._units:
+            try:
+                return unit.parser(string)
+            except ValueError:
+                pass
+        else:
+            raise ValueError(f'{self}: Unable to parse "{string}" into a unit in this group')
+
+    @property
+    def default_unit(self):
+        return self._units[self._default_unit_index]
+
+    @default_unit.setter
+    def default_unit(self, unit):
+        if type(unit) is int:
+            if 0 <= unit < len(self._units):
+                self._default_unit_index = unit
+            elif unit == -1:
+                self._default_unit_index = len(self._units) - 1
+            else:
+                raise ValueError(f'UnitGroup: Index {unit} of our bounds')
+        elif unit is None:
+            self._default_unit_index = 0
+        elif unit in self._units:
+            self._default_unit_index = self._units.index(unit)
+        else:
+            raise ValueError(f'{self}: {unit} not found in this unit group')
+        return self.default_unit
+
+    def _set_exclamation_(self):
+        self._default_unit_index = len(self._units) - 1
+
+    def str(self, string, math=False):
+        return self.default_unit().str(string, math)
+
+    def _convert_from_(self, data, from_unit):
+        to_units = self._units[:]
+        to_units.insert(to_units.pop(self._default_unit_index))
+
+        for to_unit in to_units:
+            try:
+                return from_unit._convert_(data, to_unit)
+            except UnitConvertError:
+                pass
+        else:
+            raise UnitConvertError(f'Cannot convert from "{from_unit.name}" to any unit in "{self.name}"')
+
+NONE_UNIT = NoneUnit()
+SD_UNIT = SDUnit('SD')
+SE_UNIT = SDUnit('SE')
+
+FRACTION_UNIT = PartsPerUnit('FRACTION', 1, '', '')
+PERCENT_UNIT = PartsPerUnit('PERCENT', 1E2, ' %', r'\ \%')
+PERMIL_UNIT = PartsPerUnit('PERMIL', 1E3, '  ‰', r'\ \unicode{x2030}')
+PPM_UNIT = PartsPerUnit('PPM', 1E6, ' ppm', r'\ ppm')
+PPB_UNIT = PartsPerUnit('PPB', 1E9, ' ppb', r'\ ppm')
+
+
+ALL_UNITS = {'none': NONE_UNIT, 'sd': SD_UNIT, 'se': SE_UNIT,
+             'fraction': FRACTION_UNIT, 'percent': PERCENT_UNIT,
+             'permil': PERMIL_UNIT, 'ppm': PPM_UNIT, 'ppb': PPB_UNIT}
+
+def parse_unit(string):
+    if string.lower() in ALL_UNITS:
+        return ALL_UNITS[string.lower()]
+
+    unit = None
+    last_operator = None
+    new_unit = ''
+
+    def add_unit(new_unit, new_operator):
+        if type(new_unit) is str:
+            new_unit = new_unit.strip()
+            if new_unit == '':
+                return unit, new_operator, ''
+            try:
+                new_unit = ALL_UNITS[new_unit.lower()]
+            except KeyError:
+                raise ValueError(f'asunit: No unit with the name "{new_unit}" exists')
+
+        if unit is None:
+            return new_unit, new_operator, ''
+        elif last_operator == '|':
+            return unit | new_unit, new_operator, ''
+        elif last_operator == '&':
+                return unit & new_unit, new_operator, ''
+        elif last_operator == '!':
+            raise ValueError(f'asunit: Incorrect usage of "!". Must be after unit')
+        else:
+            raise ValueError(f'asunit: Unknown operator "{last_operator}"')
+
+    i = 0
+    while i < len(string):
+        char = string[i]
+
+        if char == '|':
+            unit, last_operator, new_unit = add_unit(new_unit, '|')
+
+        elif char == '&':
+            unit, last_operator, new_unit = add_unit(new_unit, '&')
+
+        elif char == '!':
+            unit, last_operator, new_unit = add_unit(new_unit, '!')
+            unit._set_exclamation_()
+
+        elif char == '(':
+            unit, last_operator, new_unit = add_unit(new_unit, last_operator)
+            i, substring = parse_bracket(i, string)
+
+            new_unit = parse_unit(substring)
+        elif type(new_unit) is not str:
+            if char != ' ':
+                raise ValueError(f'asunit: No operator after "({new_unit})" in "{string}"')
+        elif char:
+            new_unit += char
+
+        i += 1
+
+    else:
+        unit, last_operator, text = add_unit(new_unit, '|')
+
+    if unit is None:
+        raise ValueError(f'asunit: Unable to parse "{string}"')
+    return unit
+
+def asunit(unit):
+    if type(unit) is str:
+        return parse_unit(unit)
+    elif unit is None:
+        return NONE_UNIT
+    elif unit is NotGiven:
+        return unit
+    elif isinstance(unit, BaseUnit):
+        return unit
+    else:
+        raise TypeError(f'Invalid type {type(unit)} for unit')
+
+def isunit(unit):
+    if type(unit) is str:
+        try:
+            unit = asunit(unit)
+        except:
+            return False
+
+    if isinstance(unit, BaseUnit):
+        return True
+    else:
+        return False
+
+def new_unit(name, prefix=None, suffix=None,
+                 prefix_math=None, suffix_math=None):
+    if name.lower() in ALL_UNITS:
+
+        raise ValueError('new_unit: A unit with the name {name} already exits')
+
+    if not name.isalnum():
+        raise ValueError(f'Forbidden character(s) in name "{name}". Must be alpha numerical.')
+
+    unit = Unit(name, prefix=prefix, suffix=suffix,
+                prefix_math=prefix_math, suffix_math=suffix_math)
+
+    ALL_UNITS[unit.name.lower()] = unit
+    return unit
+
+def convert_data(data, to_unit, from_unit=NotGiven):
+    to_unit = asunit(to_unit)
+    from_unit = asunit(from_unit).default_unit()
+
+    return from_unit.convert(data, to_unit)
+
+
+
 ###################
 ### Key strings ###
 ###################
@@ -568,6 +1250,7 @@ class KeyTypeError(KeyParseError, TypeError):
     def __str__(self):
         return f'{get_classname(self.cls)}: cannot convert {type(self.obj)} into \'str\''
 
+
 class KeyFlavourError(KeyParseError, TypeError):
     def __init__(self, key, flavour):
         self.cls = key.__class__
@@ -575,6 +1258,7 @@ class KeyFlavourError(KeyParseError, TypeError):
 
     def __str__(self):
         return f'{self.cls}: Key not compatible with flavour {self.flavour}'
+
 
 KEY_COMPARISONS = ('eq', 'neq', 'lt', 'gt', 'le', 'ge')
 class IsopyKeyString(str):
@@ -586,24 +1270,53 @@ class IsopyKeyString(str):
     Unless specifically noted below these methods will return a :class:`str` rather than a key string.
     """
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self}')"
+        string = self.__str__(unit=False)
+        if self.unit:
+            return f"{self.__class__.__name__}('{string}', unit='{self.unit}')"
+        else:
+            return f"{self.__class__.__name__}('{string}')"
 
     def _repr_latex_(self):
         if IPYTHON_REPR:
-            return fr'$${self.str("math")}$$'
+            return fr'$${self.__str__(math=True)}$$'
         else:
             return None
 
-    def __new__(cls, string, **kwargs):
+    def __new__(cls, string, flavour, unit, **kwargs):
         obj = str.__new__(cls, string)
+        unit = NONE_UNIT if not unit else unit
+
+        if unit:
+            base = IsopyKeyString.__new__(cls, string, flavour, NONE_UNIT, **kwargs)
+        else:
+            base = obj
+
+        object.__setattr__(obj, '_attrs', {})
+        object.__setattr__(obj, 'flavour', flavour)
+        object.__setattr__(obj, 'unit', unit)
+        object.__setattr__(obj, 'base', base)
 
         #object.__setattr__(obj, '_colname', string)
         for name, value in kwargs.items():
-            object.__setattr__(obj, name, value)
+            obj._attrs[name] = value
+
         return obj
 
+    def _change_unit_(self, unit = NotGiven):
+        unit = asunit(unit)
+        if unit is NotGiven or unit is self.unit:
+            return self
+        else:
+            return IsopyKeyString.__new__(type(self), self.__str__(unit=False), self.flavour, unit, **self._attrs)
+
+    def __getattr__(self, item):
+        try:
+            return self._attrs[item]
+        except KeyError:
+            raise AttributeError(f"'{type(self).__name__}' object as no attribute '{item}'")
+
     def __hash__(self):
-        return hash( (self.__class__, super(IsopyKeyString, self).__hash__()) )
+        return hash( (self.__class__, super(IsopyKeyString, self).__str__(), self.unit))
 
     def __setattr__(self, key, value):
         raise AttributeError('{} does not allow additional attributes'.format(self.__class__.__name__))
@@ -611,9 +1324,12 @@ class IsopyKeyString(str):
     def __eq__(self, other):
         if not isinstance(other, IsopyKeyString):
             try:
-                other = askeystring(other, flavour = self.flavour)
+                other = askeystring(other, flavour = self.flavour, unit=self.unit)
             except:
                 return False
+        
+        if other.unit is NONE_UNIT:
+            other = other._change_unit_(self.unit)
 
         return hash(self) == hash(other)
 
@@ -631,21 +1347,71 @@ class IsopyKeyString(str):
             return askeylist(other).__truediv__(self)
         else:
             return askeystring(other).__truediv__(self)
-        
+
     def _view_array_(self, a):
         return a.view(ndarray)
 
-    def _str_(self):
-        return str(self)
+    def __str__(self, unit=True, math = False):
+        if math:
+            if unit:
+                return self.__unitstr__(math=True)
+            else:
+                return self.__mathstr__()
+        else:
+            if unit:
+                return self.__unitstr__()
+            else:
+                return self.__basestr__()
 
+    def __unitstr__(self, math=False):
+        if math:
+            string = self.__mathstr__()
+        else:
+            string = self.__basestr__()
+
+        if self.unit:
+            return self.unit.str(string, math=math)
+        else:
+            return string
+
+    def __mathstr__(self):
+        return super(IsopyKeyString, self).__str__()
+
+    def __basestr__(self):
+        return super(IsopyKeyString, self).__str__()
+            
     def str(self, format = None):
-        if format is None: return str(self)
+        if format is None or format == 'key':
+            return self.__unitstr__()
+        elif format == 'base':
+            return self.__basestr__()
+        elif format == 'math':
+            return self.__unitstr__(math=True)
+        elif format == 'latex':
+            return f'${self.__unitstr__(math=True)}$'
+
         options = self._str_options_()
 
         if format in options:
             return options[format]
         else:
             return format.format(**options)
+
+    def _str_options_(self):
+        options = dict(key = self.__unitstr__(),
+                       base = self.__basestr__(),
+                       math = self.__unitstr__(math=True),
+                       latex = f'${self.__unitstr__(math=True)}$')
+        if self.unit:
+            options['prefix'] = self.unit.prefix
+            options['suffix'] = self.unit.suffix
+        else:
+            options['prefix'] = ''
+            options['suffix'] = ''
+        return options
+
+    def _index_(self, unit=NotGiven):
+        return str(self._change_unit_(unit))
 
     def _flatten_(self):
         return (self,)
@@ -712,9 +1478,12 @@ class MassKeyString(IsopyKeyString):
     False
     """
 
-    def __new__(cls, string, *, allow_reformatting=True):
+    def __new__(cls, string, *, allow_reformatting=True, unit = None):
         if isinstance(string, cls):
-            return string
+            if string.unit is unit:
+                return string
+            else:
+                return string._change_unit_(unit=unit)
 
         if isinstance(string, int) and allow_reformatting:
             string = str(string)
@@ -737,8 +1506,8 @@ class MassKeyString(IsopyKeyString):
             else:
                 raise KeyValueError(cls, string, 'Can only contain numerical characters')
 
-        key = super(MassKeyString, cls).__new__(cls, string, flavour = MassFlavour())
-        object.__setattr__(key, 'mass_number', key)
+        key = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), unit)
+        key._attrs['mass_number'] = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), None)
         return key
 
     def __ge__(self, item):
@@ -803,9 +1572,9 @@ class MassKeyString(IsopyKeyString):
         return super(MassKeyString, self).str(format)
 
     def _str_options_(self):
-        return dict(m = str(self), key = str(self),
-                    math = fr'{self}',
-                    latex = fr'${self}$')
+        options = super()._str_options_()
+        options['m'] = options['base']
+        return options
 
 
 class ElementKeyString(IsopyKeyString):
@@ -834,9 +1603,12 @@ class ElementKeyString(IsopyKeyString):
     'pd'
     """
 
-    def __new__(cls, string, *, allow_reformatting=True):
+    def __new__(cls, string, *, allow_reformatting=True, unit=None):
         if isinstance(string, cls):
-            return string
+            if string.unit is unit:
+                return string
+            else:
+                return string._change_unit_(unit=unit)
 
         if not isinstance(string, str):
             raise KeyTypeError(cls, string)
@@ -859,8 +1631,8 @@ class ElementKeyString(IsopyKeyString):
             else:
                 string = symbol
 
-        if not string.isalpha():
-            raise KeyValueError(cls, string, 'ElementKeyString is limited to alphabetical characters')
+        if not string.isalpha() or not string.isascii():
+            raise KeyValueError(cls, string, 'ElementKeyString is limited to latin alphabetical characters')
 
         if allow_reformatting:
             string = string.capitalize()
@@ -869,8 +1641,8 @@ class ElementKeyString(IsopyKeyString):
         else:
             raise KeyValueError(cls, string, 'First character must be upper case and second character must be lower case')
 
-        key = super(ElementKeyString, cls).__new__(cls, string, flavour = ElementFlavour())
-        object.__setattr__(key, 'element_symbol', key)
+        key = super(ElementKeyString, cls).__new__(cls, string, ElementFlavour(), unit)
+        key._attrs['element_symbol'] = super(ElementKeyString, cls).__new__(cls, string, ElementFlavour(), None)
         return key
 
     def _z_(self):
@@ -906,15 +1678,20 @@ class ElementKeyString(IsopyKeyString):
         return super(ElementKeyString, self).str(format)
 
     def _str_options_(self):
-        name = isopy.refval.element.symbol_name.get(self, str(self))
-        return dict(key = str(self),
-                    es=self.lower(), ES=self.upper(), Es=str(self),
-                    name=name.lower(), NAME=name.upper(), Name=name,
-                    math = fr'\mathrm{{{self}}}',
-                    latex = fr'$\mathrm{{{self}}}$')
+        options = super(ElementKeyString, self)._str_options_()
+        base = options['base']
+        name = isopy.refval.element.symbol_name.get(self, base)
+
+        options.update(dict(es=base.lower(), ES=base.upper(), Es=base,
+                       name=name.lower(), NAME=name.upper(), Name=name))
+        return options
+
+    def __mathstr__(self):
+        return fr'\mathrm{{{super(IsopyKeyString, self).__str__()}}}'
+
 
     @property
-    def isotopes(self, isotopes = None):
+    def isotopes(self):
         return askeylist(isopy.refval.element.isotopes.get(self, []))
 
 
@@ -953,9 +1730,12 @@ class IsotopeKeyString(IsopyKeyString):
     True
     """
 
-    def __new__(cls, string, *, allow_reformatting=True):
+    def __new__(cls, string, *, allow_reformatting=True, unit=None):
         if isinstance(string, cls):
-            return string
+            if string.unit is unit:
+                return string
+            else:
+                return string._change_unit_(unit=unit)
 
         if not isinstance(string, str):
             raise KeyTypeError(cls, string)
@@ -995,14 +1775,10 @@ class IsotopeKeyString(IsopyKeyString):
 
         string = '{}{}'.format(mass, element)
 
-        return super(IsotopeKeyString, cls).__new__(cls, string,
+        return super(IsotopeKeyString, cls).__new__(cls, string, IsotopeFlavour(), unit,
                                                    mass_number = mass,
                                                    element_symbol = element,
-                                                   mz = float(mass),
-                                                   flavour = IsotopeFlavour())
-
-    def __hash__(self):
-        return hash( (self.__class__, hash(self.mass_number), hash(self.element_symbol)) )
+                                                   mz = float(mass))
 
     def __contains__(self, string):
         """
@@ -1059,15 +1835,13 @@ class IsotopeKeyString(IsopyKeyString):
         return super(IsotopeKeyString, self).str(format)
         
     def _str_options_(self):
-        options = dict()
-
         mass_options = self.mass_number._str_options_()
         element_options = self.element_symbol._str_options_()
+
+        options = dict()
         options.update(mass_options)
         options.update(element_options)
-        options.update(dict(key = str(self),
-                       math = fr'{{}}^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}',
-                       latex = fr'${{}}^{{{self.mass_number}}}\mathrm{{{self.element_symbol}}}$'))
+        options.update(super(IsotopeKeyString, self)._str_options_())
 
         product = list(itertools.product(mass_options.items(), element_options.items()))
         options.update({f'{mk}{ek}': f'{mv}{ev}' for (mk, mv), (ek, ev) in product})
@@ -1076,6 +1850,9 @@ class IsotopeKeyString(IsopyKeyString):
         options.update({f'{ek}-{mk}': f'{ev}-{mv}' for (mk, mv), (ek, ev) in product})
 
         return options
+
+    def __mathstr__(self):
+        return fr'{{}}^{{{self.mass_number.__mathstr__()}}}{self.element_symbol.__mathstr__()}'
 
     @property
     def isotopes(self):
@@ -1124,16 +1901,19 @@ class MoleculeKeyString(IsopyKeyString):
     '137Ba++'
     """
 
-    def __new__(cls, components, *, allow_reformatting=True, component_flavour='element|isotope'):
+    def __new__(cls, components, *, allow_reformatting=True, component_flavour='element|isotope', unit=None):
         component_flavour = asflavour(component_flavour)
         if type(components) is cls and components.flavour in component_flavour:
-            return components
+            if components.unit is unit:
+                return components
+            else:
+                return components._change_unit_(unit=unit)
 
         parsed_components = cls._parse_components(components)
         if type(parsed_components) is MoleculeKeyString:
-            new = parsed_components
+            new = cls._new(parsed_components.components, parsed_components.n, parsed_components.charge, unit=unit)
         else:
-            new = cls._new(parsed_components)
+            new = cls._new(parsed_components, unit=unit)
 
         if new.flavour.component_flavour not in component_flavour:
             raise KeyValueError(cls, new, f'Key flavour {new.flavour.component_flavour} not compatible. '
@@ -1146,7 +1926,7 @@ class MoleculeKeyString(IsopyKeyString):
         return new
 
     @classmethod
-    def _new(cls, components, n=1, charge=None):
+    def _new(cls, components, n=1, charge=None, unit=None):
         if type(components) is list:
             components = tuple(components)
         elif type(components) is not tuple:
@@ -1154,11 +1934,10 @@ class MoleculeKeyString(IsopyKeyString):
 
         string = cls._make_string_(components, n, charge, bracket=False, square=True)
         component_flavour = cls._find_flavour_(components)
-        return super(MoleculeKeyString, cls).__new__(cls, string,
+        return super(MoleculeKeyString, cls).__new__(cls, string, MoleculeFlavour(component_flavour), unit,
                                                      components=components,
                                                      n=n,
-                                                     charge=charge,
-                                                     flavour = MoleculeFlavour(component_flavour))
+                                                     charge=charge)
 
     @classmethod
     def _parse_components(cls, components, ignore_charge = False):
@@ -1409,11 +2188,8 @@ class MoleculeKeyString(IsopyKeyString):
         """
         return super(MoleculeKeyString, self).str(format)
 
-    def _str_options_(self):
-        options = dict(key = str(self))
-        options['math'] = self._make_string_(self, format='math', bracket=False)
-        options['latex'] = fr'${self._make_string_(self, format="math", bracket=False)}$'
-        return options
+    def __mathstr__(self):
+        return self._make_string_(self, format='math', bracket=False)
 
     @property
     def mz(self):
@@ -1496,9 +2272,13 @@ class RatioKeyString(IsopyKeyString):
     True
     """
 
-    def __new__(cls, string, *, allow_reformatting=True, numerator_flavour = 'any', denominator_flavour = 'any'):
+    def __new__(cls, string, *, allow_reformatting=True,
+                numerator_flavour = 'any', denominator_flavour = 'any', unit=None):
         if isinstance(string, cls):
-            return string
+            if string.unit is unit:
+                return string
+            else:
+                return string._change_unit_(unit=unit)
 
         if isinstance(string, tuple) and len(string) == 2:
             numer, denom = string
@@ -1551,12 +2331,11 @@ class RatioKeyString(IsopyKeyString):
 
         string = f'{numer}{divider}{denom}'
 
-        return super(RatioKeyString, cls).__new__(cls, string,
-                                                  numerator = numer, denominator = denom,
-                                                  flavour = RatioFlavour(numer.flavour, denom.flavour))
+        return super(RatioKeyString, cls).__new__(cls, string, RatioFlavour(numer.flavour, denom.flavour), unit,
+                                                  numerator = numer, denominator = denom)
 
     def __hash__(self):
-        return hash( (self.__class__, hash(self.numerator), hash(self.denominator)) )
+        return hash( (self.__class__, hash(self.numerator), hash(self.denominator), self.unit) )
 
     def __contains__(self, string):
         """
@@ -1630,9 +2409,7 @@ class RatioKeyString(IsopyKeyString):
         else:
             return format.format(**options)
 
-    def _str_options_(self):
-        options = dict(key = str(self))
-
+    def __mathstr__(self):
         nmath = self.numerator.str('math')
         if type(self.numerator) is RatioKeyString:
             nmath = fr'\left({nmath}\right)'
@@ -1641,9 +2418,7 @@ class RatioKeyString(IsopyKeyString):
         if type(self.denominator) is RatioKeyString:
             dmath = fr'\left({dmath}\right)'
 
-        options['math'] = fr'\cfrac{{{nmath}}}{{{dmath}}}'
-        options['latex'] = fr'${options["math"]}$'
-        return options
+        return fr'\cfrac{{{nmath}}}{{{dmath}}}'
 
     def _flatten_(self):
         return self.numerator._flatten_() + self.denominator._flatten_()
@@ -1671,9 +2446,12 @@ class GeneralKeyString(IsopyKeyString):
     'pd'
     """
 
-    def __new__(cls, string, *, allow_reformatting=True):
+    def __new__(cls, string, *, allow_reformatting=True, unit=None):
         if isinstance(string, cls):
-            return string
+            if string.unit is unit:
+                return string
+            else:
+                return string._change_unit_(unit=unit)
 
         elif isinstance(string, (str, int, float)):
             string = str(string).strip()
@@ -1687,7 +2465,7 @@ class GeneralKeyString(IsopyKeyString):
             string = remove_prefix(string, 'GEN_') #For backwards compatibility
             #colname = string.replace('/', '_SLASH_') #For backwards compatibility
             string = string.replace('_SLASH_', '/') #For backwards compatibility
-        return super(GeneralKeyString, cls).__new__(cls, string, flavour = GeneralFlavour())
+        return super(GeneralKeyString, cls).__new__(cls, string, GeneralFlavour(), unit)
 
     def _sortkey_(self):
         return f'F{self}'
@@ -1714,10 +2492,8 @@ class GeneralKeyString(IsopyKeyString):
         """
         return super(GeneralKeyString, self).str(format)
 
-    def _str_options_(self):
-        return dict(key = str(self),
-                    math = fr'\mathrm{{{self}}}'.replace(' ', '\ '),
-                    latex = fr'$\mathrm{{{self}}}$'.replace(' ', '\ '))
+    def __mathstr__(self):
+        return fr'\mathrm{{{self.__basestr__()}}}'.replace(' ', '\ ')
 
 
 def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
@@ -1754,7 +2530,8 @@ def iskeystring(item, *, flavour = None, flavour_in = None) -> bool:
         return isinstance(item, IsopyKeyString)
 
 @lru_cache(CACHE_MAXSIZE)
-def keystring(key, *, allow_reformatting=True, flavour='any'):
+def keystring(key, *, allow_reformatting=True, flavour='any',
+              keyparser = NotGiven, unit = NotGiven):
     """
     Returns an key string with the highest priority compatible flavour.
 
@@ -1785,10 +2562,25 @@ def keystring(key, *, allow_reformatting=True, flavour='any'):
     IsopyKeyString
     """
     flavours = asflavour(flavour)
+    unit = asunit(unit)
+
+    if isinstance(key, IsopyKeyString):
+        if unit is NotGiven and key.unit:
+            unit = key.unit
+        key = key.base
+
+    if keyparser:
+        if isinstance(keyparser, BaseUnit):
+            key = keyparser.removeunit(key)
+        else:
+            key = keyparser(key)
+
+    if unit is not NotGiven:
+        key, unit = unit.parse(key)
 
     for flavour in flavours:
         try:
-            return flavour._keystring_(key, allow_reformatting=allow_reformatting)
+            return flavour._keystring_(key, allow_reformatting=allow_reformatting, unit=unit)
         except KeyParseError as err:
             pass
 
@@ -1796,7 +2588,8 @@ def keystring(key, *, allow_reformatting=True, flavour='any'):
                         f'unable to parse {type(key).__name__} "{key}" into {flavours}')
 
 @lru_cache(CACHE_MAXSIZE)
-def askeystring(key, *, allow_reformatting=True, flavour ='any'):
+def askeystring(key, *, allow_reformatting=True, flavour ='any',
+                keyparser=None, unit = NotGiven):
     """
     Returns a key string preserving the flavour if valid.
 
@@ -1830,14 +2623,19 @@ def askeystring(key, *, allow_reformatting=True, flavour ='any'):
     IsopyKeyString
     """
     flavour = asflavour(flavour)
+    unit = asunit(unit)
 
     if isinstance(key, IsopyKeyString):
         if key.flavour in flavour:
-            return key
+            if unit is not NotGiven and key.unit != unit:
+                return key._change_unit_(unit=unit)
+            else:
+                return key
         else:
             raise KeyFlavourError(key, flavour)
     else:
-        return keystring(key, allow_reformatting=allow_reformatting, flavour=flavour)
+        return keystring(key, allow_reformatting=allow_reformatting, flavour=flavour,
+                         keyparser=keyparser, unit=unit)
 
 ################
 ### Key List ###
@@ -1994,7 +2792,18 @@ class IsopyKeyList(tuple):
         The common demoninator of all ratio key strings in the sequence.
         ``None`` if there is no common denominator or the list contains non-ratio keys.
     """
-    def __new__(cls, keys, flavour, ignore_duplicates = False, allow_duplicates = True, sort = False):
+    def __new__(cls, keys, flavour, ignore_duplicates = False, allow_duplicates = True, sort = False,
+                unit = NotGiven):
+        if unit is NotGiven:
+            units = {k.unit for k in keys}
+            units.discard(None)
+            if len(units) == 1:
+                unit = units.pop()
+            else:
+                unit = NONE_UNIT
+
+        keys = [k._change_unit_(unit) for k in keys]
+
         if ignore_duplicates:
             keys = list(dict.fromkeys(keys).keys())
         elif not allow_duplicates and (len(set(keys)) != len(keys)):
@@ -2007,6 +2816,7 @@ class IsopyKeyList(tuple):
 
         obj = super(IsopyKeyList, cls).__new__(cls, keys)
         obj.flavour = flavour
+        obj.unit = unit
         return obj
 
     def _repr_latex_(self):
@@ -2016,7 +2826,11 @@ class IsopyKeyList(tuple):
             return None
 
     def __repr__(self):
-        return f"""{self.__class__.__name__}({", ".join([fr"'{str(k)}'" for k in self])}, flavour='{str(self.flavour)}')"""
+        if self.unit:
+            extra = f", flavour='{str(self.flavour)}, unit='{self.unit.name}'"
+        else:
+            extra = f", flavour='{str(self.flavour)}'"
+        return f"""{self.__class__.__name__}({", ".join([fr"'{k.__str__(False)}'" for k in self])}{extra})"""
 
     def __call__(self):
         return self
@@ -2025,11 +2839,11 @@ class IsopyKeyList(tuple):
         return hash( (self.__class__, super(IsopyKeyList, self).__hash__()) )
 
     def __eq__(self, other):
-        if not isinstance(other, IsopyKeyList):
-            try:
-                other = askeylist(other, flavour=self.flavour)
-            except:
-                return False
+        try:
+            other = askeylist(other, flavour=self.flavour, unit=self.unit)
+        except:
+            return False
+
         return hash(self) == hash(other)
 
     def __ne__(self, other):
@@ -2041,10 +2855,13 @@ class IsopyKeyList(tuple):
         """
         if not isinstance(items, (list, tuple)):
             items = (items,)
+
         for item in items:
-            if not isinstance(item, IsopyKeyString):
+            if isinstance(item, IsopyKeyString):
+                item = item._change_unit_(self.unit)
+            else:
                 try:
-                    item = askeystring(item, flavour=self.flavour)
+                    item = askeystring(item, flavour=self.flavour, unit=self.unit)
                 except:
                     return False
 
@@ -2082,6 +2899,7 @@ class IsopyKeyList(tuple):
 
     def __add__(self, other):
         other = askeylist(other)
+
         return askeylist((*self, *other))
 
     def __radd__(self, other):
@@ -2101,35 +2919,44 @@ class IsopyKeyList(tuple):
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        other = [hash(o) for o in dict.fromkeys(other)]
-        this = (t for t in this if hash(t) in other)
+        unit = self.unit or other.unit
+        if unit is not (other.unit or self.unit):
+            unit = None
 
-        return askeylist(tuple(this))
+        other = [hash(o.base) for o in dict.fromkeys(other)]
+        this = (t for t in this if hash(t.base) in other)
+
+        return askeylist(tuple(this), unit=unit)
 
     def __or__(self, other):
-        this = self
-
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        this = tuple(dict.fromkeys((*this, *other)))
+        unit = self.unit or other.unit
+        if unit is not (other.unit or self.unit):
+            unit = None
 
-        return askeylist(this)
+        return askeylist(self, other, ignore_duplicates=True, unit=unit)
 
     def __xor__(self, other):
         this = dict.fromkeys(self)
 
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
+
+        unit = self.unit or other.unit
+        if unit is not (other.unit or self.unit):
+            unit = None
+
         other = dict.fromkeys(other)
 
-        this_hash = [hash(t) for t in this]
-        other_hash = [hash(o) for o in dict.fromkeys(other)]
+        this_hash = [hash(t.base) for t in this]
+        other_hash = [hash(o.base) for o in dict.fromkeys(other)]
 
         this = (*(t for i, t in enumerate(this) if this_hash[i] not in other_hash),
                 *(o for i, o in enumerate(other) if other_hash[i] not in this_hash))
 
-        return askeylist(this)
+        return askeylist(this, unit=unit)
 
     def __rand__(self, other):
         return askeylist(other).__and__(self)
@@ -2146,9 +2973,13 @@ class IsopyKeyList(tuple):
         else:
             view =  a.view(IsopyNdarray)
 
-        view.flavour = self.flavour
-        view._key_flavour_ = view.flavour
+        view.flavour = self.flavour # Only for arrays
         view.keys = self
+
+        # used by dict
+        view._key_flavour_ = view.flavour
+        view._unit_ = self.unit
+
         return view
 
     def filter(self, key_eq= None, key_neq = None, **filters):
@@ -2209,8 +3040,17 @@ class IsopyKeyList(tuple):
         except (KeyValueError, ValueError):
             raise ValueError(f'{item} not in {self.__class__}')
 
-    def _str_(self):
-        return [str(key) for key in self]
+    def __str__(self, unit=True, math=False):
+        keys = [k.__str__(unit, math) for k in self]
+        if math:
+            keys = ', '.join(keys)
+            return fr'\left({keys}\right)'
+        else:
+            keys = "', '".join(keys)
+            return f"('{keys}')"
+
+    def _index_(self, unit=NotGiven):
+        return [str(key._change_unit_(unit)) for key in self]
     
     def strlist(self, format=None):
         """
@@ -2224,15 +3064,17 @@ class IsopyKeyList(tuple):
         """
         Return a string of the list formatted according to the format.
         """
-        if format == 'math':
-            keys = ', '.join(self.strlist('math'))
-            return fr'\left[{keys}\right]'
+        if format == None or format == 'key':
+            return self.__str__()
+        elif format == 'base':
+            return self.__str__(unit=False)
+        elif format == 'math':
+            return self.__str__(math=True)
         elif format == 'latex':
-            keys = ', '.join(self.strlist('math'))
-            return fr'$\left[{keys}\right]$'
+            return f'${self.__str__(math=True)}$'
         else:
-            keys = ', '.join(self.strlist(format))
-            return f'[{keys}]'
+            keys = "', '".join(self.strlist(format))
+            return f"('{keys}')"
 
     def sorted(self):
         """
@@ -2326,8 +3168,13 @@ def iskeylist(item, *, flavour=None, flavour_in=None) -> bool:
 
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, sort = False, flavour ='any'):
+def keylist(keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
+            sort = False, flavour ='any',
+            keyparser = None, unit = NotGiven):
     """
+    keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
+            sort = False, flavour ='any', keyparser = None, unit = NotGiven)
+
     Returns a key list with the highest priority flavour compatible with each key string.
 
     *keys* can consist of single strings, sequences of strings, dictionaries, isopy arrays and numpy arrays.
@@ -2373,16 +3220,22 @@ def keylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reforma
     IsopyKeyList
     """
     flavour = asflavour(flavour)
+    unit = asunit(unit)
 
-    keys = [keystring(k, flavour=flavour, allow_reformatting=allow_reformatting) for k in keys[0]]
+    keys = [keystring(k, flavour=flavour, allow_reformatting=allow_reformatting,
+                      keyparser=keyparser, unit=unit) for k in keys]
 
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
                        allow_duplicates=allow_duplicates, sort=sort)
 
 @combine_keys_func
 @lru_cache(CACHE_MAXSIZE)
-def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True, sort=False, flavour ='any'):
+def askeylist(keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
+              sort=False, flavour ='any',  keyparser = None, unit = NotGiven):
     """
+    askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_reformatting=True,
+              sort=False, flavour ='any', keyparser = None, unit = NotGiven)
+
     Returns a key list preserving the flavour of each key string if it has a valid flavour.
 
     If a key is a key string with a flavour not in *flavour* an exception is raised. If the key flavour is in *flavour*
@@ -2428,8 +3281,10 @@ def askeylist(*keys, ignore_duplicates=False, allow_duplicates=True, allow_refor
     IsopyKeyList
     """
     flavour = asflavour(flavour)
+    unit = asunit(unit)
 
-    keys = [askeystring(k, allow_reformatting=allow_reformatting, flavour=flavour) for k in keys[0]]
+    keys = [askeystring(k, allow_reformatting=allow_reformatting, flavour=flavour,
+                      keyparser=keyparser, unit=unit) for k in keys]
 
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
                         allow_duplicates=allow_duplicates, sort=sort)
@@ -2480,7 +3335,8 @@ class ArrayFuncMixin:
 
         return call_array_function(func, *args, **kwargs)
 
-
+    def convert_to(self, unit):
+        return self._unit_.convert_to(self, unit)
 
 
 class TableStr(str):
@@ -2803,7 +3659,7 @@ class ToTypeFileMixin:
             raise TypeError('Pandas not installed')
 
     def to_csv(self, filename, comments = None, keys_in_first='r',
-              dialect = 'excel', comment_symbol = '#'):
+              comment_symbol = '#', keyfmt = None, dialect = 'excel', ):
         """
         Save the array/dictionary to a csv file.
 
@@ -2819,14 +3675,17 @@ class ToTypeFileMixin:
             keys should be in the first column.
         comment_symbol : str, Default = '#'
             This string will precede any comments at the beginning of the file.
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
         dialect
             The CSV dialect used to save the file. Default to 'excel' which is a ', ' seperated file.
         """
         isopy.write_csv(filename, self, comments=comments, keys_in_first=keys_in_first,
-                        dialect=dialect, comment_symbol=comment_symbol)
+                        dialect=dialect, comment_symbol=comment_symbol, keyfmt=keyfmt)
 
     def to_xlsx(self, filename, sheetname = 'sheet1', comments = None,
-               keys_in_first= 'r', comment_symbol= '#', start_at ="A1", append = False, clear = True):
+               keys_in_first= 'r', comment_symbol= '#', keyfmt = None,
+               start_at ="A1", append = False, clear = True):
         """
         Save the array/dictionary to an excel workbook.
 
@@ -2839,12 +3698,14 @@ class ToTypeFileMixin:
             Data will be saved in a sheet with this name.
         comments : str, Sequence[str], Optional
             Comments to be included at the top of the file
-        comment_symbol : str, Default = '#'
-            This string will precede any comments at the beginning of the file
         keys_in_first : {'c', 'r'}
             Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
             keys should be in the first column.
-        start_at: str, (int, int)
+        comment_symbol : str, Default = '#'
+            This string will precede any comments at the beginning of the file
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
+        start_at : str, (int, int)
             The first cell where the data is written. Can either be a excel style cell reference or a (row, column)
             tuple of integers.
         append : bool, Default = False
@@ -2854,9 +3715,9 @@ class ToTypeFileMixin:
             If ``True`` any preexisting sheets are cleared before any new data is written to it.
         """
         isopy.write_xlsx(filename, comments=comments, keys_in_first=keys_in_first, comment_symbol=comment_symbol,
-                        start_at=start_at, append=append, clear=clear, **{sheetname: self})
+                        start_at=start_at, append=append, clear=clear, keyfmt=keyfmt, **{sheetname: self})
 
-    def to_clipboard(self, comments=None, keys_in_first='r', dialect = 'excel', comment_symbol = '#'):
+    def to_clipboard(self, comments=None, keys_in_first='r', comment_symbol = '#', keyfmt = None, dialect = 'excel',):
         """
         Copy the array/dictionary to the clipboard.
 
@@ -2867,13 +3728,15 @@ class ToTypeFileMixin:
         keys_in_first : {'c', 'r'}
             Only used if the input has keys. Give 'r' if the keys should be in the first row and 'c' if the
             keys should be in the first column.
-        dialect
-            The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
         comment_symbol : str, Default = '#'
             This string will precede any comments.
+        keyfmt
+            Specify the format used for the key string. See the ``str()`` method of each key string for options.
+        dialect
+            The CSV dialect used to copy the data to the clipboard. Default to 'excel' which is a ', ' seperated file.
         """
         isopy.write_clipboard(self, comments=comments,  keys_in_first=keys_in_first,
-                        dialect=dialect, comment_symbol=comment_symbol)
+                        dialect=dialect, comment_symbol=comment_symbol, keyfmt=keyfmt)
 
 # Merge with ArrayFuncMixin
 
@@ -2899,7 +3762,7 @@ def readonly_method(func):
         return func(self, *args, **kwargs)
     return decorator
 
-
+# Has no unit
 class IsopyDict(dict):
     """
     IsopyDict()
@@ -2955,7 +3818,7 @@ class IsopyDict(dict):
             descr = f'{descr}, default_value={self.__default__}'
         return f'{descr})\n{super(IsopyDict, self).__repr__()}'
 
-    def __init__(self, *args, default_value = NotGiven, readonly =False, key_flavour = 'any', **kwargs):
+    def __init__(self, *args, default_value = NotGiven, readonly =False, key_flavour = 'any', unit=None, **kwargs):
         super(IsopyDict, self).__init__()
         self._readonly_ = False
         self.default_value = default_value
@@ -2964,7 +3827,14 @@ class IsopyDict(dict):
                 key_flavour = args[0]._key_flavour_
             else:
                 key_flavour = 'any'
+
         self._key_flavour_ = asflavour(key_flavour)
+        if unit is NotGiven:
+            if len(args) == 1 and isinstance(args[0], IsopyDict):
+                key_flavour = args[0]._unit_
+            else:
+                key_flavour = None
+        self._unit_ = unit
 
         for arg in args:
             if isinstance(arg, IsopyArray):
@@ -2985,26 +3855,26 @@ class IsopyDict(dict):
 
     @readonly_method
     def __delitem__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, unit=None)
         super(IsopyDict, self).__delitem__(key)
 
     @readonly_method
     def __setitem__(self, key, value):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, unit=None)
         value = self._make_value(value, key)
         super(IsopyDict, self).__setitem__(key, value)
 
     def __contains__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, unit=None)
         return super(IsopyDict, self).__contains__(key)
 
     def __getitem__(self, key):
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, unit=None)
         return super(IsopyDict, self).__getitem__(key)
 
     @property
     def keys(self):
-        return askeylist(super(IsopyDict, self).keys(), flavour=self._key_flavour_)
+        return askeylist(super(IsopyDict, self).keys(), flavour=self._key_flavour_, unit=self._unit_)
 
     @property
     def readonly(self) -> bool:
@@ -3054,7 +3924,7 @@ class IsopyDict(dict):
             default = self.__default__
 
         try:
-            key = askeystring(key, flavour=self._key_flavour_)
+            key = askeystring(key, flavour=self._key_flavour_, unit=None)
         except KeyParseError:
             pass
         else:
@@ -3074,7 +3944,7 @@ class IsopyDict(dict):
 
         A TypeError is raised if the dictionary is readonly and *key* is not in the dictionary.
         """
-        key = askeystring(key, flavour=self._key_flavour_)
+        key = askeystring(key, flavour=self._key_flavour_, unit=None)
         if default is NotGiven:
             default = self.__default__
 
@@ -3089,7 +3959,8 @@ class IsopyDict(dict):
     def _copy(self, data, default_value):
         return self.__class__(data,
                               default_value=default_value,
-                              key_flavour=self._key_flavour_)
+                              key_flavour=self._key_flavour_,
+                              unit=self._unit_)
 
     def copy(self):
         return self._copy(self, self.__default__)
@@ -3124,7 +3995,7 @@ class IsopyDict(dict):
         """
         if isinstance(key, (str, int)):
             try:
-                key = askeystring(key, flavour=self._key_flavour_)
+                key = askeystring(key, flavour=self._key_flavour_, unit=None)
             except KeyParseError:
                 pass
             else:
@@ -3133,6 +4004,7 @@ class IsopyDict(dict):
                 except KeyError:
                     pass
 
+        # Not sure why this is here
         if isinstance(key, abc.Sequence) is False:
             return tuple(self.get(k, default) for k in key)
 
@@ -3156,7 +4028,7 @@ class IsopyDict(dict):
     def to_dict(self):
         return {key.str(): self.get(key) for key in self.keys}
 
-
+# Has unit, automatically converts to correct units
 class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
     """
     RefValDict()
@@ -3243,8 +4115,8 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         return descr
 
     def __init__(self, *args: dict, default_value=nan,
-                 readonly= False, key_flavour = 'any', ratio_function = None,
-                 molecule_functions = None, **kwargs):
+                 readonly= False, key_flavour = 'any', unit = None,
+                 ratio_function = None, molecule_functions = None, **kwargs):
 
         if len(args) == 1 and type(args[0]) is RefValDict:
             if default_value is NotGiven:
@@ -3271,11 +4143,12 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         super(RefValDict, self).__init__(*args, default_value=default_value,
                                          readonly=readonly,
                                          key_flavour= key_flavour,
+                                         unit=unit,
                                          **kwargs)
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            key = askeystring(key, flavour=self._key_flavour_)
+            key = askeystring(key, flavour=self._key_flavour_, unit=None)
             return super(IsopyDict, self).__getitem__(key)
         elif isinstance(key, (int, slice)):
             if self.ndim == 0 and (key == 0 or key == slice(None)):
@@ -3336,6 +4209,7 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         return self.__class__(data,
                               default_value=default_value,
                               key_flavour=self._key_flavour_,
+                              unit = self._unit_,
                               ratio_function = self._ratio_func,
                               molecule_functions=self._molecule_funcs)
 
@@ -3616,22 +4490,19 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
     __default__ = nan
 
-    def __new__(cls, values, keys=None, *, dtype=None, ndim=None, flavour = None):
+    def __new__(cls, values, keys=None, *, dtype=None, ndim=None, flavour = None,
+                keyparser = None, unit = NotGiven):
         flavour = asflavour(flavour)
-
-        if type(values) is IsopyNdarray and keys is None and dtype is None and ndim is None:
-            return values.copy()
-
-        # Do this early so no time is wasted if it fails
-        if keys is None and (isinstance(dtype, np.dtype) and dtype.names is not None):
-            keys = askeylist(dtype.names, allow_duplicates=False, flavour=flavour)
+        unit = asunit(unit)
 
         if isinstance(keys, np.dtype):
             if not keys.names:
                 raise ValueError('dtype does not contain named fields')
 
-            if dtype is None: dtype = keys
-            keys = askeylist(keys.names, allow_duplicates=False, flavour=flavour)
+            if dtype is None:
+                dtype = keys
+
+            keys = keys.names
 
         if ndim is not None and (not isinstance(ndim, int) or ndim < -1 or ndim > 1):
             raise ValueError('parameter "ndim" must be -1, 0 or 1')
@@ -3642,7 +4513,10 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         if isinstance(values, (ndarray, void)):
             if values.dtype.names is not None:
                 if keys is None:
-                    keys = list(values.dtype.names)
+                    if isinstance(values, IsopyArray):
+                        keys = values.keys
+                    else:
+                        keys = list(values.dtype.names)
 
                 if dtype is None:
                     dtype = [(values.dtype[i],) for i in range(len(values.dtype))]
@@ -3681,11 +4555,15 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         else:
             raise ValueError(f'unable to convert values with type "{type(values)}" to IsopyArray')
 
+        if keys is None and (isinstance(dtype, np.dtype) and dtype.names is not None):
+            keys = dtype.names
+
         if keys is None:
             # IF there are no keys at this stage raise an error
             raise ValueError('Keys argument not given and keys not found in values')
         else:
-            keys = askeylist(keys, allow_duplicates=False, flavour=flavour)
+            keys = askeylist(keys, allow_duplicates=False, flavour=flavour,
+                             keyparser=keyparser, unit=unit)
             klen = len(keys)
 
         if isinstance(values, tuple):
@@ -3737,6 +4615,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
                 raise ValueError(f'Unable to convert values for {keys[i]} to one of the specified dtypes')
 
         out = np.array(values, dtype=list(zip(keys.strlist(), dtype)))
+
         if ndim == -1:
             if out.size == 1:
                 ndim = 0
@@ -3826,7 +4705,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         if keyi is None:
             a = self
         else:
-            a = keyi._view_array_(super(IsopyArray, self).__getitem__(keyi._str_()))
+            a = keyi._view_array_(super(IsopyArray, self).__getitem__(keyi._index_(self.keys.unit)))
 
         if rowi is None:
             return a
@@ -3851,7 +4730,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
         if keyi is None:
             a = self
-        elif type(keystr:=keyi._str_()) is list:
+        elif type(keystr:=keyi._index_(self.keys.unit)) is list:
             a = keyi._view_array_(super(IsopyArray, self).__getitem__(keystr))
         elif rowi is None: # True of key index is a single key and no rows index was given
             super(IsopyArray, self).__setitem__(keystr, value.get(keyi))
@@ -3943,12 +4822,33 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
             return np.full(self.shape, default_value)
 
-    def copy(self):
+    def copy(self, keys = NotGiven, default = NotGiven, new_keys = NotGiven, new_unit = NotGiven, **key_filters):
         """
         Returns a copy of the array.
         """
-        copy =  super(IsopyArray, self).copy()
-        return self.keys._view_array_(copy)
+
+        if keys or key_filters:
+            keys = filter_keys(self, keys, key_filters)
+            a = isopy.array({k: self.get(k, default=default) for k in keys})
+            copy = True
+        else:
+            a = self
+            copy = False
+
+        if new_keys is not NotGiven or new_unit is not NotGiven:
+            new_keys = askeylist(new_keys or a.keys, allow_duplicates=False, unit=new_unit)
+            if len(new_keys) != len(a.keys):
+                raise ValueError(
+                    f'The number of new keys ({len(new_keys)}) does not match the current number of keys {len(a.keys)}')
+
+            new_dt = [(k, a.dtype[i]) for i, k in enumerate(new_keys.strlist())]
+            out = super(IsopyArray, a).astype(new_dt)
+            return new_keys.keys._view_array_(out)
+        elif copy:
+            return a
+        else:
+            copy = super(IsopyArray, a).copy()
+            return a.keys._view_array_(copy)
 
     def filter(self, **key_filters):
         """
@@ -4054,9 +4954,6 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
 
         return self * multiplier
 
-    def reshape(self, shape):
-        return self.keys._view_array_(super(IsopyArray, self).reshape(shape))
-
     def default(self, value):
         """
         Return a view of the array with a **temporary** default value.
@@ -4083,6 +4980,18 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         temp_view.__default__ = value
         return temp_view
 
+    def reshape(self, shape):
+        return self.keys._view_array_(super(IsopyArray, self).reshape(shape))
+
+    @functools.wraps(np.ndarray.astype)
+    def astype(self, *args, **kwargs):
+        out = super(IsopyArray, self).astype(*args, **kwargs)
+        if out.dtype.names:
+            keys = askeylist(out.dtype.names, allow_duplicates=False)
+            return keys._view_array_(out)
+        else:
+            return out
+
 
 class IsopyNdarray(IsopyArray, ndarray):
     pass
@@ -4104,7 +5013,9 @@ def isarray(item, *, flavour = None, flavour_in = None) -> bool:
         return isinstance(item, IsopyArray)
 
 
-def array(values=None, keys=None, *, dtype=None, ndim=None, flavour='any', **columns_or_read_kwargs):
+def array(values=None, keys=None, *, dtype=None, ndim=None, flavour='any',
+          keyparser=None, unit = NotGiven, convert_to_unit = False,
+          **columns_or_read_kwargs):
     """
     Convert the input arguments to a isopy array.
 
@@ -4117,6 +5028,9 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, flavour='any', **col
     flavours then the first successful conversion is returned.  If *flavour* is 'any' the flavours
     tried are ``['mass', 'element', 'isotope', 'ratio', 'mixed', 'molecule', 'general']``.
     """
+    flavour = asflavour(flavour)
+    unit = asunit(unit)
+
     if isinstance(values, (str, bytes, io.StringIO, io.BytesIO)):
         if values == 'clipboard':
             values = isopy.read_clipboard(**columns_or_read_kwargs)
@@ -4132,11 +5046,19 @@ def array(values=None, keys=None, *, dtype=None, ndim=None, flavour='any', **col
         raise ValueError('values and column kwargs cannot be given together')
     elif values is None:
         values = columns_or_read_kwargs
-    
-    return IsopyArray(values, keys=keys, dtype=dtype, ndim=ndim, flavour=flavour)
+
+    a = IsopyArray(values, keys=keys, dtype=dtype, ndim=ndim, flavour=flavour,
+                   keyparser=keyparser, unit=NotGiven if convert_to_unit else unit)
+
+    if unit is not NotGiven and convert_to_unit and a.keys.unit != (du:=unit.default_unit()):
+        return a.convert_to(du)
+    else:
+        return a
 
 
-def asarray(a, *, ndim = None, flavour = None, **read_kwargs):
+def asarray(a, *, ndim = None, flavour = None,
+            keyparser=None, unit=NotGiven, convert_to_unit=False,
+            **read_kwargs):
     """
     If *a* is an isopy array return it otherwise convert *a* into an isopy array and return it. If
     *ndim* is given a view of the array with the specified dimensionality is returned.
@@ -4150,6 +5072,7 @@ def asarray(a, *, ndim = None, flavour = None, **read_kwargs):
     tried are ``['mass', 'element', 'isotope', 'ratio', 'mixed', 'molecule', 'general']``.
     """
     flavour = asflavour(flavour)
+    unit = asunit(unit)
 
     if isinstance(a, (str, bytes, io.StringIO, io.BytesIO)):
         if a == 'clipboard':
@@ -4160,7 +5083,8 @@ def asarray(a, *, ndim = None, flavour = None, **read_kwargs):
             a = isopy.read_csv(a, **read_kwargs)
 
     if not isinstance(a, IsopyArray) or a.flavour not in flavour:
-        a = array(a, flavour=flavour)
+        return array(a, ndim=ndim, flavour=flavour,
+                     keyparser=keyparser, unit=unit, convert_to_unit=convert_to_unit)
 
     if ndim is not None:
         if ndim < -1 or ndim > 1:
@@ -4173,7 +5097,13 @@ def asarray(a, *, ndim = None, flavour = None, **read_kwargs):
         elif ndim > 0 and a.ndim == 0:
             a = a.reshape(-1)
 
-    return a
+    if unit is not NotGiven and a.keys.unit != (du:=unit.default_unit()):
+        if convert_to_unit:
+            return a.convert_to(du)
+        else:
+            a.copy(new_unit=du)
+    else:
+        return a
 
 
 def asanyarray(a, *, dtype = None, ndim = None, flavour=None, **read_kwargs):

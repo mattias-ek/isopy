@@ -11,6 +11,13 @@ __all__ = ['remove_mass_fractionation', 'add_mass_fractionation',
 import isopy.checks
 import isopy.core
 
+#rename rdelta to iso_delta
+# rename dsdelta to ds_delta
+ISODELTA = isopy.new_unit('isoDELTA', prefix='Δ′ ', prefix_math=r'\Delta^{\prime}\ ')
+ISOEPSILON = isopy.new_unit('isoEPSILON', prefix='ε ', prefix_math=r'\epsilon\ ')
+ISOMU = isopy.new_unit('isoMU', 'μ ', prefix_math=r'\mu\ ')
+
+# TODO add converters
 
 """
 Functions for isotope data reduction
@@ -567,7 +574,6 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
 
     #Find the initial mass fractionation
     beta = mass_fractionation_factor(rat, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
-
     if isobaric_interferences:
         #Do a combined mass fractionation and isobaric interference correction.
         #This can account for isobaric interferences on isotopes in *mf_ratio*
@@ -580,6 +586,7 @@ def internal_normalisation(data, mf_ratio, interference_correction=True,
 
             # Calculate the mass fractionation.
             beta = mass_fractionation_factor(rat2, mf_ratio, isotope_fractions=isotope_fractions, isotope_masses=isotope_masses)
+
 
             if np.all(np.abs(beta - prev_beta) < mf_tol):
                 break #Beta value has converged so no need for more iterations.
@@ -851,16 +858,12 @@ def find_isobaric_interferences(main, interferences=None):
     """
     main = isopy.askeylist(main).flatten(ignore_duplicates=True)
 
-    if len(main.flavour) > 1:
-        raise ValueError('All keys must be either element or isotope')
-
     if interferences is not None:
         interferences = isopy.askeylist(interferences).flatten(ignore_duplicates=True)
         # Create a list of all the possible isotopes
         interference_isotopes = interferences.isotopes
     else:
         interference_isotopes = isopy.askeylist()
-
 
     if  main.flavour in isopy.asflavour('element|molecule[element]'):
         # Either ElementKeyList or a MoleculeKeyList with no isotopes
@@ -870,13 +873,16 @@ def find_isobaric_interferences(main, interferences=None):
                 main_isotopes += interference_isotopes.filter(element_symbol_eq=element)
             else:
                 main_isotopes += isopy.refval.element.isotopes.get(element, tuple())
-    else:
+    elif main.flavour in isopy.asflavour('isotope|molecule[isotope]'):
         main_isotopes = main
+    else:
+        raise ValueError('All keys must be either element or isotope')
 
     if interferences is None:
         interference_isotopes = isopy.keylist()
-        for mass in main_isotopes.mass_numbers:
-            interference_isotopes += isopy.refval.mass.isotopes.get(mass)
+        for mass in main_isotopes.mz:
+            if mass % int(mass) == 0:
+                interference_isotopes += isopy.refval.mass.isotopes.get(int(mass), tuple())
 
     interference_elements = isopy.askeylist(interference_isotopes.element_symbols, ignore_duplicates=True,
                                             flavour=('element', 'isotope', 'molecule'))

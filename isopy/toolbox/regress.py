@@ -120,9 +120,9 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
         raise ValueError('Both error ci and zscore was given')
     if result_ci is not None and result_zscore is not None:
         raise ValueError('Both result ci and zscore was given')
-    if err_ci is not None and (err_ci < 1 or err_ci > 1):
+    if err_ci is not None and (err_ci < 0 or err_ci > 1):
         raise ValueError('error confidence interval must be between 0 and 1')
-    if result_ci is not None and (result_ci < 1 or result_ci > 1):
+    if result_ci is not None and (result_ci < 0 or result_ci > 1):
         raise ValueError('result confidence interval must be between 0 and 1')
 
     X = x
@@ -232,6 +232,7 @@ def yorkregress(x, y, xerr, yerr, r=0, err_ci = None, err_zscore=None, result_ci
                              np.sum(W), xbar)
 
 
+yorkregress1 = core.partial_func(yorkregress, 'yorkregress2', err_zscore=1, result_zscore=1)
 yorkregress2 = core.partial_func(yorkregress, 'yorkregress2', err_zscore=2, result_zscore=2)
 yorkregress3 = core.partial_func(yorkregress, 'yorkregress3', err_zscore=3, result_zscore=3)
 yorkregress95 = core.partial_func(yorkregress, 'yorkregress95', err_ci=0.95, result_ci=0.95)
@@ -302,7 +303,3 @@ class YorkregressResult(LinregressResult):
         label = f'{label}±{toolbox.plot._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
         label = f'{label}, msdw={self.msdw:.2f}'
         return label
-
-
-
-
