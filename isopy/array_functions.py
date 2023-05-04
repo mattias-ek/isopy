@@ -1,5 +1,5 @@
 import numpy as np
-#from numpy.lib.function_base import array_function_dispatch
+from numpy.lib.function_base import array_function_dispatch
 from scipy import stats
 import functools
 
@@ -93,9 +93,17 @@ def arrayfunc(func, *inputs, keys=None, **kwargs):
 
     return core.call_array_function(func, *inputs, keys=keys, key_filters=key_filters, **kwargs)
 
+def _sd_dispatcher(a, axis=None, *, ci=None, zscore=None):
+    return (a,)
 
-#@array_function_dispatch(_sd_dispatcher)
+def _mad_dispatcher(a, axis=None, scale=None, *, ci=None, zscore=None):
+    return (a,)
+
+def _count_dispatcher(a, axis=None):
+    return (a,)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_sd_dispatcher)
 def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom.
@@ -148,8 +156,8 @@ def sd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     return result
 
 
-#@array_function_dispatch(_sd_dispatcher)
 @arrayfunc_wrapper
+@array_function_dispatch(_sd_dispatcher)
 def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard deviation along the specified axis for N-1 degrees of freedom, while ignoring NaNs.
@@ -196,15 +204,16 @@ def nansd(a, axis = None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
-        return result * calculate_ci(ci, df)
+        return np.multiply(result, calculate_ci(ci, df))
 
     if zscore is not None:
-        return result * zscore
+        return np.multiply(result, zscore)
 
     return result
 
-#@array_function_dispatch(_se_dispatcher)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_sd_dispatcher)
 def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom.
@@ -250,15 +259,16 @@ def se(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
-        return result * calculate_ci(ci, df)
+        return np.multiply(result, calculate_ci(ci, df))
 
     if zscore is not None:
-        return result * zscore
+        return np.multiply(result, zscore)
 
     return result
 
-#@array_function_dispatch(_se_dispatcher)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_sd_dispatcher)
 def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the standard error along the specified axis for N-1 degrees of freedom, while ignoring
@@ -309,15 +319,16 @@ def nanse(a, axis=None, *, ci = None, zscore=None): #, where = core.NotGiven):
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
-        return result * calculate_ci(ci, df)
+        return np.multiply(result, calculate_ci(ci, df))
 
     if zscore is not None:
-        return result * zscore
+        return np.multiply(result, zscore)
 
     return result
 
-#@array_function_dispatch(_mad_dispatcher)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_mad_dispatcher)
 def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = core.NotGiven):
     """
     Compute the median absolute deviation of the data along the given axis.
@@ -365,16 +376,16 @@ def mad(a, axis=None, scale= 'normal', *, ci = None, zscore=None): #,  where = c
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
-        return result * calculate_ci(ci, df)
+        return np.multiply(result, calculate_ci(ci, df))
 
     if zscore is not None:
-        return result * zscore
+        return np.multiply(result, zscore)
 
-    # result is not always an array
     return result
 
-#@array_function_dispatch(_mad_dispatcher)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_mad_dispatcher)
 def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where = core.NotGiven):
     """
     Compute the median absolute deviation along the specified axis, while ignoring NaNs.
@@ -421,15 +432,16 @@ def nanmad(a, axis=None, scale = 'normal', *, ci = None, zscore=None): #, where 
 
     if ci is not None:
         df = np.count_nonzero(np.invert(np.isnan(a)), axis=axis) - 1
-        return result * calculate_ci(ci, df)
+        return np.multiply(result, calculate_ci(ci, df))
 
     if zscore is not None:
-        return result * zscore
+        return np.multiply(result, zscore)
 
     return result
 
-#@array_function_dispatch(_count_dispatcher)
+
 @arrayfunc_wrapper
+@array_function_dispatch(_count_dispatcher)
 def nancount(a, axis=None): #, where = core.NotGiven):
     """
     Count all values in array that are not NaN or Inf along the specified axis.
@@ -452,6 +464,7 @@ def nancount(a, axis=None): #, where = core.NotGiven):
     #if where is not core.NotGiven:
     #    a = a[where]
     return np.count_nonzero(np.isfinite(a), axis=axis)
+
 
 for func in [sd, nansd, se, nanse, mad, nanmad, nancount]:
     core.APPROVED_FUNCTIONS.append(func)
@@ -534,7 +547,7 @@ def rstack(*arrays, sort_keys=False):
     arrays = [core.asanyarray(a) for a in arrays]
 
     keys = core.askeylist(*(a.keys for a in arrays if isinstance(a, core.IsopyArray)),
-                        ignore_duplicates=True, sort=sort_keys)
+                          ignore_duplicates=True, sort=sort_keys)
     #arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
     for i, a in enumerate(arrays):
@@ -543,7 +556,7 @@ def rstack(*arrays, sort_keys=False):
 
     result = [np.concatenate([a.get(key).reshape(1) if a.ndim == 0 else a.get(key) for a in arrays]) for key in keys]
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
-    return keys._view_array_(np.fromiter(zip(*result), dtype=dtype))
+    return core.Array._view_array_(np.fromiter(zip(*result), dtype=dtype), keys)
 
 def cstack(*arrays, sort_keys=False):
     """

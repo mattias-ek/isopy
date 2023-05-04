@@ -1,7 +1,6 @@
 import isopy as isopy
 import isopy.core as core
 import isopy.toolbox as toolbox
-import scipy.stats as stats
 import matplotlib as mpl
 from matplotlib.patches import Polygon as mplPolygon
 from matplotlib.figure import Figure as mplFigure
@@ -10,8 +9,6 @@ from matplotlib.axes import Axes as mplAxes
 import numpy as np
 import functools
 import warnings
-from typing import Optional, Union, Literal
-import cycler
 import colorsys
 
 __all__ = ['plot_scatter', 'plot_regression', 'plot_vstack', 'plot_hstack',
@@ -34,7 +31,6 @@ grid_style = dict(extend='both')
 class RotatingList(list):
     """
     Rotates through a list of *items*
-
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
     """
@@ -100,15 +96,11 @@ class RotatingList(list):
 class Markers(RotatingList):
     """
     Rotate through the markers of the current matplotlib style.
-
     Optionally the name of a different style can be passed when creating the object to return the colours of that style.
-
     If a style does not have any markers defined a default list of markers is used. These are circle, square,
     triangle, diamond, plus, cross, pentagon.
-
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
-
     Examples
     --------
     >>> markers = isopy.tb.Colors()
@@ -116,7 +108,6 @@ class Markers(RotatingList):
     >>>     isopy.tb.plot_scatter(plt, 1, i, marker=markers.current, markersize=20)
     >>>     markers.next()
     >>> plt.show()
-
     .. figure:: plots/Markers.png
             :alt: output of the example above
             :align: center
@@ -130,12 +121,9 @@ class Markers(RotatingList):
 class Colors(RotatingList):
     """
     Rotate through the colors of the current matplotlib style.
-
     Optionally the name of a different style can be passed when creating the object to return the colours of that style.
-
     Is a subclass of ``list``. Only new methods/attributes, or methods/attributes that differ from
     the original implementation, are shown below.
-
     Examples
     --------
     >>> colors = isopy.tb.Colors() # Colours can vary depending on the default style
@@ -143,7 +131,6 @@ class Colors(RotatingList):
     >>>     isopy.tb.plot_scatter(plt, 1, i, color=colors.current, markersize=20)
     >>>     colors.next()
     >>> plt.show()
-
     .. figure:: plots/Colors.png
             :alt: output of the example above
             :align: center
@@ -156,9 +143,7 @@ class Colors(RotatingList):
     def lighten(self, color=None, lightness = 0.85):
         """
         Change the lightness of *color* to *lightness*.
-
         If the inital colour is very light then the default *lightness* might actually make the colour darker.
-
         """
         if color is None:
             color = self.current
@@ -181,14 +166,11 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
                   frameon=None, tight_layout=None, constrained_layout=None):
     """
     Update the figure options.
-
     See the matplotlib documentation
     `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html>`_
     for more details on these options.
-
     All isopy plotting functions will automatically send any *kwargs* prefixed with ``figure_`` to
     this function.
-
     Parameters
     ----------
     figure : figure, plt
@@ -213,31 +195,24 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
         If ``True`` use ``tight_layout`` when drawing the figure.
     constrained_layout : bool
         If ``True`` use ``constrained_layout`` when drawing the figure.
-
     Returns
     -------
     figure : Figure
         Returns the figure
-
     Examples
     --------
     >>> isopy.tb.update_figure(plt, size=(10,2), facecolor='orange')
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
     >>> plt.show()
-
     .. figure:: plots/update_figure1.png
             :alt: output of the example above
             :align: center
-
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
                      figure_size=(10, 2), figure_facecolor='orange')
     >>> plt.savefig('update_figure2.png')
-
     .. figure:: plots/update_figure2.png
             :alt: output of the example above
             :align: center
-
-
     """
     figure = _check_figure('figure', figure)
     if size is not None:
@@ -258,10 +233,8 @@ def update_figure(figure, *, size = None, width=None, height=None, dpi=None, fac
 def update_axes(axes, *, legend=None, **kwargs):
     """
     Update axes attributes.
-
     All isopy plotting functions will automatically send any *kwargs* prefixed with ``axes_`` to
     this function.
-
     Parameters
     ----------
     axes : axes, dict[str, axes]
@@ -273,22 +246,18 @@ def update_axes(axes, *, legend=None, **kwargs):
         Any attribute that can be set using ``axes.set_<key>(value)``.
         If the value is a tuple ``axes.set_<key>(*value)`` is used. If
         the value is a dictionary ``axes.set_<key>(**value)``.
-
     Examples
     --------
     >>> isopy.tb.update_axes(plt, xlabel='This it the x-axis', ylabel='This is the y-axis')
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10))
     >>> plt.show()
-
     .. figure:: plots/update_axes1.png
             :alt: output of the example above
             :align: center
-
     >>> isopy.tb.plot_scatter(plt, np.arange(10), np.arange(10),
                             axes_xlabel='This it the x-axis',
                             axes_ylabel='This is the y-axis')
     >>> plt.show()
-
     .. figure:: plots/update_axes2.png
             :alt: output of the example above
             :align: center
@@ -347,9 +316,7 @@ def create_subplots(figure, subplots, grid = None, *,
                     constrained_layout=True, height_ratios = None, width_ratios=None,  **kwargs):
     """
     Create subplots for a figure.
-
     Use None instead of a name to create an empty space.
-
     Parameters
     ----------
     figure : figure, plt
@@ -392,39 +359,30 @@ def create_subplots(figure, subplots, grid = None, *,
         `add_subplot <https://matplotlib.org/stable/api/figure_api.html?highlight=subplot_mosaic#matplotlib.figure.Figure.add_subplot>`_
          and `Gridspec <https://matplotlib.org/stable/api/_as_gen/matplotlib.gridspec.GridSpec.html>`_
         for a list of avaliable kwargs.
-
     Returns
     -------
     subplots : dict
         A dictionary containing the newly created subplots.
-
     Examples
     --------
     >>> subplots = [['one', 'two', 'three', 'four']]
     >>> axes = isopy.tb.create_subplots(plt, subplots)
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
-
     .. figure:: plots/create_subplots1.png
             :alt: output of the example above
             :align: center
-
-
     >>> subplots = ['one', 'two', 'three', 'four', 'five', 'six']
     >>> axes = isopy.tb.create_subplots(plt, subplots, (-1, 2))
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
-
     .. figure:: plots/create_subplots2.png
         :alt: output of the example above
         :align: center
-
-
     >>> subplots = [['one', 'two'], ['three', 'two'], ['four', 'four']]
     >>> axes = isopy.tb.create_subplots(plt, subplots)
     >>> for name, ax in axes.items(): ax.set_title(name)
     >>> plt.show()
-
     .. figure:: plots/create_subplots3.png
             :alt: output of the example above
             :align: center
@@ -557,12 +515,9 @@ class SubplotDict(dict):
 def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars = True, newlines=None, **kwargs):
     """
     Create a legend encompassing multiple axes.
-
     Items in *axes*, if there are any, will be included in the legend.
-
     If mutilple axes contains items with the same label then only the item from the last axes is included
     in the legend. Empty labels or labels beggining with ``'_'`` are not included in the legend.
-
     Parameters
     ----------
     axes
@@ -585,7 +540,6 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars 
         Any additional kwargs to be passed when creating the legend. See
         `legend <https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure.legend>`_
         for a list of avaliable kwargs.
-
     Examples
     --------
     >>> data = isopy.random(100, keys='ru pd cd'.split())
@@ -594,11 +548,9 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars 
     >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
     >>> isopy.tb.create_legend(axes['right'], axes['left'])
     >>> plt.show()
-
     .. figure:: plots/create_legend1.png
             :alt: output of the example above
             :align: center
-
     >>> data = isopy.random(100, keys='ru pd cd'.split())
     >>> axes = isopy.tb.create_subplots(plt, [['left', 'right', 'legend']],
                                         figure_width=9, gridspec_width_ratios=[4, 4, 1])
@@ -606,7 +558,6 @@ def create_legend(axes, *include_axes, labels = None, hide_axis=None, errorbars 
     >>> isopy.tb.plot_scatter(axes['right'], data['pd'], data['cd'], label='cd/pd', color='blue')
     >>> isopy.tb.create_legend(axes['legend'], axes, hide_axis=True)
     >>> plt.show()
-
     .. figure:: plots/create_legend2.png
             :alt: output of the example above
             :align: center
@@ -652,8 +603,6 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
                  color= None, marker = True, line = False, regression = None, **kwargs):
     """
     Plot data points with error bars on *axes*.
-
-
     Parameters
     ----------
     axes : axes, plt
@@ -690,26 +639,21 @@ def plot_scatter(axes, x, y, xerr = None, yerr = None,
         Any keyword argument accepted by matplotlib axes method *errorbar*. See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.errorbar.html>`_
         for a list of keyword arguments.
-
-
     Examples
     --------
     >>> x = isopy.random(20, seed=46)
     >>> y = x * 3 + isopy.random(20, seed=47)
     >>> isopy.tb.plot_scatter(plt, x, y)
     >>> plt.show()
-
     .. figure:: plots/plot_scatter1.png
             :alt: output of the example above
             :align: center
-
     >>> x = isopy.random(20, seed=46)
     >>> y = x * 3 + isopy.random(20, seed=47)
     >>> xerr = 0.2
     >>> yerr = isopy.random(20, seed=48)
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr, regression='york1', color='red', marker='s')
     >>> plt.show()
-
     .. figure:: plots/plot_scatter2.png
         :alt: output of the example above
         :align: center
@@ -774,10 +718,8 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
                     fill = True, edgeline = True, label_equation = True,  **kwargs):
     """
     Plot the result of a regression on matplotlib *axes*.
-
     If *regression_result* has a ``y_se(x)`` method the error envelope of the regression
     will also be plotted.
-
     Parameters
     ----------
     axes : axes, plt
@@ -831,7 +773,6 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
         See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html>`_
         for a list of keyword arguments for the fill area.
-
     Examples
     --------
     >>> x = isopy.random(20, seed=46)
@@ -840,23 +781,18 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_scatter(plt, x, y)
     >>> isopy.tb.plot_regression(plt, regression)
     >>> plt.show()
-
     .. figure:: plots/plot_regression1.png
             :alt: output of the example above
             :align: center
-
-
     >>> x = isopy.random(20, seed=46)
     >>> y = x * 3 + isopy.random(20, seed=47)
     >>> regression = lambda x: 2 * x + x ** 2 #Any callable that takes x and return y is a valid
     >>> isopy.tb.plot_scatter(plt, x, y, color='red')
     >>> isopy.tb.plot_regression(plt, regression, color='red', xlim=(-1, 1))
     >>> plt.show()
-
     .. figure:: plots/plot_regression2.png
             :alt: output of the example above
             :align: center
-
     >>> x = isopy.random(20, seed=46)
     >>> y = x * 3 + isopy.random(20, seed=47)
     >>> xerr = 0.2
@@ -865,11 +801,9 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr)
     >>> isopy.tb.plot_regression(plt, regression)
     >>> plt.show()
-
     .. figure:: plots/plot_regression3.png
             :alt: output of the example above
             :align: center
-
     >>> x = isopy.random(20, seed=46)
     >>> y = x * 3 + isopy.random(20, seed=47)
     >>> xerr = 0.2
@@ -877,7 +811,6 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
     >>> isopy.tb.plot_scatter(plt, x, y, xerr, yerr, color='red')
     >>> isopy.tb.plot_regression(plt, regression, color='red', line='dashed', edgeline=False)
     >>> plt.show()
-
     .. figure:: plots/plot_regression4.png
             :alt: output of the example above
             :align: center
@@ -1001,8 +934,6 @@ def plot_regression(axes, regression_result, color=None, line=True, xlim = None,
 def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = None, color = None, marker = True, line = True, **kwargs):
     """
     Plot data as a spider diagram on matplotlib *axes* .
-
-
     Parameters
     ----------
     axes : axes, plt
@@ -1048,35 +979,28 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
         Any keyword argument accepted by matplotlib axes method *errorbar*. See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.errorbar.html>`_
         for a list of keyword arguments.
-
     Examples
     --------
     >>> array = isopy.to_refval.isotope.fraction.to_array(element_symbol='pd')
     >>> isopy.tb.plot_spider(plt, array) #Will plot the fraction of each Pd isotope
     >>> plt.show()
-
     .. figure:: plots/plot_spider1.png
         :alt: output of the example above
         :align: center
-
-
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']])
     >>> array = isopy.to_refval.isotope.fraction.to_array(element_symbol='pd').ratio('105pd')
     >>> isopy.tb.plot_spider(subplots['left'], array) #The numerator mass numbers are used as x
     >>> isopy.tb.plot_spider(subplots['right'], array, constants={105: 1}) #Adds a one for the denominator
     >>> plt.show()
-
     .. figure:: plots/plot_spider2.png
         :alt: output of the example above
         :align: center
-
     >>> subplots = isopy.tb.create_subplots(plt, [['left', 'right']], figwidth=8)
     >>> values = {100: [1, 1, -1], 101.5: [0, 0, 0], 103: [-1, 1, -1]} #keys can be floats
     >>> isopy.array(values)
     >>> isopy.tb.plot_spider(subplots['left'], values) #Impossible to tell the rows apart
     >>> isopy.tb.plot_spider(subplots['right'], values, xscatter=0.15) #Much clearer
     >>> plt.show()
-
     .. figure:: plots/plot_spider3.png
         :alt: output of the example above
         :align: center
@@ -1227,10 +1151,8 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
                 spacing = -1, hide_yaxis=True, compare=False, subplots_grid = (1, -1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
-
     Can also take an array in which case it will create a grid of subplots, one for each column in
     the array.
-
     Parameters
     ----------
     axes : axes, figure, plt
@@ -1318,7 +1240,6 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
         See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html>`_
         for a list of keyword arguments for the box area.
-
     Examples
     --------
     >>> array1 = isopy.random(100, -0.5, seed=46)
@@ -1326,11 +1247,9 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_vstack(plt, array1)
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
-
     .. figure:: plots/plot_vstack1.png
         :alt: output of the example above
         :align: center
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array1 = isopy.random(100, -0.5, keys, seed=46)
     >>> array2 = isopy.random(100, 0.5, keys, seed=47)
@@ -1338,12 +1257,9 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_vstack(plt, array1)
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
-
     .. figure:: plots/plot_vstack2.png
         :alt: output of the example above
         :align: center
-
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array = isopy.random(100, -0.5, keys, seed=46)
     >>> mean = np.mean(array);
@@ -1352,11 +1268,9 @@ def plot_vstack(axes, x, xerr = None, ystart = None, *, outliers=None, cval = No
     >>> isopy.tb.create_subplots(plt, keys.sorted(), (1, -1))
     >>> isopy.tb.plot_vstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
-
     .. figure:: plots/plot_vstack3.png
         :alt: output of the example above
         :align: center
-
     """
     if isinstance(x, tuple) and len(x) == 2:
         x, xerr = x
@@ -1395,11 +1309,8 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
                 spacing = 1, hide_xaxis=True, compare=False, subplots_grid = (-1, 1), **kwargs):
     """
     Plot values along the x-axis at a regular y interval. Also known as Caltech or Carnegie plot.
-
     Can also take an array in which case it will create a grid of subplots, one for each column in
     the array.
-
-
     Parameters
     ----------
     axes : axes, figure, plt
@@ -1487,8 +1398,6 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
         See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html>`_
         for a list of keyword arguments for the box area.
-
-
     Examples
     --------
     >>> array1 = isopy.random(100, -0.5, seed=46)
@@ -1496,11 +1405,9 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_hstack(plt, array1)
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
-
     .. figure:: plots/plot_hstack1.png
         :alt: output of the example above
         :align: center
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array1 = isopy.random(100, -0.5, keys, seed=46)
     >>> array2 = isopy.random(100, 0.5, keys, seed=47)
@@ -1508,11 +1415,9 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.plot_hstack(plt, array1)
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> plt.show()
-
     .. figure:: plots/plot_hstack2.png
         :alt: output of the example above
         :align: center
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array = isopy.random(100, -0.5, keys, seed=46)
     >>> mean = np.mean(array);
@@ -1521,11 +1426,9 @@ def plot_hstack(axes, y, yerr = None, xstart = None, *, outliers=None, cval = No
     >>> isopy.tb.create_subplots(plt, keys.sorted(), (-1, 1))
     >>> isopy.tb.plot_hstack(plt, array, cval=mean, pmval=sd, outliers=outliers, color=('red', 'pink'))
     >>> plt.show()
-
     .. figure:: plots/plot_hstack3.png
         :alt: output of the example above
         :align: center
-
     """
     if isinstance(y, tuple) and len(y) == 2: y, yerr = y
 
@@ -1779,12 +1682,9 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
     A comparison plot for data sets on a hstack.
-
     Calculate the center and uncertainty values for all data plotted on a hstack and
     set the *y* axis tick marks at ``[cval-pmval, cval, cval+pmval]`` and format the
     tick labels according to *pmunit*.
-
-
     Parameters
     ----------
     axes : axes, figure, plt
@@ -1802,14 +1702,12 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         The number of significant figures to be shown on the y-axis tick labels.
     pmunit : str, Default = 'diff'
         Defines the unit of the tick labels for the *pmline*'s. Avaliable options are:
-
         * ``"diff"`` - The tick labels are shown as ``f'"Δ {+pmval}"`` and ``f'"Δ {-pmval}"``.
         * ``"abs"`` - The tick labels are shown as ``f'"{cval+pmval}"`` and ``f'"{cval-pmval}"``.
         * ``"percent"`` or ``"%"`` - The tick labels are shown as ``f'"{+pmval/cval*100} %"`` and ``f'"{-pmval/cval*100} %"``.
         * ``"permil"`` or ``"ppt"`` - The tick labels are shown as ``f'"{+pmval/cval*1000} ‰"`` and ``f'"{-pmval/cval*1000} ‰"``.
         * ``"ppm"`` - The tick labels are shown as ``f'"{+pmval/cval*1E6} ppm"`` and ``f'"{-pmval/cval*1E6} ppm"``.
         * ``"ppb"`` - The tick labels are shown as ``f'"{+pmval/cval*1E9} ppb"`` and ``f'"{-pmval/cval*1E9} ppb"``.
-
         A tuple can be used to set different units for the upper and lower tick labels.
     cline : bool, str, Default = True
         If ``True`` a horizontal line is drawn along *cval*. If ``False`` no line is shown. Can also
@@ -1836,7 +1734,6 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         This is useful if there isnt enough space to display them all next to each other.
         If *combinde_ticklabels* is a scalar then the tick labels are only combined if the
         difference between the limits and the plus/minus tick label positions exceed this value.
-
     Examples
     --------
     >>> array1 = isopy.random(100, 0.9, seed=46)
@@ -1845,22 +1742,18 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hcompare(plt)
     >>> plt.show()
-
     .. figure:: plots/plot_hcompare1.png
         :alt: output of the example above
         :align: center
-
     >>> array1 = isopy.random(100, 0.9, seed=46)
     >>> array2 = isopy.random(100, 1.1, seed=47)
     >>> isopy.tb.plot_hstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
-
     .. figure:: plots/plot_hcompare2.png
         :alt: output of the example above
         :align: center
-
     >>> pmunits = ['diff', 'abs', '%', 'ppt', 'ppm', 'ppb']
     >>> subplots = isopy.tb.create_subplots(plt, pmunits, (-1, 1), figure_height=8)
     >>> array1 = isopy.random(100, 0.9, seed=46)
@@ -1871,11 +1764,9 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             isopy.tb.plot_hcompare(axes, pmval=isopy.sd, pmunit=unit, combine_ticklabels=True)
             axes.set_ylabel(f'pmunit="{unit}"')
     >>> plt.show()
-
     .. figure:: plots/plot_hcompare3.png
         :alt: output of the example above
         :align: center
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array1 = isopy.random(100, 0.9, keys, seed=46)
     >>> array2 = isopy.random(100, 1.1, keys, seed=47)
@@ -1883,7 +1774,6 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_hstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_hcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
-
     .. figure:: plots/plot_hcompare4.png
         :alt: output of the example above
         :align: center
@@ -1932,11 +1822,9 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
                   color='black', axis_color = None, ignore_outliers=True, combine_ticklabels=5):
     """
     A comparison plot for data sets on a vstack.
-
     Calculate the center and uncertainty values for all data plotted on a vstack and
     set the *x* axis tick marks at ``[cval-pmval, cval, cval+pmval]`` and format the
     tick labels according to *pmunit*.
-
     Parameters
     ----------
     axes : axes, figure, plt
@@ -1954,14 +1842,12 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         The number of significant figures to be shown on the x-axis tick labels.
     pmunit : str, Default = 'diff'
         Defines the unit of the tick labels for the *pmline*'s. Avaliable options are:
-
         * ``"diff"`` - The tick labels are shown as ``f'"Δ {+pmval}"`` and ``f'"Δ {-pmval}"``.
         * ``"abs"`` - The tick labels are shown as ``f'"{cval+pmval}"`` and ``f'"{cval-pmval}"``.
         * ``"percent"`` or ``"%"`` - The tick labels are shown as ``f'"{+pmval/cval*100} %"`` and ``f'"{-pmval/cval*100} %"``.
         * ``"permil"`` or ``"ppt"`` - The tick labels are shown as ``f'"{+pmval/cval*1000} ‰"`` and ``f'"{-pmval/cval*1000} ‰"``.
         * ``"ppm"`` - The tick labels are shown as ``f'"{+pmval/cval*1E6} ppm"`` and ``f'"{-pmval/cval*1E6} ppm"``.
         * ``"ppb"`` - The tick labels are shown as ``f'"{+pmval/cval*1E9} ppb"`` and ``f'"{-pmval/cval*1E9} ppb"``.
-
         A tuple can be used to set different units for the upper and lower tick labels.
     cline : bool, str, Default = True
         If ``True`` a vertical line is drawn along *cval*. If ``False`` no line is shown. Can also
@@ -1988,7 +1874,6 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
         This is useful if there isnt enough space to display them all next to each other.
         If *combinde_ticklabels* is a scalar then the tick labels are only combined if the
         difference between the limits and the plus/minus tick label positions exceed this value.
-
     Examples
     --------
     >>> array1 = isopy.random(100, -0.5, seed=46)
@@ -1997,23 +1882,18 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_vcompare(plt)
     >>> plt.show()
-
     .. figure:: plots/plot_vcompare1.png
         :alt: output of the example above
         :align: center
-
-
     >>> array1 = isopy.random(100, -0.5, seed=46)
     >>> array2 = isopy.random(100, 0.5, seed=47)
     >>> isopy.tb.plot_vstack(plt, array1, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_vcompare(plt, pmval=isopy.sd, sigfig=3)
     >>> plt.show()
-
     .. figure:: plots/plot_vcompare2.png
             :alt: output of the example above
             :align: center
-
     >>> pmunits = ['diff', 'abs', '%', 'ppt', 'ppm', 'ppb']
     >>> subplots = isopy.tb.create_subplots(plt, pmunits, (1, -1), figure_width=8)
     >>> array1 = isopy.random(100, 0.9, seed=46)
@@ -2024,11 +1904,9 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
             isopy.tb.plot_vcompare(axes, pmval=isopy.sd, pmunit=unit, combine_ticklabels=True)
             axes.set_xlabel(f'pmunit="{unit}"')
     >>> plt.show()
-
     .. figure:: plots/plot_vcompare3.png
             :alt: output of the example above
             :align: center
-
     >>> keys = isopy.keylist('pd105', 'ru101', 'cd111')
     >>> array1 = isopy.random(100, 0.9, keys, seed=46)
     >>> array2 = isopy.random(100, 1.1, keys, seed=47)
@@ -2036,7 +1914,6 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
     >>> isopy.tb.plot_vstack(plt, array2, cval=np.mean, pmval=isopy.sd2)
     >>> isopy.tb.plot_vcompare(plt.gcf(), combine_ticklabels=True)
     >>> plt.show()
-
     .. figure:: plots/plot_vcompare4.png
             :alt: output of the example above
             :align: center
@@ -2168,7 +2045,6 @@ def _label_unit(refval, val, unit, sigfig):
 def plot_box(axes, x = None, y = None, color = None, autoscale = True, **style_kwargs):
     """
     Plot a semi-transparent box on *axes*.
-
     Parameters
     ----------
     axes
@@ -2224,7 +2100,6 @@ def plot_box(axes, x = None, y = None, color = None, autoscale = True, **style_k
 def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs):
     """
     Plot a semi-transparent polygon on *axes*.
-
     Parameters
     ----------
     axes
@@ -2251,7 +2126,6 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
         Any keyword argument accepted a matplotlib polygon object. See `here
         <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html>`_ for a
         list of keyword arguments.
-
     """
     axes = _check_axes(axes)
 
@@ -2281,7 +2155,6 @@ def plot_polygon(axes, x, y=None, color = None, autoscale = True, **style_kwargs
 def plot_text(axes, xpos, ypos, text, rotation = None, fontsize = None, posabs = True, **kwargs):
     """
     Add text to plot.
-
     Parameters
     ----------
     axes
@@ -2321,7 +2194,6 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
                   colorbar=None, label = False, label_levels = None, filled = True, **kwargs):
     """
     Create a contour plot on *axes* from a data grid.
-
     Parameters
     ----------
     axes : axes, figure, plt
@@ -2361,7 +2233,6 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
         See avaliable options `here <https://matplotlib.org/stable/api/contour_api.html#matplotlib.contour.ContourLabeler.clabel>`.
         All other kwargs will be send to the matplotlib functions ``contour`` or ``contourf``.
         See avaliable options `here <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contour.html>`.
-
     Examples
     --------
     >>> x = np.arange(10)
@@ -2369,12 +2240,9 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
     >>> z = np.arange(100).reshape((10, 10))
     >>> isopy.tb.plot_contours(plt, x, y, z)
     >>> plt.show()
-
-
     .. figure:: plots/plot_contours1.png
         :alt: output of the example above
         :align: center
-
     >>> element = 'fe'
     >>> spike1 = isopy.array(fe54=0, fe56=0, fe57=1, fe58=0)
     >>> spike2 = isopy.array(fe54=0, fe56=0, fe57=0, fe58=1)
@@ -2384,11 +2252,9 @@ def plot_contours(axes, x, y, z, zmin=None, zmax=None, levels=100, colors='jet',
     >>> dsgrid = isopy.tb.ds_grid(element, spike1, spike2)
     >>> isopy.tb.plot_contours(plt, *dsgrid.xyz(), zmin= 0, zmax=0.01, **axes_labels)
     >>> plt.show()
-
     .. figure:: plots/plot_contours2.png
         :alt: output of the example above
         :align: center
-
     """
     axes = _check_axes(axes)
 
@@ -2622,14 +2488,3 @@ def _axes_data_lim(axes, axis, ignore_outliers=False):
     except ValueError:
         max = np.nan
     return (min, max)
-
-def update_style():
-    prop_cycler = mpl.rcParams['axes.prop_cycle'].by_key()
-    colors = prop_cycler.get('color', Colors._original)
-    markers = prop_cycler.get('marker', Markers._original)
-
-    Colors._original = colors
-    Markers._original = markers
-    mpl.rcParams['axes.prop_cycle'] = cycler.cycler(color = colors * len(markers), marker = markers * len(colors))
-
-update_style()

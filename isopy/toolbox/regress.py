@@ -3,7 +3,7 @@ from matplotlib.patches import Polygon as _Polygon
 from scipy import stats
 import numpy as np
 from isopy import core
-from isopy import toolbox
+from isopy.plot import format_sigfig
 from isopy import array_functions
 
 
@@ -269,10 +269,10 @@ class LinregressResult:
         if np.isnan(self.slope):
             label = f'{label}(nan±nan) + (nan±nan)'
         else:
-            label = f'{label}({toolbox.plot._format_sigfig(self.slope, sigfig, self.slope_se)}'
-            label = f'{label}±{toolbox.plot._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
-            label = f'{label} + ({toolbox.plot._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
-            label = f'{label}±{toolbox.plot._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
+            label = f'{label}({format_sigfig(self.slope, sigfig, self.slope_se)}'
+            label = f'{label}±{format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
+            label = f'{label} + ({format_sigfig(self.intercept, sigfig, self.intercept_se)}'
+            label = f'{label}±{format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
         return label
 
 class YorkregressResult(LinregressResult):
@@ -303,9 +303,9 @@ class YorkregressResult(LinregressResult):
         if np.isnan(self.slope):
             label = f'{label}(nan±nan) + (nan±nan), msdw=nan'
         else:
-            label = f'{label}({toolbox.plot._format_sigfig(self.slope, sigfig, self.slope_se)}'
-            label = f'{label}±{toolbox.plot._format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
-            label = f'{label} + ({toolbox.plot._format_sigfig(self.intercept, sigfig, self.intercept_se)}'
-            label = f'{label}±{toolbox.plot._format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
+            label = f'{label}({format_sigfig(self.slope, sigfig, self.slope_se)}'
+            label = f'{label}±{format_sigfig(self.slope_se, sigfig, self.slope_se)})x'
+            label = f'{label} + ({format_sigfig(self.intercept, sigfig, self.intercept_se)}'
+            label = f'{label}±{format_sigfig(self.intercept_se, sigfig, self.intercept_se)})'
             label = f'{label}, msdw={self.msdw:.2f}'
         return label

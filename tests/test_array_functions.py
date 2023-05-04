@@ -781,38 +781,38 @@ class Test_ArrayFunctions:
             # a, a
             true = operator(a1, a2)
             result = func(a1, a2)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == true.keys
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
 
             result = func(a1, a2, keys = keys)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == keys
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
 
             result = func(a1, a2, key_eq=keys)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == keys_s1
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
 
             # a ds
             result = func(a1, ds2)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == a1.keys
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
 
             result = func(a1, ds2, keys=keys)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == keys
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
 
             result = func(a1, ds2, key_eq=keys)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == keys_s2
             for key in result.keys:
                 np.testing.assert_equal(result[key], true[key])
@@ -824,7 +824,7 @@ class Test_ArrayFunctions:
             np.testing.assert_equal(result, true)
 
             result = func(2.0, 3.0, keys=keys)
-            assert type(result) == core.IsopyNdarray
+            assert type(result) == core.Array
             assert result.keys == keys
             for key in result.keys:
                 np.testing.assert_equal(result[key], true)
@@ -1115,8 +1115,8 @@ class Test_ArrayFunctions:
             true = np.concatenate((array1.get(key), [np.nan], array3.get(key)))
             np.testing.assert_allclose(result[key], true)
 
-        a = isopy.array(a=1, b=2, flavour='general')
-        b = isopy.array(a=11, b=12)
+        a = isopy.array(ru=1, pd=2, flavour='general')
+        b = isopy.array(ru=11, pd=12)
         assert a.keys() != b.keys()
 
         c = isopy.rstack(a, b)
@@ -1185,8 +1185,8 @@ class Test_ArrayFunctions:
         with pytest.raises(np.AxisError):
             result = isopy.concatenate(array1, array2, array3, axis=2)
 
-        a = isopy.array(a=1, b=2, flavour='general')
-        b = isopy.array(a=11, b=12)
+        a = isopy.array(ru=1, pd=2, flavour='general')
+        b = isopy.array(ru=11, pd=12)
         assert a.keys() != b.keys()
 
         c = isopy.cstack(a, b)
@@ -1219,24 +1219,24 @@ class Test_ArrayFunctions:
         dict1.molecule_functions = 'abundance'
         dict1.default_value = 1
 
-        assert dict1.ratio_function == np.divide
-        assert dict1.molecule_functions == (np.add, np.multiply, None)
+        assert dict1.ratio_function == 'divide'
+        assert dict1.molecule_functions == 'abundance'
 
         dict2 = array2.to_refval()
-        dict2.ratio_function = np.add
+        dict2.ratio_function = None
         dict2.molecule_functions = 'mass'
         dict2.default_value = 2
 
-        assert dict2.ratio_function == np.add
-        assert dict2.molecule_functions == (np.add, np.multiply, np.divide)
+        assert dict2.ratio_function == None
+        assert dict2.molecule_functions == 'mass'
 
         dict3 = array2.to_refval()
-        dict3.ratio_function = np.multiply
+        dict3.ratio_function = 'divide'
         dict3.molecule_functions = 'fraction'
         dict3.default_value = [i for i in range(100)]
 
-        assert dict3.ratio_function == np.multiply
-        assert dict3.molecule_functions == (np.multiply, np.power, None)
+        assert dict3.ratio_function == 'divide'
+        assert dict3.molecule_functions == 'fraction'
 
         # abs
         result = np.abs(dict1)

@@ -7,6 +7,12 @@ You can install isopy using the following command:
 
     pip install isopy
 
+To install a specific version of isopy use the following command:
+
+.. code-block:: bash
+
+    pip install isopy==<version>
+
 This will also install libraries that isopy depend on such as
 `numpy <https://numpy.org/>`_, `scipy <https://www.scipy.org/>`_
 and `matplotlib <https://matplotlib.org/>`_.
