@@ -863,8 +863,12 @@ class MassKeyString(IsopyKeyString):
         number = round(number, MASS_DECIMALS)
         string = str(int(number) if number % 1 == 0 else number)
 
-        key = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False, number = number)
-        key._attrs['mass_number'] = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False, number = number)
+        key = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False,
+                                                number = number,
+                                                mz = number)
+        key._attrs['mass_number'] = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False,
+                                                                      number = number,
+                                                                      mz = number)
         return key
 
     def __float__(self):
