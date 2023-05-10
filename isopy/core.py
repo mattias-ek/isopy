@@ -805,6 +805,7 @@ class IsopyKeyString(str):
     def _change_asterisk_(self, state):
         raise TypeError(f'Cannot change the asterisk state for {type(self)}')
 
+MASS_DECIMALS = 6
 class MassKeyString(IsopyKeyString):
     """
     MassKeyString()
@@ -838,30 +839,39 @@ class MassKeyString(IsopyKeyString):
         if isinstance(string, cls):
             return string
 
-        if isinstance(string, int) and allow_reformatting:
-            string = str(string)
+        if isinstance(string, (int, float)) and allow_reformatting:
+            number = float(string)
 
-        if not isinstance(string, str):
+        elif isinstance(string, str):
+            string = string.strip()
+            if allow_reformatting is True:
+                # string = string.removeprefix('_')
+                string = remove_prefix(string, 'Mass_') #For backwards compatibility
+                string = remove_prefix(string, 'MAS_') #For backwards compatibility
+
+            if len(string) == 0:
+                raise KeyValueError(cls, string, 'cannot parse empty string')
+
+            try:
+                number = float(string)
+            except:
+                raise KeyValueError(cls, string, 'String must be either a valid integer of float number')
+
+        else:
             raise KeyTypeError(cls, string)
 
-        string = string.strip()
-        if allow_reformatting is True:
-            # string = string.removeprefix('_')
-            string = remove_prefix(string, 'Mass_') #For backwards compatibility
-            string = remove_prefix(string, 'MAS_') #For backwards compatibility
+        number = round(number, MASS_DECIMALS)
+        string = str(int(number) if number % 1 == 0 else number)
 
-        if len(string) == 0:
-            raise KeyValueError(cls, string, 'cannot parse empty string')
-
-        if not string.isdigit():
-            if string[0] == '-' and string[1:].isdigit():
-                raise KeyValueError(cls, string, 'Must be a positive integer')
-            else:
-                raise KeyValueError(cls, string, 'Can only contain numerical characters')
-
-        key = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False)
-        key._attrs['mass_number'] = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False)
+        key = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False, number = number)
+        key._attrs['mass_number'] = super(MassKeyString, cls).__new__(cls, string, MassFlavour(), False, number = number)
         return key
+
+    def __float__(self):
+        return self.number
+
+    def __int__(self):
+        return self.number.__int__()
 
     def __ge__(self, item):
         if isinstance(item, str):
@@ -870,7 +880,7 @@ class MassKeyString(IsopyKeyString):
             except:
                 pass
 
-        return int(self) >= item
+        return self.number >= item
 
     def __le__(self, item):
         if isinstance(item, str):
@@ -879,7 +889,7 @@ class MassKeyString(IsopyKeyString):
             except:
                 pass
 
-        return int(self) <= item
+        return self.number <= item
 
     def __gt__(self, item):
         if isinstance(item, str):
@@ -888,7 +898,7 @@ class MassKeyString(IsopyKeyString):
             except:
                 pass
 
-        return int(self) > item
+        return self.number > item
 
     def __lt__(self, item):
         if isinstance(item, str):
@@ -897,7 +907,7 @@ class MassKeyString(IsopyKeyString):
             except:
                 pass
 
-        return int(self) < item
+        return self.number < item
 
     def _sortkey_(self):
         return f'A{self:0>4}'
@@ -1137,7 +1147,7 @@ class IsotopeKeyString(IsopyKeyString):
         return super(IsotopeKeyString, cls).__new__(cls, string, IsotopeFlavour(), asterisk,
                                                    mass_number = mass,
                                                    element_symbol = element,
-                                                   mz = float(mass))
+                                                   mz = mass.number)
 
     def __contains__(self, string):
         """
@@ -1224,7 +1234,6 @@ class IsotopeKeyString(IsopyKeyString):
             return self
         else:
             return self._copy_(asterisk=state)
-
 
 class MoleculeKeyString(IsopyKeyString):
     """
@@ -1600,7 +1609,6 @@ class MoleculeKeyString(IsopyKeyString):
     def isotopes(self):
         return askeylist(self._isotopes_(None))
 
-
 class RatioKeyString(IsopyKeyString):
     """
     RatioKeyString()
@@ -1779,7 +1787,6 @@ class RatioKeyString(IsopyKeyString):
 
     def _flatten_(self):
         return self.numerator._flatten_() + self.denominator._flatten_()
-
 
 class GeneralKeyString(IsopyKeyString):
     """
@@ -2225,40 +2232,22 @@ class IsopyKeyList(tuple):
         return askeylist(other).__sub__(self)
 
     def __and__(self, other):
-        this = dict.fromkeys(self)
-
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        other = [hash(o) for o in dict.fromkeys(other)]
-        this = (t for t in this if hash(t) in other)
-
-        return askeylist(tuple(this))
+        return askeylist(set(self) & other, sort=True)
 
     def __or__(self, other):
-        this = self
-
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        this = tuple(dict.fromkeys((*this, *other)))
-
-        return askeylist(this)
+        return askeylist(set(self) | other, sort=True)
 
     def __xor__(self, other):
-        this = dict.fromkeys(self)
-
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
-        other = dict.fromkeys(other)
 
-        this_hash = [hash(t) for t in this]
-        other_hash = [hash(o) for o in dict.fromkeys(other)]
-
-        this = (*(t for i, t in enumerate(this) if this_hash[i] not in other_hash),
-                *(o for i, o in enumerate(other) if other_hash[i] not in this_hash))
-
-        return askeylist(this)
+        return askeylist(set(self) ^ other, sort=True)
 
     def __rand__(self, other):
         return askeylist(other).__and__(self)
