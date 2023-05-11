@@ -1309,6 +1309,8 @@ class MoleculeKeyString(IsopyKeyString):
         elif type(components) is not tuple:
             components = (components,)
 
+
+
         string = cls._make_string_(components, n, charge, bracket=False, square=True)
         component_flavour = cls._find_flavour_(components)
         return super(MoleculeKeyString, cls).__new__(cls, string, MoleculeFlavour(component_flavour), False,
@@ -1510,13 +1512,24 @@ class MoleculeKeyString(IsopyKeyString):
             components = components[0]
 
         if type(components) == ElementKeyString:
-            return  f'{components.str(format)}{ncharge}'
+            string = f'{components.str(format)}{ncharge}'
+            if square:
+                return f'[{string}]'
+            else:
+                return string
 
         elif type(components) == IsotopeKeyString:
-            if format == 'math' or not bracket:
-                return f'{components.str(format)}{ncharge}'
+            if format == 'math':
+                string = f'{components.str(format)}{ncharge}'
+            elif ncharge or square is False:
+                string = f'[{components.str(format)}]{ncharge}'
             else:
-                return f'[{components.str(format)}]{ncharge}'
+                string = f'{components.str(format)}'
+
+            if square:
+                return f'[{string}]'
+            else:
+                return string
 
         elif type(components) == MoleculeKeyString:
             if ncharge:
@@ -2239,19 +2252,19 @@ class IsopyKeyList(tuple):
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        return askeylist(set(self) & other, sort=True)
+        return askeylist(set(self) & set(other), sort=True)
 
     def __or__(self, other):
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        return askeylist(set(self) | other, sort=True)
+        return askeylist(set(self) | set(other), sort=True)
 
     def __xor__(self, other):
         if not isinstance(other, IsopyKeyList):
             other = askeylist(other)
 
-        return askeylist(set(self) ^ other, sort=True)
+        return askeylist(set(self) ^ set(other), sort=True)
 
     def __rand__(self, other):
         return askeylist(other).__and__(self)
@@ -4305,7 +4318,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
           
     def _default_array_(self, key, default_value):
         if default_value is NotGiven:
-            default_value = self._temp_default_value or self._default_value
+            default_value = self._temp_default_value if self._temp_default_value is not None else self._default_value
         elif isinstance(default_value, (IsopyDict, IsopyArray)):
             default_value = default_value.get(key, self._default_value)
         else:
@@ -4321,7 +4334,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
     
     @property
     def default_value(self):
-        return self._temp_default_value or self._default_value
+        return self._temp_default_value if self._temp_default_value is not None else self._default_value
     
     @deprecrated_function('This method has been deprecrated in favour of dv()')
     def default(self, value):
