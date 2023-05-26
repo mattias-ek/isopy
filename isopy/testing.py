@@ -5,6 +5,9 @@ import pyperclip
 
 # TODO create functions for creating arrays with random data keys etc
 
+###############
+### strings ###
+###############
 class TextRepr:
     def __init__(self, type, text, hash=None):
         self.text = text
@@ -44,7 +47,6 @@ class TextRepr:
     @classmethod
     def html(cls, text, hash=None):
         return cls('html', text, hash)
-
 
 def hash_str(obj):
     string = obj.__str__()
@@ -268,10 +270,14 @@ def assert_hash(obj, str = None, repr = None,
         objhash = core.hashstr(string)
         if objhash != correct:
             raise AssertionError(f'str-html hashes dont match: {objhash} != {correct}')
-        
+
+
+##############
+### arrays ###
+##############
 def assert_compare_arrays(copy, original):
-    if isinstance(original, core.IsopyArray):
-        if not isinstance(copy, core.IsopyArray):
+    if isinstance(original, core.IsopyNdArray):
+        if not isinstance(copy, core.IsopyNdArray):
             raise AssertionError(f'copy is not an IsopyArray: {type(copy)}')
         if copy.keys != original.keys:
             raise AssertionError(f'keys dont match: {copy.keys} != {original.keys}')
@@ -282,7 +288,7 @@ def assert_compare_arrays(copy, original):
         for k in original.keys:
             np.testing.assert_allclose(copy[k], original[k])
     else:
-        if isinstance(copy, core.IsopyArray):
+        if isinstance(copy, core.IsopyNdArray):
             raise AssertionError(f'copy is an IsopyArray: {type(copy)}')
         if not isinstance(copy, np.ndarray):
             raise AssertionError(f'copy is not an numpy ndarray: {type(copy)}')
@@ -291,4 +297,81 @@ def assert_compare_arrays(copy, original):
         if copy.dtype != original.dtype:
             raise AssertionError(f'dtype doesnt match: {copy.dtype} != {original.dtype}')
         np.testing.assert_allclose(copy, original)
+
+def assert_array_equal_array(array1, array2, match_dtype=True):
+    if not isinstance(array1, core.IsopyNdArray):
+        raise AssertionError(f'array1 is not an IsopyArray')
+    if not isinstance(array2, core.IsopyNdArray):
+        raise AssertionError(f'array2 is not an IsopyArray')
+
+    if array1.dtype.names is None:
+        raise AssertionError('array1 is not a structured numpy array')
+    if array2.dtype.names is None:
+        raise AssertionError('array2 is not a structured numpy array')
+
+    if array1.flavour is not array1.keys.flavour:
+        raise AssertionError(f'flavour of array1 ({array1.flavour}) does not match the key flavour ({array1.keys.flavour})')
+    if array2.flavour is not array1.keys.flavour:
+        raise AssertionError(f'flavour of array2 ({array2.flavour}) does not match the key flavour ({array2.keys.flavour})')
+    if array1.flavour != array2.flavour:
+        raise AssertionError(f'flavour of array1 ({array1.flavour}) does not match array2 ({array2.flavour})')
+
+    if array1.keys != array2.keys:
+        raise AssertionError(f'array1 keys do not match array2 keys')
+    if array1.ndim != array2.ndim:
+        raise AssertionError(f'ndim of array1 ({array1.ndim} does not match array2 ({array2.ndim})')
+    if array1.size != array2.size:
+        raise AssertionError(f'size of array1 ({array1.size}) does not match array2 ({array2.size})')
+    if array1.shape != array2.shape:
+        raise AssertionError(f'shape of array1 ({array1.shape}) does not match array2 ({array2.shape})')
+
+    if match_dtype:
+        for i in range(len(array1.dtype)):
+            if array1.dtype[i] != array2.dtype[i]:
+                raise AssertionError(f'dtype of column {i} in array1 ({array1.dtype[i]}) does not match array2 ({array2.dtype[i]})')
+
+    for name in array1.keys:
+        try:
+            np.testing.assert_allclose(array1[name], array2[name])
+        except AssertionError:
+            raise AssertionError(f'Values of column "{name}" in array1 does not match array2')
+
+
+def assert_array_equal_ndarray(array1, array2, match_dtype=True):
+    if not isinstance(array1, core.IsopyNdArray):
+        raise AssertionError(f'array1 is not an IsopyArray')
+    if not isinstance(array2, np.ndarray):
+        raise AssertionError(f'array2 is not an nd array')
+
+    if array1.dtype.names is None:
+        raise AssertionError('array1 is not a structured numpy array')
+    if array2.dtype.names is None:
+        raise AssertionError('array2 is not a structured numpy array')
+
+    if array1.flavour is not array1.keys.flavour:
+        raise AssertionError('flavour of array1 does not match the key flavour')
+    if len(array1.dtype.names) != len(array2.dtype.names):
+        raise AssertionError(f'size of keys in array1 ({len(array1.dtype.names) }) does not match array2 ({len(array2.dtype.names)})')
+
+    for i in range(len(array1.dtype.names)):
+        if array1.dtype.names[i] != array2.dtype.names[i]:
+            raise AssertionError(f'key of column {i} in array1 ({array1.dtype.names[i]}) does not match array2 ({array2.dtype.names[i]})')
+
+    if array1.ndim != array2.ndim:
+        raise AssertionError(f'ndim of array1 ({array1.ndim} does not match array2 ({array2.ndim})')
+    if array1.size != array2.size:
+        raise AssertionError(f'size of array1 ({array1.size}) does not match array2 ({array2.size})')
+    if array1.shape != array2.shape:
+        raise AssertionError(f'shape of array1 ({array1.shape}) does not match array2 ({array2.shape})')
+
+    if match_dtype:
+        for i in range(len(array1.dtype)):
+            if array1.dtype[i] != array2.dtype[i]:
+                raise AssertionError(f'dtype of column {i} in array1 ({array1.dtype[i]}) does not match array2 ({array2.dtype[i]})')
+
+    for name in array1.dtype.names:
+        try:
+            np.testing.assert_allclose(array1[name], array2[name])
+        except AssertionError:
+            raise AssertionError(f'Values of column "{name}" in array1 does not match array2')
     

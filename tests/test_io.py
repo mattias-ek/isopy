@@ -2129,7 +2129,7 @@ class Test_exp:
         assert len(data.measurements) == 1
         assert 1 in data.measurements
 
-        assert isinstance(data.measurements[1], core.IsopyArray)
+        assert isinstance(data.measurements[1], core.IsopyNdArray)
         for key in '101ru 102pd 104pd 105pd 106pd 108pd 110pd 111cd'.split():
             assert key in data.measurements[1].keys
 

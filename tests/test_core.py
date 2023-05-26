@@ -3,6 +3,7 @@ import pandas
 
 import isopy
 import isopy.core
+from isopy.testing import assert_array_equal_array, assert_array_equal_ndarray
 from isopy import core, checks
 import numpy as np
 import pytest
@@ -12,26 +13,6 @@ import warnings
 import IPython
 import pandas as pd
 import isopy.testing
-
-
-def assert_array_equal_array(array1, array2, match_dtype=True):
-    assert isinstance(array1, core.IsopyArray)
-    assert array1.flavour == array1.keys.flavour
-
-    assert array1.dtype.names is not None
-    assert array2.dtype.names is not None
-
-    assert len(array1.dtype.names) == len(array2.dtype.names)
-    for i in range(len(array1.dtype.names)):
-        assert str(array1.dtype.names[i]) == str(array2.dtype.names[i])
-    assert array1.ndim == array2.ndim
-    assert array1.size == array2.size
-    assert array1.shape == array2.shape
-    if match_dtype:
-        for i in range(len(array1.dtype)):
-            assert array1.dtype[i] == array2.dtype[i]
-    for name in array1.dtype.names:
-        np.testing.assert_allclose(array1[name], array2[name])
 
 class Test_Flavour:
     def test_creation(self):
@@ -224,9 +205,9 @@ class Test_IsopyKeyString:
         # MassKeyString
         self.direct_creation(core.MassKeyString, correct='105',
                              same=[105, '105', 'MAS_105'],
-                             fails=['pd105', 'onehundred and five', -105, '-105', 'GEN_105',
+                             fails=['pd105', 'onehundred and five', 'GEN_105',
                                    'MAS__105', '_105'],
-                             different=['96', 96, '5', 5, '300', 300, '1000', 1000])
+                             different=['96', 96, '5', 5, '300', 300, '1000', 1000, -105, '-105'])
 
         #ElementKeyString
         self.direct_creation(core.ElementKeyString, correct ='Pd',
@@ -346,7 +327,7 @@ class Test_IsopyKeyString:
                             'pd105/pD', 'Pd/Pd', 'Pd/Cd//Ru', 'Ru///Pd//Cd/Ag', 'Cd/Ru//Ru/Cd'])
 
 
-        self.general_creation(core.GeneralKeyString, ['test', '-1', '/Pd', '105Pdd', 'Pd/Pd/Pd'])
+        self.general_creation(core.GeneralKeyString, ['test', '/Pd', '105Pdd', 'Pd/Pd/Pd'])
 
         # Check behaviour of general string is as expected for keystring and askeystring.
         for key in ['105', 'Pd', '108Pd', 'H2O']:
@@ -360,6 +341,12 @@ class Test_IsopyKeyString:
             gkey2 = isopy.askeystring(gkey)
             assert type(gkey) == type(gkey2)
             assert gkey == gkey2
+
+
+        key = isopy.keystring('Pd')
+        assert isopy.keystring(key, flavour='isotope|general').flavour == 'general'
+        with pytest.raises(core.KeyFlavourError):
+            isopy.askeystring(key, flavour='isotope|general')
 
     def general_creation(self, keytype, correct = []):
         #Test creation with isopy.keystring() and isopy.askeystring
@@ -539,7 +526,6 @@ class Test_IsopyKeyString:
         with pytest.raises(core.KeyValueError):
             prev / 'ho'
 
-
     def test_str(self):
         # Test the *str* method that turns key string into python strings
 
@@ -650,7 +636,7 @@ class Test_IsopyKeyString:
         assert core.GeneralKeyString('Hermione++') == 'Hermione++'
 
         key = core.RatioKeyString('105Pd++/108Pd-')
-        assert str(key) == '105Pd++/108Pd-'
+        assert str(key) == '[[105Pd]++]/[[108Pd]-]'
         assert key.numerator.charge == 2
         assert key.denominator.charge == -1
 
@@ -661,7 +647,7 @@ class Test_IsopyKeyString:
             for string in strings:
                 key = core.MoleculeKeyString(string)
                 assert key.charge == charge
-                assert str(key) == 'Ba' + ('+' * charge or '-' * abs(charge)) + ''
+                assert str(key) == '[Ba' + ('+' * charge or '-' * abs(charge)) + ']'
 
         key = core.ElementKeyString('Ba')
         for charge in [-2, -1, 1, 2]:
@@ -675,7 +661,7 @@ class Test_IsopyKeyString:
             for string in strings:
                 key = core.MoleculeKeyString(string)
                 assert key.charge == charge
-                assert str(key) == '138Ba' + ('+' * charge or '-' * abs(charge))
+                assert str(key) == '[[138Ba]' + ('+' * charge or '-' * abs(charge)) + ']'
                 assert key.mz == 138 / charge
 
         key = core.IsotopeKeyString('138Ba')
@@ -805,6 +791,65 @@ class Test_IsopyKeyString:
 
         assert isopy.keystring('(1H)2(16O)').mz == 18
         assert isopy.keystring('(1H)2(16O)++').mz == 10
+
+    def test_asterisk(self):
+        def assert_asterisk(key, flavour, can_have_asterisk, other_flavour='general'):
+            key1 = isopy.keystring(key)
+            assert key1.flavour == flavour
+            assert key1.asterisk is False
+
+            if can_have_asterisk:
+                key2 = isopy.keystring(f'{key}*')
+                assert key2.flavour == flavour
+                assert key2.asterisk is True
+
+                key2 = isopy.keystring(f'{key}*', flavour=flavour)
+                assert key2.flavour == flavour
+                assert key2.asterisk is True
+
+                key3 = key2.remove_asterisk()
+                assert key3.asterisk is False
+                assert str(key3) == str(key1)
+
+                key4 = key1.add_asterisk()
+                assert key4.asterisk is True
+                assert str(key4) == str(key2)
+
+                key5 = key1.remove_asterisk()
+                assert key5.asterisk is False
+                assert str(key5) == str(key1)
+
+                key6 = key2.add_asterisk()
+                assert key6.asterisk is True
+                assert str(key6) == str(key2)
+
+            else:
+                key2 = isopy.keystring(f'{key}*')
+                assert key2.flavour == other_flavour
+                assert key2.asterisk is False
+
+                if flavour != other_flavour:
+                    with pytest.raises(core.KeyParseError):
+                        isopy.keystring(f'{key}*', flavour=flavour)
+
+                with pytest.raises(TypeError):
+                    key2.remove_asterisk()
+
+                with pytest.raises(TypeError):
+                    key1.add_asterisk()
+
+
+        assert_asterisk('100', 'mass', False)
+        assert_asterisk('Mo', 'element', True)
+        assert_asterisk('102Pd', 'isotope', True)
+        assert_asterisk('[H2O]', 'molecule', False)
+        assert_asterisk('[H2O]/[OH]', 'ratio', False, 'ratio')
+        assert_asterisk('Hermione', 'general', False)
+
+        key = isopy.keystring('Ru/Pd*')
+        assert key.asterisk is False
+        assert key.denominator.asterisk is True
+
 
 
 # TODO creation add subflavours
@@ -1091,52 +1136,56 @@ class Test_IsopyList:
         return keylist
 
     def test_bitwise(self):
-        #Last two of key1 should be the first two of key2
-        #Otherwise the ratio test will fail
-        mass = self.bitwise('mass', (102, 104, 105, 106),
-                    ('105', '106', '108', '110'),
+        self.bitwise('mass', (102, 104, 105, 106),
+                     ('105', '106', '108', '110'),
                      ('105', '106'),
                      (102, 104, 105, 106, 108, 110),
                      ('102', '104', 108, 110))
 
-        element = self.bitwise('element', ('Mo', 'Ru', 'Pd', 'Rh'),
+        self.bitwise('element', ('Mo', 'Ru', 'Pd', 'Rh'),
                      ('Pd', 'Rh', 'Ag', 'Cd'),
                      ('Pd', 'Rh'),
                      ('Mo', 'Ru', 'Pd', 'Rh', 'Ag', 'Cd'),
                      ('Mo', 'Ru', 'Ag', 'Cd'))
 
-        isotope= self.bitwise('isotope', ('102Pd', '104Pd', '105Pd', '106Pd'),
+        self.bitwise('isotope', ('102Pd', '104Pd', '105Pd', '106Pd'),
                      ('105Pd', '106Pd', '108Pd', '110Pd'),
                      ('105Pd', '106Pd'),
                      ('102Pd', '104Pd', '105Pd', '106Pd', '108Pd', '110Pd'),
                      ('102Pd', '104Pd', '108Pd', '110Pd'))
 
-        general = self.bitwise('general', ('Hermione', 'Neville', 'Harry', 'Ron'),
+        self.bitwise('molecule', ('[102Pd]', '[H2O]', '[105Pd]++', '[OH]'),
+                    ('[H2O]', '[HNO3]', '105pd++', '[HCl]'),
+                    ('[H2O]', '105pd++',),
+                    ('[102Pd]', '[H2O]', '[105Pd]++', '[OH]', '[HNO3]', '[HCl]'),
+                    ('[102Pd]', '[OH]', '[HNO3]', '[HCl]'))
+
+        self.bitwise('ratio', ('Ru/Pd', 'Ru/Cd', 'Fe/Ni', 'Ge/As'),
+                     ('Ge/As', 'Rh/Ag', 'Cd/Ru', 'Ru/Cd'),
+                     ('Ge/As', 'Ru/Cd'),
+                     ('Ru/Pd', 'Ru/Cd', 'Fe/Ni', 'Ge/As', 'Rh/Ag', 'Cd/Ru'),
+                     ('Ru/Pd', 'Fe/Ni', 'Rh/Ag', 'Cd/Ru'))
+
+        self.bitwise('general', ('Hermione', 'Neville', 'Harry', 'Ron'),
                      ('Harry', 'Ron', 'George', 'Fred'),
                      ('Harry', 'Ron'),
                      ('Hermione', 'Neville', 'Harry', 'Ron', 'George', 'Fred'),
                      ('Hermione', 'Neville', 'George', 'Fred'))
 
-        for numerator, denominator in itertools.permutations((mass, element, isotope, general), 2):
-            key1 = (numerator[2][:2] + numerator[0]) / (denominator[2][:2] + denominator[0])
-            key2 = (numerator[0] + numerator[2][2:])/ (denominator[0] + denominator[2][2:])
-
-            rand = numerator[0] / denominator[0]
-            ror = numerator[1] / denominator[1]
-            rxor = numerator[2] / denominator[2]
-
-            self.bitwise('ratio', key1, key2, rand, ror, rxor)
 
     def bitwise(self, flavour, keys1, keys2, band, bor, bxor):
         keylist1 = isopy.keylist(*keys1)
         keylist2 = isopy.keylist(*keys2, *keys2[-2:])
+
+        band = isopy.askeylist(band, sort=True)
+        bor = isopy.askeylist(bor, sort=True)
+        bxor = isopy.askeylist(bxor, sort=True)
 
         keyband = keylist1 & keylist2
         assert keyband.flavour == flavour
         assert keyband == band
         assert keylist1 & keys2 == band
         assert keys1 & keylist2 == band
-
 
         keybor = keylist1 | keylist2
         assert keybor.flavour == flavour
@@ -1149,8 +1198,6 @@ class Test_IsopyList:
         assert keybxor == bxor
         assert keylist1 ^ keys2 == bxor
         assert keys1 ^ keylist2 == bxor
-
-        return keyband, keybor, keybxor
 
     def test_filter(self):
         mass = isopy.keylist(['104', '105', '106', '108', '104', '108'])
@@ -1457,51 +1504,73 @@ class Test_IsopyList:
     def test_sorted(self):
         mass = isopy.askeylist('102 104 105 106 108 110'.split())
         mass2 = isopy.askeylist('104 108 102 110 106 105'.split())
+        mass3 = isopy.askeylist('104 108 102 110 106 105'.split(), sort=True)
         assert mass != mass2
         assert mass == mass2.sorted()
+        assert mass == mass3
 
         element = isopy.askeylist('ru rh pd ag cd te'.split())
         element2 = isopy.askeylist('pd cd te ag rh ru'.split())
+        element3 = isopy.askeylist('pd cd te ag rh ru'.split(), sort=True)
         assert element != element2
         assert element == element2.sorted()
+        assert element == element3
 
         isotope = isopy.askeylist('102ru 102pd 104ru 104pd 106pd 106cd'.split())
         isotope2 = isopy.askeylist('106cd 104ru 102ru 104pd 102pd 106pd'.split())
+        isotope3 = isopy.askeylist('106cd 104ru 102ru 104pd 102pd 106pd'.split(), sort=True)
         assert isotope != isotope2
         assert isotope == isotope2.sorted()
+        assert isotope == isotope3
 
         molecule =  isopy.askeylist('H2O', 'HCl', '(OH)2', 'HNO3')
         molecule2 = isopy.askeylist('H2O HNO3 HCl (OH)2'.split())
+        molecule3 = isopy.askeylist('H2O HNO3 HCl (OH)2'.split(), sort=True)
         assert molecule != molecule2
         assert molecule == molecule2.sorted()
+        assert molecule == molecule3
 
         molecule = isopy.askeylist('H2O (2H)2(16O)++ (1H)2(16O) (2H)2(16O)'.split())
         molecule2 = isopy.askeylist('(2H)2(16O)++ (2H)2(16O) (1H)2(16O) H2O'.split())
+        molecule3 = isopy.askeylist('(2H)2(16O)++ (2H)2(16O) (1H)2(16O) H2O'.split(), sort=True)
         assert molecule != molecule2
         assert molecule == molecule2.sorted()
+        assert molecule == molecule3
 
         general = isopy.askeylist('ginny harry hermione luna neville ron'.split())
         general2 = isopy.askeylist('hermione ginny luna ron neville harry'.split())
+        general3 = isopy.askeylist('hermione ginny luna ron neville harry'.split(), sort=True)
         assert general != general2
         assert general == general2.sorted()
+        assert general == general3
 
         ratio = element / 'pd'
         ratio2 = element2 / 'pd'
+        ratio3 = isopy.askeylist(ratio2, sort=True)
         assert ratio != ratio2
         assert ratio == ratio2.sorted()
+        assert ratio == ratio3
 
         ratio = 'pd' / element
         ratio2 = 'pd' / element2
+        ratio3 = isopy.askeylist(ratio2, sort=True)
         assert ratio != ratio2
         assert ratio == ratio2.sorted()
+        assert ratio == ratio3
 
         mixed = isopy.askeylist('105 pd H2O 99ru 108pd/105pd hermione'.split())
         mixed2 = isopy.askeylist('H2O 108pd/105pd 99ru 105 hermione pd'.split())
+        mixed3 = isopy.askeylist('H2O 108pd/105pd 99ru 105 hermione pd'.split(), sort=True)
         assert mixed != mixed2
         assert mixed == mixed2.sorted()
+        assert mixed == mixed3
 
     def test_reversed(self):
         mass = isopy.askeylist('104 108 102 110 106 105'.split()).reversed()
+        assert mass != '104 108 102 110 106 105'.split()
+        assert mass == list(reversed('104 108 102 110 106 105'.split()))
+
+        mass = isopy.askeylist('104 108 102 110 106 105'.split(), reverse=True)
         assert mass != '104 108 102 110 106 105'.split()
         assert mass == list(reversed('104 108 102 110 106 105'.split()))
 
@@ -1509,7 +1578,15 @@ class Test_IsopyList:
         assert element != 'pd cd te ag rh ru'.split()
         assert element == list(reversed('pd cd te ag rh ru'.split()))
 
+        element = isopy.askeylist('pd cd te ag rh ru'.split(), reverse=True)
+        assert element != 'pd cd te ag rh ru'.split()
+        assert element == list(reversed('pd cd te ag rh ru'.split()))
+
         isotope = isopy.askeylist('106cd 104ru 102ru 104pd 102pd 106pd'.split()).reversed()
+        assert isotope != '106cd 104ru 102ru 104pd 102pd 106pd'.split()
+        assert isotope == list(reversed('106cd 104ru 102ru 104pd 102pd 106pd'.split()))
+
+        isotope = isopy.askeylist('106cd 104ru 102ru 104pd 102pd 106pd'.split(), reverse=True)
         assert isotope != '106cd 104ru 102ru 104pd 102pd 106pd'.split()
         assert isotope == list(reversed('106cd 104ru 102ru 104pd 102pd 106pd'.split()))
 
@@ -1517,7 +1594,15 @@ class Test_IsopyList:
         assert molecule != 'H2O HNO3 HCl (OH)2'.split()
         assert molecule == list(reversed('H2O HNO3 HCl (OH)2'.split()))
 
+        molecule = isopy.askeylist('H2O HNO3 HCl (OH)2'.split(), reverse=True)
+        assert molecule != 'H2O HNO3 HCl (OH)2'.split()
+        assert molecule == list(reversed('H2O HNO3 HCl (OH)2'.split()))
+
         general = isopy.askeylist('hermione ginny luna ron neville harry'.split()).reversed()
+        assert general != 'hermione ginny luna ron neville harry'.split()
+        assert general == list(reversed('hermione ginny luna ron neville harry'.split()))
+
+        general = isopy.askeylist('hermione ginny luna ron neville harry'.split(), reverse=True)
         assert general != 'hermione ginny luna ron neville harry'.split()
         assert general == list(reversed('hermione ginny luna ron neville harry'.split()))
 
@@ -1525,11 +1610,23 @@ class Test_IsopyList:
         assert ratio.numerators != 'pd cd te ag rh ru'.split()
         assert ratio.numerators == list(reversed('pd cd te ag rh ru'.split()))
 
+        ratio = (isopy.askeylist('pd cd te ag rh ru'.split(), reverse=True) / 'pd')
+        assert ratio.numerators != 'pd cd te ag rh ru'.split()
+        assert ratio.numerators == list(reversed('pd cd te ag rh ru'.split()))
+
         ratio = ('pd' / isopy.askeylist('pd cd te ag rh ru'.split())).reversed()
         assert ratio.denominators != 'pd cd te ag rh ru'.split()
         assert ratio.denominators == list(reversed('pd cd te ag rh ru'.split()))
 
+        ratio = ('pd' / isopy.askeylist('pd cd te ag rh ru'.split(), reverse=True))
+        assert ratio.denominators != 'pd cd te ag rh ru'.split()
+        assert ratio.denominators == list(reversed('pd cd te ag rh ru'.split()))
+
         mixed = isopy.askeylist('H2O 108pd/105pd 99ru 105 hermione pd'.split()).reversed()
+        assert mixed != 'H2O 108pd/105pd 99ru 105 hermione pd'.split()
+        assert mixed == list(reversed('H2O 108pd/105pd 99ru 105 hermione pd'.split()))
+
+        mixed = isopy.askeylist('H2O 108pd/105pd 99ru 105 hermione pd'.split(), reverse=True)
         assert mixed != 'H2O 108pd/105pd 99ru 105 hermione pd'.split()
         assert mixed == list(reversed('H2O 108pd/105pd 99ru 105 hermione pd'.split()))
 
@@ -2116,11 +2213,11 @@ class Test_Dict:
         isopydict = core.IsopyDict(dict(zip(keys, values)))
 
         part1, part2 = repr(isopydict).split('\n', 1)
-        assert part1 == "IsopyDict(readonly=False, key_flavour='any')"
+        assert part1 == "IsopyDict(readonly=False, key_flavour='any', default_value=None)"
         assert part2 == repr({key:value for key, value in isopydict.items()})
 
         part1, part2 = str(isopydict).split('\n', 1)
-        assert part1 == "IsopyDict(readonly=False, key_flavour='any')"
+        assert part1 == "IsopyDict(readonly=False, key_flavour='any', default_value=None)"
         assert part2 == repr({key:value for key, value in isopydict.items()})
 
         keys = '101 pd ru cd 105pd hermione'.split()
@@ -2166,8 +2263,7 @@ class Test_Dict:
         assert '107ag' not in isopydict
         value = isopydict.pop('107ag', None)
         assert value is None
-        with pytest.raises(ValueError):
-            value = isopydict.pop('107ag')
+        assert isopydict.pop('107ag') is None
 
         assert isopydict.pop(None, 0) == 0
 
@@ -2178,8 +2274,7 @@ class Test_Dict:
         assert value is None
         assert '107ag' in isopydict
         assert isopydict['107ag'] == None
-        with pytest.raises(ValueError):
-            value = isopydict.setdefault('103rh')
+        assert isopydict.setdefault('103rh') is None
 
         #update
         isopydict.update({'pd': 222, '107ag': 107})
@@ -2317,8 +2412,7 @@ class Test_Dict:
         assert isopydict1.get(101) == dictionary.get('101')
         assert isopydict2.get(101) == dictionary.get('101')
         for key in '103rh 107ag'.split():
-            with pytest.raises(ValueError):
-                isopydict1.get(key)
+            assert isopydict1.get(key) is None
             assert isopydict2.get(key) == 'default'
 
             assert isopydict1.get(key, None) is None
@@ -2328,8 +2422,7 @@ class Test_Dict:
             isopydict1.get(3.14)
 
         # Test ratio
-        with pytest.raises(ValueError):
-            isopydict1.get('105pd/ru')
+        assert isopydict1.get('105pd/ru') is None
         assert isopydict2.get('105pd/ru') == 'default'
         assert isopydict1.get('105pd/ru', None) is None
         assert isopydict2.get('105pd/ru', None) is None
@@ -3301,11 +3394,11 @@ class Test_Array:
             assert result.nrows == result.size
             assert len(result) == result.size
 
-        assert_array_equal_array(result, correct)
+        assert_array_equal_ndarray(result, correct)
 
         result2 = isopy.array(result)
         assert result2 is not result
-        assert_array_equal_array(result2, correct)
+        assert_array_equal_ndarray(result2, correct)
 
         result2 = isopy.asarray(result)
         assert result2 is result
@@ -4920,7 +5013,7 @@ class Test_ToMixin:
         assert tovalue is not d
 
         tovalue = d.to_array()
-        assert isinstance(tovalue, core.IsopyArray)
+        assert isinstance(tovalue, core.IsopyNdArray)
         assert_array_equal_array(a, tovalue)
 
         tovalue = d.to_list()
@@ -4995,7 +5088,7 @@ class Test_ToMixin:
         assert tovalue is not d
 
         tovalue = d.to_array()
-        assert isinstance(tovalue, core.IsopyArray)
+        assert isinstance(tovalue, core.IsopyNdArray)
         assert_array_equal_array(a[0], tovalue)
 
         tovalue = d.to_list()
@@ -5065,7 +5158,7 @@ class Test_ToMixin:
         assert tovalue is not d
 
         tovalue = d.to_array()
-        assert isinstance(tovalue, core.IsopyArray)
+        assert isinstance(tovalue, core.IsopyNdArray)
         assert_array_equal_array(a, tovalue)
 
         tovalue = d.to_list()
@@ -5480,56 +5573,56 @@ class Test_EmptyArrays:
 
         #creating array with size 1
         array = isopy.empty(None, keys)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(None, keys, ndim = 0)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(None, keys, ndim = -1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(None, keys, ndim = 1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 1
         assert array.size == 1
         assert array.nrows == 1
 
         array = isopy.empty(-1, keys)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(-1, keys, ndim = 0)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(-1, keys, ndim = -1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 0
         assert array.size == 1
         assert array.nrows == -1
 
         array = isopy.empty(-1, keys, ndim = 1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 1
         assert array.size == 1
@@ -5537,21 +5630,21 @@ class Test_EmptyArrays:
 
         # creating array with size > 1
         array = isopy.empty(4, keys)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 1
         assert array.size == 4
         assert array.nrows == 4
 
         array = isopy.empty(4, keys, ndim =-1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 1
         assert array.size == 4
         assert array.nrows == 4
 
         array = isopy.empty(4, keys, ndim = 1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.keys == keys
         assert array.ndim == 1
         assert array.size == 4
@@ -5562,31 +5655,31 @@ class Test_EmptyArrays:
 
         # dtype
         array = isopy.empty(4, keys, dtype=np.float64)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 4
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.float64
 
         array = isopy.empty(None, keys, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
 
         array = isopy.empty(-1, keys, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
 
         array = isopy.empty(tuple(), keys, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
 
         array = isopy.empty(1, keys, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
@@ -5595,13 +5688,13 @@ class Test_EmptyArrays:
             isopy.empty(-2, keys, dtype=np.int8)
 
         array = isopy.empty(1, keys, ndim = -1, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
 
         array = isopy.empty(-1, keys, ndim=1, dtype=np.int8)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         for i in range(len(array.dtype)): assert array.dtype[i].type is np.int8
@@ -5613,7 +5706,7 @@ class Test_EmptyArrays:
             isopy.empty(1, keys, ndim=2, dtype=np.int8)
 
         array = isopy.empty(None, keys, ndim = 1, dtype=[np.int8, np.float32, np.uint64])
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         assert array.dtype[0].type is np.int8
@@ -5628,7 +5721,7 @@ class Test_EmptyArrays:
 
         # Test using an existing array for dtype
         array = isopy.empty(None, keys2, dtype=existing_array)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         assert array.keys == keys2
@@ -5637,7 +5730,7 @@ class Test_EmptyArrays:
         assert array.dtype[2].type is np.uint64
 
         array = isopy.empty(None, keys2, ndim = 1, dtype=existing_array)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         assert array.keys == keys2
@@ -5646,7 +5739,7 @@ class Test_EmptyArrays:
         assert array.dtype[2].type is np.uint64
 
         array = isopy.empty(None, dtype=existing_array)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         assert array.keys == keys
@@ -5659,7 +5752,7 @@ class Test_EmptyArrays:
 
         # Test using an existing array for keys
         array = isopy.empty(None, existing_array)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         assert array.keys == keys
@@ -5668,7 +5761,7 @@ class Test_EmptyArrays:
         assert array.dtype[2].type is np.uint64
 
         array = isopy.empty(None, existing_array, ndim = 1)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         assert array.keys == keys
@@ -5678,7 +5771,7 @@ class Test_EmptyArrays:
 
         # Test using an existing array for rows
         array = isopy.empty(existing_array)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         assert array.keys == keys
@@ -5687,7 +5780,7 @@ class Test_EmptyArrays:
         assert array.dtype[2].type is np.uint64
 
         array = isopy.empty(existing_array, ndim = 0)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 0
         assert array.size == 1
         assert array.keys == keys
@@ -5696,7 +5789,7 @@ class Test_EmptyArrays:
         assert array.dtype[2].type is np.uint64
 
         array = isopy.empty(existing_array, keys2)
-        assert isinstance(array, core.IsopyArray)
+        assert isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 1
         assert array.keys == keys2
@@ -5707,43 +5800,43 @@ class Test_EmptyArrays:
         # Check that ones only contains ones
         array1 = isopy.ones(4, ['Ru', 'Pd', 'Cd'])
         array2 = np.ones(4, [('Ru', np.float64), ('Pd', np.float64), ('Cd', np.float64)])
-        assert isinstance(array1, core.IsopyArray)
+        assert isinstance(array1, core.IsopyNdArray)
         np.testing.assert_equal(array1, array2)
 
         # Check that zeros only contain zeros
         array1 = isopy.zeros(None, ['Ru', 'Pd', 'Cd'])
         array2 = np.zeros(None, [('Ru', np.float64), ('Pd', np.float64), ('Cd', np.float64)])
-        assert isinstance(array1, core.IsopyArray)
+        assert isinstance(array1, core.IsopyNdArray)
         np.testing.assert_equal(array1, array2)
 
     def test_ones_zero_empty2(self):
         array = isopy.empty(None)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 0
         assert array.size == 1
 
         array = isopy.empty(1)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 1
 
         array = isopy.empty(10)
         assert isinstance(array, np.ndarray)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 10
 
         array = isopy.zeros(None)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 0
         assert array.size == 1
         np.testing.assert_allclose(array, 0)
 
         array = isopy.ones(10)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 10
@@ -5755,28 +5848,28 @@ class Test_EmptyArrays:
 
         array1 = isopy.full(None, 1.5, keys)
         array2 = np.full(None, 1.5, [('Ru', np.float64), ('Pd', np.float64), ('Cd', np.float64)])
-        assert isinstance(array1, core.IsopyArray)
+        assert isinstance(array1, core.IsopyNdArray)
         np.testing.assert_equal(array1, array2)
 
         array1 = isopy.full(4, 1.5, keys)
         array2 = np.full(4, 1.5, [('Ru', np.float64), ('Pd', np.float64), ('Cd', np.float64)])
-        assert isinstance(array1, core.IsopyArray)
+        assert isinstance(array1, core.IsopyNdArray)
         np.testing.assert_equal(array1, array2)
 
         array1 = isopy.full(existing_array, existing_array)
-        assert isinstance(array1, core.IsopyArray)
+        assert isinstance(array1, core.IsopyNdArray)
         np.testing.assert_equal(array1, existing_array)
 
     def test_full2(self):
         array = isopy.full(None, 6)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 0
         assert array.size == 1
         np.testing.assert_allclose(array, 6)
 
         array = isopy.full(1, 6)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 1
@@ -5784,7 +5877,7 @@ class Test_EmptyArrays:
 
         array = isopy.full(10, [i for i in range(10)])
         assert isinstance(array, np.ndarray)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert array.ndim == 1
         assert array.size == 10
         np.testing.assert_allclose(array, [i for i in range(10)])
@@ -5848,7 +5941,7 @@ class Test_EmptyArrays:
     def test_random2(self):
         rng = np.random.default_rng(seed=46)
         array = isopy.random(None, None, seed=46)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 0
         assert array.size == 1
@@ -5856,7 +5949,7 @@ class Test_EmptyArrays:
 
         rng = np.random.default_rng(seed=46)
         array = isopy.random(1, None, seed=46)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 1
@@ -5864,7 +5957,7 @@ class Test_EmptyArrays:
 
         rng = np.random.default_rng(seed=46)
         array = isopy.random(100, None, seed=46)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 100
@@ -5873,7 +5966,7 @@ class Test_EmptyArrays:
 
         rng = np.random.default_rng(seed=46)
         array = isopy.random(100, 33, seed=46)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 100
@@ -5881,7 +5974,7 @@ class Test_EmptyArrays:
 
         rng = np.random.default_rng(seed=46)
         array = isopy.random(100, (33, 10), seed=46)
-        assert not isinstance(array, core.IsopyArray)
+        assert not isinstance(array, core.IsopyNdArray)
         assert isinstance(array, np.ndarray)
         assert array.ndim == 1
         assert array.size == 100
@@ -6046,3 +6139,131 @@ class Test_Misc:
             checks.check_type('test', None, int, float)
 
         assert checks.check_type('test', None, int, float, allow_none=True) is None
+
+    def test_PresetMethod(self):
+        class MyClass:
+            @isopy.core.add_preset_method('two4', two=4)
+            def method(self, one=1, two=2):
+                return one * two
+
+        myclass = MyClass()
+
+        assert type(myclass.method) is isopy.core.PresetCaller
+
+        assert myclass.method() == 2
+        assert myclass.method(2) == 4
+        assert myclass.method(4) == 8
+
+        assert myclass.method() == 2
+        assert myclass.method(2, 1) == 2
+        assert myclass.method(4, 3) == 12
+
+        assert myclass.method.two4() == 4
+        assert myclass.method.two4(2) == 8
+        assert myclass.method.two4(4) == 16
+
+        with pytest.raises(TypeError):
+            myclass.method.two4(2, 1)
+
+    def test_KeyKwargs(self):
+        a1 = isopy.random(2, keys='a b')
+        kwargs = dict(one=1, two=dict(a=1, b=2), three=a1, four=isopy.IsopyDict(a=10, b=20))
+
+        # array
+        keykwargs = isopy.core.KeyKwargs(kwargs, isopy.core.IsopyNdArray)
+
+        assert keykwargs['one'] is kwargs['one']
+        assert keykwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(keykwargs['three'], kwargs['three'])
+        assert keykwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('a')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], kwargs['three']['a'])
+        assert getkwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('c')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], np.array([np.nan, np.nan]))
+        assert getkwargs['four'] is kwargs['four']
+
+        # array, dict
+        keykwargs = isopy.core.KeyKwargs(kwargs, isopy.core.IsopyNdArray, dict)
+
+        assert keykwargs['one'] is kwargs['one']
+        assert keykwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(keykwargs['three'], kwargs['three'])
+        assert keykwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('a')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']['a']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], kwargs['three']['a'])
+        assert getkwargs['four'] is kwargs['four']['a']
+
+        getkwargs = keykwargs.get('c')
+
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is None
+        isopy.testing.assert_compare_arrays(getkwargs['three'], np.array([np.nan, np.nan]))
+        assert getkwargs['four'] is None
+
+        # array, isopy dict
+        keykwargs = isopy.core.KeyKwargs(kwargs, isopy.core.IsopyNdArray, isopy.IsopyDict)
+
+        getkwargs = keykwargs.get('c')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], np.array([np.nan, np.nan]))
+        assert getkwargs['four'] is None
+
+        # With default values
+        a1 = isopy.random(2, keys='a b').dv(10)
+        kwargs = dict(one=1, two=dict(a=1, b=2), three=a1, four=isopy.IsopyDict(a=10, b=20, default_value=100))
+
+        # array
+        keykwargs = isopy.core.KeyKwargs(kwargs, isopy.core.IsopyNdArray)
+
+        assert keykwargs['one'] is kwargs['one']
+        assert keykwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(keykwargs['three'], kwargs['three'])
+        assert keykwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('a')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], kwargs['three']['a'])
+        assert getkwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('c')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], np.array([10.0, 10.0]))
+        assert getkwargs['four'] is kwargs['four']
+
+        # array, dict
+        keykwargs = isopy.core.KeyKwargs(kwargs, isopy.core.IsopyNdArray, dict)
+
+        assert keykwargs['one'] is kwargs['one']
+        assert keykwargs['two'] is kwargs['two']
+        isopy.testing.assert_compare_arrays(keykwargs['three'], kwargs['three'])
+        assert keykwargs['four'] is kwargs['four']
+
+        getkwargs = keykwargs.get('a')
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is kwargs['two']['a']
+        isopy.testing.assert_compare_arrays(getkwargs['three'], kwargs['three']['a'])
+        assert getkwargs['four'] is kwargs['four']['a']
+
+        getkwargs = keykwargs.get('c')
+
+        assert getkwargs['one'] is kwargs['one']
+        assert getkwargs['two'] is None
+        isopy.testing.assert_compare_arrays(getkwargs['three'], np.array([10.0, 10.0]))
+        assert getkwargs['four'] is 100
+
+
+
+

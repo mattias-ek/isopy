@@ -502,7 +502,7 @@ nanmad99 = core.partial_func(nanmad, 'nanmad99', ci=0.99)
 ### Non-arrayfuncs ###
 ######################
 
-def rstack(*arrays, sort_keys=False):
+def rstack(*arrays, sort_keys=True):
     """
     Stack the rows of multiple arrays.
 
@@ -546,19 +546,19 @@ def rstack(*arrays, sort_keys=False):
     """
     arrays = [core.asanyarray(a) for a in arrays]
 
-    keys = core.askeylist(*(a.keys for a in arrays if isinstance(a, core.IsopyArray)),
+    keys = core.askeylist(*(a.keys for a in arrays if isinstance(a, core.IsopyNdArray)),
                           ignore_duplicates=True, sort=sort_keys)
     #arrays = [a.reshape(1) if a.ndim == 0 else a for a in arrays]
 
     for i, a in enumerate(arrays):
-        if not isinstance(a, core.IsopyArray):
+        if not isinstance(a, core.IsopyNdArray):
             arrays[i] = core.full(a.size, a, keys)
 
     result = [np.concatenate([a.get(key).reshape(1) if a.ndim == 0 else a.get(key) for a in arrays]) for key in keys]
     dtype = [(key, result[i].dtype) for i, key in enumerate(keys.strlist())]
     return core.Array._view_array_(np.fromiter(zip(*result), dtype=dtype), keys)
 
-def cstack(*arrays, sort_keys=False):
+def cstack(*arrays, sort_keys=True):
     """
     Stack the columns of multiple arrays.
 
@@ -644,7 +644,7 @@ def concatenate(*arrays, axis=0):
     """
     arrays = [core.asanyarray(a) for a in arrays]
 
-    if True not in [isinstance(a, core.IsopyArray) for a in arrays]:
+    if True not in [isinstance(a, core.IsopyNdArray) for a in arrays]:
         return np.concatenate([a for a in arrays if a is not None], axis=axis)
 
     if axis == 0 or axis is None:

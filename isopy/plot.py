@@ -482,7 +482,7 @@ class IsopyPlot:
             ax.axis(False)
             
         if axes_kwargs:
-            axes_kwargs = core.KeyKwargs(axes_kwargs, core.IsopyArray, dict)
+            axes_kwargs = core.KeyKwargs(axes_kwargs, core.IsopyNdArray, dict)
             for name, ax in self.subplots.items():
                 if name != 'legend' or not legend:
                     kwargs = axes_kwargs.get(name)
@@ -1001,7 +1001,7 @@ class IsopyPlot:
                 else:
                     kwargs['start'] = np.nanmin([wmin - kwargs['pad'], 0])
 
-        kwargs = core.KeyKwargs(kwargs, core.IsopyArray, dict)
+        kwargs = core.KeyKwargs(kwargs, core.IsopyNdArray, dict)
         for key in keys:
             if str(key) in named_axes:
                 ax = named_axes[str(key)]
@@ -1741,11 +1741,11 @@ class IsopyPlot:
         except Exception as err:
             raise TypeError(f'invalid y: {err}') from err
 
-        if isinstance(y, isopy.core.IsopyArray):
+        if isinstance(y, isopy.core.IsopyNdArray):
             if x is None:
                 x = y.keys()
 
-            if isinstance(yerr, isopy.core.IsopyArray):
+            if isinstance(yerr, isopy.core.IsopyNdArray):
                 if type(yerr) is not type(y):
                     raise TypeError(f'yerr ({type(yerr).__name__}) is not the same type as y ({type(y).__name__})')
                 else:

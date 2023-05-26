@@ -104,7 +104,7 @@ def rows_to_data(data, has_keys, keys_in_first):
 def data_to_rows(data, keys_in_first, keyfmt = None):
     data = isopy.asanyarray(data)
 
-    if isinstance(data, core.IsopyArray):
+    if isinstance(data, core.IsopyNdArray):
         if data.ndim == 0:
             data = data.reshape(-1)
         if keys_in_first == 'r':

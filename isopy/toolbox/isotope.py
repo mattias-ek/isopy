@@ -89,14 +89,14 @@ def johnson_nyquist_noise(voltage, resistor = 1E11, integration_time = 8.389, in
     IsopyNdarray(-1, flavour='isotope', default_value=nan)
     """
 
-    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsopyArray, np.ndarray, np.float64, coerce=True,
-                                      coerce_into=[isopy.core.IsopyArray, np.float64, np.array])
-    resistor = isopy.checks.check_type('resistor', resistor, isopy.core.IsopyArray, np.ndarray, dict, coerce=True,
-                                       coerce_into=[isopy.core.IsopyArray, np.float64, np.array])
+    voltage = isopy.checks.check_type('voltage', voltage, isopy.core.IsopyNdArray, np.ndarray, np.float64, coerce=True,
+                                      coerce_into=[isopy.core.IsopyNdArray, np.float64, np.array])
+    resistor = isopy.checks.check_type('resistor', resistor, isopy.core.IsopyNdArray, np.ndarray, dict, coerce=True,
+                                       coerce_into=[isopy.core.IsopyNdArray, np.float64, np.array])
     integration_time = isopy.checks.check_type('integration_time', integration_time, np.float64, coerce=True)
     include_counting_statistics = isopy.checks.check_type('include_counting_statistics', include_counting_statistics,
                                                           bool)
-    if isinstance(resistor, (core.IsopyArray, dict)):
+    if isinstance(resistor, (core.IsopyNdArray, dict)):
         resistor = core.RefValDict(resistor, default_value=R)
         resistor = isopy.array({key: resistor.get(key) for key in voltage.keys})
 
@@ -200,7 +200,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
 
     out_keys = isopy.askeylist()
     for key, val in input:
-        if isinstance(key, core.IsopyArray):
+        if isinstance(key, core.IsopyNdArray):
             keys = key.keys()
         else:
             key = isopy.askeystring(key)
@@ -219,7 +219,7 @@ def make_ms_array(*args, mf_factor = None, isotope_fractions = 'isotope.fraction
 
     out = isopy.zeros(None, out_keys)
     for key, val in input:
-        if isinstance(key, core.IsopyArray):
+        if isinstance(key, core.IsopyNdArray):
             array = key
         else:
             key = isopy.askeystring(key)
@@ -1110,7 +1110,7 @@ def rDelta(data, reference_data, factor=1, deviations=1):
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
 
     """
-    data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
+    data = isopy.checks.check_type('data', data, isopy.core.IsopyNdArray, coerce=True, coerce_into=isopy.core.asarray)
     factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
     deviations = isopy.checks.check_type('deviations', deviations, np.float64, coerce=True)
 
@@ -1184,7 +1184,7 @@ def inverse_rDelta(data, reference_data, factor=1, deviations=1):
     99                  1.00000             1.00000             1.00000             1.00000             1.00000
     IsopyNdarray(100, flavour='ratio[isotope, isotope]', default_value=nan)
     """
-    data = isopy.checks.check_type('data', data, isopy.core.IsopyArray, coerce=True, coerce_into=isopy.core.asarray)
+    data = isopy.checks.check_type('data', data, isopy.core.IsopyNdArray, coerce=True, coerce_into=isopy.core.asarray)
     factor = isopy.checks.check_type('factor', factor, np.float64, coerce=True)
     deviations = isopy.checks.check_type('deviations', deviations, np.float64, coerce=True)
 

@@ -1394,24 +1394,24 @@ class Test_JohnsonNyquistNoise:
         jk_result = isopy.tb.johnson_nyquist_noise(voltage, **kwargs, include_counting_statistics=False)
         combined_result = isopy.tb.johnson_nyquist_noise(voltage, **kwargs)
 
-        if isinstance(resistor, isopy.core.IsopyArray):
+        if isinstance(resistor, isopy.core.IsopyNdArray):
             assert jk_result.keys == jk_correct.keys
             assert jk_result.size == jk_correct.size
             assert jk_result.ndim == jk_correct.ndim
             for key in jk_result.keys:
                 np.testing.assert_allclose(jk_result[key], jk_correct[key])
         else:
-            assert not isinstance(jk_result, isopy.core.IsopyArray)
+            assert not isinstance(jk_result, isopy.core.IsopyNdArray)
             np.testing.assert_allclose(jk_result, jk_correct)
 
-        if isinstance(voltage, isopy.core.IsopyArray):
+        if isinstance(voltage, isopy.core.IsopyNdArray):
             assert combined_result.keys == combined_correct.keys
             assert combined_result.size == combined_correct.size
             assert combined_result.ndim == combined_correct.ndim
             for key in combined_result.keys:
                 np.testing.assert_allclose(combined_result[key], combined_correct[key])
         else:
-            assert not isinstance(combined_result, isopy.core.IsopyArray)
+            assert not isinstance(combined_result, isopy.core.IsopyNdArray)
             np.testing.assert_allclose(combined_result, combined_correct)
 
 

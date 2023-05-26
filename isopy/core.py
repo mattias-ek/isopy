@@ -176,7 +176,6 @@ class PresetMethod:
         self.__doc__ = func.__doc__ or ''
         self.__doc__ += '\n        This function contains the following presets:'
         
-        
     def add_preset(self, name, kwargs):
         self.presets[name] = kwargs
         kwargs_doc = ', '.join([f'{key} = {get_module_name(value)}' for key, value in kwargs.items()])
@@ -225,9 +224,9 @@ def extract_kwargs(kwargs, prefix, keep_prefix=False):
 
 class KeyKwargs:
     def __init__(self, kwargs, *instance_types):
-        self.keykwargs = {kwk: kwargs.pop(kwk) for kwk, kwv in tuple(kwargs.items())
+        self.kwargs = kwargs.copy()
+        self.keykwargs = {kwk: self.kwargs.pop(kwk) for kwk, kwv in tuple(kwargs.items())
                                 if isinstance(kwv, instance_types)}
-        self.kwargs = kwargs
         
     def __getitem__(self, name):
         if name in self.kwargs:
@@ -2060,7 +2059,7 @@ def combine_keys_func(func):
                 keys += (arg, )
             elif type(arg) is IsopyKeyList:
                 keys += tuple(arg)
-            elif isinstance(arg, IsopyArray):
+            elif isinstance(arg, IsopyNdArray):
                 keys += arg.keys
             elif isinstance(arg, np.dtype) and arg.names is not None:
                 keys += tuple(name for name in arg.names)
@@ -2505,7 +2504,7 @@ def keylist(keys, ignore_duplicates=False, allow_duplicates=True, allow_reformat
         keys = sorted(keys, key= lambda k: k._sortkey_())
         
     if reverse:
-        keys = reversed(keys)
+        keys = tuple(reversed(keys))
     
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
                        allow_duplicates=allow_duplicates)
@@ -2568,7 +2567,7 @@ def askeylist(keys, ignore_duplicates=False, allow_duplicates=True, allow_reform
         keys = sorted(keys, key= lambda k: k._sortkey_())
         
     if reverse:
-        keys = reversed(keys)
+        keys = tuple(reversed(keys))
     
     return IsopyKeyList(keys, flavour, ignore_duplicates=ignore_duplicates,
                         allow_duplicates=allow_duplicates)
@@ -3033,12 +3032,6 @@ REFVAL_RATIO_DEFAULTS = ARRAY_RATIO_DEFAULTS
 REFVAL_MOLECULE_DEFAULTS = ARRAY_MOLECULE_DEFAULTS
 REFVAL_MOLECULE_DEFAULTS['mass'] = REFVAL_MOLECULE_DEFAULTS['mz']
 
-def inv_named_function(value, named_function):
-    for name, func in named_function.items():
-        if value == func or value is func:
-            return f"'{name}'"
-    return value
-
 def readonly_method(func):
     def decorator(self, *args, **kwargs):
         if self._readonly_:
@@ -3103,7 +3096,7 @@ class IsopyDict(dict):
             descr = f'{descr}, default_value={self._default_value}'
         return f'{descr})\n{super(IsopyDict, self).__repr__()}'
 
-    def __init__(self, *args, default_value = NotGiven, readonly =False, key_flavour = 'any', **kwargs):
+    def __init__(self, *args, default_value = None, readonly =False, key_flavour = 'any', **kwargs):
         super(IsopyDict, self).__init__()
         self._readonly_ = False
         self.default_value = default_value
@@ -3115,7 +3108,7 @@ class IsopyDict(dict):
         self._key_flavour_ = asflavour(key_flavour)
 
         for arg in args:
-            if isinstance(arg, IsopyArray):
+            if isinstance(arg, IsopyNdArray):
                 self.update(arg.to_dict())
             if pandas is not None and isinstance(arg, pandas.DataFrame):
                 arg = arg.to_dict('list')
@@ -3298,7 +3291,7 @@ class IsopyDict(dict):
         if isinstance(default, dict):
             default = isopy.asdict(default)
             default_value = default.get(key, self._default_value)
-        elif isinstance(default, IsopyArray):
+        elif isinstance(default, IsopyNdArray):
             default_value = default.get(key, self._default_value)
         else:
             default_value = default
@@ -3606,7 +3599,7 @@ class RefValDict(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin, IsopyDict):
         if isinstance(default, dict):
             default = isopy.asdict(default)
             default_value = default.get(key, self._default_value)
-        elif isinstance(default, IsopyArray):
+        elif isinstance(default, IsopyNdArray):
             default_value = default.get(key, self._default_value)
         else:
             default_value = default
@@ -3742,8 +3735,9 @@ ARRAY_RATIO_DEFAULTS = {'divide':np.divide}
 ARRAY_MOLECULE_DEFAULTS = {'abundance': (np.add, np.multiply, None),
                            'fraction': (np.multiply, np.power, None),
                            'mz': (np.add, np.multiply, np.divide)}
+NumpyNdArray = np.ndarray
 
-class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
+class IsopyNdArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
     """
     IsopyArray()
 
@@ -4003,15 +3997,15 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         if keyi is None:
             a = self
         else:
-            a_ = super(IsopyArray, self).__getitem__(keyi._index_())
+            a_ = super(IsopyNdArray, self).__getitem__(keyi._index_())
             a = self._view_array_(a_, keyi)
 
         if rowi is None:
             return a
-        elif isinstance(rowi, IsopyArray):
+        elif isinstance(rowi, IsopyNdArray):
             raise IndexError('Isopy arrays can only be used as an index when setting arrays')
-        elif isinstance(a, IsopyArray):
-            a_ = super(IsopyArray, a).__getitem__(rowi)
+        elif isinstance(a, IsopyNdArray):
+            a_ = super(IsopyNdArray, a).__getitem__(rowi)
             return self._view_array_(a_, a.keys)
         else:
             return a[rowi]
@@ -4022,7 +4016,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         if isinstance(value, dict) and not isinstance(value, IsopyDict):
             value = isopy.asdict(value, default_value=np.nan)
 
-        if not isinstance(value, (IsopyArray, IsopyDict)):
+        if not isinstance(value, (IsopyNdArray, IsopyDict)):
             value = np.asarray(value)
             if self.ndim == 0 and value.ndim != 0 and value.size == 1:
                 value = value.reshape(tuple())
@@ -4031,30 +4025,30 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         if keyi is None:
             a = self
         elif type(keystr:=keyi._index_()) is list:
-            a = self._view_array_(super(IsopyArray, self).__getitem__(keystr), keyi)
+            a = self._view_array_(super(IsopyNdArray, self).__getitem__(keystr), keyi)
         elif rowi is None: # True of key index is a single key and no rows index was given
-            super(IsopyArray, self).__setitem__(keystr, value.get(keyi))
+            super(IsopyNdArray, self).__setitem__(keystr, value.get(keyi))
             return
         else:
-            super(IsopyArray, self).__getitem__(keystr).view(ndarray)[rowi] = value.get(keyi)
+            super(IsopyNdArray, self).__getitem__(keystr).view(ndarray)[rowi] = value.get(keyi)
             return
 
         if rowi is None:
             for key in a.keys:
-                super(IsopyArray, a).__setitem__(str(key), value.get(key))
+                super(IsopyNdArray, a).__setitem__(str(key), value.get(key))
             return
-        elif isinstance(rowi, IsopyArray):
+        elif isinstance(rowi, IsopyNdArray):
             for k in rowi.keys:
                 a.get(k)[rowi[k]] = value.get(k)
         else:
             for key in a.keys:
-                super(IsopyArray, a).__getitem__(str(key)).view(ndarray)[rowi] = value.get(key)
+                super(IsopyNdArray, a).__getitem__(str(key)).view(ndarray)[rowi] = value.get(key)
             return
         
     def __len__(self):
         if self.ndim == 0: #For voids
             raise TypeError('len() of unsized object')
-        return super(IsopyArray, self).__len__()
+        return super(IsopyNdArray, self).__len__()
 
     @property
     def ncols(self):
@@ -4141,7 +4135,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
                 return self._default_array_(key, default)
 
     def _newkeys_(self, keys):
-        out = super(IsopyArray, self).astype(list(zip(keys.strlist(), self.datatypes)))
+        out = super(IsopyNdArray, self).astype(list(zip(keys.strlist(), self.datatypes)))
         return self._view_array_(out, keys)
     
     def copy(self, keys = NotGiven, default = NotGiven, new_keys = NotGiven, new_flavour = NotGiven, **key_filters):
@@ -4169,7 +4163,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
             a = self._newkeys_(new_keys)
         
         if a.npbase is self.npbase:
-            acopy = super(IsopyArray, a).copy()
+            acopy = super(IsopyNdArray, a).copy()
             return a._view_array_(acopy, a.keys)
         else:
             return a
@@ -4279,11 +4273,11 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         return self * multiplier
 
     def reshape(self, shape):
-        return self._view_array_(super(IsopyArray, self).reshape(shape), self.keys)
+        return self._view_array_(super(IsopyNdArray, self).reshape(shape), self.keys)
 
     @functools.wraps(np.ndarray.astype)
     def astype(self, *args, **kwargs):
-        out = super(IsopyArray, self).astype(*args, **kwargs)
+        out = super(IsopyNdArray, self).astype(*args, **kwargs)
         if out.dtype.names:
             keys = askeylist(out.dtype.names, allow_duplicates=False)
             return self._view_array_(out, keys)
@@ -4311,7 +4305,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
     @property
     def npbase(self):
         base = self.base
-        if isinstance(base, IsopyArray):
+        if isinstance(base, IsopyNdArray):
             return base.npbase
         else:
             return base
@@ -4319,7 +4313,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
     def _default_array_(self, key, default_value):
         if default_value is NotGiven:
             default_value = self._temp_default_value if self._temp_default_value is not None else self._default_value
-        elif isinstance(default_value, (IsopyDict, IsopyArray)):
+        elif isinstance(default_value, (IsopyDict, IsopyNdArray)):
             default_value = default_value.get(key, self._default_value)
         else:
             default_value = default_value
@@ -4366,7 +4360,7 @@ class IsopyArray(ArrayFuncMixin, ToTypeFileMixin, TabulateMixin):
         temp_view._temp_default_value = value
         return temp_view
         
-class ArrayBase(IsopyArray):
+class ArrayBase(IsopyNdArray):
     pass
 
 class Array(ArrayBase, ndarray):
@@ -4383,11 +4377,11 @@ def isarray(item, *, flavour = None, flavour_in = None) -> bool:
     Returns ``True`` if *item* is an isopy array otherwise returns ``False``.
     """
     if flavour is not None:
-        return isinstance(item, IsopyArray) and item.flavour == asflavour(flavour)
+        return isinstance(item, IsopyNdArray) and item.flavour == asflavour(flavour)
     elif flavour_in is not None:
-        return isinstance(item, IsopyArray) and item.flavour in asflavour(flavour_in)
+        return isinstance(item, IsopyNdArray) and item.flavour in asflavour(flavour_in)
     else:
-        return isinstance(item, IsopyArray)
+        return isinstance(item, IsopyNdArray)
 
 @append_preset_docstring
 @add_preset('clipboard', file_type='clipboard')
@@ -4486,7 +4480,7 @@ def asarray(a=None, *, ndim = None, flavour = None, file_type = None, **read_kwa
     if a is None:
         raise ValueError(f'No input array given')
             
-    if isinstance(a, IsopyArray):
+    if isinstance(a, IsopyNdArray):
         keys = askeylist(a.keys, flavour=flavour, allow_duplicates=False)
         if a.keys != keys:
             a = a._newkeys_(keys)
@@ -4533,7 +4527,7 @@ def asanyarray(a, *, dtype = None, ndim = None, flavour=None, **read_kwargs):
         else:
             a = isopy.read_csv(a, **read_kwargs)
 
-    if isinstance(a, IsopyArray) and dtype is None:
+    if isinstance(a, IsopyNdArray) and dtype is None:
         return asarray(a, ndim=ndim, flavour=flavour)
 
     if isinstance(a, dict) or (isinstance(a, ndarray) and a.dtype.names is not None):
@@ -4681,7 +4675,7 @@ def full(rows, fill_value, keys=None, *, ndim = None, dtype=None, flavour = 'any
         different datatypes for different columns in the final array. If not given ``np.float64``
         is used for all columns.
     """
-    if keys is None and isinstance(fill_value, IsopyArray):
+    if keys is None and isinstance(fill_value, IsopyNdArray):
         keys = fill_value.keys()
 
     out = new_empty_array(rows, keys, ndim, dtype, np.empty, flavour)
@@ -4789,7 +4783,7 @@ def random(rows, random_args = None, keys=None, *, distribution='normal', seed=N
     rng = np.random.default_rng(seed=seed)
     dist = getattr(rng, distribution)
 
-    if isinstance(array, IsopyArray):
+    if isinstance(array, IsopyNdArray):
         if random_args is None:
             random_args = [tuple() for k in array.keys]
         elif type(random_args) is tuple:
@@ -4814,19 +4808,19 @@ def random(rows, random_args = None, keys=None, *, distribution='normal', seed=N
 
 
 def new_empty_array(rows, keys, ndim, dtype, func, flavour):
-    if isinstance(rows, IsopyArray):
+    if isinstance(rows, IsopyNdArray):
         if keys is None:
             keys = rows.keys
         if dtype is None:
             dtype = rows.dtype
         rows = rows.nrows
 
-    if isinstance(keys, IsopyArray):
+    if isinstance(keys, IsopyNdArray):
         if dtype is None:
             dtype = keys.dtype
         keys = keys.keys
 
-    if isinstance(dtype, IsopyArray):
+    if isinstance(dtype, IsopyNdArray):
         dtype = dtype.dtype
 
     if dtype is None:
@@ -5006,7 +5000,7 @@ def call_array_function(func, *inputs, axis=NotGiven, keys=None, key_filters = N
     a_input = []
     d_input = []
     for i, arg in enumerate(inputs):
-        if isinstance(arg, IsopyArray):
+        if isinstance(arg, IsopyNdArray):
             new_inputs.append(arg)
             a_input.append(arg)
 
@@ -5047,7 +5041,7 @@ def call_array_function(func, *inputs, axis=NotGiven, keys=None, key_filters = N
         if axis_kwarg:
             kwargs['axis'] = None
         out = kwargs.get('out', None)
-        keykwargs = KeyKwargs(kwargs, IsopyArray, IsopyDict)
+        keykwargs = KeyKwargs(kwargs, IsopyNdArray, IsopyDict)
 
         result = [func(*(input.get(key) for input in new_inputs), **keykwargs.get(key)) for key in keys]
 
@@ -5080,7 +5074,7 @@ def call_array_function(func, *inputs, axis=NotGiven, keys=None, key_filters = N
 
     else:
         for kwk, kwv in list(kwargs.items()):
-            if isinstance(kwv, (IsopyArray, IsopyDict)):
+            if isinstance(kwv, (IsopyNdArray, IsopyDict)):
                 kwargs[kwk] = np.transpose([kwv.get(key) for key in keys])
 
         new_inputs = [np.transpose([input.get(key) for key in keys]) if

@@ -534,7 +534,7 @@ def ds_correction(measured, spike, standard=None, inversion_keys=None,
 # TODO cache for speedier grid
 def _deduce_inversion_keys(spike, inversion_keys):
     if inversion_keys is None:
-        if not isinstance(spike, core.IsopyArray):
+        if not isinstance(spike, core.IsopyNdArray):
             raise ValueError(
                 f'Can not deduce inversion keys from spike since it is not an isopy array')
         elif spike.flavour == 'isotope':

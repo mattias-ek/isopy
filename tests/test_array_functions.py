@@ -7,7 +7,7 @@ import operator as op
 from scipy import stats
 
 def assert_array_equal_array(array1, array2, match_dtype=True):
-    assert isinstance(array1, core.IsopyArray)
+    assert isinstance(array1, core.IsopyNdArray)
     assert array1.flavour == array1.keys.flavour
 
     assert array1.dtype.names is not None
@@ -249,7 +249,7 @@ class Test_ArrayFunctions:
         if axis is core.NotGiven or axis == 0:
 
             result = func(a, **kwargs)
-            assert isinstance(result, core.IsopyArray)
+            assert isinstance(result, core.IsopyNdArray)
             assert result.keys == a.keys
             for key in result.keys:
                 true = func(a[key])
@@ -258,7 +258,7 @@ class Test_ArrayFunctions:
                 np.testing.assert_allclose(result[key], true)
 
             result = isopy.arrayfunc(func, a, **kwargs)
-            assert isinstance(result, core.IsopyArray)
+            assert isinstance(result, core.IsopyNdArray)
             assert result.keys == a.keys
             for key in result.keys:
                 true = func(a[key])
@@ -270,7 +270,7 @@ class Test_ArrayFunctions:
             funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
             if hasattr(a, funcname):
                 result = getattr(a, funcname)(**kwargs)
-                assert isinstance(result, core.IsopyArray)
+                assert isinstance(result, core.IsopyNdArray)
                 assert result.keys == a.keys
                 for key in result.keys:
                     true = func(a[key])
@@ -282,13 +282,13 @@ class Test_ArrayFunctions:
             true = func(a.to_list(), **kwargs)
 
             result = func(a, **kwargs)
-            assert not isinstance(result, core.IsopyArray)
+            assert not isinstance(result, core.IsopyNdArray)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
 
             result = isopy.arrayfunc(func, a, **kwargs)
-            assert not isinstance(result, core.IsopyArray)
+            assert not isinstance(result, core.IsopyNdArray)
             assert result.size == true.size
             assert result.ndim == true.ndim
             np.testing.assert_allclose(result, true)
@@ -297,7 +297,7 @@ class Test_ArrayFunctions:
             funcname = {'amin': 'min', 'amax': 'max'}.get(func.__name__, func.__name__)
             if hasattr(a, funcname):
                 result = getattr(a, funcname)(**kwargs)
-                assert not isinstance(result, core.IsopyArray)
+                assert not isinstance(result, core.IsopyNdArray)
                 assert result.size == true.size
                 assert result.ndim == true.ndim
                 np.testing.assert_allclose(result, true)
@@ -481,7 +481,7 @@ class Test_ArrayFunctions:
         keys = (a1.keys | a2.keys).sorted()
 
         result = func(a1, a2)
-        assert isinstance(result, core.IsopyArray)
+        assert isinstance(result, core.IsopyNdArray)
         assert result.keys == keys
         assert result.ndim == ndim
         for key in keys:
@@ -536,7 +536,7 @@ class Test_ArrayFunctions:
         ds = isopy.asrefval(d)
 
         result = func(a, d)
-        assert isinstance(result, core.IsopyArray)
+        assert isinstance(result, core.IsopyNdArray)
         assert result.keys == keys
         assert result.ndim == ndim
         for key in keys:
@@ -556,7 +556,7 @@ class Test_ArrayFunctions:
 
         # Flip input arguments
         result = func(d, a)
-        assert isinstance(result, core.IsopyArray)
+        assert isinstance(result, core.IsopyNdArray)
         assert result.keys == keys
         assert result.ndim == ndim
         for key in keys:
@@ -674,7 +674,7 @@ class Test_ArrayFunctions:
         keys = a.keys
 
         result = func(a, v)
-        assert isinstance(result, core.IsopyArray)
+        assert isinstance(result, core.IsopyNdArray)
         assert result.keys == keys
         for key in keys:
             true = func(a.get(key), v)
@@ -688,7 +688,7 @@ class Test_ArrayFunctions:
 
         # Flip order of values
         result = func(v, a)
-        assert isinstance(result, core.IsopyArray)
+        assert isinstance(result, core.IsopyNdArray)
         assert result.keys == keys
         for key in keys:
             true = func(v, a.get(key))
@@ -1149,7 +1149,7 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, array1)
 
         result = isopy.concatenate(array1, array2, array3, axis=1)
-        assert result.keys == array1.keys + array2.keys + array3.keys
+        assert result.keys == array1.keys | array2.keys | array3.keys
         for key, v in array1.items():
             np.testing.assert_allclose(result[key], v)
         for key, v in array2.items():
@@ -1166,7 +1166,7 @@ class Test_ArrayFunctions:
         assert_array_equal_array(result, array1)
 
         result = isopy.cstack(array1, array2, array3)
-        assert result.keys == array1.keys + array2.keys + array3.keys
+        assert result.keys == array1.keys | array2.keys | array3.keys
         for key, v in array1.items():
             np.testing.assert_allclose(result[key], v)
         for key, v in array2.items():
@@ -1200,12 +1200,12 @@ class Test_ArrayFunctions:
 
         true = np.concatenate([array1, array2], axis=0)
         result = isopy.concatenate(array1, array2)
-        assert not isinstance(result, core.IsopyArray)
+        assert not isinstance(result, core.IsopyNdArray)
         np.testing.assert_allclose(result, true)
 
         true = np.concatenate([array1, array2], axis=1)
         result = isopy.concatenate(array1, array2, axis=1)
-        assert not isinstance(result, core.IsopyArray)
+        assert not isinstance(result, core.IsopyNdArray)
         np.testing.assert_allclose(result, true)
 
 

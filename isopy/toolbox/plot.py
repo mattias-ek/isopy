@@ -1013,11 +1013,11 @@ def plot_spider(axes, y, yerr = None, x = None, constants = None, xscatter  = No
     except Exception as err:
         raise TypeError(f'invalid y: {err}') from err
 
-    if isinstance(y, isopy.core.IsopyArray):
+    if isinstance(y, isopy.core.IsopyNdArray):
         if x is None:
             x = y.keys()
 
-        if isinstance(yerr, isopy.core.IsopyArray):
+        if isinstance(yerr, isopy.core.IsopyNdArray):
             if type(yerr) is not type(y):
                 raise TypeError(f'yerr ({type(yerr).__name__}) is not the same type as y ({type(y).__name__})')
             else:
@@ -1792,8 +1792,8 @@ def plot_hcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
 
         for name, ax in named_axes.items():
             if name == '_': continue
-            plot_hcompare(ax, **{k: v.get(name) if isinstance(v, core.IsopyArray) else v for k, v in
-                    kwargs.items()})
+            plot_hcompare(ax, **{k: v.get(name) if isinstance(v, core.IsopyNdArray) else v for k, v in
+                                 kwargs.items()})
 
     else:
         axes = _check_axes(axes)
@@ -1931,8 +1931,8 @@ def plot_vcompare(axes, cval = np.nanmean, pmval = isopy.nansd2, sigfig = 2, pmu
 
         for name, ax in named_axes.items():
             if name == '': continue
-            plot_vcompare(ax, **{k: v.get(name) if isinstance(v, core.IsopyArray) else v for k, v in
-                    kwargs.items()})
+            plot_vcompare(ax, **{k: v.get(name) if isinstance(v, core.IsopyNdArray) else v for k, v in
+                                 kwargs.items()})
 
     else:
         axes = _check_axes(axes)
